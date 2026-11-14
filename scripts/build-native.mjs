@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
 const out = join(root, 'native/www');
+const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
 const files = [
   'index.html',
@@ -65,5 +66,5 @@ writeFileSync(join(out, 'index.html'), shell);
 
 // Capacitor serves the staged shell from its local origin. Keep a marker so
 // support and store diagnostics can see which bundle is in the binary.
-writeFileSync(join(out, 'native-build.txt'), 'Sixfold 5.1 native web bundle\n');
+writeFileSync(join(out, 'native-build.txt'), 'Sixfold ' + pkg.version + ' native web bundle\n');
 console.log('native web bundle ready:', out);

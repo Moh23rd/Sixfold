@@ -2,7 +2,7 @@
 
 Audit date: 2026-11-13
 
-Scope: `wordle-words.js`, `wordle-locales/*.js`, the files that load them, and
+Scope: `js/wordle-words.js`, `wordle-locales/*.js`, the files that load them, and
 the project’s attribution files. This is an engineering and editorial review,
 not legal advice.
 
@@ -74,7 +74,7 @@ exhaustive count.
   every key is exactly one grapheme, action keys are not stored in the data,
   keys are unique across the whole keyboard, and the rows collectively cover
   every grapheme used by all answers and valid guesses. Coverage matters
-  because `wordle.js` accepts a tapped key only when it is in `KEY_CHARS`.
+  because `js/wordle.js` accepts a tapped key only when it is in `KEY_CHARS`.
 
 The check is run in CI with `npm run audit:wordle`; a structural or invariant
 failure fails the build. `npm run audit:wordle:strict` remains the stronger
@@ -84,7 +84,7 @@ manual/release gate for the known provenance and editorial debt.
 
 ### English list
 
-`wordle-words.js` says the answers are a “common-word subset of the original
+`js/wordle-words.js` says the answers are a “common-word subset of the original
 Wordle answer list” and the valid guesses are the “full five-letter Wordle
 guess list.” It records no URL, revision or license.
 

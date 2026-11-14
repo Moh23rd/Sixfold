@@ -286,7 +286,7 @@ if (!errors.some((message) => message.startsWith('Wordle'))) {
   console.log('  ok  Wordle strings — ' + expectedWordleLocales.length + ' locales, ' + wordleStringCount + ' messages');
 }
 
-// English uses wordle-words.js; every other locale has its own lazy pack.
+// English uses js/wordle-words.js; every other locale has its own lazy pack.
 const expectedPackLocales = expectedWordleLocales.filter((locale) => locale !== 'en');
 const packDirectory = 'wordle-locales';
 let packFiles = [];
