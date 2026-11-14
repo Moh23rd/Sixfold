@@ -90,13 +90,13 @@
     loading = true;
     const active = locale();
     const files = [
-      { src: 'wordle-words.js?v=' + VERSION },
+      { src: 'js/wordle-words.js?v=' + VERSION },
       { src: 'wordle-i18n.js?v=' + VERSION }
     ];
     if (PACK_LOCALES.indexOf(active) !== -1) {
       files.push({ src: 'wordle-locales/' + active + '.js?v=' + VERSION, optional: true });
     }
-    files.push({ src: 'wordle.js?v=' + VERSION });
+    files.push({ src: 'js/wordle.js?v=' + VERSION });
     files.reduce(function (chain, file) {
       return chain.then(function () { return loadScript(file.src, file.optional); });
     }, Promise.resolve()).catch(function () {

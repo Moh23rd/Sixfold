@@ -9,17 +9,8 @@ const files = [
   'licenses.html',
   'LICENSE',
   'APPSTORE-EXCEPTION.md',
-  'styles.css',
-  'home.css',
-  'games.css',
-  'polish.css',
-  'sudoku.css',
   'v5.css',
-  'celebrate.js',
   'daily.js',
-  'game.js',
-  'games.js',
-  'haptics.js',
   'i18n.js',
   'i18n-fr.js',
   'i18n-de.js',
@@ -31,24 +22,15 @@ const files = [
   'i18n-hi.js',
   'i18n-ar.js',
   'i18n-patterns.js',
-  'install.js',
   'native.js',
-  'overscroll.js',
   'settings.js',
-  'sharecard.js',
-  'theme.js',
-  'sudoku.js',
-  'theme.js',
   'update.js',
-  'wordle-loader.js',
-  'wordle-words.js',
   'wordle-i18n.js',
-  'wordle.js',
   'manifest.webmanifest',
   'manifest-dark.webmanifest'
 ];
 
-const directories = ['fonts', 'icons', 'splash', 'wordle-locales'];
+const directories = ['css', 'js', 'fonts', 'icons', 'splash', 'wordle-locales'];
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });

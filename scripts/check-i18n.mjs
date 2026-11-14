@@ -308,7 +308,7 @@ if (extraPacks.length) {
 }
 
 const englishWordsWindow = {};
-evaluate('wordle-words.js', { window: englishWordsWindow });
+evaluate('js/wordle-words.js', { window: englishWordsWindow });
 let dictionaryCount = 0;
 let wordCount = checkWordPack('Wordle en dictionary', englishWordsWindow.SixfoldWordleWords);
 if (wordCount) dictionaryCount += 1;
@@ -330,13 +330,13 @@ for (const file of packFiles) {
   }
 }
 
-const loaderSource = read('wordle-loader.js');
+const loaderSource = read('js/wordle-loader.js');
 const packList = loaderSource.match(/PACK_LOCALES\s*=\s*\[([\s\S]*?)\]/);
 const declaredPacks = packList
   ? [...packList[1].matchAll(/'([^']+)'/g)].map((match) => match[1]).sort()
   : [];
 if (!packList) {
-  fail('Wordle: could not find PACK_LOCALES in wordle-loader.js');
+  fail('Wordle: could not find PACK_LOCALES in js/wordle-loader.js');
 } else if (declaredPacks.join(',') !== expectedPackLocales.join(',')) {
   fail('Wordle: PACK_LOCALES does not match the supported locale packs');
 }

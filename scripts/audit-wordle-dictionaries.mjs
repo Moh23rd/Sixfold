@@ -54,7 +54,7 @@ const BASE_KEY_ROWS = [
 ];
 
 const expectedLocales = ['en', 'ar', 'de', 'es', 'fr', 'hi', 'ja', 'ko', 'pt-BR', 'zh-Hans', 'zh-Hant'];
-const packFiles = new Map([['en', 'wordle-words.js']]);
+const packFiles = new Map([['en', 'js/wordle-words.js']]);
 for (const file of readdirSync(join(root, 'wordle-locales')).filter((name) => name.endsWith('.js'))) {
   packFiles.set(file.slice(0, -3), 'wordle-locales/' + file);
 }

@@ -122,18 +122,19 @@ The preview is served on its own port from `beta-build/`, so the published site 
 
 ```
 index.html                 hub, game screens, help, install and rules sheets
-styles.css                 shared shell, theme tokens and the 2048 board
-home.css                   hub layout, six-piece intro and cartridge cards
-games.css                  in-game screens and controls
-polish.css                 motion, result cards and Wordle styles
+licenses.html              licence and App Store notice
+css/styles.css             shared shell, theme tokens and the 2048 board
+css/home.css               hub layout, six-piece intro and cartridge cards
+css/games.css              in-game screens and controls
+css/polish.css             motion, result cards and Wordle styles
+css/sudoku.css             Sudoku board, pad, result and difficulty styles
 v5.css                     Daily Sixfold, settings, learning and update surfaces
 daily.js                   daily set, streak, calendar and share link
 settings.js                accessibility, input order, persistence and backup
 update.js                  service-worker update prompt
-game.js                    Merge (2048)
-games.js                   Water Sort, Sudoku adapter, Fruit Merge, Tic Tac Toe, Minesweeper
-sudoku.js                  Sudoku generator, solver, controls and saved progress
-sudoku.css                 Sudoku board, pad, result and difficulty styles
+js/game.js                 Merge (2048)
+js/games.js                Water Sort, Sudoku adapter, Fruit Merge, Tic Tac Toe, Minesweeper
+js/sudoku.js               Sudoku generator, solver, controls and saved progress
 i18n.js                    locale registry, English catalog, locale-aware rendering and the language switch
 i18n-fr.js, i18n-de.js     Complete French and German message and game-status catalogs
 i18n-zh-hans.js … i18n-ar.js  Complete Chinese, Japanese, Korean, Portuguese, Hindi and Arabic catalogs
@@ -143,12 +144,15 @@ capacitor.config.json      Capacitor app id, web bundle and splash settings
 native/                    wrapper build notes, store listings, review notes and privacy policy
 android/, ios/             generated Capacitor native projects
 scripts/build-native.mjs   stages the static shell and native-only plugin bundle
-wordle.js                  the hidden five-letter game and its saved stats
-wordle-words.js            offline answer and accepted-guess lists
-theme.js                   palettes, light/dark, focus and appearance controls
-overscroll.js              Android stretch overscroll on the hub
-celebrate.js               result flourish and stamped seals
-sharecard.js               share-card drawing for every game
+js/wordle.js               the hidden five-letter game and its saved stats
+js/wordle-words.js         offline answer and accepted-guess lists
+wordle-i18n.js             localized Wordle copy
+wordle-locales/            lazy per-locale Wordle dictionaries
+js/wordle-loader.js        loads the hidden game and the active dictionary
+js/theme.js                palettes, light/dark, focus and appearance controls
+js/overscroll.js           Android stretch overscroll on the hub
+js/celebrate.js            result flourish and stamped seals
+js/sharecard.js            share-card drawing for every game
 sw.js                      offline cache (bump VERSION when assets change)
 manifest*.webmanifest      install metadata for light and dark chrome
 icons/, splash/, fonts/    app icons, iOS launch images and the typeface
