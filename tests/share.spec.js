@@ -1,15 +1,17 @@
 const { test, expect } = require('@playwright/test');
 
+const WATER_SORT = {
+  title: 'Water Sort',
+  text: 'I sorted Water Sort in 4 moves. Can you?',
+  fileName: 'sixfold-water-sort.png',
+  data: {
+    game: 'Water Sort', number: '05', kind: 'SORTING', title: 'Water Sort',
+    score: 4, label: 'MOVES', meta: ['Level 1 of 8', 'Every colour sorted'], accent: '#39a9a1'
+  }
+};
+
 const NON_MERGE_CARDS = [
-  {
-    title: 'Water Sort',
-    text: 'I sorted Water Sort in 4 moves. Can you?',
-    fileName: 'sixfold-water-sort.png',
-    data: {
-      game: 'Water Sort', number: '05', kind: 'SORTING', title: 'Water Sort',
-      score: 4, label: 'MOVES', meta: ['Level 1 of 8', 'Every colour sorted'], accent: '#39a9a1'
-    }
-  },
+  WATER_SORT,
   {
     title: 'Sudoku',
     text: 'I solved a Medium Sudoku in 4:12 with no hints. Can you?',
@@ -48,11 +50,9 @@ const NON_MERGE_CARDS = [
   }
 ];
 
-test('non-Merge shares send a PNG during the click instead of copying text', async ({ page }) => {
-  const pageErrors = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-
+test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
+    window.__shareMode = 'resolve';
     window.__shareCalls = [];
     window.__copiedText = [];
     Object.defineProperty(navigator, 'canShare', {
@@ -62,15 +62,21 @@ test('non-Merge shares send a PNG during the click instead of copying text', asy
     Object.defineProperty(navigator, 'share', {
       configurable: true,
       value: (data) => {
-        window.__shareCalls.push({
+        const call = {
           title: data.title,
           text: data.text,
+          url: data.url,
           files: Array.from(data.files || [], (file) => ({
             name: file.name,
             type: file.type,
             size: file.size
           }))
-        });
+        };
+        window.__shareCalls.push(call);
+        if (window.__shareMode === 'throw') throw new Error('share unavailable');
+        if (window.__shareMode === 'reject-files' && call.files.length) {
+          return Promise.reject(new Error('file share failed'));
+        }
         return Promise.resolve();
       }
     });
@@ -84,27 +90,43 @@ test('non-Merge shares send a PNG during the click instead of copying text', asy
       }
     });
   });
+});
 
+async function openSharePage(page, mode = 'resolve') {
   await page.goto('/');
   await page.waitForFunction(() => window.MergeShare && window.MergeShare.result);
+  await page.evaluate((nextMode) => { window.__shareMode = nextMode; }, mode);
+}
+
+async function shareFromClick(page, card) {
+  return page.evaluate(({ title, text, data }) => {
+    window.__shareCalls = [];
+    window.__copiedText = [];
+    let shareDuringClick = false;
+    let copyDuringClick = false;
+    const button = document.createElement('button');
+    button.addEventListener('click', () => {
+      window.MergeShare.result(title, text, data);
+      shareDuringClick = window.__shareCalls.length === 1;
+      copyDuringClick = window.__copiedText.length === 1;
+    });
+    button.click();
+    return {
+      shareDuringClick,
+      copyDuringClick,
+      calls: window.__shareCalls,
+      copied: window.__copiedText
+    };
+  }, card);
+}
+
+test('non-Merge shares send a PNG during the click instead of copying text', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await openSharePage(page);
 
   for (const card of NON_MERGE_CARDS) {
-    const result = await page.evaluate(({ title, text, data }) => {
-      window.__shareCalls = [];
-      window.__copiedText = [];
-      let shareDuringClick = false;
-      const button = document.createElement('button');
-      button.addEventListener('click', () => {
-        window.MergeShare.result(title, text, data);
-        shareDuringClick = window.__shareCalls.length === 1;
-      });
-      button.click();
-      return {
-        shareDuringClick,
-        calls: window.__shareCalls,
-        copied: window.__copiedText
-      };
-    }, card);
+    const result = await shareFromClick(page, card);
 
     expect(result.shareDuringClick, card.title + ' should call navigator.share before the click returns').toBe(true);
     expect(result.calls, card.title + ' should make exactly one native share call').toHaveLength(1);
@@ -119,57 +141,32 @@ test('non-Merge shares send a PNG during the click instead of copying text', asy
 });
 
 test('a synchronous navigator.share failure falls back to copying text', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.__shareCalls = 0;
-    window.__copiedText = [];
-    Object.defineProperty(navigator, 'canShare', {
-      configurable: true,
-      value: (data) => Boolean(data && data.files && data.files.length)
-    });
-    Object.defineProperty(navigator, 'share', {
-      configurable: true,
-      value: () => {
-        window.__shareCalls += 1;
-        throw new Error('share unavailable');
-      }
-    });
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: {
-        writeText: (text) => {
-          window.__copiedText.push(text);
-          return Promise.resolve();
-        }
-      }
-    });
-  });
+  await openSharePage(page, 'throw');
+  const result = await shareFromClick(page, WATER_SORT);
 
-  await page.goto('/');
-  await page.waitForFunction(() => window.MergeShare && window.MergeShare.result);
-
-  const result = await page.evaluate(() => {
-    window.__shareCalls = 0;
-    window.__copiedText = [];
-    let copyDuringClick = false;
-    const button = document.createElement('button');
-    button.addEventListener('click', () => {
-      window.MergeShare.result('Water Sort', 'I sorted Water Sort in 4 moves. Can you?', {
-        game: 'Water Sort', number: '05', kind: 'SORTING', title: 'Water Sort',
-        score: 4, label: 'MOVES', meta: ['Level 1 of 8', 'Every colour sorted'], accent: '#39a9a1'
-      });
-      copyDuringClick = window.__copiedText.length === 1;
-    });
-    button.click();
-    return {
-      copyDuringClick,
-      shareCalls: window.__shareCalls,
-      copied: window.__copiedText
-    };
-  });
-
-  expect(result.shareCalls).toBe(1);
+  expect(result.shareDuringClick).toBe(true);
   expect(result.copyDuringClick).toBe(true);
+  expect(result.calls).toHaveLength(1);
   expect(result.copied).toHaveLength(1);
-  expect(result.copied[0]).toContain('I sorted Water Sort in 4 moves. Can you?');
+  expect(result.copied[0]).toContain(WATER_SORT.text);
   expect(result.copied[0]).toContain('http://127.0.0.1:8000/');
+});
+
+test('an asynchronous navigator.share rejection falls back to sharing text', async ({ page }) => {
+  await openSharePage(page, 'reject-files');
+  const firstCall = await shareFromClick(page, WATER_SORT);
+
+  expect(firstCall.shareDuringClick).toBe(true);
+  await page.waitForFunction(() => window.__shareCalls.length === 2);
+  const result = await page.evaluate(() => ({
+    calls: window.__shareCalls,
+    copied: window.__copiedText
+  }));
+
+  expect(result.calls[0].files).toHaveLength(1);
+  expect(result.calls[0].files[0].type).toBe('image/png');
+  expect(result.calls[1].files).toEqual([]);
+  expect(result.calls[1].text).toContain(WATER_SORT.text);
+  expect(result.calls[1].url).toBe('http://127.0.0.1:8000/');
+  expect(result.copied).toEqual([]);
 });
