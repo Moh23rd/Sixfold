@@ -1087,9 +1087,12 @@
     }
 
     function updateStats() {
-      if (levelLabel) levelLabel.textContent = LEVELS[level].tier + ' · Level ' + (level + 1) + ' of ' + LEVELS.length;
-      if (levelValue) levelValue.textContent = String(level + 1);
-      if (movesEl) movesEl.textContent = String(moves);
+      const label = LEVELS[level].tier + ' · Level ' + (level + 1) + ' of ' + LEVELS.length;
+      const levelText = String(level + 1);
+      const movesText = String(moves);
+      if (levelLabel && levelLabel.textContent !== label) levelLabel.textContent = label;
+      if (levelValue && levelValue.textContent !== levelText) levelValue.textContent = levelText;
+      if (movesEl && movesEl.textContent !== movesText) movesEl.textContent = movesText;
     }
 
     function invalidate(index, message) {
@@ -1192,7 +1195,7 @@
       return item;
     }
 
-    function render() {
+    function render(liquidTubes) {
       if (!tubesEl) return;
       updateStats();
       if (winEl) winEl.hidden = !solved;
@@ -1223,7 +1226,7 @@
         if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
         const title = tube.length ? visible : 'Empty tube';
         if (button.title !== title) button.title = title;
-        updateTubeLiquid(view, tube);
+        if (!liquidTubes || liquidTubes.indexOf(index) !== -1) updateTubeLiquid(view, tube);
       });
     }
 
@@ -1336,14 +1339,14 @@
           return;
         }
         selected = index;
-        render();
+        render([]);
         coachEvent('water', 'select');
         status('Now choose a tube with room on top.', 2600);
         return;
       }
       if (selected === index) {
         selected = -1;
-        render();
+        render([]);
         status('Selection cleared.', 1400);
         return;
       }
@@ -1365,7 +1368,7 @@
       solved = isSorted(tubes);
       coachEvent('water', 'pour', { moves: moves });
       saveState();
-      render();
+      render([sourceIndex, index]);
       const sourceEl = tubesEl.querySelector('[data-index="' + sourceIndex + '"]');
       const targetEl = tubesEl.querySelector('[data-index="' + index + '"]');
       const sourceGlass = sourceEl ? sourceEl.querySelector('.water-glass') : null;
