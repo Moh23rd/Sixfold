@@ -10,7 +10,8 @@
 // 5.3.7: 5.2 What’s New copy in every locale, plus RTL panel padding.
 // 5.3.8: collapsible accessibility settings; remove synthesized interface sounds.
 // 5.3.9: add the Kannada interface, font and Wordle dictionary.
-const VERSION = 'sixfold-5.3.9-kannada';
+// 5.3.10: filter the Wordle answer pools and record dictionary provenance.
+const VERSION = 'sixfold-5.3.10-wordle-policy';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -23,7 +24,7 @@ const STYLE_ASSET = '5.2.0';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '5.2.0';
 const GAME_CODE = '4.0.0-w4';
-const WORDLE_CODE = '5.3.9-wordle';
+const WORDLE_CODE = '5.3.10-wordle';
 const SUDOKU_GAME_CODE = '5.2.0';
 const LOCALE_FONT = '5.1.3';
 const GAMES_CSS = '4.0.0-w14';

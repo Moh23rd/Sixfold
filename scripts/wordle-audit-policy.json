@@ -1,6 +1,8 @@
 {
   "provenance": {
     "localeSources": ["Wordle Global", "wordfreq", "Wordle JP"],
+    "appAttributionSources": ["Wordle Global", "wordfreq", "Wordle JP", "Wordle Kannada"],
+    "localeSourceOverrides": { "kn": ["Wordle Kannada"] },
     "appAttributionFiles": ["README.md", "licenses.html"],
     "englishSourcePattern": "original Wordle"
   },

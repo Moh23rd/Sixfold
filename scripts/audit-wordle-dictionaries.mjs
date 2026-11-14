@@ -65,7 +65,8 @@ if (actualLocales.join(',') !== expectedLocales.slice().sort().join(',')) {
 }
 
 const appText = policy.provenance.appAttributionFiles.map(read).join('\n');
-for (const source of policy.provenance.localeSources) {
+const attributionSources = policy.provenance.appAttributionSources || policy.provenance.localeSources;
+for (const source of attributionSources) {
   if (!appText.includes(source)) {
     findings.provenance.push('README/licenses.html do not attribute ' + source);
   }
@@ -236,7 +237,8 @@ for (const locale of expectedLocales) {
       provenance.push('header claims the “original Wordle” list, but records no source URL, revision or license');
     }
   } else {
-    const missingSources = policy.provenance.localeSources.filter((source) => !sourceHeader.includes(source));
+    const requiredSources = (policy.provenance.localeSourceOverrides && policy.provenance.localeSourceOverrides[locale]) || policy.provenance.localeSources;
+    const missingSources = requiredSources.filter((source) => !sourceHeader.includes(source));
     if (missingSources.length) provenance.push('header does not name ' + missingSources.join(', '));
     if (!/(https?:\/\/|commit|revision|\bv\d)/i.test(sourceHeader)) {
       provenance.push('header records no source URL or revision');

@@ -66,15 +66,19 @@ machine, Xcode and the store accounts. See [native/README.md](native/README.md).
 npm install
 npx playwright install chromium
 npm run test:i18n
-npm run audit:wordle
+npm run audit:wordle:strict
 npm test
 ```
 
 `npm run test:i18n` checks every translated catalog against the English source: no missing or unknown keys, no empty copy, and matching numbered placeholders. It also verifies the shared dynamic-copy templates.
 
-`npm run audit:wordle` enforces the Wordle data invariants: five-grapheme entries, duplicate-free arrays, answers present in the valid-guess list, IME packs with no keyboard rows, and non-IME keyboard rows that cover every grapheme used by answers and valid guesses. Structural or invariant failures exit non-zero; provenance and answer-pool policy findings are reported separately. `npm run audit:wordle:strict` also fails on those review findings. See [WORDLE-AUDIT.md](WORDLE-AUDIT.md) for the source/licensing review and the known answer-pool problems.
+`npm run audit:wordle` enforces the Wordle data invariants: five-grapheme entries, duplicate-free arrays, answers present in the valid-guess list, IME packs with no keyboard rows, and non-IME keyboard rows that cover every grapheme used by answers and valid guesses. Structural or invariant failures exit non-zero; provenance and answer-pool policy findings are reported separately. `npm run audit:wordle:strict` is the release gate. See [WORDLE-AUDIT.md](WORDLE-AUDIT.md) for the source and licensing record.
 
-The Kannada Wordle dictionary is adapted from [Wordle Kannada](https://github.com/Omkar-Shetkar/wordle-kannada) (MIT, Copyright (c) 2022 Hannah Park), filtered to five user-perceived Kannada graphemes.
+## Wordle dictionary sources
+
+The non-English dictionaries record their Wordle Global, wordfreq and Wordle JP lineage in each file header. Kannada records its actual source, [Wordle Kannada](https://github.com/Omkar-Shetkar/wordle-kannada) (MIT, Copyright (c) 2022 Hannah Park). The relevant upstream projects are [Wordle Global](https://github.com/Hugo0/wordle) (MIT code), [wordfreq](https://github.com/rspeer/wordfreq) (Apache-2.0 code and CC BY-SA 4.0 data) and [Wordle JP](https://github.com/sen-ltd/wordle-jp) (MIT). Source revisions are not pinned in this tree.
+
+The answer pools are filtered against `scripts/wordle-audit-policy.json` to remove profanity, proper names, brands, political and religious terms, loanwords, technical entries and named-entity patterns. The valid-guess lists remain broader. Repository modifications are GPL-3.0-only; the source data remains under the licenses above.
 
 The Playwright suite covers the six game screens, Daily Sixfold, Sudoku Learn hints, settings and backup download. The Wordle end-to-end matrix wins a round in each of the twelve locales, checking native IME input, RTL Arabic, localized Arabic/Hindi/Kannada numerals and the copied share text. Axe scans the hub, all six games and settings in both light and dark themes in all twelve languages, with no rule exceptions. A 320px layout pass checks each locale for clipped or overflowing text. CI runs the catalog audit, the Wordle dictionary invariants and the same Playwright suite on every push and pull request, and can be run manually from the Actions tab.
 
