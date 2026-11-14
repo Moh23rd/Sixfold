@@ -1,27 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
-// 5.3: multilingual Wordle dictionaries, keyboards and result copy.
-// 5.3 licenses: add the in-app license view and its source documents.
-// 5.3.1: Wordle loads and caches only the active language's dictionary.
-// 5.3.2: an uncached locale pack falls back to the English word list.
-// 5.3.3: the fallback round saves separately from the localized game.
-// 5.3.4: prefetch the active pack and retry it when online returns.
-// 5.3.5: show the offline fallback notice.
-// 5.3.6: localized release labels, fallback copy and style refresh.
-// 5.3.7: 5.2 What’s New copy in every locale, plus RTL panel padding.
-// 5.3.8: collapsible accessibility settings; remove synthesized interface sounds.
-// 5.3.9: add the Kannada interface, font and Wordle dictionary.
-// 5.3.10: filter the Wordle answer pools and record dictionary provenance.
-// 5.4.0: daily featured game rotation, milestone badges, smoother desktop motion.
-// 5.4.1: cache Fruit Merge art and reuse Water Sort tube DOM.
-// 5.4.2: share generated result images synchronously from every game.
-// 5.4.3: keep the text fallback when a native file share throws.
-// 5.4.4: send only files to Web Share so iOS opens the image sheet.
-// 5.4.5: show a save-card fallback when native image sharing is blocked.
-// 5.4.6: make the daily card one featured game with one play action.
-// 5.4.7: add the badge shelf, a home share card and a daily finish banner.
-// 5.4.8: share today’s challenge, recap the week and opt in to a local reminder.
-// 5.4.10: localized share cards, consistent script fonts and digit faces.
-const VERSION = 'sixfold-5.4.10-localized-cards';
+// Release 5.2.0: localized share cards, consistent script fonts and digit faces.
+const VERSION = 'sixfold-5.2.0';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -30,13 +9,13 @@ const CACHE_PREFIX = 'sixfold-';
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
 const ASSET = '4.0.0';
-const SHARE_CARD = '5.2.4';
+const SHARE_CARD = '5.2.5';
 const STYLE_ASSET = '5.2.4';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '5.2.0';
 const GAME_CODE = '5.2.4';
 const WORDLE_CODE = '5.2.4-wordle';
-const SUDOKU_GAME_CODE = '5.2.4';
+const SUDOKU_GAME_CODE = '5.2.5';
 const LOCALE_FONT = '5.1.4';
 const GAMES_CSS = '5.2.4';
 const POLISH_CSS = '4.0.0-w12';
@@ -45,7 +24,7 @@ const SUDOKU_CSS = '4.0.0-w13';
 const V5_CSS = '5.3.6';
 const HOME_CSS = '4.0.0-w6';
 const DAILY_CODE = '5.3.6';
-const I18N_CODE = '5.4.3';
+const I18N_CODE = '5.4.4';
 
 const SHELL = [
   './',

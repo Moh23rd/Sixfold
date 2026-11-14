@@ -53,7 +53,7 @@
     return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
   }
 
-  function cardTitle(value) {
+  function cardCopy(value) {
     const source = String(value == null ? '' : value);
     const direct = t(source);
     if (direct !== source) return direct;
@@ -73,14 +73,6 @@
     return t(LABELS[source] || source);
   }
 
-  function cardMeta(value) {
-    const source = String(value == null ? '' : value);
-    const direct = t(source);
-    if (direct !== source) return direct;
-    const punctuated = source + '.';
-    const translated = t(punctuated);
-    return translated !== punctuated ? translated.replace(/[.!。！]+$/, '') : source;
-  }
 
   function fitFont(ctx, text, weight, start, maxWidth, min) {
     let px = start;
@@ -444,7 +436,7 @@
 
     // Title and the number that matters.
     ctx.fillStyle = INK;
-    const title = cardTitle(data.title || 'Result');
+    const title = cardCopy(data.title || 'Result');
     fitFont(ctx, title, 800, 64, 920, 34);
     ctx.fillText(title, 80, 306);
 
@@ -462,7 +454,7 @@
 
     if (data.meta && data.meta.length) {
       ctx.fillStyle = INK;
-      const meta = data.meta.map(cardMeta).map(number).join('   ·   ');
+      const meta = data.meta.map(cardCopy).map(number).join('   ·   ');
       fitFont(ctx, meta, 600, 26, 920, 15);
       ctx.fillText(meta, 80, 648);
     }

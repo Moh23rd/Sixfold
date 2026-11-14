@@ -29,6 +29,13 @@ fallback and prefetch, localized numerals, and a CI audit for the word data.
 - Interface numbers now use Arabic-Indic digits in Arabic and Devanagari
   digits in Hindi, including scores, timers, daily counters and Sudoku
   digits, while dates and share text use the same locale-aware numerals.
+- Share cards now follow the selected interface language: card chrome,
+  game titles, labels, metadata, fallback copy and generated PNGs are all
+  localized, with script-specific fonts and overflow-safe text fitting.
+- Arabic and Hindi share cards now render their native numerals from bundled
+  digit faces instead of losing the score and level digits.
+- Sudoku share cards show the hint count again, localized with the active
+  interface language.
 
 ### Added
 

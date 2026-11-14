@@ -1179,14 +1179,19 @@
   function sharePuzzle() {
     const time = state.solved ? state.elapsed : Math.round(currentElapsed());
     const label = LEVELS[difficulty].label;
-    const hintText = state.hints ? state.hints + (state.hints === 1 ? ' hint' : ' hints') : 'no hints';
+    const hintWord = function (key) {
+      return window.SixfoldI18n ? window.SixfoldI18n.t(key) : key;
+    };
+    const hintText = state.hints
+      ? formatNumber(state.hints) + ' ' + hintWord(state.hints === 1 ? 'Hint' : 'Hints')
+      : hintWord('No hints');
     const dailyText = dailyKey ? 'Daily Sixfold ' + prettyDaily(dailyKey) + ': ' : '';
     const message = dailyText + 'I solved a ' + label + ' Sudoku in ' + formatTime(time) + ' with ' + hintText + '. Can you?';
     const accent = window.MergeTheme && window.MergeTheme.colour ? window.MergeTheme.colour('#39a9a1') : '#39a9a1';
     if (window.MergeShare && window.MergeShare.result) {
       window.MergeShare.result('Sudoku', message, {
         game: 'Sudoku', number: '02', kind: 'LOGIC', title: dailyKey ? 'Daily Sudoku' : 'Sudoku',
-        score: formatTime(time), label: 'TIME', meta: dailyKey ? [prettyDaily(dailyKey), label] : [label], accent: accent
+        score: formatTime(time), label: 'TIME', meta: dailyKey ? [prettyDaily(dailyKey), label, hintText] : [label, hintText], accent: accent
       });
       return;
     }
