@@ -74,6 +74,7 @@ test.beforeEach(async ({ page }) => {
         };
         window.__shareCalls.push(call);
         if (window.__shareMode === 'throw') throw new Error('share unavailable');
+        if (window.__shareMode === 'reject-all') return Promise.reject(new Error('share unavailable'));
         if (window.__shareMode === 'reject-files' && call.files.length) {
           return Promise.reject(new Error('file share failed'));
         }
@@ -169,4 +170,22 @@ test('an asynchronous navigator.share rejection falls back to sharing text', asy
   expect(result.calls[1].text).toContain(WATER_SORT.text);
   expect(result.calls[1].url).toBe('http://127.0.0.1:8000/');
   expect(result.copied).toEqual([]);
+});
+
+test('an asynchronous share rejection with a failing text fallback copies the text', async ({ page }) => {
+  await openSharePage(page, 'reject-all');
+  await shareFromClick(page, WATER_SORT);
+
+  await page.waitForFunction(() => window.__shareCalls.length === 2 && window.__copiedText.length === 1);
+  const result = await page.evaluate(() => ({
+    calls: window.__shareCalls,
+    copied: window.__copiedText
+  }));
+
+  expect(result.calls[0].files).toHaveLength(1);
+  expect(result.calls[0].files[0].type).toBe('image/png');
+  expect(result.calls[1].files).toEqual([]);
+  expect(result.copied).toHaveLength(1);
+  expect(result.copied[0]).toContain(WATER_SORT.text);
+  expect(result.copied[0]).toContain('http://127.0.0.1:8000/');
 });
