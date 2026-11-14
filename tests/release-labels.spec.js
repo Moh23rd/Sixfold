@@ -22,6 +22,10 @@ test('public release labels are 5.0 and the build cache stays 5.2.0', () => {
   expect(html, 'What’s New label').toContain('What’s new in ' + short);
   expect(html, 'What’s New storage version').toContain('data-version="' + short + '"');
   expect(sw, 'internal build cache').toContain("const VERSION = 'sixfold-" + build + "';");
-  expect(changelog, 'internal build changelog heading').toContain('## ' + build + ' —');
+  const firstChangelogHeading = changelog.match(/^## (.+)$/m)?.[1] || '';
+  expect(firstChangelogHeading, 'latest changelog entry').toContain('v' + short);
+  expect(firstChangelogHeading, 'latest changelog entry is not the internal build number').not.toContain(build);
+  expect(changelog, 'internal build is not a release heading').not.toMatch(/^## 5\.2\.0/m);
+  expect(changelog, 'internal build label').toContain('Internal build: **' + build + '**');
   expect(changelog, 'public release note').toContain('Public release label: **v' + release + '**');
 });

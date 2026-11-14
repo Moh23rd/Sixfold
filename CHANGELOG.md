@@ -2,9 +2,11 @@
 
 > Public release label: **v5.0**. The internal build version for this release is **5.2.0**.
 
-## 5.2.0 — 13 November 2026
+## v5.0 — 13 November 2026
 
-5.2 brings Wordle to every interface language, with offline dictionary
+Internal build: **5.2.0**
+
+This release brings Wordle to every interface language, with offline dictionary
 fallback and prefetch, localized numerals, and a CI audit for the word data.
 
 ### Changed
