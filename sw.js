@@ -16,7 +16,8 @@
 // 5.4.2: share generated result images synchronously from every game.
 // 5.4.3: keep the text fallback when a native file share throws.
 // 5.4.4: send only files to Web Share so iOS opens the image sheet.
-const VERSION = 'sixfold-5.4.4-share';
+// 5.4.5: show a save-card fallback when native image sharing is blocked.
+const VERSION = 'sixfold-5.4.5-share';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -33,9 +34,9 @@ const GAME_CODE = '4.0.0-w5';
 const WORDLE_CODE = '5.3.10-wordle';
 const SUDOKU_GAME_CODE = '5.2.0';
 const LOCALE_FONT = '5.1.3';
-const GAMES_CSS = '4.0.0-w16';
+const GAMES_CSS = '4.0.0-w17';
 const POLISH_CSS = '4.0.0-w12';
-const GAMES_JS = '5.1.5';
+const GAMES_JS = '5.1.6';
 const SUDOKU_CSS = '4.0.0-w13';
 const V5_CSS = '5.3.1';
 const HOME_CSS = '4.0.0-w6';

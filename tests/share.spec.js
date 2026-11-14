@@ -55,9 +55,10 @@ test.beforeEach(async ({ page }) => {
     window.__shareMode = 'resolve';
     window.__shareCalls = [];
     window.__copiedText = [];
+    window.__canShareFiles = true;
     Object.defineProperty(navigator, 'canShare', {
       configurable: true,
-      value: (data) => Boolean(data && data.files && data.files.length)
+      value: (data) => window.__canShareFiles !== false && Boolean(data && data.files && data.files.length)
     });
     Object.defineProperty(navigator, 'share', {
       configurable: true,
@@ -74,7 +75,6 @@ test.beforeEach(async ({ page }) => {
         };
         window.__shareCalls.push(call);
         if (window.__shareMode === 'throw') throw new Error('share unavailable');
-        if (window.__shareMode === 'reject-all') return Promise.reject(new Error('share unavailable'));
         if (window.__shareMode === 'reject-files' && call.files.length) {
           return Promise.reject(new Error('file share failed'));
         }
@@ -97,6 +97,16 @@ async function openSharePage(page, mode = 'resolve') {
   await page.goto('/');
   await page.waitForFunction(() => window.MergeShare && window.MergeShare.result);
   await page.evaluate((nextMode) => { window.__shareMode = nextMode; }, mode);
+}
+
+async function expectShareFallback(scope, note) {
+  const fallback = scope.locator('#share-fallback');
+  await expect(fallback).toBeVisible();
+  await expect(fallback.locator('#share-fallback-title')).toHaveText('Save your result');
+  await expect(fallback.locator('.share-fallback-image')).toHaveAttribute('src', /^blob:/);
+  await expect(fallback.locator('.share-fallback-save')).toHaveAttribute('download', /^sixfold-.+\.png$/);
+  await expect(fallback.locator('.share-fallback-save')).toHaveAttribute('href', /^blob:/);
+  await expect(fallback.locator('#share-fallback-note')).toContainText(note);
 }
 
 async function shareFromClick(page, card) {
@@ -143,53 +153,63 @@ test('non-Merge shares send a PNG during the click instead of copying text', asy
   expect(pageErrors).toEqual([]);
 });
 
-test('a synchronous navigator.share failure falls back to copying text', async ({ page }) => {
+test('a synchronous navigator.share failure shows the save-card fallback', async ({ page }) => {
   await openSharePage(page, 'throw');
   const result = await shareFromClick(page, WATER_SORT);
 
   expect(result.shareDuringClick).toBe(true);
-  expect(result.copyDuringClick).toBe(true);
+  expect(result.copyDuringClick).toBe(false);
   expect(result.calls).toHaveLength(1);
-  expect(result.copied).toHaveLength(1);
-  expect(result.copied[0]).toContain(WATER_SORT.text);
-  expect(result.copied[0]).toContain('http://127.0.0.1:8000/');
+  expect(result.copied).toEqual([]);
+  await expectShareFallback(page, 'native image share sheet');
 });
 
-test('an asynchronous navigator.share rejection falls back to sharing text', async ({ page }) => {
+test('an asynchronous navigator.share rejection shows the save-card fallback', async ({ page }) => {
   await openSharePage(page, 'reject-files');
   const firstCall = await shareFromClick(page, WATER_SORT);
 
   expect(firstCall.shareDuringClick).toBe(true);
-  await page.waitForFunction(() => window.__shareCalls.length === 2);
+  await expectShareFallback(page, 'native image share sheet');
   const result = await page.evaluate(() => ({
     calls: window.__shareCalls,
     copied: window.__copiedText
   }));
 
+  expect(result.calls).toHaveLength(1);
   expect(result.calls[0].files).toHaveLength(1);
   expect(result.calls[0].files[0].type).toBe('image/png');
-  expect(result.calls[1].files).toEqual([]);
-  expect(result.calls[1].text).toContain(WATER_SORT.text);
-  expect(result.calls[1].url).toBe('http://127.0.0.1:8000/');
   expect(result.copied).toEqual([]);
 });
 
-test('an asynchronous share rejection with a failing text fallback copies the text', async ({ page }) => {
-  await openSharePage(page, 'reject-all');
-  await shareFromClick(page, WATER_SORT);
+test('when the browser cannot share image files, the generated card can be saved', async ({ page }) => {
+  await openSharePage(page);
+  await page.evaluate(() => { window.__canShareFiles = false; });
+  const result = await shareFromClick(page, WATER_SORT);
 
-  await page.waitForFunction(() => window.__shareCalls.length === 2 && window.__copiedText.length === 1);
-  const result = await page.evaluate(() => ({
-    calls: window.__shareCalls,
-    copied: window.__copiedText
-  }));
+  expect(result.shareDuringClick).toBe(false);
+  expect(result.calls).toEqual([]);
+  expect(result.copied).toEqual([]);
+  await expectShareFallback(page, 'native image share sheet');
+});
 
-  expect(result.calls[0].files).toHaveLength(1);
-  expect(result.calls[0].files[0].type).toBe('image/png');
-  expect(result.calls[1].files).toEqual([]);
-  expect(result.copied).toHaveLength(1);
-  expect(result.copied[0]).toContain(WATER_SORT.text);
-  expect(result.copied[0]).toContain('http://127.0.0.1:8000/');
+test('the share fallback explains when the embedded preview blocks sharing', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    const frame = document.createElement('iframe');
+    frame.id = 'share-preview-frame';
+    frame.src = '/';
+    frame.style.cssText = 'position:fixed;left:0;top:0;width:390px;height:700px;border:0;z-index:9999';
+    document.body.appendChild(frame);
+  });
+  const handle = await page.locator('#share-preview-frame').elementHandle();
+  const frame = await handle.contentFrame();
+  expect(frame).not.toBeNull();
+  await frame.waitForFunction(() => window.MergeShare && window.MergeShare.result && window.MergeShareCard);
+  await frame.evaluate((card) => {
+    window.__canShareFiles = false;
+    window.MergeShare.result(card.title, card.text, card.data);
+  }, WATER_SORT);
+  await expectShareFallback(frame, 'embedded preview');
 });
 
 test('Merge shares only its PNG with navigator.share', async ({ page }) => {

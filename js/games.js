@@ -62,6 +62,10 @@
   const SHARE_TITLE = 'Sixfold — Six games. No filler.';
   const SHARE_TEXT = 'Sixfold: six games, no filler — an offline pocket arcade of Merge, Sudoku, Tic Tac Toe, Minesweeper, Water Sort and Fruit Merge. No accounts, no ads.';
   let toastTimer = 0;
+  let shareFallbackEl = null;
+  let shareFallbackUrl = '';
+  let shareFallbackOpener = null;
+  let shareFallbackInert = null;
 
   function shareUrl() {
     if (location.protocol !== 'http:' && location.protocol !== 'https:') return '';
@@ -119,12 +123,104 @@
     copyShare(text);
   }
 
-  /* Share the generated Sixfold card when the browser can share files, and
-     fall back to the plain text/link share everywhere else. Keeping this in
-     one helper means all six games use the same card and the same fallback. */
+  function closeShareFallback() {
+    if (!shareFallbackEl || shareFallbackEl.hidden) return;
+    shareFallbackEl.hidden = true;
+    document.documentElement.classList.remove('share-fallback-open');
+    if (shareFallbackInert) {
+      shareFallbackInert.inert = false;
+      shareFallbackInert = null;
+    }
+    if (shareFallbackUrl) {
+      URL.revokeObjectURL(shareFallbackUrl);
+      shareFallbackUrl = '';
+    }
+    const opener = shareFallbackOpener;
+    shareFallbackOpener = null;
+    if (opener && opener.isConnected) {
+      try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }
+    }
+  }
+
+  function buildShareFallback() {
+    if (shareFallbackEl) return shareFallbackEl;
+    const el = document.createElement('div');
+    el.className = 'share-fallback';
+    el.id = 'share-fallback';
+    el.hidden = true;
+    el.innerHTML = [
+      '<div class="share-fallback-card" role="dialog" aria-modal="true" aria-labelledby="share-fallback-title" aria-describedby="share-fallback-note">',
+      '  <div class="share-fallback-head"><h2 id="share-fallback-title">Save your result</h2></div>',
+      '  <img class="share-fallback-image" alt="Your Sixfold result card" decoding="async" />',
+      '  <p class="share-fallback-note" id="share-fallback-note"></p>',
+      '  <div class="share-fallback-actions">',
+      '    <a class="btn share-fallback-save" download>Save image</a>',
+      '    <button class="btn ghost share-fallback-done" type="button" data-close>Done</button>',
+      '  </div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(el);
+    el.addEventListener('click', function (event) {
+      if (event.target === el || event.target.closest('[data-close]')) closeShareFallback();
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || el.hidden) return;
+      event.preventDefault();
+      closeShareFallback();
+    });
+    shareFallbackEl = el;
+    return el;
+  }
+
+  function showShareFallback(file, data) {
+    const el = buildShareFallback();
+    const embedded = window.self !== window.top;
+    shareFallbackOpener = document.activeElement;
+    if (shareFallbackUrl) URL.revokeObjectURL(shareFallbackUrl);
+    shareFallbackUrl = URL.createObjectURL(file);
+
+    const image = el.querySelector('.share-fallback-image');
+    image.src = shareFallbackUrl;
+    image.alt = data && data.title ? 'Your ' + data.title + ' result card' : 'Your Sixfold result card';
+    const download = el.querySelector('.share-fallback-save');
+    download.href = shareFallbackUrl;
+    download.download = file.name || 'sixfold-result.png';
+    el.querySelector('#share-fallback-note').textContent = embedded
+      ? 'Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.'
+      : 'This browser cannot open the native image share sheet. Save the card instead.';
+
+    const screen = document.body.dataset.screen;
+    const background = screen === 'hub'
+      ? document.getElementById('hub')
+      : screen === 'merge'
+        ? document.querySelector('.app')
+        : document.getElementById(screen);
+    if (background && 'inert' in background && !background.inert) {
+      background.inert = true;
+      shareFallbackInert = background;
+    }
+    el.hidden = false;
+    document.documentElement.classList.add('share-fallback-open');
+    window.setTimeout(function () {
+      if (!el.hidden) download.focus({ preventScroll: true });
+    }, 0);
+  }
+
+  function offerShareFallback(file, data, text) {
+    try {
+      showShareFallback(file, data);
+    } catch (err) {
+      copyShare(text);
+    }
+  }
+
+  /* Share the generated Sixfold card when the browser can share files. When
+     the native sheet cannot take an image, show the same card with a save
+     option instead of silently copying text. Keeping this in one helper means
+     all six games use the same card and the same fallback. */
   function shareResult(title, text, data) {
     if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
-        typeof File !== 'function' || !navigator.share || !navigator.canShare) {
+        typeof File !== 'function') {
       share(title, text);
       return;
     }
@@ -136,9 +232,11 @@
       return;
     }
     let canShare = false;
-    try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
+    if (navigator.share && navigator.canShare) {
+      try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
+    }
     if (!canShare) {
-      share(title, text);
+      offerShareFallback(file, data, text);
       return;
     }
     let pending;
@@ -147,13 +245,13 @@
       // file so the native image share sheet is allowed to open.
       pending = navigator.share({ files: [file] });
     } catch (err) {
-      copyShare(text);
+      offerShareFallback(file, data, text);
       return;
     }
     if (pending && typeof pending.catch === 'function') {
       pending.catch(function (err) {
         if (err && err.name === 'AbortError') return;
-        share(title, text);
+        offerShareFallback(file, data, text);
       });
     }
   }
