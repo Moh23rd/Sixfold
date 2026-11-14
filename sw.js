@@ -12,7 +12,8 @@
 // 5.3.9: add the Kannada interface, font and Wordle dictionary.
 // 5.3.10: filter the Wordle answer pools and record dictionary provenance.
 // 5.4.0: daily featured game rotation, milestone badges, smoother desktop motion.
-const VERSION = 'sixfold-5.4.0-daily';
+// 5.4.1: cache Fruit Merge art and reuse Water Sort tube DOM.
+const VERSION = 'sixfold-5.4.1-games';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -28,9 +29,9 @@ const GAME_CODE = '4.0.0-w4';
 const WORDLE_CODE = '5.3.10-wordle';
 const SUDOKU_GAME_CODE = '5.2.0';
 const LOCALE_FONT = '5.1.3';
-const GAMES_CSS = '4.0.0-w15';
+const GAMES_CSS = '4.0.0-w16';
 const POLISH_CSS = '4.0.0-w12';
-const GAMES_JS = '5.1.1';
+const GAMES_JS = '5.1.2';
 const SUDOKU_CSS = '4.0.0-w13';
 const V5_CSS = '5.3.1';
 const HOME_CSS = '4.0.0-w6';

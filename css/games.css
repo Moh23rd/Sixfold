@@ -771,6 +771,7 @@ html[data-theme="dark"] .water-board {
       var(--drain) 8px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
   pointer-events: none;
+  transform-origin: 50% 100%;
   animation: sourceDrain var(--pour-ms, 400ms) var(--ease-out) both;
 }
 
@@ -983,8 +984,8 @@ html[data-theme="dark"] .water-glass {
 }
 
 @keyframes sourceDrain {
-  from { height: calc(var(--poured, 1) * 25%); }
-  to { height: 0; }
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0); }
 }
 
 @keyframes waterSplash {
@@ -1514,8 +1515,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 @media (prefers-reduced-motion: reduce) {
   .water-glass,
   .ttt-cell,
-  .play-btn,
-  .one-node { transition: none; }
+  .play-btn { transition: none; }
 }
 
 

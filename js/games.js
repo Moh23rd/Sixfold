@@ -247,8 +247,9 @@
     coach.el.querySelector('.coach-step').textContent = (coach.step + 1) + '/' + steps.length;
     coach.el.querySelector('.coach-text').textContent = localize(step.text);
     coach.el.classList.remove('coach-in');
-    void coach.el.offsetWidth;
-    coach.el.classList.add('coach-in');
+    window.requestAnimationFrame(function () {
+      if (coach.el) coach.el.classList.add('coach-in');
+    });
   }
 
   function enterCoach(game) {
@@ -1016,6 +1017,8 @@
     let statusTimer = 0;
     let dailyActive = false;
     let dailyLevel = 0;
+    let tubeViews = [];
+    let tubeGeometry = [];
 
     function colorOf(index) {
       const base = COLORS[index] || COLORS[0];
@@ -1100,75 +1103,137 @@
       status(message, 2300);
     }
 
-    function render() {
-      if (!tubesEl) return;
-      updateStats();
-      if (winEl) winEl.hidden = !solved;
-      if (statusEl) statusEl.hidden = solved;
-      tubesEl.innerHTML = '';
-      const columns = tubes.length <= 3 ? tubes.length : tubes.length <= 6 ? 3 : 4;
-      tubesEl.style.setProperty('--water-cols', String(columns));
-      tubesEl.dataset.count = String(tubes.length);
+    function setTubeStyle(element, name, value) {
+      if (element.style.getPropertyValue(name) !== value) element.style.setProperty(name, value);
+    }
 
-      tubes.forEach(function (tube, index) {
+    function ensureTubeViews() {
+      let changed = false;
+      while (tubeViews.length < tubes.length) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'water-tube';
-        button.dataset.index = String(index);
-        button.setAttribute('aria-pressed', selected === index ? 'true' : 'false');
-        button.disabled = solved;
-        const visible = tube.slice().reverse().map(function (color) { return colorOf(color).name; }).join(', ');
-        button.setAttribute('aria-label', 'Tube ' + (index + 1) + ', ' +
-          (tube.length ? (visible + ', ' + tube.length + ' of 4 full') : 'empty') +
-          (selected === index ? ', selected' : ''));
-        button.title = tube.length ? visible : 'Empty tube';
-
-        if (selected === index) button.classList.add('is-selected');
-        if (level < 2 && selected >= 0 && selected !== index && canPour(selected, index) > 0) {
-          button.classList.add('is-target');
-        }
-
+        button.dataset.index = String(tubeViews.length);
         const glass = document.createElement('span');
         glass.className = 'water-glass';
-        if (tube.length) {
-          const liquid = document.createElement('span');
-          liquid.className = 'water-liquid';
-          liquid.style.setProperty('--fill', String(tube.length));
-          let below = null;
-          tube.forEach(function (color, layer) {
-            const swatch = colorOf(color);
-            const segment = document.createElement('span');
-            segment.className = 'water-seg' + (layer === tube.length - 1 ? ' water-surface' : '');
-            segment.style.setProperty('--liquid', swatch.hex);
-            segment.style.setProperty('--liquid-deep', swatch.deep);
-            if (below) {
-              segment.style.setProperty('--liquid-below', below.hex);
-              segment.style.setProperty('--liquid-below-deep', below.deep);
-            }
-            segment.setAttribute('aria-hidden', 'true');
-            liquid.appendChild(segment);
-            below = swatch;
-          });
-          glass.appendChild(liquid);
-        }
-
         const shine = document.createElement('span');
         shine.className = 'water-shine';
         shine.setAttribute('aria-hidden', 'true');
         glass.appendChild(shine);
         button.appendChild(glass);
-        button.addEventListener('click', function () { chooseTube(index); });
         tubesEl.appendChild(button);
+        tubeViews.push({ button: button, glass: glass, liquid: null, segments: [] });
+        changed = true;
+      }
+      while (tubeViews.length > tubes.length) {
+        const view = tubeViews.pop();
+        view.button.remove();
+        changed = true;
+      }
+      if (changed) tubeGeometry = [];
+    }
+
+    function updateTubeLiquid(view, tube) {
+      if (!tube.length) {
+        if (view.liquid) {
+          view.liquid.remove();
+          view.liquid = null;
+          view.segments = [];
+        }
+        return;
+      }
+      if (!view.liquid) {
+        const liquid = document.createElement('span');
+        liquid.className = 'water-liquid';
+        liquid.setAttribute('aria-hidden', 'true');
+        view.glass.insertBefore(liquid, view.glass.firstChild);
+        view.liquid = liquid;
+        view.segments = [];
+      }
+      setTubeStyle(view.liquid, '--fill', String(tube.length));
+      while (view.segments.length > tube.length) view.segments.pop().remove();
+      while (view.segments.length < tube.length) {
+        const segment = document.createElement('span');
+        segment.setAttribute('aria-hidden', 'true');
+        view.liquid.appendChild(segment);
+        view.segments.push(segment);
+      }
+      let below = null;
+      tube.forEach(function (color, layer) {
+        const swatch = colorOf(color);
+        const segment = view.segments[layer];
+        const className = 'water-seg' + (layer === tube.length - 1 ? ' water-surface' : '');
+        if (segment.className !== className) segment.className = className;
+        setTubeStyle(segment, '--liquid', swatch.hex);
+        setTubeStyle(segment, '--liquid-deep', swatch.deep);
+        if (below) {
+          setTubeStyle(segment, '--liquid-below', below.hex);
+          setTubeStyle(segment, '--liquid-below-deep', below.deep);
+        } else {
+          segment.style.removeProperty('--liquid-below');
+          segment.style.removeProperty('--liquid-below-deep');
+        }
+        below = swatch;
       });
     }
 
-    function pourStream(fromIndex, toIndex, color, sourceBaseRect, amount, pourMs) {
+    function measureTubeGeometry() {
+      tubeGeometry = tubeViews.map(function (view) {
+        return { glass: view.glass.getBoundingClientRect(), tube: view.button.getBoundingClientRect() };
+      });
+    }
+
+    function cachedTubeGeometry(index) {
+      let item = tubeGeometry[index];
+      if (!item || !item.glass.width || !item.glass.height) {
+        measureTubeGeometry();
+        item = tubeGeometry[index];
+      }
+      return item;
+    }
+
+    function render() {
+      if (!tubesEl) return;
+      updateStats();
+      if (winEl) winEl.hidden = !solved;
+      if (statusEl) statusEl.hidden = solved;
+      ensureTubeViews();
+      const columns = tubes.length <= 3 ? tubes.length : tubes.length <= 6 ? 3 : 4;
+      const columnsValue = String(columns);
+      if (tubesEl.style.getPropertyValue('--water-cols') !== columnsValue) {
+        tubesEl.style.setProperty('--water-cols', columnsValue);
+      }
+      if (tubesEl.dataset.count !== String(tubes.length)) tubesEl.dataset.count = String(tubes.length);
+
+      tubes.forEach(function (tube, index) {
+        const view = tubeViews[index];
+        const button = view.button;
+        const isTarget = level < 2 && selected >= 0 && selected !== index && canPour(selected, index) > 0;
+        const className = 'water-tube' +
+          (selected === index ? ' is-selected' : '') +
+          (isTarget ? ' is-target' : '');
+        if (button.className !== className) button.className = className;
+        if (button.disabled !== solved) button.disabled = solved;
+        const pressed = selected === index ? 'true' : 'false';
+        if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
+        const visible = tube.slice().reverse().map(function (color) { return colorOf(color).name; }).join(', ');
+        const label = 'Tube ' + (index + 1) + ', ' +
+          (tube.length ? (visible + ', ' + tube.length + ' of 4 full') : 'empty') +
+          (selected === index ? ', selected' : '');
+        if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
+        const title = tube.length ? visible : 'Empty tube';
+        if (button.title !== title) button.title = title;
+        updateTubeLiquid(view, tube);
+      });
+    }
+
+    function pourStream(fromIndex, toIndex, color, sourceGeometry, targetGeometry, amount, pourMs) {
       const from = tubesEl.querySelector('[data-index="' + fromIndex + '"]');
       const to = tubesEl.querySelector('[data-index="' + toIndex + '"]');
       if (!from || !to) return;
       const toGlass = to.querySelector('.water-glass') || to;
-      const a = sourceBaseRect || (from.querySelector('.water-glass') || from).getBoundingClientRect();
-      const b = toGlass.getBoundingClientRect();
+      const a = sourceGeometry ? sourceGeometry.glass : (from.querySelector('.water-glass') || from).getBoundingClientRect();
+      const b = targetGeometry ? targetGeometry.glass : toGlass.getBoundingClientRect();
       const targetCount = Math.min(CAP, tubes[toIndex].length);
       const dx = b.left + b.width / 2;
       const dy = b.bottom - 2 - (b.height - 5) * (targetCount / CAP);
@@ -1304,7 +1369,8 @@
       const sourceEl = tubesEl.querySelector('[data-index="' + sourceIndex + '"]');
       const targetEl = tubesEl.querySelector('[data-index="' + index + '"]');
       const sourceGlass = sourceEl ? sourceEl.querySelector('.water-glass') : null;
-      const sourceBaseRect = sourceGlass ? sourceGlass.getBoundingClientRect() : null;
+      const sourceGeometry = cachedTubeGeometry(sourceIndex);
+      const targetGeometry = cachedTubeGeometry(index);
       const pourMs = amount === 1 ? 360 : Math.min(1000, 340 + amount * 170);
       let drain = null;
       if (sourceEl) {
@@ -1329,13 +1395,13 @@
         targetEl.style.setProperty('--pour-ms', pourMs + 'ms');
         targetEl.classList.add('is-receiving');
       }
-      const sourceRect = sourceEl ? sourceEl.getBoundingClientRect() : null;
-      const targetRect = targetEl ? targetEl.getBoundingClientRect() : null;
+      const sourceRect = sourceGeometry ? sourceGeometry.tube : null;
+      const targetRect = targetGeometry ? targetGeometry.tube : null;
       if (sourceEl && sourceRect && targetRect) {
         sourceEl.style.setProperty('--pour-tilt',
           (targetRect.left + targetRect.width / 2 >= sourceRect.left + sourceRect.width / 2 ? 6 : -6) + 'deg');
       }
-      pourStream(sourceIndex, index, pouredColor, sourceBaseRect, amount, pourMs);
+      pourStream(sourceIndex, index, pouredColor, sourceGeometry, targetGeometry, amount, pourMs);
       busy = true;
       window.setTimeout(function () {
         busy = false;
@@ -1486,6 +1552,10 @@
     });
 
     window.addEventListener('merge:appearance', function () { render(); });
+    window.addEventListener('resize', function () {
+      render();
+      window.requestAnimationFrame(measureTubeGeometry);
+    });
 
     function startDaily(seed, dateKey) {
       if (!window.SixfoldDaily) return;
@@ -1502,11 +1572,20 @@
       restore();
     }
 
+    if (tubesEl) {
+      tubesEl.addEventListener('click', function (event) {
+        const button = event.target.closest('.water-tube');
+        if (!button || !tubesEl.contains(button)) return;
+        chooseTube(Number(button.dataset.index));
+      });
+    }
+
     restore();
     games.water = {
       title: title,
       activate: function () {
         render();
+        window.requestAnimationFrame(measureTubeGeometry);
         if (solved) scheduleAutoNext(nextBtn, nextLevel);
         else cancelAutoNext();
       },
@@ -2115,6 +2194,10 @@
     let warningShown = false;
     let ui = {};
     let dpr = 1;
+    let backgroundCanvas = null;
+    let backgroundCtx = null;
+    let backgroundKey = '';
+    let fruitSprites = [];
 
     function readUi() {
       const computed = getComputedStyle(document.documentElement);
@@ -2132,11 +2215,66 @@
     function setupCanvas() {
       // A 2× backing store stays sharp on phones without the extra memory a
       // 2.5× canvas costs on every resize and page restore.
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const nextDpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dprChanged = nextDpr !== dpr;
+      dpr = nextDpr;
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
       canvas.style.aspectRatio = W + ' / ' + H;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      backgroundKey = '';
+      if (!fruitSprites.length || dprChanged) buildFruitSprites();
+    }
+
+    function buildFruitSprites() {
+      const previous = ctx;
+      const sprites = [];
+      FRUITS.forEach(function (def, tier) {
+        const size = Math.ceil(def.r * 3.2);
+        const sprite = document.createElement('canvas');
+        sprite.width = Math.round(size * dpr);
+        sprite.height = Math.round(size * dpr);
+        const spriteCtx = sprite.getContext('2d');
+        spriteCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx = spriteCtx;
+        paintFruit({ tier: tier, r: def.r, x: size / 2, y: size / 2, angle: 0 });
+        sprites.push({ canvas: sprite, size: size });
+      });
+      ctx = previous;
+      fruitSprites = sprites;
+    }
+
+    function drawFruitSprite(fruit) {
+      const sprite = fruitSprites[fruit.tier];
+      if (!sprite) return;
+      ctx.save();
+      ctx.translate(fruit.x, fruit.y);
+      ctx.rotate(fruit.angle || 0);
+      ctx.drawImage(sprite.canvas, -sprite.size / 2, -sprite.size / 2, sprite.size, sprite.size);
+      ctx.restore();
+    }
+
+    function drawBackgroundFrame() {
+      if (!backgroundCanvas) {
+        backgroundCanvas = document.createElement('canvas');
+        backgroundCtx = backgroundCanvas.getContext('2d');
+      }
+      const key = [ui.page, ui.panel, ui.card, ui.line, ui.warn, ui.muted, nearTop, dpr].join('|');
+      if (key !== backgroundKey) {
+        const pixelWidth = Math.round(W * dpr);
+        const pixelHeight = Math.round(H * dpr);
+        if (backgroundCanvas.width !== pixelWidth || backgroundCanvas.height !== pixelHeight) {
+          backgroundCanvas.width = pixelWidth;
+          backgroundCanvas.height = pixelHeight;
+        }
+        backgroundCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const previous = ctx;
+        ctx = backgroundCtx;
+        drawBackground();
+        ctx = previous;
+        backgroundKey = key;
+      }
+      ctx.drawImage(backgroundCanvas, 0, 0, W, H);
     }
 
     function randomTier() {
@@ -2598,7 +2736,7 @@
       }
     }
 
-    function drawFruit(fruit) {
+    function paintFruit(fruit) {
       const def = FRUITS[fruit.tier];
       const r = fruit.r;
       ctx.save();
@@ -2861,7 +2999,7 @@
 
       ctx.globalAlpha = 1;
       const ghost = { x: x, y: 44, r: r, tier: tier, angle: 0 };
-      drawFruit(ghost);
+      drawFruitSprite(ghost);
       ctx.globalAlpha = 1;
       ctx.fillStyle = ui.muted;
       ctx.font = '800 8px ui-sans-serif, system-ui, sans-serif';
@@ -2896,8 +3034,8 @@
     }
 
     function render() {
-      drawBackground();
-      fruits.forEach(drawFruit);
+      drawBackgroundFrame();
+      fruits.forEach(drawFruitSprite);
       drawEffects();
       drawGuide();
     }
