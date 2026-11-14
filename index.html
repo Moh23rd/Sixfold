@@ -306,7 +306,7 @@
   <link rel="stylesheet" href="css/home.css?v=4.0.0-w6" />
   <link rel="stylesheet" href="css/polish.css?v=4.0.0-w12" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w13" />
-  <link rel="stylesheet" href="v5.css?v=5.3.1" />
+  <link rel="stylesheet" href="v5.css?v=5.3.3" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -435,9 +435,8 @@
 
       <section class="daily" id="daily" aria-labelledby="daily-title">
         <div class="daily-head">
-          <div>
+          <div class="daily-heading">
             <p class="daily-kicker">Daily Sixfold</p>
-            <h2 id="daily-title">Today’s six.</h2>
             <p class="daily-date" id="daily-date">Today</p>
           </div>
           <div class="daily-side">
@@ -446,24 +445,31 @@
               <span>day streak</span>
               <small>best <b id="daily-best">0</b></small>
             </div>
-            <div class="daily-badge" id="daily-badge">
-              <span class="daily-badge-mark" aria-hidden="true">★</span>
-              <span class="daily-badge-copy">
-                <span class="daily-badge-title" id="daily-badge-title">Badge</span>
-                <span class="daily-badge-value"><b id="daily-badge-value">0</b> <span id="daily-badge-unit">day streak</span></span>
-              </span>
+            <div class="daily-badge-wrap">
+              <div class="daily-badge" id="daily-badge">
+                <span class="daily-badge-mark" aria-hidden="true">★</span>
+                <span class="daily-badge-copy">
+                  <span class="daily-badge-title" id="daily-badge-title">Badge</span>
+                  <span class="daily-badge-value"><b id="daily-badge-value">0</b> <span id="daily-badge-unit">day streak</span></span>
+                </span>
+              </div>
+              <p class="daily-badge-next" id="daily-badge-next" hidden></p>
             </div>
-            <p class="daily-badge-next" id="daily-badge-next" hidden></p>
+            <button class="daily-calendar-btn" id="daily-calendar-open" type="button" aria-haspopup="dialog" aria-controls="daily-calendar" aria-label="30-day calendar" title="30-day calendar">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M8 3.5v4M16 3.5v4M4 10h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><circle cx="9" cy="13.5" r="1" fill="currentColor" /><circle cx="12" cy="13.5" r="1" fill="currentColor" /><circle cx="15" cy="13.5" r="1" fill="currentColor" /><circle cx="9" cy="16.5" r="1" fill="currentColor" /><circle cx="12" cy="16.5" r="1" fill="currentColor" /></svg>
+            </button>
           </div>
         </div>
-        <div class="daily-progress" aria-hidden="true"></div>
-        <p class="daily-summary" id="daily-summary">Every game has a date-seeded daily. Pick one to begin.</p>
-        <div class="daily-games" id="daily-games" role="group" aria-label="Today’s six games"></div>
-        <div class="daily-actions">
-          <button class="btn" id="daily-featured" type="button">Play</button>
-          <button class="contact-link" id="daily-share" type="button">Share daily</button>
-          <button class="daily-archive-link" id="daily-calendar-open" type="button" aria-haspopup="dialog" aria-controls="daily-calendar">30-day calendar</button>
+
+        <div class="daily-feature">
+          <p class="daily-eyebrow"><span id="daily-today">Today</span><span aria-hidden="true">·</span><span id="daily-game-kind">Sorting</span></p>
+          <h2 id="daily-title"><span id="daily-game-name">Water Sort</span></h2>
         </div>
+
+        <button class="daily-play" id="daily-featured" type="button">
+          <span id="daily-featured-label">Play Water Sort for today</span>
+          <span class="daily-play-arrow" aria-hidden="true">→</span>
+        </button>
         <p class="sr-only" id="daily-live" role="status" aria-live="polite"></p>
       </section>
 
@@ -1239,8 +1245,8 @@
         <h2 id="daily-calendar-title">Daily calendar</h2>
         <button class="sheet-done" data-close type="button">Done</button>
       </div>
-      <p class="sheet-sub">The last 30 local days. Any Sudoku can be replayed from its date; the other five games count on the day you finish them.</p>
-      <div class="daily-calendar-grid" id="daily-calendar-grid" role="group" aria-label="Last 30 daily sets"></div>
+      <p class="sheet-sub">The last 30 local days. Each date features one game; completed days are marked.</p>
+      <div class="daily-calendar-grid" id="daily-calendar-grid" role="group" aria-label="Last 30 daily picks"></div>
       <div class="daily-day-detail">
         <h3 id="daily-day-title">Today</h3>
         <p id="daily-day-copy"></p>
@@ -1287,7 +1293,7 @@
   <script src="js/install.js?v=4.0.0"></script>
   <script src="js/sudoku.js?v=5.2.0"></script>
   <script src="js/games.js?v=5.1.6"></script>
-  <script src="daily.js?v=5.3.1"></script>
+  <script src="daily.js?v=5.3.3"></script>
   <script src="update.js?v=5.1.0"></script>
   <script src="i18n-fr.js?v=5.4.0"></script>
   <script src="i18n-de.js?v=5.4.0"></script>

@@ -7,12 +7,12 @@
   const KEY = 'sixfold.daily.v1';
   const ORDER = ['merge', 'sudoku', 'ttt', 'mines', 'water', 'fruit'];
   const GAMES = {
-    merge: { label: 'Merge', goal: 'Finish seeded 4 × 4' },
-    sudoku: { label: 'Sudoku', goal: 'Solve the daily grid' },
-    ttt: { label: 'Tic Tac Toe', goal: 'Beat today’s computer' },
-    mines: { label: 'Minesweeper', goal: 'Clear today’s field' },
-    water: { label: 'Water Sort', goal: 'Clear today’s level' },
-    fruit: { label: 'Fruit Merge', goal: 'Finish today’s run' }
+    merge: { label: 'Merge', kind: 'Numbers', goal: 'Finish seeded 4 × 4' },
+    sudoku: { label: 'Sudoku', kind: 'Numbers', goal: 'Solve the daily grid' },
+    ttt: { label: 'Tic Tac Toe', kind: 'Classic', goal: 'Beat today’s computer' },
+    mines: { label: 'Minesweeper', kind: 'Logic', goal: 'Clear today’s field' },
+    water: { label: 'Water Sort', kind: 'Sorting', goal: 'Clear today’s level' },
+    fruit: { label: 'Fruit Merge', kind: 'Merging', goal: 'Finish today’s run' }
   };
   const MAX_ARCHIVE = 30;
   // Milestones follow the widely used 7 / 30 / 100 / 365 rhythm, with a
@@ -221,13 +221,8 @@
       pulseBadge();
       announce(tr('Badge') + ': ' + number(earnedBadge) + ' ' + tr('day streak') + '.');
     }
+    announce(tr(GAMES[game].label) + ' · ' + tr('Done') + '.');
     const total = countFor(key);
-    if (total === ORDER.length) {
-      announce('Daily Sixfold complete. All six games played.');
-      try { window.dispatchEvent(new CustomEvent('sixfold:daily-full', { detail: { date: key } })); } catch (err) {}
-    } else {
-      announce(tr(GAMES[game].label + ' checked off. ' + total + ' of six today.'));
-    }
     try {
       window.dispatchEvent(new CustomEvent('sixfold:daily-change', {
         detail: { date: key, game: game, total: total, meta: meta || null }
@@ -264,55 +259,34 @@
     announce(tr(GAMES[game].goal) + ' · ' + short(date) + '.');
   }
 
-  function share() {
-    const key = todayKey();
-    const done = countFor(key);
-    const url = new URL(location.href);
-    url.search = '';
-    url.hash = '';
-    url.searchParams.set('daily', key);
-    const text = number(tr('Sixfold Daily') + ' · ' + pretty(key) + '\n' +
-      done + tr('/6 games · ') + streak() + tr('-day streak.') + '\n' + tr('No spoilers — play today’s set:'));
-    const payload = { title: 'Sixfold Daily', text: text, url: url.toString() };
-    const live = $('daily-live');
-    if (navigator.share) {
-      navigator.share(payload).catch(function () {});
-      return;
-    }
-    const copy = text + '\n' + url.toString();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(copy).then(function () {
-        announce(tr('Daily link copied.'));
-        if (live) live.textContent = tr('Daily link copied.');
-      }).catch(function () { announce(url.toString()); });
-      return;
-    }
-    announce(url.toString());
-  }
-
   function render() {
     const key = todayKey();
-    const done = countFor(key);
-    const total = ORDER.length;
     const dateEl = $('daily-date');
     const streakEl = $('daily-streak');
     const bestEl = $('daily-best');
-    const summaryEl = $('daily-summary');
-    const progressEl = $('daily-progress');
-    const gamesEl = $('daily-games');
     const featuredBtn = $('daily-featured');
+    const featuredLabel = $('daily-featured-label');
     const featured = featuredGame(key);
+    const dailyEl = $('daily');
+    const gameNameEl = $('daily-game-name');
+    const gameKindEl = $('daily-game-kind');
+    const todayEl = $('daily-today');
+
     if (dateEl) dateEl.textContent = pretty(key);
     if (streakEl) streakEl.textContent = String(streak());
     if (bestEl) bestEl.textContent = String(bestStreak());
-    if (summaryEl) {
-      summaryEl.textContent = tr(done === total
-        ? 'Six of six. Today’s set is complete.'
-        : done
-          ? done + ' of six done · ' + (total - done) + ' to go.'
-          : 'Every game has a date-seeded daily. Pick one to begin.');
+    if (dailyEl) {
+      dailyEl.dataset.dailyGame = featured;
+      dailyEl.classList.toggle('is-done', isDone(key, featured));
     }
-    if (progressEl) progressEl.style.setProperty('--daily-progress', (done / total * 100) + '%');
+    if (todayEl) todayEl.textContent = tr('Today');
+    if (gameNameEl) gameNameEl.textContent = tr(GAMES[featured].label);
+    if (gameKindEl) gameKindEl.textContent = tr(GAMES[featured].kind);
+    if (featuredBtn) {
+      featuredBtn.dataset.game = featured;
+      featuredBtn.setAttribute('aria-label', tr('Play ' + GAMES[featured].label + ' for today'));
+    }
+    if (featuredLabel) featuredLabel.textContent = tr('Play ' + GAMES[featured].label + ' for today');
 
     const best = bestStreak();
     const earned = highestMilestone(best);
@@ -335,31 +309,6 @@
       badgeNext.hidden = !(earned && next);
       badgeNext.textContent = earned && next ? tr('Next badge') + ' · ' + number(next) : '';
     }
-    if (featuredBtn) {
-      const featuredDone = isDone(key, featured);
-      featuredBtn.dataset.game = featured;
-      featuredBtn.textContent = tr((featuredDone ? 'Replay ' : 'Play ') + GAMES[featured].label + ' for today');
-    }
-
-    if (gamesEl) {
-      gamesEl.innerHTML = '';
-      ORDER.forEach(function (game, index) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'daily-game' + (isDone(key, game) ? ' is-done' : '');
-        button.dataset.dailyGame = game;
-        const numberText = number('0' + (index + 1));
-        const labelText = tr(GAMES[game].label);
-        const goalText = tr(isDone(key, game) ? 'Done' : GAMES[game].goal);
-        button.innerHTML = '<span class="sr-only">' + tr('Play') + ' </span>' +
-          '<span class="daily-game-num">' + numberText + '</span>' +
-          '<strong>' + labelText + '</strong>' +
-          '<small>' + goalText + '</small>' +
-          '<i aria-hidden="true">' + (isDone(key, game) ? '✓' : '›') + '</i>';
-        button.addEventListener('click', function () { play(game); });
-        gamesEl.appendChild(button);
-      });
-    }
     renderCalendar();
   }
 
@@ -374,15 +323,12 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'daily-day' + (key === today ? ' is-today' : '') +
-        (count === ORDER.length ? ' is-full' : '') + (count ? ' is-started' : '');
+        (count ? ' is-started' : '');
       button.dataset.date = key;
-      button.setAttribute('aria-label', tr(short(key) + ', ' + count + ' of six games'));
+      button.setAttribute('aria-label', tr(short(key) + (count ? ', ' + tr('Done') : '')));
       const d = dateFromKey(key);
       button.innerHTML = '<span>' + (d ? d.getDate() : '') + '</span>' +
-        '<i class="daily-day-dots" aria-hidden="true">' +
-        ORDER.map(function (game) {
-          return '<b class="' + (isDone(key, game) ? 'on' : '') + '"></b>';
-        }).join('') + '</i>';
+        '<i class="daily-day-dots" aria-hidden="true"><b class="' + (count ? 'on' : '') + '"></b></i>';
       button.addEventListener('click', function () { selectDay(key); });
       grid.appendChild(button);
     }
@@ -397,28 +343,24 @@
     const action = $('daily-day-play');
     const count = countFor(key);
     const isToday = key === todayKey();
-    const game = isToday ? featuredGame(key) : 'sudoku';
-    if (title) title.textContent = pretty(key) + (isToday ? ' · ' + tr('today') : '');
+    const game = featuredGame(key);
+    if (title) title.textContent = pretty(key) + ' · ' + tr(GAMES[game].label);
     if (copy) {
-      if (!count) {
-        copy.textContent = isToday
-          ? tr('Every game has a date-seeded daily. Pick one to begin.')
-          : tr('No games checked in. The Sudoku can be replayed for this date; the other five scenarios are today only.');
-      } else if (count === ORDER.length) {
-        copy.textContent = tr(count + ' of six games checked in. A full set.');
-      } else if (isToday) {
-        copy.textContent = tr(count + ' checked off. ' + (ORDER.length - count) + ' of six today.');
-      } else {
-        copy.textContent = tr(count + ' of six games checked in. You can still replay the Sudoku.');
-      }
+      copy.textContent = tr(GAMES[game].kind) + (count ? ' · ' + tr('Done') : '');
     }
     if (action) {
-      action.hidden = false;
+      action.hidden = !isToday;
       action.dataset.date = key;
       action.dataset.game = game;
-      action.textContent = isToday
-        ? tr((isDone(key, game) ? 'Replay ' : 'Play ') + GAMES[game].label + ' for today')
-        : tr(count ? 'Replay this Sudoku' : 'Play this Sudoku');
+      action.textContent = tr('Play ' + GAMES[game].label + ' for today');
+    }
+    const grid = $('daily-calendar-grid');
+    if (grid) {
+      grid.querySelectorAll('.daily-day').forEach(function (button) {
+        const selected = button.dataset.date === key;
+        button.classList.toggle('is-selected', selected);
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
     }
   }
 
@@ -428,6 +370,7 @@
   }
 
   function openCalendar(opener) {
+    selectedDay = todayKey();
     renderCalendar();
     const sheet = $('daily-calendar');
     if (!sheet) return;
@@ -446,8 +389,6 @@
     render();
     const calendarBtn = $('daily-calendar-open');
     if (calendarBtn) calendarBtn.addEventListener('click', function () { openCalendar(calendarBtn); });
-    const shareBtn = $('daily-share');
-    if (shareBtn) shareBtn.addEventListener('click', share);
     const featuredBtn = $('daily-featured');
     if (featuredBtn) featuredBtn.addEventListener('click', function () {
       play(featuredBtn.dataset.game || featuredGame(todayKey()));

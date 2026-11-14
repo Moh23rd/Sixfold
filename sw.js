@@ -17,7 +17,8 @@
 // 5.4.3: keep the text fallback when a native file share throws.
 // 5.4.4: send only files to Web Share so iOS opens the image sheet.
 // 5.4.5: show a save-card fallback when native image sharing is blocked.
-const VERSION = 'sixfold-5.4.5-share';
+// 5.4.6: make the daily card one featured game with one play action.
+const VERSION = 'sixfold-5.4.6-daily-card';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -38,9 +39,9 @@ const GAMES_CSS = '4.0.0-w17';
 const POLISH_CSS = '4.0.0-w12';
 const GAMES_JS = '5.1.6';
 const SUDOKU_CSS = '4.0.0-w13';
-const V5_CSS = '5.3.1';
+const V5_CSS = '5.3.3';
 const HOME_CSS = '4.0.0-w6';
-const DAILY_CODE = '5.3.1';
+const DAILY_CODE = '5.3.3';
 const I18N_CODE = '5.4.0';
 
 const SHELL = [

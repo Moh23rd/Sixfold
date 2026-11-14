@@ -18,89 +18,102 @@
 /* ---------- Daily Sixfold ---------- */
 
 .daily {
+  --daily-accent: var(--t16);
   position: relative;
-  margin: 42px 0 8px;
-  padding: clamp(18px, 3vw, 28px);
+  overflow: hidden;
+  margin: 30px 0 6px;
+  padding: clamp(14px, 2.4vw, 20px);
   border: 1px solid var(--home-rule);
+  border-top: 4px solid var(--daily-accent);
   border-radius: 14px;
   background: color-mix(in srgb, var(--card) 86%, var(--page));
   box-shadow: 0 3px 0 var(--home-hard);
 }
 
+.daily[data-daily-game="sudoku"] { --daily-accent: var(--g1); }
+.daily[data-daily-game="ttt"] { --daily-accent: var(--g3); }
+.daily[data-daily-game="mines"] { --daily-accent: var(--g5); }
+.daily[data-daily-game="water"] { --daily-accent: var(--g4); }
+.daily[data-daily-game="fruit"] { --daily-accent: var(--g2); }
+
 html[data-daily="off"] #daily { display: none; }
 
 .daily-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 10px;
 }
 
+.daily-heading { min-width: 0; }
+
 .daily-kicker {
-  margin: 0 0 7px;
+  margin: 0 0 3px;
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.11em;
   text-transform: uppercase;
 }
 
-.daily h2 {
+.daily-date {
   margin: 0;
-  font-size: clamp(24px, 4vw, 34px);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.3;
 }
 
-.daily-date {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 12px;
+.daily-side {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 5px;
 }
 
 .daily-streak {
   display: flex;
   align-items: baseline;
-  gap: 7px;
-  padding: 9px 12px;
-  border-radius: 12px;
+  gap: 4px;
+  padding: 5px 7px;
+  border-radius: 9px;
   background: color-mix(in srgb, var(--g1) 10%, var(--panel));
   white-space: nowrap;
 }
 
-.daily-streak strong { font-size: 26px; line-height: 1; }
-.daily-streak span { color: var(--muted-strong); font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-.daily-streak small { color: var(--muted-strong); font-size: 9px; }
+.daily-streak strong { font-size: 19px; line-height: 1; font-variant-numeric: tabular-nums; }
+.daily-streak span { color: var(--muted-strong); font-size: 7.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.daily-streak small { color: var(--muted-strong); font-size: 7.5px; }
 
-.daily-side {
+.daily-badge-wrap {
   display: flex;
-  flex: none;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: 3px;
 }
 
 .daily-badge {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 9px;
+  gap: 5px;
+  padding: 4px 6px;
   border: 1px solid color-mix(in srgb, var(--t256) 45%, var(--home-rule, var(--line)));
-  border-radius: 11px;
+  border-radius: 9px;
   background: color-mix(in srgb, var(--t256) 10%, var(--panel));
 }
 
 .daily-badge-mark {
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   flex: none;
   border-radius: 50%;
   background: color-mix(in srgb, var(--t256) 38%, var(--panel));
   color: var(--home-accent-ink, var(--ink));
-  font-size: 10px;
+  font-size: 8px;
   line-height: 1;
 }
 
@@ -129,7 +142,7 @@ html[data-daily="off"] #daily { display: none; }
 .daily-badge-title {
   color: var(--muted-strong);
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: 6.5px;
   font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1;
@@ -138,7 +151,7 @@ html[data-daily="off"] #daily { display: none; }
 
 .daily-badge-value {
   color: var(--ink);
-  font-size: 11px;
+  font-size: 9.5px;
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -146,7 +159,7 @@ html[data-daily="off"] #daily { display: none; }
 
 .daily-badge-value span {
   color: var(--muted-strong);
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 650;
 }
 
@@ -154,7 +167,7 @@ html[data-daily="off"] #daily { display: none; }
   margin: 0;
   color: var(--muted-strong);
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: 6.5px;
   font-weight: 700;
   letter-spacing: 0.03em;
   line-height: 1.2;
@@ -171,124 +184,119 @@ html[data-daily="off"] #daily { display: none; }
   100% { transform: scale(1); }
 }
 
-.daily-progress {
-  height: 5px;
-  margin: 18px 0 14px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 9%, transparent);
-}
-
-.daily-progress::before {
-  content: "";
-  display: block;
-  width: var(--daily-progress, 0%);
-  height: 100%;
-  border-radius: inherit;
-  background: var(--g1);
-  transition: width 350ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.daily-summary {
-  margin: 0 0 13px;
-  font-size: 12.5px;
-  font-weight: 650;
-}
-
-.daily-games {
+.daily-calendar-btn {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
-}
-
-.daily-game {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto auto;
-  gap: 1px 6px;
-  align-items: center;
-  min-width: 0;
-  min-height: 66px;
-  padding: 8px 9px;
-  border: 1px solid color-mix(in srgb, var(--ink) 11%, transparent);
-  border-radius: 11px;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 9px;
   background: var(--panel);
   color: var(--ink);
-  font: inherit;
-  text-align: left;
   cursor: pointer;
   touch-action: manipulation;
+  transition: transform 120ms ease, background-color 180ms ease;
 }
 
-.daily-game:hover { background: color-mix(in srgb, var(--panel) 70%, var(--card)); }
-.daily-game:active { transform: translateY(1px) scale(0.985); }
-.daily-game:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.daily-calendar-btn:hover { background: color-mix(in srgb, var(--panel) 70%, var(--card)); }
+.daily-calendar-btn:active { transform: scale(0.96); }
+.daily-calendar-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.daily-calendar-btn svg { width: 15px; height: 15px; display: block; }
 
-.daily-game-num {
-  grid-row: 1 / 3;
-  align-self: start;
-  color: var(--muted-strong);
-  font-family: var(--font-ui);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  font-variant-numeric: tabular-nums;
-}
+.daily-feature { margin-top: 14px; }
 
-.daily-game strong {
-  grid-column: 2;
-  min-width: 0;
-  overflow: hidden;
-  font-size: 11.5px;
-  line-height: 1.1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.daily-game small {
-  grid-column: 2;
-  color: var(--muted-strong);
-  font-size: 8.5px;
-  line-height: 1.2;
-}
-
-.daily-game i {
-  grid-column: 3;
-  grid-row: 1 / 3;
-  color: var(--muted);
-  font-size: 15px;
-  font-style: normal;
-  font-weight: 700;
-}
-
-.daily-game.is-done {
-  border-color: color-mix(in srgb, #4f8f4b 36%, transparent);
-  background: color-mix(in srgb, #4f8f4b 9%, var(--panel));
-}
-
-.daily-game.is-done i { color: #4f8f4b; font-size: 13px; }
-
-.daily-actions {
+.daily-eyebrow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  color: var(--muted-strong);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.daily-actions .btn,
-.daily-actions .contact-link { margin-top: 0; }
+.daily h2 {
+  margin: 0;
+  font-size: clamp(27px, 5vw, 42px);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
 
-.daily-archive-link {
+.daily-play {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 14px;
+  padding: 0 13px 0 16px;
   border: 0;
-  background: none;
-  color: var(--muted);
+  border-radius: 12px;
+  background: var(--daily-accent);
+  color: var(--home-accent-ink, var(--ink));
   font: inherit;
-  font-size: 11px;
-  font-weight: 750;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-align: start;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--daily-accent) 62%, var(--ink));
   cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 140ms ease, filter 180ms ease;
+}
+
+.daily-play:hover { filter: brightness(1.03); }
+.daily-play:active { transform: translateY(2px); box-shadow: 0 1px 0 color-mix(in srgb, var(--daily-accent) 62%, var(--ink)); }
+.daily-play:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.daily-play-arrow {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--home-accent-ink, var(--ink)) 14%, transparent);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.daily.is-done .daily-play {
+  background: color-mix(in srgb, var(--daily-accent) 30%, var(--panel));
+  color: var(--ink);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.daily.is-done .daily-play-arrow {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+@media (max-width: 440px) {
+  .daily-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .daily-side { width: 100%; justify-content: flex-start; }
+  .daily-badge-wrap { align-items: flex-start; }
+  .daily-badge-next { text-align: start; }
+  .daily-feature { margin-top: 12px; }
+}
+
+@media (max-width: 390px) {
+  .daily { padding: 13px; margin-top: 24px; }
+  .daily-streak { padding: 4px 6px; }
+  .daily-streak strong { font-size: 18px; }
+  .daily-play { min-height: 48px; font-size: 12.5px; }
+  .daily-calendar-grid { gap: 3px; }
+  .daily-day { min-height: 43px; }
+}
+
+@media (max-width: 360px) {
+  .daily h2 { font-size: 26px; }
 }
 
 /* ---------- Daily calendar ---------- */
@@ -317,8 +325,9 @@ html[data-daily="off"] #daily { display: none; }
 
 .daily-day > span { font-family: var(--font-ui); font-size: 10px; font-weight: 750; font-variant-numeric: tabular-nums; }
 .daily-day.is-started { border-color: color-mix(in srgb, var(--ink) 28%, transparent); }
-.daily-day.is-full { background: color-mix(in srgb, var(--g3) 20%, var(--panel)); border-color: color-mix(in srgb, var(--g3) 50%, transparent); }
 .daily-day.is-today { box-shadow: inset 0 0 0 2px var(--ink); }
+.daily-day.is-selected { border-color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, var(--panel)); }
+.daily-day.is-selected > span { font-weight: 800; }
 .daily-day:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 .daily-day-dots {
@@ -338,43 +347,18 @@ html[data-daily="off"] #daily { display: none; }
 .daily-day-dots b.on { background: var(--g1); }
 
 .daily-day-detail {
-  margin-top: 16px;
-  padding: 13px 14px;
+  margin-top: 12px;
+  padding: 11px 12px;
   border-radius: 11px;
   background: var(--seg-bg, var(--panel));
 }
 
 .daily-day-detail h3 { margin: 0 0 4px; font-size: 13px; }
-.daily-day-detail p { margin: 0 0 10px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
-
-@media (max-width: 760px) {
-  .daily-games { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .daily-game { min-height: 62px; }
-}
+.daily-day-detail p { margin: 0 0 8px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
 
 @media (max-width: 390px) {
-  .daily { padding: 16px; margin-top: 34px; }
-  .daily-head { gap: 9px; }
-  .daily-streak { padding: 7px 9px; }
-  .daily-streak strong { font-size: 22px; }
-  .daily-badge { padding: 5px 7px; }
-  .daily-badge-mark { width: 18px; height: 18px; font-size: 9px; }
-  .daily-badge-value { font-size: 10px; }
-  .daily-games { gap: 5px; }
-  .daily-game { padding: 7px 6px; }
-  .daily-game strong { font-size: 10.5px; }
-  .daily-game small { font-size: 8px; }
   .daily-calendar-grid { gap: 3px; }
   .daily-day { min-height: 43px; }
-}
-
-@media (max-width: 360px) {
-  .daily-head { flex-direction: column; }
-  .daily-side { align-items: flex-start; }
-  .daily-streak { align-self: flex-start; }
-  .daily-badge-next { text-align: start; }
-  .daily-game { min-height: 70px; }
-  .daily-game strong { overflow: visible; white-space: normal; }
 }
 
 /* ---------- settings ---------- */
@@ -574,7 +558,8 @@ html[data-theme="dark"][data-contrast="high"] {
 html[data-contrast="high"] .sudoku-board,
 html[data-contrast="high"] .sudoku-cell,
 html[data-contrast="high"] .setting-row,
-html[data-contrast="high"] .daily-game,
+html[data-contrast="high"] .daily,
+html[data-contrast="high"] .daily-calendar-btn,
 html[data-contrast="high"] .sheet-card { border-color: currentColor; }
 
 html[data-contrast="high"] .sudoku-cell { border-right-width: 1px; border-bottom-width: 1px; }
@@ -791,6 +776,7 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .daily-progress::before { transition: none; }
-  .daily-badge.is-new { animation: none; }
+  .daily-badge.is-new,
+  .daily-play,
+  .daily-calendar-btn { animation: none; transition: none; }
 }
