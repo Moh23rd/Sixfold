@@ -1,5 +1,5 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
-// Release 5.2.0: localized share cards, consistent script fonts and digit faces.
+// Internal build 5.2.0: localized share cards, consistent script fonts and digit faces.
 const VERSION = 'sixfold-5.2.0';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.

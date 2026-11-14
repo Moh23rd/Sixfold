@@ -1,6 +1,7 @@
 {
   "name": "sixfold",
   "version": "5.2.0",
+  "release": "5.0",
   "private": true,
   "license": "GPL-3.0-only",
   "description": "Sixfold \u2014 an offline pocket arcade of six games.",

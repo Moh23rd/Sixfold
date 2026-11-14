@@ -95,12 +95,12 @@ sub(
     'could not disable the service worker registration'
 )
 sub(
-    r'aria-label="Sixfold version 5\.2"',
-    lambda m: 'aria-label="Sixfold 5.2 beta preview"',
+    r'aria-label="Sixfold version 5\.0"',
+    lambda m: 'aria-label="Sixfold 5.0 beta preview"',
     'could not label the version for screen readers'
 )
 sub(
-    r'<p class="hub-version"[^>]*>v5\.2</p>',
+    r'<p class="hub-version"[^>]*>v5\.0</p>',
     lambda m: m.group(0)[:-4] + ' <span class="beta-flag" title="Beta preview · '
     + escape(stamp) + '">beta</span></p>',
     'could not tag the version label'

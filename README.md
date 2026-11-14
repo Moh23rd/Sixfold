@@ -96,6 +96,10 @@ No accounts, ads, analytics or third-party scripts. Boards, scores and appearanc
 
 **Erase all data** in Look & feel removes every board, score, streak, saved puzzle and appearance choice. Each game also has its own reset in its bottom tool row.
 
+## Release naming
+
+The public release is **v5.0**. The internal build version in `package.json` and the offline cache is **5.2.0**; the two are deliberately separate so the public release label can stay stable while the build advances.
+
 ## Running locally
 
 Serve the repository root over localhost, because the service worker and install prompt need a real origin:

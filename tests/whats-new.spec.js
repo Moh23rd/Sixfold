@@ -8,7 +8,7 @@ const WHATS_NEW_ITEMS = [
   'New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi and Arabic, with complete catalogs and offline fonts'
 ];
 
-test.describe('What’s New 5.2', () => {
+test.describe('What’s New 5.0', () => {
   for (const locale of LOCALES) {
     test(LANGUAGE_NAMES[locale] + ' translations and 320px layout', async ({ page }) => {
       await page.addInitScript(({ locale }) => {
@@ -27,12 +27,12 @@ test.describe('What’s New 5.2', () => {
       const heading = (await panel.locator('.whats-new-label').textContent()).trim();
       const expectedHeading = await page.evaluate(() => {
         const i18n = window.SixfoldI18n;
-        return i18n.number(i18n.t('What’s new in 5.2'));
+        return i18n.number(i18n.t('What’s new in 5.0'));
       });
       expect(heading).toBe(expectedHeading);
 
       if (locale !== 'en') {
-        expect(heading, locale + ' heading').not.toBe('What’s new in 5.2');
+        expect(heading, locale + ' heading').not.toBe('What’s new in 5.0');
         expected.forEach((text, index) => {
           expect(text, locale + ' item ' + (index + 1)).not.toBe(WHATS_NEW_ITEMS[index]);
         });
