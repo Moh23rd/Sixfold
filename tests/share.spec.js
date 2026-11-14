@@ -117,3 +117,59 @@ test('non-Merge shares send a PNG during the click instead of copying text', asy
 
   expect(pageErrors).toEqual([]);
 });
+
+test('a synchronous navigator.share failure falls back to copying text', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__shareCalls = 0;
+    window.__copiedText = [];
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: (data) => Boolean(data && data.files && data.files.length)
+    });
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: () => {
+        window.__shareCalls += 1;
+        throw new Error('share unavailable');
+      }
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: (text) => {
+          window.__copiedText.push(text);
+          return Promise.resolve();
+        }
+      }
+    });
+  });
+
+  await page.goto('/');
+  await page.waitForFunction(() => window.MergeShare && window.MergeShare.result);
+
+  const result = await page.evaluate(() => {
+    window.__shareCalls = 0;
+    window.__copiedText = [];
+    let copyDuringClick = false;
+    const button = document.createElement('button');
+    button.addEventListener('click', () => {
+      window.MergeShare.result('Water Sort', 'I sorted Water Sort in 4 moves. Can you?', {
+        game: 'Water Sort', number: '05', kind: 'SORTING', title: 'Water Sort',
+        score: 4, label: 'MOVES', meta: ['Level 1 of 8', 'Every colour sorted'], accent: '#39a9a1'
+      });
+      copyDuringClick = window.__copiedText.length === 1;
+    });
+    button.click();
+    return {
+      copyDuringClick,
+      shareCalls: window.__shareCalls,
+      copied: window.__copiedText
+    };
+  });
+
+  expect(result.shareCalls).toBe(1);
+  expect(result.copyDuringClick).toBe(true);
+  expect(result.copied).toHaveLength(1);
+  expect(result.copied[0]).toContain('I sorted Water Sort in 4 moves. Can you?');
+  expect(result.copied[0]).toContain('http://127.0.0.1:8000/');
+});
