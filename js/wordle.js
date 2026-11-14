@@ -599,7 +599,9 @@
     const streak = stats.streak ? tr('dayStreak', { n: stats.streak }) : tr('noStreak');
     // Keep the emoji grid in the shared text, but give Wordle the same image
     // card as every other finished game when file sharing is available.
-    if (window.MergeShare && window.MergeShare.result) {
+    /* The image card needs a browser file-share sheet. Without one, keep
+       Wordle's emoji-grid text (the clipboard fallback the test expects). */
+    if (window.MergeShare && window.MergeShare.result && navigator.share && navigator.canShare) {
       window.MergeShare.result('Sixfold — Wordle', text, {
         game: 'Wordle', number: '??', kind: tr('shareGuesses'),
         title: win ? tr('shareSolved') : tr('shareLost'),

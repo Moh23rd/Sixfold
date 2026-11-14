@@ -20,7 +20,8 @@
 // 5.4.6: make the daily card one featured game with one play action.
 // 5.4.7: add the badge shelf, a home share card and a daily finish banner.
 // 5.4.8: share today’s challenge, recap the week and opt in to a local reminder.
-const VERSION = 'sixfold-5.4.9-daily-share';
+// 5.4.10: localized share cards, consistent script fonts and digit faces.
+const VERSION = 'sixfold-5.4.10-localized-cards';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -29,22 +30,22 @@ const CACHE_PREFIX = 'sixfold-';
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
 const ASSET = '4.0.0';
-const SHARE_CARD = '4.0.3';
-const STYLE_ASSET = '5.2.3';
+const SHARE_CARD = '5.2.4';
+const STYLE_ASSET = '5.2.4';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '5.2.0';
-const GAME_CODE = '4.0.0-w6';
-const WORDLE_CODE = '5.3.10-wordle';
-const SUDOKU_GAME_CODE = '5.2.0';
-const LOCALE_FONT = '5.1.3';
-const GAMES_CSS = '4.0.0-w17';
+const GAME_CODE = '5.2.4';
+const WORDLE_CODE = '5.2.4-wordle';
+const SUDOKU_GAME_CODE = '5.2.4';
+const LOCALE_FONT = '5.1.4';
+const GAMES_CSS = '5.2.4';
 const POLISH_CSS = '4.0.0-w12';
-const GAMES_JS = '5.1.8';
+const GAMES_JS = '5.2.4';
 const SUDOKU_CSS = '4.0.0-w13';
 const V5_CSS = '5.3.6';
 const HOME_CSS = '4.0.0-w6';
 const DAILY_CODE = '5.3.6';
-const I18N_CODE = '5.4.2';
+const I18N_CODE = '5.4.3';
 
 const SHELL = [
   './',
@@ -104,7 +105,9 @@ const SHELL = [
   './fonts/sixfold-kr.woff2?v=' + LOCALE_FONT,
   './fonts/sixfold-devanagari.woff2?v=' + LOCALE_FONT,
   './fonts/sixfold-kannada.woff2?v=' + LOCALE_FONT,
-  './fonts/sixfold-arabic.woff2?v=' + LOCALE_FONT
+  './fonts/sixfold-arabic.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-arabic-digits.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-devanagari-digits.woff2?v=' + LOCALE_FONT
 ];
 
 self.addEventListener('install', (event) => {

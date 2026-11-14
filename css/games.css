@@ -3833,7 +3833,7 @@ html[data-theme="dark"] .reset-confirm:hover {
    ========================================================================== */
 
 :root {
-  --font-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Google Sans Flex", monospace;
 }
 
 .hub h1 {

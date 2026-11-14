@@ -982,9 +982,9 @@
   }
 
   function localizeShare(value) {
-    return window.SixfoldI18n && window.SixfoldI18n.number
-      ? window.SixfoldI18n.number(String(value))
-      : String(value);
+    if (!window.SixfoldI18n) return String(value);
+    const translated = window.SixfoldI18n.t(String(value));
+    return window.SixfoldI18n.number ? window.SixfoldI18n.number(translated) : translated;
   }
 
   // Somewhere without a share sheet (most desktops) copies the same line instead.
@@ -993,13 +993,13 @@
     const localized = localizeShare(message);
     const text = url ? localized + ' ' + url : localized;
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
-      flashShare('Couldn’t copy');
+      flashShare(localizeShare('Couldn’t copy'));
       return;
     }
     navigator.clipboard.writeText(text).then(function () {
-      flashShare('Copied');
+      flashShare(localizeShare('Copied'));
     }).catch(function () {
-      flashShare('Couldn’t copy');
+      flashShare(localizeShare('Couldn’t copy'));
     });
   }
 
@@ -1014,7 +1014,7 @@
 
   function shareText(message, url) {
     if (navigator.share) {
-      navigator.share({ title: 'Sixfold — Merge', text: localizeShare(message), url: url || undefined }).catch(function (err) {
+      navigator.share({ title: localizeShare('Sixfold — Merge'), text: localizeShare(message), url: url || undefined }).catch(function (err) {
         // Closing the share sheet is a choice, not a failure.
         if (err && err.name === 'AbortError') return;
         copyResult(message);

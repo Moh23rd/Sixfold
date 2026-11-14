@@ -90,9 +90,9 @@
   }
 
   function localizeShare(text) {
-    return window.SixfoldI18n && window.SixfoldI18n.number
-      ? window.SixfoldI18n.number(String(text))
-      : String(text);
+    if (!window.SixfoldI18n) return String(text);
+    const translated = window.SixfoldI18n.t(String(text));
+    return window.SixfoldI18n.number ? window.SixfoldI18n.number(translated) : translated;
   }
 
   function copyShare(text) {
@@ -100,13 +100,13 @@
     const localized = localizeShare(text);
     const full = url ? localized + ' ' + url : localized;
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
-      toast('Copy is not available in this browser.');
+      toast(localize('Copy is not available in this browser.'));
       return;
     }
     navigator.clipboard.writeText(full).then(function () {
-      toast('Copied — paste it anywhere.');
+      toast(localize('Copied — paste it anywhere.'));
     }).catch(function () {
-      toast('Could not copy the text.');
+      toast(localize('Could not copy the text.'));
     });
   }
 
@@ -114,7 +114,7 @@
     const url = shareUrl();
     const localized = localizeShare(text);
     if (navigator.share) {
-      navigator.share({ title: title || SHARE_TITLE, text: localized, url: url || undefined }).catch(function (err) {
+      navigator.share({ title: localize(title || SHARE_TITLE), text: localized, url: url || undefined }).catch(function (err) {
         // Closing the share sheet is a choice, not a failure.
         if (err && err.name === 'AbortError') return;
         copyShare(text);
@@ -182,13 +182,16 @@
 
     const image = el.querySelector('.share-fallback-image');
     image.src = shareFallbackUrl;
-    image.alt = data && data.title ? 'Your ' + data.title + ' result card' : 'Your Sixfold result card';
+    image.alt = localize('Your Sixfold result card');
+    el.querySelector('#share-fallback-title').textContent = localize('Save your result');
     const download = el.querySelector('.share-fallback-save');
     download.href = shareFallbackUrl;
     download.download = file.name || 'sixfold-result.png';
+    download.textContent = localize('Save image');
+    el.querySelector('.share-fallback-done').textContent = localize('Done');
     el.querySelector('#share-fallback-note').textContent = embedded
-      ? 'Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.'
-      : 'This browser cannot open the native image share sheet. Save the card instead.';
+      ? localize('Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.')
+      : localize('This browser cannot open the native image share sheet. Save the card instead.');
 
     const screen = document.body.dataset.screen;
     const background = screen === 'hub'
@@ -275,9 +278,10 @@
   function shareAppText() {
     const data = shareAppData();
     const badge = data.badge
-      ? data.badge.unit
-        ? ' My badge: perfect six.'
-        : ' My badge: ' + data.badge.days + '-day streak.'
+      ? ' ' + localize('Your badge') + ': ' +
+        (data.badge.unit
+          ? localize('Perfect six')
+          : localize(data.badge.days + ' day streak')) + '.'
       : '';
     return SHARE_TEXT + badge;
   }
@@ -1726,7 +1730,7 @@
           title: 'Water Sort',
           score: moves,
           label: 'MOVES',
-          meta: ['Level ' + (level + 1) + ' of ' + LEVELS.length, 'Every colour sorted'],
+          meta: ['Level ' + (level + 1) + ' of ' + LEVELS.length, 'Every colour has its own tube.'],
           accent: '#39a9a1'
         });
       });
@@ -2259,7 +2263,7 @@
           title: winner ? (isTwo ? winner + ' wins' : winner === 'X' ? 'You win' : 'Computer wins') : 'A draw',
           score: isTwo ? (twoStats.x + '–' + twoStats.o) : (stats.wins + '–' + stats.losses),
           label: isTwo ? 'X – O' : 'WINS – LOSSES',
-          meta: [isTwo ? 'Two players' : level + ' computer', draws + (draws === 1 ? ' draw' : ' draws')],
+          meta: [isTwo ? '2 players' : level],
           accent: '#8bbd54'
         });
       });
@@ -3373,10 +3377,10 @@
       shareBtn.addEventListener('click', function () {
         shareResult('Fruit Merge', 'I scored ' + score + ' in Fruit Merge. My best is ' + best + '. Can you beat it?', {
           game: 'Fruit Merge', number: '06', kind: 'MERGING',
-          title: 'Run complete',
+          title: 'Round complete',
           score: score,
           label: 'POINTS',
-          meta: ['Best ' + best, 'Endless mode'],
+          meta: ['Best ' + best],
           accent: '#e3b94a'
         });
       });
@@ -3988,7 +3992,7 @@
           title: won ? 'Field cleared' : 'Mine hit',
           score: formatTime(elapsedTime()),
           label: won ? 'TIME' : 'LASTED',
-          meta: [currentLevel().label, won ? 'Every safe square open' : 'The field was revealed'],
+          meta: [currentLevel().label, won ? 'Every safe square is open.' : 'Mine hit.'],
           accent: '#5b8fd5'
         });
       });

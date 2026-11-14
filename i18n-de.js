@@ -512,6 +512,32 @@
     return M[key] || M[text.toLowerCase()] || value;
   }
 
+  /* Share card and fallback copy */
+  Object.assign(M, {
+    "Daily": "Täglich",
+    "Today’s challenge": "Die heutige Aufgabe",
+    "One game a day": "Ein Spiel pro Tag",
+    "Can you finish it?": "Schaffst du es?",
+    "Your badge": "Dein Abzeichen",
+    "Six games": "Sechs Spiele",
+    "Save your result": "Ergebnis speichern",
+    "Your Sixfold result card": "Deine Sixfold-Ergebniskarte",
+    "This browser cannot open the native image share sheet. Save the card instead.": "Dieser Browser kann das native Bild-Teilen nicht öffnen. Speichere stattdessen die Karte.",
+    "Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.": "Das native Teilen von Bildern ist in der eingebetteten Vorschau blockiert. Speichere die Karte hier oder öffne die Vorschau-URL direkt in deinem Browser, um das Teilen-Menü zu verwenden.",
+    "Daily Sudoku": "Tägliches Sudoku",
+    "Copy is not available in this browser.": "Kopieren ist in diesem Browser nicht verfügbar.",
+    "Copied — paste it anywhere.": "Kopiert – füge es überall ein.",
+    "Could not copy the text.": "Der Text konnte nicht kopiert werden.",
+    "Couldn’t copy": "Kopieren fehlgeschlagen",
+    "Copied": "Kopiert",
+    "DAY STREAK": "TAGE-SERIE",
+    "GAMES / WEEK": "SPIELE / WOCHE",
+    "An offline pocket arcade.": "Eine Offline-Spielhalle für die Tasche.",
+    "No ads. No accounts. Offline.": "Keine Werbung. Keine Konten. Offline.",
+    "X wins": "X gewinnt",
+    "O wins": "O gewinnt"
+  });
+
   var PATTERNS = [
     [/^How to play (.+)$/, 'So spielst du $1'],
     [/^Reset (.+)\?$/, '$1 zurücksetzen?'],

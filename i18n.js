@@ -537,7 +537,29 @@
     'Tic Tac Toe': 'Tic Tac Toe',
     'Minesweeper': 'Minesweeper',
     'Water Sort': 'Water Sort',
-    'Fruit Merge': 'Fruit Merge'
+    'Fruit Merge': 'Fruit Merge',
+    "Daily": "Diario",
+    "Today’s challenge": "El reto de hoy",
+    "One game a day": "Un juego al día",
+    "Can you finish it?": "¿Puedes completarlo?",
+    "Your badge": "Tu insignia",
+    "Six games": "Seis juegos",
+    "Save your result": "Guarda tu resultado",
+    "Your Sixfold result card": "Tu tarjeta de resultado de Sixfold",
+    "This browser cannot open the native image share sheet. Save the card instead.": "Este navegador no puede abrir el panel nativo para compartir imágenes. Guarda la tarjeta en su lugar.",
+    "Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.": "Compartir imágenes de forma nativa está bloqueado dentro de la vista previa integrada. Guarda la tarjeta aquí o abre la URL de la vista previa directamente en tu navegador para usar el panel de compartir.",
+    "Daily Sudoku": "Sudoku diario",
+    "Copy is not available in this browser.": "Copiar no está disponible en este navegador.",
+    "Copied — paste it anywhere.": "Copiado: pégalo donde quieras.",
+    "Could not copy the text.": "No se pudo copiar el texto.",
+    "Couldn’t copy": "No se pudo copiar",
+    "Copied": "Copiado",
+    "DAY STREAK": "RACHA DE DÍAS",
+    "GAMES / WEEK": "JUEGOS / SEMANA",
+    "An offline pocket arcade.": "Una sala de juegos de bolsillo sin conexión.",
+    "No ads. No accounts. Offline.": "Sin anuncios. Sin cuentas. Sin conexión.",
+    "X wins": "Gana X",
+    "O wins": "Gana O"
   };
 
   var PATTERNS = [
@@ -827,7 +849,43 @@
     try { localStorage.setItem(KEY, locale); } catch (err) {}
   }
 
+  // A CSS font can occasionally fail its first decode in a browser even though
+  // the same bytes load through the FontFace API (seen with the bundled JP
+  // face). Register the active script face explicitly so canvas share cards
+  // and the interface never fall back to tofu boxes.
+  var SCRIPT_FACE = {
+    'zh-Hans': { family: 'Sixfold SC', file: 'sixfold-sc.woff2?v=5.1.4', sample: '中' },
+    'zh-Hant': { family: 'Sixfold TC', file: 'sixfold-tc.woff2?v=5.1.4', sample: '中' },
+    ja: { family: 'Sixfold JP', file: 'sixfold-jp.woff2?v=5.1.4', sample: 'の' },
+    ko: { family: 'Sixfold KR', file: 'sixfold-kr.woff2?v=5.1.4', sample: '한' },
+    hi: { family: 'Sixfold Devanagari', file: 'sixfold-devanagari.woff2?v=5.1.4', sample: 'ह', digits: { family: 'Sixfold Devanagari Digits', file: 'sixfold-devanagari-digits.woff2?v=5.1.4', sample: '१' } },
+    kn: { family: 'Sixfold Kannada', file: 'sixfold-kannada.woff2?v=5.1.4', sample: 'ಕ' },
+    ar: { family: 'Sixfold Arabic', file: 'sixfold-arabic.woff2?v=5.1.4', sample: 'ت', digits: { family: 'Sixfold Arabic Digits', file: 'sixfold-arabic-digits.woff2?v=5.1.4', sample: '١' } }
+  };
+
+  function loadFace(face) {
+    if (!face) return;
+    try {
+      if (document.fonts.check('16px "' + face.family + '"', face.sample)) return;
+    } catch (err) {}
+    fetch('fonts/' + face.file)
+      .then(function (response) { return response.arrayBuffer(); })
+      .then(function (buffer) {
+        var loaded = new window.FontFace(face.family, buffer, { weight: '400', style: 'normal', display: 'swap' });
+        return loaded.load().then(function () { document.fonts.add(loaded); });
+      })
+      .catch(function () {});
+  }
+
+  function ensureScriptFace() {
+    var face = SCRIPT_FACE[locale];
+    if (!face || !window.FontFace || !window.fetch || !document.fonts) return;
+    loadFace(face);
+    loadFace(face.digits);
+  }
+
   function init() {
+    ensureScriptFace();
     translateHead();
     translateTree(document.body);
     bindLanguage();
