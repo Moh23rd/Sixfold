@@ -14,7 +14,8 @@
 // 5.4.0: daily featured game rotation, milestone badges, smoother desktop motion.
 // 5.4.1: cache Fruit Merge art and reuse Water Sort tube DOM.
 // 5.4.2: share generated result images synchronously from every game.
-const VERSION = 'sixfold-5.4.2-share';
+// 5.4.3: keep the text fallback when a native file share throws.
+const VERSION = 'sixfold-5.4.3-share';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -33,7 +34,7 @@ const SUDOKU_GAME_CODE = '5.2.0';
 const LOCALE_FONT = '5.1.3';
 const GAMES_CSS = '4.0.0-w16';
 const POLISH_CSS = '4.0.0-w12';
-const GAMES_JS = '5.1.3';
+const GAMES_JS = '5.1.4';
 const SUDOKU_CSS = '4.0.0-w13';
 const V5_CSS = '5.3.1';
 const HOME_CSS = '4.0.0-w6';

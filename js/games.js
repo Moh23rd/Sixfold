@@ -141,14 +141,23 @@
       share(title, text);
       return;
     }
-    navigator.share({
-      files: [file],
-      title: title,
-      text: localizeShare(text)
-    }).catch(function (err) {
-      if (err && err.name === 'AbortError') return;
-      share(title, text);
-    });
+    let pending;
+    try {
+      pending = navigator.share({
+        files: [file],
+        title: title,
+        text: localizeShare(text)
+      });
+    } catch (err) {
+      copyShare(text);
+      return;
+    }
+    if (pending && typeof pending.catch === 'function') {
+      pending.catch(function (err) {
+        if (err && err.name === 'AbortError') return;
+        share(title, text);
+      });
+    }
   }
 
   window.MergeShare = {
