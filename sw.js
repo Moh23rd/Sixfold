@@ -18,7 +18,9 @@
 // 5.4.4: send only files to Web Share so iOS opens the image sheet.
 // 5.4.5: show a save-card fallback when native image sharing is blocked.
 // 5.4.6: make the daily card one featured game with one play action.
-const VERSION = 'sixfold-5.4.6-daily-card';
+// 5.4.7: add the badge shelf, a home share card and a daily finish banner.
+// 5.4.8: share today’s challenge, recap the week and opt in to a local reminder.
+const VERSION = 'sixfold-5.4.9-daily-share';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -27,22 +29,22 @@ const CACHE_PREFIX = 'sixfold-';
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
 const ASSET = '4.0.0';
-const SHARE_CARD = '4.0.1';
+const SHARE_CARD = '4.0.3';
 const STYLE_ASSET = '5.2.3';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '5.2.0';
-const GAME_CODE = '4.0.0-w5';
+const GAME_CODE = '4.0.0-w6';
 const WORDLE_CODE = '5.3.10-wordle';
 const SUDOKU_GAME_CODE = '5.2.0';
 const LOCALE_FONT = '5.1.3';
 const GAMES_CSS = '4.0.0-w17';
 const POLISH_CSS = '4.0.0-w12';
-const GAMES_JS = '5.1.6';
+const GAMES_JS = '5.1.8';
 const SUDOKU_CSS = '4.0.0-w13';
-const V5_CSS = '5.3.3';
+const V5_CSS = '5.3.6';
 const HOME_CSS = '4.0.0-w6';
-const DAILY_CODE = '5.3.3';
-const I18N_CODE = '5.4.0';
+const DAILY_CODE = '5.3.6';
+const I18N_CODE = '5.4.2';
 
 const SHELL = [
   './',
@@ -63,10 +65,11 @@ const SHELL = [
   './css/polish.css?v=' + POLISH_CSS,
   './css/sudoku.css?v=' + SUDOKU_CSS,
   './v5.css?v=' + V5_CSS,
-  './settings.js?v=5.2.1',
+  './settings.js?v=5.2.3',
   './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
   './daily.js?v=' + DAILY_CODE,
+  './js/badges.js?v=1.0.1',
   './update.js?v=5.1.0',
   './i18n-fr.js?v=' + I18N_CODE,
   './i18n-de.js?v=' + I18N_CODE,
@@ -223,6 +226,24 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
+    })
+  );
+});
+
+// The page shows the local daily nudge through its registration. A tag on the
+// notification replaces an older one instead of stacking reminders.
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || './#daily';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windows) {
+      for (let i = 0; i < windows.length; i += 1) {
+        if ('focus' in windows[i]) {
+          windows[i].navigate(target).catch(function () {});
+          return windows[i].focus();
+        }
+      }
+      return self.clients.openWindow(target);
     })
   );
 });

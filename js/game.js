@@ -10,6 +10,7 @@
 
   let size = DEFAULT_SIZE;
   let dailyActive = false;
+  let dailyDate = '';
   let dailySeed = '';
   let tileRandom = Math.random;
 
@@ -789,7 +790,7 @@
 
   function showResultCard(snapshot, reopen, finished) {
     if (!reopen && dailyActive && window.SixfoldDaily) {
-      window.SixfoldDaily.complete('merge', { score: snapshot.score });
+      window.SixfoldDaily.complete('merge', { score: snapshot.score }, dailyDate);
     }
     if (!snapshot.win && window.MergeCelebrate) {
       window.MergeCelebrate.clear(document.querySelector('.overlay-card'));
@@ -1138,9 +1139,10 @@
     resetBoard();
   }
 
-  function startDaily(seed) {
+  function startDaily(seed, dateKey) {
     if (!window.SixfoldDaily) return;
     dailyActive = true;
+    dailyDate = dateKey || '';
     dailySeed = seed;
     size = DEFAULT_SIZE;
     buildCells();
@@ -1153,6 +1155,7 @@
   function endDaily() {
     if (!dailyActive) return;
     dailyActive = false;
+    dailyDate = '';
     tileRandom = Math.random;
     const saved = readSaved();
     if (saved) {

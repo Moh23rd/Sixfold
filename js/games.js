@@ -18,11 +18,12 @@
     fruit: $('fruit'),
     ttt: $('ttt'),
     mines: $('mines'),
-    wordle: $('wordle')
+    wordle: $('wordle'),
+    badges: $('badges')
   };
   const cards = $$('[data-game]');
   const backButtons = $$('[data-back]');
-  if (!app || !hub || !screens.water || !screens.sudoku || !screens.fruit || !screens.ttt || !screens.mines || !screens.wordle) return;
+  if (!app || !hub || !screens.water || !screens.sudoku || !screens.fruit || !screens.ttt || !screens.mines || !screens.wordle || !screens.badges) return;
 
   function load(key, fallback) {
     try {
@@ -256,9 +257,80 @@
     }
   }
 
+  function shareAppData() {
+    let summary = null;
+    try {
+      if (window.SixfoldDaily && window.SixfoldDaily.badgeSummary) {
+        summary = window.SixfoldDaily.badgeSummary();
+      }
+    } catch (err) {}
+    const badge = summary && summary.earned
+      ? { days: summary.earned.days, color: summary.earned.color }
+      : summary && summary.weekly
+        ? { days: 6, color: '#8bbd54', unit: 'GAMES / WEEK' }
+        : null;
+    return { app: true, file: 'sixfold-collection', title: 'Sixfold', badge: badge };
+  }
+
+  function shareAppText() {
+    const data = shareAppData();
+    const badge = data.badge
+      ? data.badge.unit
+        ? ' My badge: perfect six.'
+        : ' My badge: ' + data.badge.days + '-day streak.'
+      : '';
+    return SHARE_TEXT + badge;
+  }
+
+  function shareApp() {
+    const data = shareAppData();
+    const text = shareAppText();
+    if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
+        typeof File !== 'function') {
+      share(SHARE_TITLE, text);
+      return;
+    }
+    let file;
+    try {
+      file = window.MergeShareCard.fileSync(data);
+    } catch (err) {
+      share(SHARE_TITLE, text);
+      return;
+    }
+    let canShare = false;
+    if (navigator.share && navigator.canShare) {
+      try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
+    }
+    if (!canShare) {
+      offerShareFallback(file, data, text);
+      return;
+    }
+    let pending;
+    try {
+      pending = navigator.share({ files: [file] });
+    } catch (err) {
+      offerShareFallback(file, data, text);
+      return;
+    }
+    if (pending && typeof pending.catch === 'function') {
+      pending.catch(function (err) {
+        if (err && err.name === 'AbortError') return;
+        offerShareFallback(file, data, text);
+      });
+    }
+  }
+
+  function shareDaily() {
+    if (!window.SixfoldDaily || !window.SixfoldDaily.shareData) return;
+    const data = window.SixfoldDaily.shareData();
+    shareResult(data.title, data.game + ' · ' + data.label, data);
+  }
+
   window.MergeShare = {
     share: share,
     result: shareResult,
+    app: shareApp,
+    daily: shareDaily,
     url: shareUrl,
     toast: toast
   };
@@ -552,6 +624,9 @@
       window.dispatchEvent(new Event('resize'));
       const back = $('back-to-games');
       if (back) back.focus({ preventScroll: true });
+    } else if (screen === 'badges') {
+      const back = $('badges-back');
+      if (back) back.focus({ preventScroll: true });
     } else if (screen !== 'hub' && games[screen]) {
       games[screen].activate();
       const title = games[screen].title;
@@ -569,6 +644,7 @@
     fruit: 'Fruit Merge',
     wordle: 'Wordle'
   };
+  const SCREEN_NAMES = Object.assign({ badges: 'Badges' }, GAME_NAMES);
   const VALID_GAMES = Object.keys(GAME_NAMES);
   const PUBLIC_GAMES = VALID_GAMES.filter(function (name) { return name !== 'wordle'; });
 
@@ -578,7 +654,19 @@
   }
 
   function updateDocumentTitle() {
-    document.title = current === 'hub' ? 'Sixfold — Six games. No filler.' : (GAME_NAMES[current] || 'Sixfold') + ' — Sixfold';
+    document.title = current === 'hub' ? 'Sixfold — Six games. No filler.' : (SCREEN_NAMES[current] || 'Sixfold') + ' — Sixfold';
+  }
+
+  function openBadges() {
+    setScreen('badges');
+    updateDocumentTitle();
+    try {
+      if (!history.state || history.state.game !== 'badges') {
+        history.pushState({ game: 'badges' }, '', '#badges');
+      }
+    } catch (err) {
+      /* file:// or a browser with history restricted */
+    }
   }
 
   function openGame(game) {
@@ -709,7 +797,9 @@
 
   window.addEventListener('popstate', function (event) {
     const screen = event.state && event.state.game ? event.state.game : 'hub';
-    if (screen !== 'hub' && VALID_GAMES.indexOf(screen) !== -1) {
+    if (screen === 'badges') {
+      setScreen('badges');
+    } else if (screen !== 'hub' && VALID_GAMES.indexOf(screen) !== -1) {
       lastGame = screen;
       setScreen(screen);
     } else {
@@ -728,7 +818,8 @@
     }
     setScreen('hub');
     updateDocumentTitle();
-    if (PUBLIC_GAMES.indexOf(initial) !== -1) openGame(initial);
+    if (initial === 'badges') openBadges();
+    else if (PUBLIC_GAMES.indexOf(initial) !== -1) openGame(initial);
   }
 
   cards.forEach(function (card) {
@@ -737,9 +828,7 @@
 
   const hubShare = $('hub-share');
   if (hubShare) {
-    hubShare.addEventListener('click', function () {
-      share(SHARE_TITLE, SHARE_TEXT);
-    });
+    hubShare.addEventListener('click', shareApp);
   }
 
   const surpriseBtn = $('home-surprise');
@@ -919,8 +1008,8 @@
         window.MergeGame.endDaily();
       }
     },
-    startDaily: function (seed) {
-      if (window.MergeGame) window.MergeGame.startDaily(seed);
+    startDaily: function (seed, dateKey) {
+      if (window.MergeGame) window.MergeGame.startDaily(seed, dateKey);
     },
     endDaily: function () {
       if (window.MergeGame) window.MergeGame.endDaily();
@@ -1138,6 +1227,7 @@
     let busy = false;
     let statusTimer = 0;
     let dailyActive = false;
+    let dailyDate = '';
     let dailyLevel = 0;
     let tubeViews = [];
     let tubeGeometry = [];
@@ -1536,7 +1626,7 @@
       }, pourMs + 50);
       if (solved) {
         if (window.MergeCoach) window.MergeCoach.complete('water');
-        if (dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('water');
+        if (dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('water', null, dailyDate);
         status('Level clear. Every colour has its own tube.');
         if (window.MergeHaptics) window.MergeHaptics.win();
         if (window.MergeCelebrate) {
@@ -1685,6 +1775,7 @@
     function startDaily(seed, dateKey) {
       if (!window.SixfoldDaily) return;
       dailyActive = true;
+      dailyDate = dateKey || '';
       const day = Number(String(dateKey).slice(-2)) || 1;
       dailyLevel = day % LEVELS.length;
       loadLevel(dailyLevel, 'Daily Sixfold. Seeded ' + LEVELS[dailyLevel].tier.toLowerCase() + ' level.');
@@ -1694,6 +1785,7 @@
     function endDaily() {
       if (!dailyActive) return;
       dailyActive = false;
+      dailyDate = '';
       restore();
     }
 
@@ -1799,6 +1891,7 @@
     let difficulty = savedDifficulty && ['easy', 'sharp', 'perfect'].indexOf(savedDifficulty.difficulty) !== -1
       ? savedDifficulty.difficulty : 'sharp';
     let dailyActive = false;
+    let dailyDate = '';
     let dailySeed = '';
     let normalMode = mode;
     let normalDifficulty = difficulty;
@@ -1924,7 +2017,7 @@
       winner = mark;
       if (window.MergeCoach) window.MergeCoach.complete('ttt');
       if (dailyActive && mode === 'computer' && mark === 'X' && window.SixfoldDaily) {
-        window.SixfoldDaily.complete('ttt', { difficulty: difficulty });
+        window.SixfoldDaily.complete('ttt', { difficulty: difficulty }, dailyDate);
       }
       winLine = line;
       if (mode === 'two') {
@@ -2179,6 +2272,7 @@
         normalDifficulty = difficulty;
       }
       dailyActive = true;
+      dailyDate = dateKey || '';
       dailySeed = seed;
       mode = 'computer';
       const day = Number(String(dateKey).slice(-2)) || 1;
@@ -2191,6 +2285,7 @@
     function endDaily() {
       if (!dailyActive) return;
       dailyActive = false;
+      dailyDate = '';
       aiRandom = Math.random;
       mode = normalMode;
       difficulty = normalDifficulty;
@@ -2306,6 +2401,7 @@
     let best = Number(load(BEST_KEY, 0)) || 0;
     let nextTier = 0;
     let dailyActive = false;
+    let dailyDate = '';
     let dailySeed = '';
     let fruitRandom = Math.random;
     let aimX = W / 2;
@@ -2724,7 +2820,7 @@
       if (over) return;
       over = true;
       if (window.MergeCoach) window.MergeCoach.complete('fruit');
-      if (dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('fruit', { score: score });
+      if (dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('fruit', { score: score }, dailyDate);
       if (overlay) overlay.hidden = false;
       if (finalScore) finalScore.textContent = String(score);
       if (finalBest) finalBest.textContent = String(best);
@@ -3308,9 +3404,10 @@
       }
     });
 
-    function startDaily(seed) {
+    function startDaily(seed, dateKey) {
       if (!window.SixfoldDaily) return;
       dailyActive = true;
+      dailyDate = dateKey || '';
       dailySeed = seed;
       beginNewRun();
       setStatus('Daily Sixfold. Seeded fruit run.');
@@ -3319,6 +3416,7 @@
     function endDaily() {
       if (!dailyActive) return;
       dailyActive = false;
+      dailyDate = '';
       fruitRandom = Math.random;
       newRun();
     }
@@ -3413,6 +3511,7 @@
     let cellButtons = [];
     let explodedIndex = -1;
     let dailyActive = false;
+    let dailyDate = '';
     let dailySeed = '';
     let normalDifficulty = difficulty;
     let mineRandom = Math.random;
@@ -3645,7 +3744,7 @@
       over = true;
       won = win;
       if (window.MergeCoach) window.MergeCoach.complete('mines');
-      if (win && dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('mines');
+      if (win && dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('mines', null, dailyDate);
       explodedIndex = win ? -1 : (Number.isInteger(exploded) ? exploded : -1);
       if (win) {
         cells.forEach(function (cell) {
@@ -3899,6 +3998,7 @@
       if (!window.SixfoldDaily) return;
       if (!dailyActive) normalDifficulty = difficulty;
       dailyActive = true;
+      dailyDate = dateKey || '';
       dailySeed = seed;
       const day = Number(String(dateKey).slice(-2)) || 1;
       difficulty = day % 3 === 0 ? 'hard' : day % 3 === 1 ? 'medium' : 'easy';
@@ -3910,6 +4010,7 @@
     function endDaily() {
       if (!dailyActive) return;
       dailyActive = false;
+      dailyDate = '';
       mineRandom = Math.random;
       difficulty = normalDifficulty;
       reset('Daily challenge closed. Fresh normal field.');
@@ -3968,6 +4069,7 @@
   // The daily layer opens games through the same router as the hub cards.
   window.MergeGames = {
     open: openGame,
+    openBadges: openBadges,
     back: backToHub,
     startDaily: function (game, seed, dateKey) {
       if (games[game] && games[game].startDaily) games[game].startDaily(seed, dateKey);

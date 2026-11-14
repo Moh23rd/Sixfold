@@ -7,19 +7,28 @@
   const KEY = 'sixfold.daily.v1';
   const ORDER = ['merge', 'sudoku', 'ttt', 'mines', 'water', 'fruit'];
   const GAMES = {
-    merge: { label: 'Merge', kind: 'Numbers', goal: 'Finish seeded 4 × 4' },
-    sudoku: { label: 'Sudoku', kind: 'Numbers', goal: 'Solve the daily grid' },
-    ttt: { label: 'Tic Tac Toe', kind: 'Classic', goal: 'Beat today’s computer' },
-    mines: { label: 'Minesweeper', kind: 'Logic', goal: 'Clear today’s field' },
-    water: { label: 'Water Sort', kind: 'Sorting', goal: 'Clear today’s level' },
-    fruit: { label: 'Fruit Merge', kind: 'Merging', goal: 'Finish today’s run' }
+    merge: { label: 'Merge', kind: 'Numbers', goal: 'Finish seeded 4 × 4', color: '#e85f3b' },
+    sudoku: { label: 'Sudoku', kind: 'Numbers', goal: 'Solve the daily grid', color: '#e3b94a' },
+    ttt: { label: 'Tic Tac Toe', kind: 'Classic', goal: 'Beat today’s computer', color: '#8bbd54' },
+    mines: { label: 'Minesweeper', kind: 'Logic', goal: 'Clear today’s field', color: '#5b8fd5' },
+    water: { label: 'Water Sort', kind: 'Sorting', goal: 'Clear today’s level', color: '#39a9a1' },
+    fruit: { label: 'Fruit Merge', kind: 'Merging', goal: 'Finish today’s run', color: '#e3b94a' }
   };
   const MAX_ARCHIVE = 30;
   // Milestones follow the widely used 7 / 30 / 100 / 365 rhythm, with a
   // shorter 3-day first step so a new player can earn a badge without waiting
   // a full week. A badge is permanent: it is earned from the best streak, not
   // the current one, so a missed day never takes it away.
-  const MILESTONES = [3, 7, 30, 100, 365];
+  const BADGES = [
+    { days: 3, color: '#e85f3b' },
+    { days: 7, color: '#e3b94a' },
+    { days: 30, color: '#39a9a1' },
+    { days: 100, color: '#5b8fd5' },
+    { days: 365, color: '#9a6bb5' }
+  ];
+  const WEEKLY_BADGE = { days: ORDER.length, color: '#8bbd54' };
+  const REMINDER_KEY = 'sixfold.daily.reminder.v1';
+  const REMINDER_HOUR = 9;
   const $ = function (id) { return document.getElementById(id); };
 
   function pad(value) { return String(value).padStart(2, '0'); }
@@ -168,19 +177,105 @@
     return Math.max(data.best || 0, streak());
   }
 
-  function highestMilestone(value) {
-    let earned = 0;
-    MILESTONES.forEach(function (milestone) {
-      if (value >= milestone) earned = milestone;
+  function earnedBadgeFor(value) {
+    let earned = null;
+    BADGES.forEach(function (badge) {
+      if (value >= badge.days) earned = badge;
     });
     return earned;
   }
 
-  function nextMilestone(value) {
-    for (let i = 0; i < MILESTONES.length; i += 1) {
-      if (value < MILESTONES[i]) return MILESTONES[i];
+  function nextBadgeFor(value) {
+    for (let i = 0; i < BADGES.length; i += 1) {
+      if (value < BADGES[i].days) return BADGES[i];
     }
-    return 0;
+    return null;
+  }
+
+  function highestMilestone(value) {
+    const badge = earnedBadgeFor(value);
+    return badge ? badge.days : 0;
+  }
+
+  function nextMilestone(value) {
+    const badge = nextBadgeFor(value);
+    return badge ? badge.days : 0;
+  }
+
+  function weekStartKey(key) {
+    const date = dateFromKey(key || todayKey());
+    if (!date) return key;
+    date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+    return todayKey(date);
+  }
+
+  function weekProgress(key) {
+    const start = weekStartKey(key || todayKey());
+    const games = {};
+    for (let i = 0; i < 7; i += 1) {
+      const day = dayFor(shiftKey(start, i));
+      if (!day) continue;
+      ORDER.forEach(function (game) {
+        if (day.games && day.games[game]) games[game] = true;
+      });
+    }
+    const list = ORDER.filter(function (game) { return games[game]; });
+    return {
+      start: start,
+      games: list,
+      count: list.length,
+      total: ORDER.length,
+      complete: list.length === ORDER.length
+    };
+  }
+
+  function weeklyBadge() {
+    const weeks = {};
+    Object.keys(data.days).forEach(function (key) {
+      const start = weekStartKey(key);
+      const games = weeks[start] || (weeks[start] = {});
+      const day = data.days[key];
+      if (!day || !day.games) return;
+      ORDER.forEach(function (game) {
+        if (day.games[game]) games[game] = true;
+      });
+    });
+    return Object.keys(weeks).some(function (start) {
+      return ORDER.every(function (game) { return weeks[start][game]; });
+    });
+  }
+
+  function badgeSummary() {
+    const best = bestStreak();
+    return {
+      best: best,
+      earned: earnedBadgeFor(best),
+      next: nextBadgeFor(best),
+      weekly: weeklyBadge(),
+      week: weekProgress(todayKey())
+    };
+  }
+
+  function badgeList() {
+    const best = bestStreak();
+    const week = weekProgress(todayKey());
+    const list = BADGES.map(function (badge) {
+      return {
+        days: badge.days,
+        color: badge.color,
+        earned: best >= badge.days,
+        next: nextBadgeFor(best) === badge
+      };
+    });
+    list.push({
+      days: WEEKLY_BADGE.days,
+      color: WEEKLY_BADGE.color,
+      earned: weeklyBadge(),
+      next: false,
+      weekly: true,
+      progress: week.count
+    });
+    return list;
   }
 
   function pulseBadge() {
@@ -211,17 +306,28 @@
     day.games[game] = true;
     data.days[key] = day;
     const previousBest = data.best || 0;
+    const previousWeekly = weeklyBadge();
     const current = streak();
     const previousBadge = highestMilestone(previousBest);
     const earnedBadge = highestMilestone(current);
+    const weeklyEarned = !previousWeekly && weeklyBadge();
     data.best = Math.max(previousBest, current);
     save();
     render();
+    const notes = [tr(GAMES[game].label) + ' · ' + tr('Done') + '.'];
     if (earnedBadge > previousBadge) {
       pulseBadge();
-      announce(tr('Badge') + ': ' + number(earnedBadge) + ' ' + tr('day streak') + '.');
+      notes.push(tr('Badge') + ': ' + number(earnedBadge) + ' ' + tr('day streak') + '.');
     }
-    announce(tr(GAMES[game].label) + ' · ' + tr('Done') + '.');
+    if (weeklyEarned) {
+      pulseBadge();
+      notes.push(tr('Perfect six') + '.');
+    }
+    announce(notes.join(' '));
+    if (key === todayKey() && game === featuredGame(key)) {
+      showFinish(game, earnedBadge > previousBadge ? earnedBadge : 0, weeklyEarned);
+      scheduleReminder();
+    }
     const total = countFor(key);
     try {
       window.dispatchEvent(new CustomEvent('sixfold:daily-change', {
@@ -229,6 +335,41 @@
       }));
     } catch (err) {}
     return true;
+  }
+
+  let finishTimer = 0;
+
+  function hideFinish() {
+    const el = $('daily-finish');
+    if (!el) return;
+    window.clearTimeout(finishTimer);
+    el.classList.remove('is-on');
+    finishTimer = window.setTimeout(function () {
+      if (!el.classList.contains('is-on')) el.hidden = true;
+    }, 220);
+  }
+
+  function showFinish(game, earnedBadge, weeklyEarned) {
+    const el = $('daily-finish');
+    if (!el) return;
+    const title = $('daily-finish-title');
+    const copy = $('daily-finish-copy');
+    if (title) title.textContent = tr('Challenge finished');
+    if (copy) {
+      const parts = [tr(GAMES[game].label)];
+      if (earnedBadge) parts.push(tr('Badge') + ' ' + number(earnedBadge));
+      if (weeklyEarned) parts.push(tr('Perfect six'));
+      copy.textContent = parts.join(' · ');
+    }
+    el.hidden = false;
+    el.classList.remove('is-on');
+    void el.offsetWidth;
+    el.classList.add('is-on');
+    if (window.MergeCelebrate && window.MergeCelebrate.play) {
+      window.MergeCelebrate.play(el);
+    }
+    window.clearTimeout(finishTimer);
+    finishTimer = window.setTimeout(hideFinish, 5200);
   }
 
   function play(game, dateKey) {
@@ -243,10 +384,6 @@
         }
       }, 80);
       announce(tr('Daily Sudoku for ' + short(date) + '.'));
-      return;
-    }
-    if (date !== todayKey()) {
-      announce(tr('Only the Sudoku archive can be replayed. Other games count today.'));
       return;
     }
     if (window.MergeGames && window.MergeGames.open) window.MergeGames.open(game);
@@ -296,6 +433,8 @@
     const badgeValue = $('daily-badge-value');
     const badgeUnit = $('daily-badge-unit');
     const badgeNext = $('daily-badge-next');
+    const badgeProgress = $('daily-badge-progress');
+    const badgeFill = $('daily-badge-progress-fill');
     if (badge) {
       badge.classList.toggle('is-earned', Boolean(earned));
       badge.classList.toggle('is-next', !earned);
@@ -306,8 +445,36 @@
       badge.setAttribute('aria-label', tr(earned ? 'Badge' : 'Next badge') + ': ' + number(shown) + ' ' + tr('day streak'));
     }
     if (badgeNext) {
-      badgeNext.hidden = !(earned && next);
-      badgeNext.textContent = earned && next ? tr('Next badge') + ' · ' + number(next) : '';
+      badgeNext.hidden = !next;
+      badgeNext.textContent = next
+        ? (earned ? number(next - best) + ' ' + tr('days to') + ' ' + number(next) : tr('Next badge') + ' · ' + number(next))
+        : '';
+    }
+    if (badgeProgress && badgeFill) {
+      const from = earned || 0;
+      const to = next || 0;
+      const ratio = to > from ? Math.max(0, Math.min(1, (best - from) / (to - from))) : 0;
+      badgeProgress.hidden = !next;
+      badgeFill.style.width = Math.round(ratio * 100) + '%';
+    }
+
+    const weekEl = $('daily-week');
+    const weekTrack = $('daily-week-track');
+    const weekNote = $('daily-week-note');
+    if (weekTrack) {
+      const week = weekProgress(key);
+      weekTrack.innerHTML = '';
+      ORDER.forEach(function (game) {
+        const dot = document.createElement('i');
+        dot.className = 'daily-week-dot' + (week.games.indexOf(game) !== -1 ? ' is-done' : '');
+        dot.style.setProperty('--dot-color', GAMES[game].color);
+        weekTrack.appendChild(dot);
+      });
+      if (weekNote) weekNote.textContent = week.complete ? tr('Perfect six') : number(week.count) + '/' + number(week.total);
+      if (weekEl) {
+        weekEl.classList.toggle('is-perfect', week.complete);
+        weekEl.setAttribute('aria-label', tr('This week') + ': ' + number(week.count) + '/' + number(week.total) + (week.complete ? ' · ' + tr('Perfect six') : ''));
+      }
     }
     renderCalendar();
   }
@@ -349,10 +516,12 @@
       copy.textContent = tr(GAMES[game].kind) + (count ? ' · ' + tr('Done') : '');
     }
     if (action) {
-      action.hidden = !isToday;
+      action.hidden = false;
       action.dataset.date = key;
       action.dataset.game = game;
-      action.textContent = tr('Play ' + GAMES[game].label + ' for today');
+      action.textContent = isToday
+        ? tr('Play ' + GAMES[game].label + ' for today')
+        : tr('Replay') + ' ' + tr(GAMES[game].label) + ' · ' + short(key);
     }
     const grid = $('daily-calendar-grid');
     if (grid) {
@@ -385,6 +554,112 @@
     else { sheet.hidden = true; sheet.classList.remove('is-open'); }
   }
 
+  function shareData(dateKey) {
+    const key = isKey(dateKey) ? dateKey : todayKey();
+    const game = featuredGame(key);
+    return {
+      daily: true,
+      title: tr('Daily Sixfold'),
+      game: tr(GAMES[game].label),
+      kind: tr(GAMES[game].kind),
+      goal: tr(GAMES[game].goal),
+      date: key,
+      label: pretty(key),
+      color: GAMES[game].color,
+      index: ORDER.indexOf(game),
+      file: 'sixfold-daily-' + key,
+      url: 'https://moh23rd.github.io/Sixfold/?daily=' + key
+    };
+  }
+
+  function reminderEnabled() {
+    try {
+      return Boolean(window.SixfoldSettings && window.SixfoldSettings.get('dailyReminder'));
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function reminderStamp() {
+    try {
+      const value = JSON.parse(localStorage.getItem(REMINDER_KEY) || 'null');
+      return value && typeof value === 'object' ? value : {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function markReminderShown(key) {
+    try {
+      localStorage.setItem(REMINDER_KEY, JSON.stringify({ lastShown: key }));
+    } catch (err) {}
+  }
+
+  function reminderAllowed() {
+    return 'Notification' in window && Notification.permission === 'granted';
+  }
+
+  let reminderTimer = 0;
+  let reminderInFlight = false;
+
+  function showReminder() {
+    if (reminderInFlight || !reminderEnabled() || !reminderAllowed()) return;
+    const key = todayKey();
+    const game = featuredGame(key);
+    if (isDone(key, game) || reminderStamp().lastShown === key) return;
+
+    const title = tr('Daily Sixfold');
+    const body = tr(GAMES[game].label) + ' · ' + tr(GAMES[game].goal);
+    const done = function () { markReminderShown(key); };
+    const fallback = function () {
+      try {
+        new Notification(title, { body: body, tag: 'sixfold-daily' });
+        done();
+      } catch (err) {}
+    };
+
+    reminderInFlight = true;
+    const finish = function () { reminderInFlight = false; };
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+      navigator.serviceWorker.getRegistration().then(function (registration) {
+        if (!registration) {
+          fallback();
+          finish();
+          return;
+        }
+        return registration.showNotification(title, {
+          body: body,
+          tag: 'sixfold-daily',
+          icon: 'icons/icon-192.png',
+          data: { url: './#daily' }
+        }).then(done).catch(fallback).then(finish);
+      }).catch(function () {
+        fallback();
+        finish();
+      });
+      return;
+    }
+    fallback();
+    finish();
+  }
+
+  function scheduleReminder(skipToday) {
+    window.clearTimeout(reminderTimer);
+    if (!reminderEnabled() || !reminderAllowed()) return;
+    const key = todayKey();
+    if (skipToday) markReminderShown(key);
+    if (isDone(key, featuredGame(key))) return;
+
+    const now = new Date();
+    const at = new Date(now);
+    at.setHours(REMINDER_HOUR, 0, 0, 0);
+    if (now >= at) {
+      if (reminderStamp().lastShown !== key) showReminder();
+      return;
+    }
+    reminderTimer = window.setTimeout(showReminder, at.getTime() - now.getTime());
+  }
+
   function init() {
     render();
     const calendarBtn = $('daily-calendar-open');
@@ -393,12 +668,18 @@
     if (featuredBtn) featuredBtn.addEventListener('click', function () {
       play(featuredBtn.dataset.game || featuredGame(todayKey()));
     });
+    const shareBtn = $('daily-share');
+    if (shareBtn) shareBtn.addEventListener('click', function () {
+      if (window.MergeShare && window.MergeShare.daily) window.MergeShare.daily();
+    });
     const sheet = $('daily-calendar');
     if (sheet) {
       sheet.querySelectorAll('[data-close]').forEach(function (el) {
         el.addEventListener('click', closeCalendar);
       });
     }
+    const finishClose = $('daily-finish-close');
+    if (finishClose) finishClose.addEventListener('click', hideFinish);
     const archivePlay = $('daily-day-play');
     if (archivePlay) {
       archivePlay.addEventListener('click', function () {
@@ -412,13 +693,18 @@
       render();
     });
     try { window.addEventListener('sixfold:daily-change', render); } catch (err) {}
+    try { window.addEventListener('sixfold:settings', scheduleReminder); } catch (err) {}
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) scheduleReminder();
+    });
+    scheduleReminder();
 
     const url = new URL(location.href);
     const shared = url.searchParams.get('daily');
     if (isKey(shared) && shared <= todayKey() && shared >= shiftKey(todayKey(), -(MAX_ARCHIVE - 1))) {
       url.searchParams.delete('daily');
       try { history.replaceState({ game: 'hub' }, '', url.pathname + url.search + url.hash); } catch (err) {}
-      window.setTimeout(function () { play('sudoku', shared); }, 220);
+      window.setTimeout(function () { play(featuredGame(shared), shared); }, 220);
     }
   }
 
@@ -434,6 +720,14 @@
     featuredGame: featuredGame,
     streak: streak,
     bestStreak: bestStreak,
+    badgeSummary: badgeSummary,
+    badgeList: badgeList,
+    weeklyBadge: weeklyBadge,
+    weekProgress: weekProgress,
+    weekStartKey: weekStartKey,
+    shareData: shareData,
+    refreshReminder: scheduleReminder,
+    hideFinish: hideFinish,
     isDone: isDone,
     countFor: countFor,
     seededRandom: seededRandom

@@ -86,7 +86,8 @@ test('daily calendar shows the selected day\'s game', async ({ page }) => {
   await expect(page.locator('#daily-day-title')).toContainText(expected.label);
   await expect(page.locator('#daily-day-copy')).toHaveText(expected.kind);
   expect(expected.game).not.toBe('sudoku');
-  await expect(page.locator('#daily-day-play')).toBeHidden();
+  await expect(page.locator('#daily-day-play')).toBeVisible();
+  await expect(page.locator('#daily-day-play')).toContainText('Replay');
 });
 
 test('daily milestone badge is earned from the best streak', async ({ page }) => {

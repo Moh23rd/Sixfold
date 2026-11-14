@@ -306,7 +306,7 @@
   <link rel="stylesheet" href="css/home.css?v=4.0.0-w6" />
   <link rel="stylesheet" href="css/polish.css?v=4.0.0-w12" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w13" />
-  <link rel="stylesheet" href="v5.css?v=5.3.3" />
+  <link rel="stylesheet" href="v5.css?v=5.3.6" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -446,14 +446,15 @@
               <small>best <b id="daily-best">0</b></small>
             </div>
             <div class="daily-badge-wrap">
-              <div class="daily-badge" id="daily-badge">
+              <button class="daily-badge" id="daily-badge" type="button" data-open-badges title="Badges">
                 <span class="daily-badge-mark" aria-hidden="true">★</span>
                 <span class="daily-badge-copy">
                   <span class="daily-badge-title" id="daily-badge-title">Badge</span>
                   <span class="daily-badge-value"><b id="daily-badge-value">0</b> <span id="daily-badge-unit">day streak</span></span>
                 </span>
-              </div>
+              </button>
               <p class="daily-badge-next" id="daily-badge-next" hidden></p>
+              <span class="daily-badge-progress" id="daily-badge-progress" hidden><i id="daily-badge-progress-fill"></i></span>
             </div>
             <button class="daily-calendar-btn" id="daily-calendar-open" type="button" aria-haspopup="dialog" aria-controls="daily-calendar" aria-label="30-day calendar" title="30-day calendar">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M8 3.5v4M16 3.5v4M4 10h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><circle cx="9" cy="13.5" r="1" fill="currentColor" /><circle cx="12" cy="13.5" r="1" fill="currentColor" /><circle cx="15" cy="13.5" r="1" fill="currentColor" /><circle cx="9" cy="16.5" r="1" fill="currentColor" /><circle cx="12" cy="16.5" r="1" fill="currentColor" /></svg>
@@ -466,10 +467,20 @@
           <h2 id="daily-title"><span id="daily-game-name">Water Sort</span></h2>
         </div>
 
-        <button class="daily-play" id="daily-featured" type="button">
-          <span id="daily-featured-label">Play Water Sort for today</span>
-          <span class="daily-play-arrow" aria-hidden="true">→</span>
-        </button>
+        <div class="daily-actions">
+          <button class="daily-play" id="daily-featured" type="button">
+            <span id="daily-featured-label">Play Water Sort for today</span>
+            <span class="daily-play-arrow" aria-hidden="true">→</span>
+          </button>
+          <button class="daily-share" id="daily-share" type="button" aria-label="Share today’s challenge" title="Share today’s challenge">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg>
+          </button>
+        </div>
+        <div class="daily-week" id="daily-week">
+          <span class="daily-week-label">This week</span>
+          <span class="daily-week-track" id="daily-week-track" aria-hidden="true"></span>
+          <span class="daily-week-note" id="daily-week-note">0/6</span>
+        </div>
         <p class="sr-only" id="daily-live" role="status" aria-live="polite"></p>
       </section>
 
@@ -596,16 +607,41 @@
 
         <footer class="hub-foot"><span>No accounts</span><span>No ads</span><span>Works offline</span></footer>
         <div class="hub-meta">
-          <button class="hub-link" id="hub-about" type="button" aria-haspopup="dialog" aria-controls="about" title="About and privacy">
-            <svg class="hub-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M12 11.2v5.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" /><circle cx="12" cy="7.9" r="1.05" fill="currentColor" /></svg>
-            <span>About &amp; privacy</span>
-            <span class="hub-link-chevron" aria-hidden="true">›</span>
-          </button>
+          <div class="hub-meta-links">
+            <button class="hub-link" id="hub-about" type="button" aria-haspopup="dialog" aria-controls="about" title="About and privacy">
+              <svg class="hub-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M12 11.2v5.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" /><circle cx="12" cy="7.9" r="1.05" fill="currentColor" /></svg>
+              <span>About &amp; privacy</span>
+              <span class="hub-link-chevron" aria-hidden="true">›</span>
+            </button>
+            <button class="hub-link" id="hub-badges" type="button" data-open-badges title="Badges">
+              <svg class="hub-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="9" r="5.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="m8.7 13.3-1.5 7 4.8-2.4 4.8 2.4-1.5-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /><path d="m12 6.8.8 1.6 1.8.3-1.3 1.3.3 1.8-1.6-.8-1.6.8.3-1.8-1.3-1.3 1.8-.3z" fill="currentColor" /></svg>
+              <span>Badges</span>
+              <span class="hub-link-chevron" aria-hidden="true">›</span>
+            </button>
+          </div>
           <p class="hub-version" id="app-version" aria-label="Sixfold version 5.2">v5.2</p>
         </div>
       </div>
     </div>
   </section>
+
+  <section class="play-screen badges-page" id="badges" aria-labelledby="badges-title" hidden>
+    <div class="play-shell badges-shell">
+      <header class="badges-head">
+        <button class="games-home" id="badges-back" data-back type="button" aria-label="Back to Sixfold" title="Back to Sixfold">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+        <div class="badges-heading">
+          <p class="badges-kicker">Daily Sixfold</p>
+          <h1 id="badges-title">Badges</h1>
+        </div>
+        <p class="badges-score" aria-label="Badges collected"><strong id="badges-earned">0</strong><span id="badges-total">/ 6</span></p>
+      </header>
+      <p class="badges-best" id="badges-best"></p>
+      <ul class="badges-grid" id="badges-grid" aria-label="Daily badge collection"></ul>
+    </div>
+  </section>
+
   <main class="app">
     <header class="header">
       <div class="title-block">
@@ -1095,6 +1131,8 @@
       <p class="sheet-label">Home</p>
       <div class="settings-list">
         <button class="setting-row" type="button" data-setting="dailyPuzzle" aria-pressed="true"><span class="setting-copy"><strong>Daily Sixfold</strong><small>Show today’s six games on the hub.</small></span><span class="setting-state">On</span></button>
+        <button class="setting-row" type="button" data-setting="dailyReminder" aria-pressed="false"><span class="setting-copy"><strong>Daily reminder</strong><small>One local nudge at 9:00 while Sixfold is open.</small></span><span class="setting-state">Off</span></button>
+        <p class="sheet-note" id="daily-reminder-status" role="status" aria-live="polite"></p>
       </div>
       <p class="sheet-label">Backup</p>
       <p class="sheet-note">Keep a copy of every board, score, streak and setting. A backup is a normal JSON file and stays on this device until you share it. Moving to a new phone? Export here, then restore there.</p>
@@ -1281,32 +1319,43 @@
     <button class="update-later" id="update-later" type="button">Later</button>
   </aside>
 
+  <aside class="daily-finish" id="daily-finish" aria-live="polite" hidden>
+    <span class="daily-finish-medal" aria-hidden="true"></span>
+    <div class="daily-finish-copy">
+      <strong id="daily-finish-title">Challenge finished</strong>
+      <span id="daily-finish-copy"></span>
+    </div>
+    <button class="daily-finish-badges" type="button" data-open-badges>Badges</button>
+    <button class="daily-finish-close" id="daily-finish-close" type="button" aria-label="Dismiss">×</button>
+  </aside>
+
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="settings.js?v=5.2.1"></script>
+  <script src="settings.js?v=5.2.3"></script>
   <script src="js/haptics.js?v=4.0.0"></script>
   <script src="js/overscroll.js?v=4.0.0"></script>
   <script src="js/celebrate.js?v=4.0.0"></script>
-  <script src="js/sharecard.js?v=4.0.1"></script>
+  <script src="js/sharecard.js?v=4.0.3"></script>
   <script src="js/theme.js?v=5.2.0"></script>
-  <script src="js/game.js?v=4.0.0-w5"></script>
+  <script src="js/game.js?v=4.0.0-w6"></script>
   <script src="js/install.js?v=4.0.0"></script>
   <script src="js/sudoku.js?v=5.2.0"></script>
-  <script src="js/games.js?v=5.1.6"></script>
-  <script src="daily.js?v=5.3.3"></script>
+  <script src="js/games.js?v=5.1.8"></script>
+  <script src="daily.js?v=5.3.6"></script>
+  <script src="js/badges.js?v=1.0.1"></script>
   <script src="update.js?v=5.1.0"></script>
-  <script src="i18n-fr.js?v=5.4.0"></script>
-  <script src="i18n-de.js?v=5.4.0"></script>
-  <script src="i18n-zh-hans.js?v=5.4.0"></script>
-  <script src="i18n-zh-hant.js?v=5.4.0"></script>
-  <script src="i18n-ja.js?v=5.4.0"></script>
-  <script src="i18n-ko.js?v=5.4.0"></script>
-  <script src="i18n-pt-br.js?v=5.4.0"></script>
-  <script src="i18n-hi.js?v=5.4.0"></script>
-  <script src="i18n-kn.js?v=5.4.0"></script>
-  <script src="i18n-ar.js?v=5.4.0"></script>
-  <script src="i18n-patterns.js?v=5.4.0"></script>
-  <script src="i18n.js?v=5.4.0"></script>
+  <script src="i18n-fr.js?v=5.4.2"></script>
+  <script src="i18n-de.js?v=5.4.2"></script>
+  <script src="i18n-zh-hans.js?v=5.4.2"></script>
+  <script src="i18n-zh-hant.js?v=5.4.2"></script>
+  <script src="i18n-ja.js?v=5.4.2"></script>
+  <script src="i18n-ko.js?v=5.4.2"></script>
+  <script src="i18n-pt-br.js?v=5.4.2"></script>
+  <script src="i18n-hi.js?v=5.4.2"></script>
+  <script src="i18n-kn.js?v=5.4.2"></script>
+  <script src="i18n-ar.js?v=5.4.2"></script>
+  <script src="i18n-patterns.js?v=5.4.2"></script>
+  <script src="i18n.js?v=5.4.2"></script>
   <script src="native.js?v=5.1.0"></script>
   <script src="js/wordle-loader.js?v=5.3.10-wordle"></script>
   <script>
