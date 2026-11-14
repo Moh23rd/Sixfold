@@ -48,6 +48,8 @@
     "Today": "اليوم",
     "day streak": "أيام متتالية",
     "best": "الأفضل",
+    "Badge": "شارة",
+    "Next badge": "الشارة التالية",
     "Every game has a date-seeded daily. Pick one to begin.": "لكل لعبة تحدٍّ يومي مولّد من التاريخ. اختر واحدة للبدء.",
     "Play daily Sudoku": "العب سودوكو اليوم",
     "Share daily": "شارك تحدي اليوم",

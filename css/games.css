@@ -939,7 +939,8 @@ html[data-theme="dark"] .water-glass {
   animation: waterStream var(--pour-ms, 440ms) cubic-bezier(0.22, 0.75, 0.3, 1) forwards;
 }
 
-.water-pour-layer .water-stream-edge { filter: blur(0.15px); }
+/* Avoid a filter layer on an animated SVG stream; the path is already thin
+   enough and the blur cost was visible on desktop during every pour. */
 
 .water-pour-splash,
 .water-pour-ring,

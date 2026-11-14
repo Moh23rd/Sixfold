@@ -48,6 +48,8 @@
     "Today": "आज",
     "day streak": "दिन की स्ट्रीक",
     "best": "सर्वश्रेष्ठ",
+    "Badge": "बैज",
+    "Next badge": "अगला बैज",
     "Every game has a date-seeded daily. Pick one to begin.": "हर गेम में तारीख से बनने वाली डेली है। शुरू करने के लिए एक चुनें।",
     "Play daily Sudoku": "आज का सुडोकू खेलें",
     "Share daily": "आज का दैनिक शेयर करें",

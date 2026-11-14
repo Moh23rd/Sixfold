@@ -26,7 +26,7 @@ async function expectAllScreensAccessible(page, theme, locale) {
   await expectNoClippedText(page, screen + ' hub', '#hub');
 
   for (const game of ['merge', 'sudoku', 'ttt', 'mines', 'water', 'fruit']) {
-    await page.locator('[data-game="' + game + '"]').click();
+    await page.locator('.home-game[data-game="' + game + '"]').click();
     await expect(page.locator(game === 'merge' ? 'main.app' : '#' + game)).toBeVisible();
     await expect(page.locator('body')).toHaveAttribute('data-screen', game);
     await waitForEntrance(page);

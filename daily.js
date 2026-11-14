@@ -15,6 +15,11 @@
     fruit: { label: 'Fruit Merge', goal: 'Finish today’s run' }
   };
   const MAX_ARCHIVE = 30;
+  // Milestones follow the widely used 7 / 30 / 100 / 365 rhythm, with a
+  // shorter 3-day first step so a new player can earn a badge without waiting
+  // a full week. A badge is permanent: it is earned from the best streak, not
+  // the current one, so a missed day never takes it away.
+  const MILESTONES = [3, 7, 30, 100, 365];
   const $ = function (id) { return document.getElementById(id); };
 
   function pad(value) { return String(value).padStart(2, '0'); }
@@ -43,6 +48,11 @@
       t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
       return ((t ^ t >>> 14) >>> 0) / 4294967296;
     };
+  }
+
+  function featuredGame(key) {
+    const safe = isKey(key) ? key : todayKey();
+    return ORDER[seedValue('sixfold-daily-feature|' + safe) % ORDER.length];
   }
 
   function dateFromKey(key) {
@@ -158,6 +168,30 @@
     return Math.max(data.best || 0, streak());
   }
 
+  function highestMilestone(value) {
+    let earned = 0;
+    MILESTONES.forEach(function (milestone) {
+      if (value >= milestone) earned = milestone;
+    });
+    return earned;
+  }
+
+  function nextMilestone(value) {
+    for (let i = 0; i < MILESTONES.length; i += 1) {
+      if (value < MILESTONES[i]) return MILESTONES[i];
+    }
+    return 0;
+  }
+
+  function pulseBadge() {
+    const badge = $('daily-badge');
+    if (!badge) return;
+    badge.classList.remove('is-new');
+    void badge.offsetWidth;
+    badge.classList.add('is-new');
+    window.setTimeout(function () { badge.classList.remove('is-new'); }, 900);
+  }
+
   function announce(message) {
     const live = $('daily-live');
     if (live) {
@@ -176,10 +210,17 @@
     }
     day.games[game] = true;
     data.days[key] = day;
+    const previousBest = data.best || 0;
     const current = streak();
-    data.best = Math.max(data.best || 0, current);
+    const previousBadge = highestMilestone(previousBest);
+    const earnedBadge = highestMilestone(current);
+    data.best = Math.max(previousBest, current);
     save();
     render();
+    if (earnedBadge > previousBadge) {
+      pulseBadge();
+      announce(tr('Badge') + ': ' + number(earnedBadge) + ' ' + tr('day streak') + '.');
+    }
     const total = countFor(key);
     if (total === ORDER.length) {
       announce('Daily Sixfold complete. All six games played.');
@@ -259,6 +300,8 @@
     const summaryEl = $('daily-summary');
     const progressEl = $('daily-progress');
     const gamesEl = $('daily-games');
+    const featuredBtn = $('daily-featured');
+    const featured = featuredGame(key);
     if (dateEl) dateEl.textContent = pretty(key);
     if (streakEl) streakEl.textContent = String(streak());
     if (bestEl) bestEl.textContent = String(bestStreak());
@@ -270,6 +313,33 @@
           : 'Every game has a date-seeded daily. Pick one to begin.');
     }
     if (progressEl) progressEl.style.setProperty('--daily-progress', (done / total * 100) + '%');
+
+    const best = bestStreak();
+    const earned = highestMilestone(best);
+    const next = nextMilestone(best);
+    const badge = $('daily-badge');
+    const badgeTitle = $('daily-badge-title');
+    const badgeValue = $('daily-badge-value');
+    const badgeUnit = $('daily-badge-unit');
+    const badgeNext = $('daily-badge-next');
+    if (badge) {
+      badge.classList.toggle('is-earned', Boolean(earned));
+      badge.classList.toggle('is-next', !earned);
+      const shown = earned || next;
+      if (badgeTitle) badgeTitle.textContent = tr(earned ? 'Badge' : 'Next badge');
+      if (badgeValue) badgeValue.textContent = number(shown);
+      if (badgeUnit) badgeUnit.textContent = tr('day streak');
+      badge.setAttribute('aria-label', tr(earned ? 'Badge' : 'Next badge') + ': ' + number(shown) + ' ' + tr('day streak'));
+    }
+    if (badgeNext) {
+      badgeNext.hidden = !(earned && next);
+      badgeNext.textContent = earned && next ? tr('Next badge') + ' · ' + number(next) : '';
+    }
+    if (featuredBtn) {
+      const featuredDone = isDone(key, featured);
+      featuredBtn.dataset.game = featured;
+      featuredBtn.textContent = tr((featuredDone ? 'Replay ' : 'Play ') + GAMES[featured].label + ' for today');
+    }
 
     if (gamesEl) {
       gamesEl.innerHTML = '';
@@ -326,16 +396,29 @@
     const copy = $('daily-day-copy');
     const action = $('daily-day-play');
     const count = countFor(key);
-    if (title) title.textContent = pretty(key) + (key === todayKey() ? ' · ' + tr('today') : '');
+    const isToday = key === todayKey();
+    const game = isToday ? featuredGame(key) : 'sudoku';
+    if (title) title.textContent = pretty(key) + (isToday ? ' · ' + tr('today') : '');
     if (copy) {
-      copy.textContent = count
-        ? tr(count + ' of six games checked in. ' + (count === ORDER.length ? 'A full set.' : 'You can still replay the Sudoku.'))
-        : tr('No games checked in. The Sudoku can be replayed for this date; the other five scenarios are today only.');
+      if (!count) {
+        copy.textContent = isToday
+          ? tr('Every game has a date-seeded daily. Pick one to begin.')
+          : tr('No games checked in. The Sudoku can be replayed for this date; the other five scenarios are today only.');
+      } else if (count === ORDER.length) {
+        copy.textContent = tr(count + ' of six games checked in. A full set.');
+      } else if (isToday) {
+        copy.textContent = tr(count + ' checked off. ' + (ORDER.length - count) + ' of six today.');
+      } else {
+        copy.textContent = tr(count + ' of six games checked in. You can still replay the Sudoku.');
+      }
     }
     if (action) {
       action.hidden = false;
-      action.textContent = tr(count ? 'Replay this Sudoku' : 'Play this Sudoku');
       action.dataset.date = key;
+      action.dataset.game = game;
+      action.textContent = isToday
+        ? tr((isDone(key, game) ? 'Replay ' : 'Play ') + GAMES[game].label + ' for today')
+        : tr(count ? 'Replay this Sudoku' : 'Play this Sudoku');
     }
   }
 
@@ -365,8 +448,10 @@
     if (calendarBtn) calendarBtn.addEventListener('click', function () { openCalendar(calendarBtn); });
     const shareBtn = $('daily-share');
     if (shareBtn) shareBtn.addEventListener('click', share);
-    const sudokuBtn = $('daily-sudoku');
-    if (sudokuBtn) sudokuBtn.addEventListener('click', function () { play('sudoku'); });
+    const featuredBtn = $('daily-featured');
+    if (featuredBtn) featuredBtn.addEventListener('click', function () {
+      play(featuredBtn.dataset.game || featuredGame(todayKey()));
+    });
     const sheet = $('daily-calendar');
     if (sheet) {
       sheet.querySelectorAll('[data-close]').forEach(function (el) {
@@ -376,7 +461,7 @@
     const archivePlay = $('daily-day-play');
     if (archivePlay) {
       archivePlay.addEventListener('click', function () {
-        play('sudoku', archivePlay.dataset.date || todayKey());
+        play(archivePlay.dataset.game || 'sudoku', archivePlay.dataset.date || todayKey());
         closeCalendar();
       });
     }
@@ -405,6 +490,7 @@
     complete: complete,
     play: play,
     openCalendar: openCalendar,
+    featuredGame: featuredGame,
     streak: streak,
     bestStreak: bestStreak,
     isDone: isDone,

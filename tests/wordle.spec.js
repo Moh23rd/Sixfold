@@ -78,6 +78,43 @@ test('Wordle uses the selected language dictionary, input mode and result copy',
   }
 });
 
+test('accepts a valid guess that is absent from every answer', async ({ page }) => {
+  await setPreferences(page, 'light', 'en');
+  await openWordle(page);
+
+  const candidate = await page.evaluate(() => {
+    const game = JSON.parse(localStorage.getItem('sixfold.wordle.game.v1'));
+    const answers = new Set(window.SixfoldWordleWords.answers);
+    const valid = window.SixfoldWordleWords.valid;
+    const word = valid.find((entry) => /^[a-z]{5}$/.test(entry) && !answers.has(entry));
+    return {
+      word: word || '',
+      answer: game.answer,
+      inValid: Boolean(word) && valid.includes(word),
+      inAnswers: Boolean(word) && answers.has(word)
+    };
+  });
+  expect(candidate.word, 'a filtered valid guess outside the answer pool is available').toBeTruthy();
+  expect(candidate.inValid, 'the guess is in the filtered valid list').toBe(true);
+  expect(candidate.inAnswers, 'the guess is not in any answer pool').toBe(false);
+  expect(candidate.word, 'the guess is not the current answer').not.toBe(candidate.answer);
+  const guess = candidate.word;
+
+  for (const character of guess) {
+    await page.evaluate((key) => {
+      const button = Array.from(document.querySelectorAll('#wordle-keyboard [data-key]'))
+        .find((candidate) => candidate.dataset.key === key);
+      if (!button) throw new Error('Missing keyboard key ' + key);
+      button.click();
+    }, character);
+  }
+  await page.locator('#wordle-keyboard [data-key="Enter"]').click();
+
+  await expect(page.locator('#wordle-board .wordle-tile[data-filled="true"]')).toHaveCount(5);
+  await expect(page.locator('#wordle-result')).toBeHidden();
+  await expect(page.locator('#wordle-status')).not.toContainText('Not in word list');
+});
+
 test('Wordle board is accessible in Arabic', async ({ page }) => {
   await setPreferences(page, 'light', 'ar');
   await openWordle(page);

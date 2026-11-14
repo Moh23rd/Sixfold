@@ -11,7 +11,8 @@
 // 5.3.8: collapsible accessibility settings; remove synthesized interface sounds.
 // 5.3.9: add the Kannada interface, font and Wordle dictionary.
 // 5.3.10: filter the Wordle answer pools and record dictionary provenance.
-const VERSION = 'sixfold-5.3.10-wordle-policy';
+// 5.4.0: daily featured game rotation, milestone badges, smoother desktop motion.
+const VERSION = 'sixfold-5.4.0-daily';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -27,12 +28,14 @@ const GAME_CODE = '4.0.0-w4';
 const WORDLE_CODE = '5.3.10-wordle';
 const SUDOKU_GAME_CODE = '5.2.0';
 const LOCALE_FONT = '5.1.3';
-const GAMES_CSS = '4.0.0-w14';
-const POLISH_CSS = '4.0.0-w11';
-const GAMES_JS = '5.1.0';
+const GAMES_CSS = '4.0.0-w15';
+const POLISH_CSS = '4.0.0-w12';
+const GAMES_JS = '5.1.1';
 const SUDOKU_CSS = '4.0.0-w13';
-const V5_CSS = '5.2.1';
-const HOME_CSS = '4.0.0-w5';
+const V5_CSS = '5.3.1';
+const HOME_CSS = '4.0.0-w6';
+const DAILY_CODE = '5.3.1';
+const I18N_CODE = '5.4.0';
 
 const SHELL = [
   './',
@@ -56,20 +59,20 @@ const SHELL = [
   './settings.js?v=5.2.1',
   './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
-  './daily.js?v=5.2.0',
+  './daily.js?v=' + DAILY_CODE,
   './update.js?v=5.1.0',
-  './i18n-fr.js?v=5.3.7',
-  './i18n-de.js?v=5.3.7',
-  './i18n-zh-hans.js?v=5.3.7',
-  './i18n-zh-hant.js?v=5.3.7',
-  './i18n-ja.js?v=5.3.7',
-  './i18n-ko.js?v=5.3.7',
-  './i18n-pt-br.js?v=5.3.7',
-  './i18n-hi.js?v=5.3.7',
-  './i18n-kn.js?v=5.3.9',
-  './i18n-ar.js?v=5.3.7',
-  './i18n-patterns.js?v=5.3.7',
-  './i18n.js?v=5.3.7',
+  './i18n-fr.js?v=' + I18N_CODE,
+  './i18n-de.js?v=' + I18N_CODE,
+  './i18n-zh-hans.js?v=' + I18N_CODE,
+  './i18n-zh-hant.js?v=' + I18N_CODE,
+  './i18n-ja.js?v=' + I18N_CODE,
+  './i18n-ko.js?v=' + I18N_CODE,
+  './i18n-pt-br.js?v=' + I18N_CODE,
+  './i18n-hi.js?v=' + I18N_CODE,
+  './i18n-kn.js?v=' + I18N_CODE,
+  './i18n-ar.js?v=' + I18N_CODE,
+  './i18n-patterns.js?v=' + I18N_CODE,
+  './i18n.js?v=' + I18N_CODE,
   './native.js?v=5.1.0',
   './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the

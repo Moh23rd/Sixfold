@@ -48,6 +48,8 @@
     "Today": "今日",
     "day streak": "日連続",
     "best": "ベスト",
+    "Badge": "バッジ",
+    "Next badge": "次のバッジ",
     "Every game has a date-seeded daily. Pick one to begin.": "全ゲームに日付から生成されるデイリーがあります。1つ選んで始めましょう。",
     "Play daily Sudoku": "今日の数独をプレイ",
     "Share daily": "今日の記録を共有",

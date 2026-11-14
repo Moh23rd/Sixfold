@@ -48,6 +48,8 @@
     "Today": "今天",
     "day streak": "連續天數",
     "best": "最佳",
+    "Badge": "徽章",
+    "Next badge": "下一枚徽章",
     "Every game has a date-seeded daily. Pick one to begin.": "每款遊戲都有依日期產生的每日挑戰。選一款開始吧。",
     "Play daily Sudoku": "玩每日數獨",
     "Share daily": "分享每日挑戰",

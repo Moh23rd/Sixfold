@@ -20,7 +20,15 @@
   .home-six {
     transform: rotate(-3deg) rotateX(var(--six-tilt-x, 0deg)) rotateY(var(--six-tilt-y, 0deg));
     transform-style: preserve-3d;
-    transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* The tilt is pointer-driven, so keep it on its own compositor layer only
+     while the pointer is over the cover. A permanent will-change layer and a
+     420ms transition made every mouse event retarget a long animation, which
+     is what felt sticky on desktop. */
+  .home-six.is-tilting {
+    transition-duration: 70ms;
     will-change: transform;
   }
 
@@ -28,12 +36,11 @@
     cursor: pointer;
     touch-action: manipulation;
     user-select: none;
-    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), filter 240ms ease;
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .home-six-piece:hover {
     transform: translateY(-3px);
-    filter: brightness(1.045);
   }
 
   .home-six-piece:active { transform: translateY(0) scale(0.975); }
@@ -68,9 +75,10 @@
 
   .result-share:hover { transform: translateY(-1px); }
 
-  .tile,
-  .water-glass,
-  .one-node { will-change: transform; backface-visibility: hidden; }
+  /* Merge tiles already get will-change in styles.css. Promoting every water
+     glass and every Minesweeper node created hundreds of compositor layers on
+     desktop, especially on the Expert board, and made the game animations
+     stutter. Transform transitions alone are enough here. */
 }
 
 /* A tap is a brief press, not an animation. Keeping it off the animation

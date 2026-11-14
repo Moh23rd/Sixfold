@@ -16,7 +16,7 @@ async function expectHubSettingsAndGamesFit(page, locale) {
   await page.locator('#sheet-done').click();
 
   for (const game of ['merge', 'sudoku', 'ttt', 'mines', 'water', 'fruit']) {
-    await page.locator('[data-game="' + game + '"]').click();
+    await page.locator('.home-game[data-game="' + game + '"]').click();
     await expect(page.locator(game === 'merge' ? 'main.app' : '#' + game)).toBeVisible();
     await expectNoClippedText(page, LANGUAGE_NAMES[locale] + ' ' + game + ' at 320px', game === 'merge' ? 'main.app' : '#' + game);
     if (game === 'merge') await page.locator('#back-to-games').click();

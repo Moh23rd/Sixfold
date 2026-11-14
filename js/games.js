@@ -450,7 +450,7 @@
   const PUBLIC_GAMES = VALID_GAMES.filter(function (name) { return name !== 'wordle'; });
 
   function focusLastCard() {
-    const card = document.querySelector('[data-game="' + lastGame + '"]') || document.querySelector('[data-game]');
+    const card = document.querySelector('.home-game[data-game="' + lastGame + '"]') || document.querySelector('.home-game[data-game]');
     if (card) card.focus({ preventScroll: true });
   }
 
@@ -734,18 +734,48 @@
   if (sixArt && sixGrid && window.matchMedia &&
       window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
       !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    sixArt.addEventListener('pointermove', function (event) {
-      const rect = sixArt.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
+    let tiltFrame = 0;
+    let tiltRect = null;
+    let tiltPoint = null;
+
+    function paintTilt() {
+      tiltFrame = 0;
+      if (!tiltPoint) return;
+      if (!tiltRect) tiltRect = sixArt.getBoundingClientRect();
+      if (!tiltRect.width || !tiltRect.height) return;
+      const x = (tiltPoint.x - tiltRect.left) / tiltRect.width - 0.5;
+      const y = (tiltPoint.y - tiltRect.top) / tiltRect.height - 0.5;
       sixGrid.style.setProperty('--six-tilt-x', (y * -4.5).toFixed(2) + 'deg');
       sixGrid.style.setProperty('--six-tilt-y', (x * 6.5).toFixed(2) + 'deg');
+    }
+
+    function queueTilt() {
+      if (!tiltFrame) tiltFrame = window.requestAnimationFrame(paintTilt);
+    }
+
+    sixArt.addEventListener('pointerenter', function () {
+      tiltRect = sixArt.getBoundingClientRect();
+      sixGrid.classList.add('is-tilting');
+    });
+    sixArt.addEventListener('pointermove', function (event) {
+      if (event.pointerType === 'touch') return;
+      tiltPoint = { x: event.clientX, y: event.clientY };
+      queueTilt();
     });
     sixArt.addEventListener('pointerleave', function () {
+      tiltPoint = null;
+      tiltRect = null;
+      if (tiltFrame) {
+        window.cancelAnimationFrame(tiltFrame);
+        tiltFrame = 0;
+      }
+      sixGrid.classList.remove('is-tilting');
       sixGrid.style.removeProperty('--six-tilt-x');
       sixGrid.style.removeProperty('--six-tilt-y');
     });
+    // A scroll changes the element's page position without a pointerenter.
+    // Drop the cached box so the next mouse frame measures it again.
+    document.addEventListener('scroll', function () { tiltRect = null; }, { capture: true, passive: true });
   }
 
   backButtons.forEach(function (button) {

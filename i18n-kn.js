@@ -48,6 +48,8 @@
     "Today": "ಇಂದು",
     "day streak": "ದಿನಗಳ ಸರಣಿ",
     "best": "ಅತ್ಯುತ್ತಮ",
+    "Badge": "ಬ್ಯಾಡ್ಜ್",
+    "Next badge": "ಮುಂದಿನ ಬ್ಯಾಡ್ಜ್",
     "Every game has a date-seeded daily. Pick one to begin.": "ಪ್ರತಿ ಆಟಕ್ಕೂ ದಿನಾಂಕದಿಂದ ನಿಗದಿಯಾದ ದೈನಂದಿನ ಆವೃತ್ತಿ ಇದೆ. ಪ್ರಾರಂಭಿಸಲು ಒಂದನ್ನು ಆರಿಸಿ.",
     "Play daily Sudoku": "ದೈನಂದಿನ ಸುಡೋಕು ಆಡಿ",
     "Share daily": "ದೈನಂದಿನ ಫಲಿತಾಂಶ ಹಂಚಿಕೊಳ್ಳಿ",
