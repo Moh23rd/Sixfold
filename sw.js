@@ -20,7 +20,7 @@ const CACHE_PREFIX = 'sixfold-';
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
 const ASSET = '4.0.0';
-const STYLE_ASSET = '5.2.0';
+const STYLE_ASSET = '5.2.3';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '5.2.0';
 const GAME_CODE = '4.0.0-w4';

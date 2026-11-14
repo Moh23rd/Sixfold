@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "auditDate": "2026-11-14",
+  "note": "Reference revisions are the upstream HEADs resolved on the audit date. The original extraction revision is not recoverable from this tree, so the checked-in packs are pinned by local SHA-256.",
+  "sources": {
+    "wordleGlobal": {
+      "url": "https://github.com/Hugo0/wordle",
+      "revision": "7b2466fcb43d0313c8a1dcacdb98819a8d18e5db",
+      "license": "MIT code; contributed word lists may carry their own terms"
+    },
+    "wordfreq": {
+      "url": "https://github.com/rspeer/wordfreq",
+      "revision": "912caf64b657478d1dff1138efdc078947d54bb1",
+      "license": "Apache-2.0 code; CC BY-SA 4.0 data"
+    },
+    "wordleJp": {
+      "url": "https://github.com/sen-ltd/wordle-jp",
+      "revision": "4ff47905a3ea9fc12bb50073fa7918142a59b935",
+      "license": "MIT"
+    },
+    "wordleKannada": {
+      "url": "https://github.com/Omkar-Shetkar/wordle-kannada",
+      "revision": "2b9bd9c88be69bdd8df6940211f349b38c9fdf27",
+      "license": "MIT, Copyright (c) 2022 Hannah Park"
+    },
+    "englishReference": {
+      "url": "https://github.com/stuartpb/wordles",
+      "revision": "6072f5b335dfa33b6abfb8ab18fbce2ba42f2b62",
+      "license": "Reference only; no formal upstream license or extraction revision is asserted"
+    }
+  },
+  "packs": {
+    "en": {
+      "path": "js/wordle-words.js",
+      "sha256": "010defd95136cb6ac803e13b23b1f954d97dcec05a6be50933eca6053eee2b3e"
+    },
+    "ar": {
+      "path": "wordle-locales/ar.js",
+      "sha256": "78cb0080f6a2cd9934e966b16d8f04532d95e622df2d94e07a28c75768e5f87a"
+    },
+    "de": {
+      "path": "wordle-locales/de.js",
+      "sha256": "291a8e4ec21d0365a81d8aec42637bcd86cfeb137f6239f476a14830006bcf92"
+    },
+    "es": {
+      "path": "wordle-locales/es.js",
+      "sha256": "1faf31ca80a4b3dcd4403510fcc21a1d7d36bad503a9965d81942ad9751a907e"
+    },
+    "fr": {
+      "path": "wordle-locales/fr.js",
+      "sha256": "6c43aee22e6f319bd79d6e28eb2166104bcc4b39640a8815e8105f59faa96449"
+    },
+    "hi": {
+      "path": "wordle-locales/hi.js",
+      "sha256": "59cbcaf74c5f2251e2da5652bc3bb7101a0020a7041d5c122a2ca14b28b65dfa"
+    },
+    "kn": {
+      "path": "wordle-locales/kn.js",
+      "sha256": "5032f2ff9610db8dfb3f30c18d2378dc5b82fdfd79896204990f8bb6a940357b"
+    },
+    "ja": {
+      "path": "wordle-locales/ja.js",
+      "sha256": "a1b8c6a996f206dfb375e439519747f8387acd92c76b94b01265629ba946815f"
+    },
+    "ko": {
+      "path": "wordle-locales/ko.js",
+      "sha256": "6db1e9bb8b889ffaea7e62a64e5c95eecb10a4328d8bf9594018197292a65ef8"
+    },
+    "pt-BR": {
+      "path": "wordle-locales/pt-BR.js",
+      "sha256": "6d1ab209c929d4fa6029392cf3e27fa15045b028d31175252c0fda157536377d"
+    },
+    "zh-Hans": {
+      "path": "wordle-locales/zh-Hans.js",
+      "sha256": "2359c08493af6400889e83084969d2246487084aa1f0fc75dd541c3aa70a395a"
+    },
+    "zh-Hant": {
+      "path": "wordle-locales/zh-Hant.js",
+      "sha256": "a28d1ed4ce70ace4bbeee4bbaf2e0e0170e4dc173e20f854b81f238647d951b7"
+    }
+  }
+}

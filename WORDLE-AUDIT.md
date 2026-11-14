@@ -15,24 +15,25 @@ npm run audit:wordle:strict
 
 | Locale | Answers | Valid guesses | Input | Structural | Invariants | Provenance | Policy hits |
 | --- | ---: | ---: | --- | --- | --- | --- | ---: |
-| English (`en`) | 781 | 14,855 | base rows | ok | ok | ok | 0 |
-| Arabic (`ar`) | 352 | 12,000 | IME | ok | ok | ok | 0 |
-| German (`de`) | 377 | 2,382 | rows | ok | ok | ok | 0 |
-| Spanish (`es`) | 384 | 2,696 | rows | ok | ok | ok | 0 |
-| French (`fr`) | 381 | 2,724 | rows | ok | ok | ok | 0 |
-| Hindi (`hi`) | 79 | 1,039 | IME | ok | ok | ok | 0 |
+| English (`en`) | 781 | 14,821 | base rows | ok | ok | ok | 0 |
+| Arabic (`ar`) | 352 | 11,948 | IME | ok | ok | ok | 0 |
+| German (`de`) | 377 | 2,359 | rows | ok | ok | ok | 0 |
+| Spanish (`es`) | 384 | 2,680 | rows | ok | ok | ok | 0 |
+| French (`fr`) | 381 | 2,705 | rows | ok | ok | ok | 0 |
+| Hindi (`hi`) | 79 | 1,008 | IME | ok | ok | ok | 0 |
 | Kannada (`kn`) | 106 | 2,138 | IME | ok | ok | ok | 0 |
-| Japanese (`ja`) | 279 | 566 | IME | ok | ok | ok | 0 |
-| Korean (`ko`) | 272 | 312 | IME | ok | ok | ok | 0 |
-| Brazilian Portuguese (`pt-BR`) | 382 | 2,801 | rows | ok | ok | ok | 0 |
-| Simplified Chinese (`zh-Hans`) | 212 | 587 | IME | ok | ok | ok | 0 |
-| Traditional Chinese (`zh-Hant`) | 212 | 587 | IME | ok | ok | ok | 0 |
+| Japanese (`ja`) | 279 | 545 | IME | ok | ok | ok | 0 |
+| Korean (`ko`) | 272 | 284 | IME | ok | ok | ok | 0 |
+| Brazilian Portuguese (`pt-BR`) | 382 | 2,783 | rows | ok | ok | ok | 0 |
+| Simplified Chinese (`zh-Hans`) | 212 | 449 | IME | ok | ok | ok | 0 |
+| Traditional Chinese (`zh-Hant`) | 212 | 449 | IME | ok | ok | ok | 0 |
 
-The answer pools are filtered against `scripts/wordle-audit-policy.json`.
-That removes profanity, proper names, brands, political and religious terms,
-loanwords, technical entries, numeric phrases and named-entity/administrative
-patterns from the answers. The valid-guess lists remain intentionally broad;
-they are not the answer pool.
+The answer and valid-guess pools are filtered against
+`scripts/wordle-audit-policy.json`. That removes profanity, proper names,
+brands, political and religious terms, loanwords, technical entries, numeric
+phrases and named-entity/administrative patterns from both lists. Valid lists
+remain larger than the answer pools, but they are no longer exempt from the
+policy.
 
 ## Provenance
 
@@ -53,9 +54,11 @@ and license notes.
   <https://github.com/Omkar-Shetkar/wordle-kannada>. Kannada uses this source
   rather than the Wordle Global/wordfreq/Wordle JP lineage.
 
-`README.md` and `licenses.html` carry the same attribution. Source revisions
-are not pinned in this tree; a future source refresh should record the exact
-commit or release used for each pack.
+`README.md` and `licenses.html` carry the same attribution. `WORDLE-SOURCES.json`
+records the upstream reference revisions and the SHA-256 of every checked-in
+pack; the strict audit verifies those hashes. The original extraction revision
+is not recoverable from this tree, so a future source refresh should record the
+exact commit or release used for each pack.
 
 ## Answer-pool review
 
@@ -67,9 +70,8 @@ run reports zero policy hits.
 The removed entries include the examples previously flagged in this audit:
 English brand/proper-name and technical entries; Arabic, German, Spanish,
 French, Hindi, Japanese, Korean, Portuguese and Chinese names, places,
-political/religious terms, profanity and administrative phrases. Those entries
-may remain in the valid-guess lists, which are deliberately wider than the
-answer pool.
+political/religious terms, profanity and administrative phrases. They are
+removed from both answers and valid guesses.
 
 Passing the policy gate is not a claim that every remaining answer is ideal.
 The non-English pools still originate from frequency lists, and a
@@ -97,11 +99,9 @@ The audit validates:
 
 ## Residual work
 
-- Pin a source revision or snapshot for each dictionary and regenerate from
-  that record.
+- Recover the exact extraction revision or source snapshot for each
+  dictionary and regenerate from that record.
 - Run a native-speaker editorial review of the non-English answer pools.
-- Decide whether the broad valid-guess lists should have their own product
-  policy; the current audit treats only answers as the answer pool.
 - Add a reproducible generator once the source snapshots are checked in.
 
 The service worker caches the dictionaries that a player actually selects, so

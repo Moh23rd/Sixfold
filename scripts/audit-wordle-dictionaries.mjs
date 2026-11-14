@@ -12,6 +12,7 @@
  *   npm run audit:wordle:strict
  *   node scripts/audit-wordle-dictionaries.mjs --json
  */
+import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +22,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const strict = process.argv.includes('--strict');
 const json = process.argv.includes('--json');
 const policy = JSON.parse(readFileSync(join(root, 'scripts/wordle-audit-policy.json'), 'utf8'));
+const sourceManifest = JSON.parse(readFileSync(join(root, 'WORDLE-SOURCES.json'), 'utf8'));
 const findings = { structural: [], invariants: [], provenance: [], policy: [] };
 const report = { generatedAt: new Date().toISOString(), packs: [], findings };
 
@@ -62,6 +64,18 @@ for (const file of readdirSync(join(root, 'wordle-locales')).filter((name) => na
 const actualLocales = [...packFiles.keys()].sort();
 if (actualLocales.join(',') !== expectedLocales.slice().sort().join(',')) {
   findings.structural.push('pack locales are ' + actualLocales.join(', ') + ', expected ' + expectedLocales.slice().sort().join(', '));
+}
+
+for (const locale of expectedLocales) {
+  const entry = sourceManifest.packs && sourceManifest.packs[locale];
+  if (!entry || entry.path !== packFiles.get(locale)) {
+    findings.provenance.push(locale + ': WORDLE-SOURCES.json does not pin the expected pack path');
+    continue;
+  }
+  const digest = createHash('sha256').update(readFileSync(join(root, entry.path))).digest('hex');
+  if (digest !== entry.sha256) {
+    findings.provenance.push(locale + ': checked-in pack does not match WORDLE-SOURCES.json SHA-256');
+  }
 }
 
 const appText = policy.provenance.appAttributionFiles.map(read).join('\n');
@@ -229,7 +243,18 @@ for (const locale of expectedLocales) {
   if (loanwords.length) add('policy', 'loanwords or non-standard forms in answers: ' + loanwords.join(', '));
   if (obscure.length) add('policy', 'obscure, technical or non-standalone entries in answers: ' + obscure.join(', '));
   if (patternHits.length) add('policy', 'answer entries matching named-entity/administrative patterns: ' + patternHits.slice(0, 12).join(', ') + (patternHits.length > 12 ? ' …' : ''));
-  packReport.policy = { profanity, properNouns: proper, loanwords, obscure, patternHits };
+
+  const validHits = [];
+  for (const field of ['profanity', 'properNouns', 'loanwords', 'obscure']) {
+    validHits.push(...(localePolicy[field] || []).filter((word) => valid.includes(word)));
+  }
+  for (const pattern of (policy.patterns && policy.patterns[locale]) || []) {
+    const regex = new RegExp(pattern, 'u');
+    for (const word of valid) if (regex.test(word)) validHits.push(word);
+  }
+  const uniqueValidHits = husk(validHits);
+  if (uniqueValidHits.length) add('policy', 'valid guesses contain policy terms: ' + uniqueValidHits.slice(0, 12).join(', ') + (uniqueValidHits.length > 12 ? ' …' : ''));
+  packReport.policy = { profanity, properNouns: proper, loanwords, obscure, patternHits, validHits: uniqueValidHits };
 
   const provenance = [];
   if (locale === 'en') {
@@ -276,7 +301,8 @@ if (json) {
   for (const pack of report.packs) {
     const policyCount = pack.policy && pack.policy.profanity
       ? pack.policy.profanity.length + pack.policy.properNouns.length +
-        pack.policy.loanwords.length + pack.policy.obscure.length + pack.policy.patternHits.length
+        pack.policy.loanwords.length + pack.policy.obscure.length + pack.policy.patternHits.length +
+        (pack.policy.validHits ? pack.policy.validHits.length : 0)
       : 0;
     console.log(
       pack.locale.padEnd(7) + ' answers ' + String(pack.answers).padStart(4) +
