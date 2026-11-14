@@ -143,11 +143,9 @@
     }
     let pending;
     try {
-      pending = navigator.share({
-        files: [file],
-        title: title,
-        text: localizeShare(text)
-      });
+      // iOS rejects a file share that also carries title/text. Send only the
+      // file so the native image share sheet is allowed to open.
+      pending = navigator.share({ files: [file] });
     } catch (err) {
       copyShare(text);
       return;

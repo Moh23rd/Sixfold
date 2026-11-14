@@ -1024,12 +1024,9 @@
   }
 
   function shareFile(file, message, url) {
-    const localized = localizeShare(message);
-    navigator.share({
-      files: [file],
-      title: 'Sixfold — Merge',
-      text: url ? localized + ' ' + url : localized
-    }).catch(function (err) {
+    // iOS rejects a file share that also carries title/text. Send only the
+    // file so the native image share sheet is allowed to open.
+    navigator.share({ files: [file] }).catch(function (err) {
       if (err && err.name === 'AbortError') return;
       shareText(message, url);
     });

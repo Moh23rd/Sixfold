@@ -134,7 +134,9 @@ test('non-Merge shares send a PNG during the click instead of copying text', asy
     expect(result.calls[0].files, card.title + ' should share one file').toHaveLength(1);
     expect(result.calls[0].files[0]).toMatchObject({ name: card.fileName, type: 'image/png' });
     expect(result.calls[0].files[0].size, card.title + ' should share a non-empty PNG').toBeGreaterThan(1000);
-    expect(result.calls[0].text).toContain(card.title);
+    expect(result.calls[0].title, card.title + ' should send only the file, without title').toBeUndefined();
+    expect(result.calls[0].text, card.title + ' should send only the file, without text').toBeUndefined();
+    expect(result.calls[0].url, card.title + ' should send only the file, without a URL').toBeUndefined();
     expect(result.copied, card.title + ' should not fall back to copying text').toEqual([]);
   }
 
@@ -188,4 +190,50 @@ test('an asynchronous share rejection with a failing text fallback copies the te
   expect(result.copied).toHaveLength(1);
   expect(result.copied[0]).toContain(WATER_SORT.text);
   expect(result.copied[0]).toContain('http://127.0.0.1:8000/');
+});
+
+test('Merge shares only its PNG with navigator.share', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.addInitScript(() => {
+    localStorage.setItem('merge2048.save', JSON.stringify({
+      size: 4,
+      score: 128,
+      moves: 24,
+      won: false,
+      cells: [
+        [2, 0, 0], [4, 0, 1], [2, 0, 2], [4, 0, 3],
+        [4, 1, 0], [2, 1, 1], [4, 1, 2], [2, 1, 3],
+        [2, 2, 0], [4, 2, 1], [2, 2, 2], [4, 2, 3],
+        [4, 3, 0], [2, 3, 1], [4, 3, 2], [2, 3, 3]
+      ]
+    }));
+  });
+  await page.goto('/');
+  await page.locator('.home-game[data-game="merge"]').click();
+  await expect(page.locator('#overlay')).toBeVisible();
+  await expect(page.locator('#result-preview-img')).toBeVisible();
+
+  const result = await page.evaluate(() => {
+    window.__shareCalls = [];
+    window.__copiedText = [];
+    const button = document.getElementById('overlay-share');
+    button.click();
+    return {
+      shareDuringClick: window.__shareCalls.length === 1,
+      calls: window.__shareCalls,
+      copied: window.__copiedText
+    };
+  });
+
+  expect(result.shareDuringClick).toBe(true);
+  expect(result.calls).toHaveLength(1);
+  expect(result.calls[0].files).toHaveLength(1);
+  expect(result.calls[0].files[0]).toMatchObject({ name: 'sixfold-merge.png', type: 'image/png' });
+  expect(result.calls[0].files[0].size).toBeGreaterThan(1000);
+  expect(result.calls[0].title).toBeUndefined();
+  expect(result.calls[0].text).toBeUndefined();
+  expect(result.calls[0].url).toBeUndefined();
+  expect(result.copied).toEqual([]);
+  expect(pageErrors).toEqual([]);
 });

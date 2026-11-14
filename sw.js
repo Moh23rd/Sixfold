@@ -15,7 +15,8 @@
 // 5.4.1: cache Fruit Merge art and reuse Water Sort tube DOM.
 // 5.4.2: share generated result images synchronously from every game.
 // 5.4.3: keep the text fallback when a native file share throws.
-const VERSION = 'sixfold-5.4.3-share';
+// 5.4.4: send only files to Web Share so iOS opens the image sheet.
+const VERSION = 'sixfold-5.4.4-share';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -28,13 +29,13 @@ const SHARE_CARD = '4.0.1';
 const STYLE_ASSET = '5.2.3';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '5.2.0';
-const GAME_CODE = '4.0.0-w4';
+const GAME_CODE = '4.0.0-w5';
 const WORDLE_CODE = '5.3.10-wordle';
 const SUDOKU_GAME_CODE = '5.2.0';
 const LOCALE_FONT = '5.1.3';
 const GAMES_CSS = '4.0.0-w16';
 const POLISH_CSS = '4.0.0-w12';
-const GAMES_JS = '5.1.4';
+const GAMES_JS = '5.1.5';
 const SUDOKU_CSS = '4.0.0-w13';
 const V5_CSS = '5.3.1';
 const HOME_CSS = '4.0.0-w6';
