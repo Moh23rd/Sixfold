@@ -123,13 +123,30 @@
      fall back to the plain text/link share everywhere else. Keeping this in
      one helper means all six games use the same card and the same fallback. */
   function shareResult(title, text, data) {
-    if (!window.MergeShareCard || typeof File !== 'function' || !navigator.share || !navigator.canShare) {
+    if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
+        typeof File !== 'function' || !navigator.share || !navigator.canShare) {
       share(title, text);
       return;
     }
-    window.MergeShareCard.share(data, title, text).then(function (shared) {
-      if (!shared) share(title, text);
-    }).catch(function () {
+    let file;
+    try {
+      file = window.MergeShareCard.fileSync(data);
+    } catch (err) {
+      share(title, text);
+      return;
+    }
+    let canShare = false;
+    try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
+    if (!canShare) {
+      share(title, text);
+      return;
+    }
+    navigator.share({
+      files: [file],
+      title: title,
+      text: localizeShare(text)
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') return;
       share(title, text);
     });
   }

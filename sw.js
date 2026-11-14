@@ -13,7 +13,8 @@
 // 5.3.10: filter the Wordle answer pools and record dictionary provenance.
 // 5.4.0: daily featured game rotation, milestone badges, smoother desktop motion.
 // 5.4.1: cache Fruit Merge art and reuse Water Sort tube DOM.
-const VERSION = 'sixfold-5.4.1-games';
+// 5.4.2: share generated result images synchronously from every game.
+const VERSION = 'sixfold-5.4.2-share';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -22,6 +23,7 @@ const CACHE_PREFIX = 'sixfold-';
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
 const ASSET = '4.0.0';
+const SHARE_CARD = '4.0.1';
 const STYLE_ASSET = '5.2.3';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '5.2.0';
@@ -31,7 +33,7 @@ const SUDOKU_GAME_CODE = '5.2.0';
 const LOCALE_FONT = '5.1.3';
 const GAMES_CSS = '4.0.0-w16';
 const POLISH_CSS = '4.0.0-w12';
-const GAMES_JS = '5.1.2';
+const GAMES_JS = '5.1.3';
 const SUDOKU_CSS = '4.0.0-w13';
 const V5_CSS = '5.3.1';
 const HOME_CSS = '4.0.0-w6';
@@ -50,7 +52,7 @@ const SHELL = [
   './js/haptics.js?v=' + ASSET,
   './js/overscroll.js?v=' + ASSET,
   './js/celebrate.js?v=' + ASSET,
-  './js/sharecard.js?v=' + ASSET,
+  './js/sharecard.js?v=' + SHARE_CARD,
   './js/install.js?v=' + ASSET,
   './css/games.css?v=' + GAMES_CSS,
   './css/home.css?v=' + HOME_CSS,

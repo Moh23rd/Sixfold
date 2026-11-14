@@ -156,6 +156,17 @@
     return canvas;
   }
 
+  function fileName(data) {
+    return 'sixfold-' + String(data.game || 'result').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
+  }
+
+  function asFile(blob, data) {
+    const name = fileName(data);
+    if (typeof File === 'function') return new File([blob], name, { type: 'image/png' });
+    blob.name = name;
+    return blob;
+  }
+
   async function file(data) {
     try {
       if (document.fonts && document.fonts.load) {
@@ -171,14 +182,18 @@
           reject(new Error('image unavailable'));
           return;
         }
-        const name = 'sixfold-' + String(data.game || 'result').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
-        if (typeof File === 'function') resolve(new File([blob], name, { type: 'image/png' }));
-        else {
-          blob.name = name;
-          resolve(blob);
-        }
+        resolve(asFile(blob, data));
       }, 'image/png');
     });
+  }
+
+  function fileSync(data) {
+    const canvas = draw(data);
+    const dataUrl = canvas.toDataURL('image/png');
+    const binary = atob(dataUrl.slice(dataUrl.indexOf(',') + 1));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return asFile(new Blob([bytes], { type: 'image/png' }), data);
   }
 
   async function share(data, title, text) {
@@ -197,5 +212,5 @@
     return false;
   }
 
-  window.MergeShareCard = { draw: draw, file: file, share: share };
+  window.MergeShareCard = { draw: draw, file: file, fileSync: fileSync, share: share };
 })();
