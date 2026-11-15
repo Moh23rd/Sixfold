@@ -334,4 +334,47 @@ test.describe('service worker locale cache', () => {
 
     await expect.poll(cachedLocaleFiles).toEqual(['/i18n-fr.js', '/i18n-patterns.js']);
   });
+
+  test('a new worker prunes stale versioned assets', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+    const currentLocaleVersion = await page.evaluate(() => window.SixfoldLocale.VERSION);
+
+    await page.evaluate(async (version) => {
+      const name = (await caches.keys()).find((value) => value.startsWith('sixfold-'));
+      if (!name) throw new Error('No Sixfold cache');
+      const cache = await caches.open(name);
+      await cache.put(new Request('/css/home.css?v=4.0.0-w10'), new Response('stale css'));
+      await cache.put(new Request('/i18n-fr.js?v=4.0.0'), new Response('stale catalog'));
+      await cache.put(new Request('/i18n-fr.js?v=' + version), new Response('current catalog'));
+    }, currentLocaleVersion);
+
+    await page.evaluate(async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    });
+    await page.reload();
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+
+    const cachedPaths = () => page.evaluate(async () => {
+      const paths = [];
+      for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) {
+          const url = new URL(request.url);
+          paths.push(url.pathname + url.search);
+        }
+      }
+      return paths;
+    });
+
+    await expect.poll(cachedPaths).toEqual(expect.not.arrayContaining([
+      '/css/home.css?v=4.0.0-w10',
+      '/i18n-fr.js?v=4.0.0',
+    ]));
+    await expect.poll(cachedPaths).toEqual(expect.arrayContaining([
+      '/index.html',
+      '/i18n-fr.js?v=' + currentLocaleVersion,
+    ]));
+  });
 });
