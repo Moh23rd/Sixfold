@@ -119,6 +119,11 @@ jobs:
           set -euo pipefail
           if [ "$BASELINE" != "true" ]; then
             echo "No previous footprint artifact; baseline run only."
+            {
+              echo '## Locale cache footprint drift'
+              echo ''
+              echo 'No previous footprint artifact was available, so this run establishes the baseline.'
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           current=$(find test-results -name locale-cache-footprints.json -print -quit)
