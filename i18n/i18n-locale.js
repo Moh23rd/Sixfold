@@ -5,12 +5,13 @@
 
   var KEY = 'sixfold.locale.v1';
   var VERSION = '5.4.5';
-  var PATTERNS = 'i18n-patterns.js';
+  var BASE = 'i18n/';
+  var PATTERNS = BASE + 'i18n-patterns.js';
   var CATALOG = {
-    fr: 'i18n-fr.js', de: 'i18n-de.js',
-    'zh-Hans': 'i18n-zh-hans.js', 'zh-Hant': 'i18n-zh-hant.js',
-    ja: 'i18n-ja.js', ko: 'i18n-ko.js', 'pt-BR': 'i18n-pt-br.js',
-    hi: 'i18n-hi.js', kn: 'i18n-kn.js', ar: 'i18n-ar.js'
+    fr: BASE + 'i18n-fr.js', de: BASE + 'i18n-de.js',
+    'zh-Hans': BASE + 'i18n-zh-hans.js', 'zh-Hant': BASE + 'i18n-zh-hant.js',
+    ja: BASE + 'i18n-ja.js', ko: BASE + 'i18n-ko.js', 'pt-BR': BASE + 'i18n-pt-br.js',
+    hi: BASE + 'i18n-hi.js', kn: BASE + 'i18n-kn.js', ar: BASE + 'i18n-ar.js'
   };
 
   function normalize(tag) {

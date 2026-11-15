@@ -175,6 +175,23 @@ test.describe('Wordle locale packs', () => {
     await expect.poll(() => cachedPacks(page)).toContain('/wordle-locales/es.js');
   });
 
+  test('drops the previous dictionary after a language change', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+    await page.evaluate(() => localStorage.setItem('sixfold.locale.v1', 'es'));
+    await page.reload();
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+    await expect.poll(() => cachedPacks(page)).toEqual(['/wordle-locales/es.js']);
+
+    await page.locator('#appearance').click();
+    const switched = page.waitForEvent('load');
+    await chooseLocale(page, 'fr');
+    await switched;
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+
+    await expect.poll(() => cachedPacks(page)).toEqual(['/wordle-locales/fr.js']);
+  });
+
   test('prefetches the active dictionary after an online visit', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('sixfold.locale.v1', 'es'));
     await page.goto('/');

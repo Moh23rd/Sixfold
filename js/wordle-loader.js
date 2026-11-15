@@ -91,7 +91,7 @@
     const active = locale();
     const files = [
       { src: 'js/wordle-words.js?v=' + VERSION },
-      { src: 'wordle-i18n.js?v=' + VERSION }
+      { src: 'i18n/wordle-i18n.js?v=' + VERSION }
     ];
     if (PACK_LOCALES.indexOf(active) !== -1) {
       files.push({ src: 'wordle-locales/' + active + '.js?v=' + VERSION, optional: true });
