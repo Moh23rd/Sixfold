@@ -57,29 +57,29 @@ fallback and prefetch, localized numerals, and a CI audit for the word data.
   Arabic/Hindi digits and the copied share text. The matrix takes about 1.3
   minutes locally, keeping the 20-minute CI job within budget.
 - **Multilingual Wordle**: the hidden game now has localized board copy,
-  result text and five-character dictionaries for all eleven interface
+  result text and five-character dictionaries for all twelve interface
   languages, with a native input method for scripts that do not use the
   on-screen letter grid. Only the active language's dictionary is downloaded
   and cached.
 - **Localization audit in CI**: `npm run test:i18n` checks every catalog against
   the English source for missing or unknown keys, empty copy and mismatched
   numbered placeholders, including the shared dynamic-copy templates. It also
-  guards the Wordle strings and all eleven locale dictionaries.
+  guards the Wordle strings and all twelve locale dictionaries.
 - **Localized store listings and privacy policies** for Simplified and
   Traditional Chinese, Japanese, Korean, Brazilian Portuguese, Hindi and
   Arabic, alongside the English and Spanish store copy.
-- **Seven more interface languages**: Simplified and Traditional Chinese,
-  Japanese, Korean, Brazilian Portuguese, Hindi and Arabic. Each includes a
+- **Eight more interface languages**: Simplified and Traditional Chinese,
+  Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic. Each includes a
   complete catalog for the hub, all six games, settings, help, accessibility
   labels, validation messages, game status lines, dates and daily share text.
   Arabic switches the interface to right-to-left.
-- **Offline script fonts** for Chinese, Japanese, Korean, Devanagari and Arabic,
-  subset to the characters Sixfold actually uses, so translated screens keep a
+- **Offline script fonts** for Chinese, Japanese, Korean, Devanagari, Kannada and
+  Arabic, subset to the characters Sixfold actually uses, so translated screens keep a
   consistent face without a network request.
 - **French and German localization**: complete catalogs for the hub, all six
   games, settings, help, accessibility labels, validation messages, game
   status lines, dates and daily share text. The language picker now offers
-  eleven languages in a responsive grid on phones.
+  twelve languages in a responsive grid on phones.
 - **Locale layout tests** at 320px and 390px for every language, checking for
   clipped text and horizontal overflow alongside the existing light/dark axe
   scans.
@@ -149,7 +149,7 @@ without adding accounts, ads, tracking or a server.
 - **Accessibility controls**: high contrast, colour-blind cues, larger Sudoku
   digits, left-handed landscape layout, timer hiding and cell-first or
   digit-first number entry.
-- **Interface sounds** with a separate setting, plus pause/resume for Sudoku.
+- **Sudoku pause/resume**, so the timer can be stopped during a break.
 - **Backup and restore**: a JSON export of every board, score, streak and
   setting, and a guarded restore flow.
 - **Persistent storage**: `navigator.storage.persist()` is requested where the

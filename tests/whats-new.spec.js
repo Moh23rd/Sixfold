@@ -2,10 +2,10 @@ const { test, expect } = require('@playwright/test');
 const { LANGUAGE_NAMES, LOCALES, expectNoClippedText } = require('./helpers');
 
 const WHATS_NEW_ITEMS = [
-  'Wordle in all eleven languages: localized word lists, native input for Arabic, Hindi, Japanese, Korean and Chinese, and an offline English fallback',
+  'Wordle in all twelve languages: localized word lists, native input for Arabic, Hindi, Kannada, Japanese, Korean and Chinese, and an offline English fallback',
   'Wordle offline support: the selected dictionary downloads in the background, and an English fallback round keeps the game playable when it is not cached',
   'Arabic and Hindi numerals, right-to-left Arabic, localized dates and share text across every game',
-  'New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi and Arabic, with complete catalogs and offline fonts'
+  'New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic, with complete catalogs and offline fonts'
 ];
 
 test.describe('What’s New 5.0', () => {
