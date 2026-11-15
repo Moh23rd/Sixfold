@@ -29,8 +29,21 @@
   const INK = '#211d18';
   const MUTED = '#6f665a';
   const LINE = 'rgba(94, 76, 45, 0.16)';
-  const YELLOW = '#e3b94a';
   const TILES = ['#e85f3b', '#efb07a', '#e3b94a', '#8bbd54', '#39a9a1', '#5b8fd5'];
+  // Warm's yellow, the third cover tile, is the cards' small brand accent.
+  const BRAND_ACCENT = 2;
+
+  // The six-piece mark and strip use the same cover-order tokens as the hub.
+  // Follow --six-n's one-level alias (--six-1 -> --g1) before painting.
+  function gameColours() {
+    const styles = getComputedStyle(document.documentElement);
+    return TILES.map(function (fallback, index) {
+      let value = styles.getPropertyValue('--six-' + (index + 1)).trim();
+      const alias = /^var\(\s*(--[\w-]+)\s*\)$/.exec(value);
+      if (alias) value = styles.getPropertyValue(alias[1]).trim();
+      return value || fallback;
+    });
+  }
 
   function font(weight, px) {
     const locale = window.SixfoldI18n ? window.SixfoldI18n.locale() : 'en';
@@ -117,8 +130,9 @@
     canvas.height = W;
     const ctx = canvas.getContext('2d');
     if (!ctx) return canvas;
+    const tiles = gameColours();
 
-    const accent = data.color || YELLOW;
+    const accent = data.color || tiles[BRAND_ACCENT];
     ctx.direction = 'ltr';
     ctx.fillStyle = CREAM;
     ctx.fillRect(0, 0, W, W);
@@ -139,7 +153,7 @@
     const gap = 4;
     for (let i = 0; i < 6; i += 1) {
       roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = TILES[i];
+      ctx.fillStyle = tiles[i];
       ctx.fill();
     }
     const brandX = markX + 3 * (tile + gap) + 14;
@@ -197,7 +211,7 @@
     for (let i = 0; i < 6; i += 1) {
       const x = 80 + i * (strip + 10);
       roundRect(ctx, x, stripY, strip, strip, 16);
-      ctx.fillStyle = TILES[i];
+      ctx.fillStyle = tiles[i];
       ctx.fill();
       if (Number(data.index) === i) {
         ctx.strokeStyle = INK;
@@ -229,6 +243,7 @@
     canvas.height = W;
     const ctx = canvas.getContext('2d');
     if (!ctx) return canvas;
+    const tiles = gameColours();
 
     ctx.direction = 'ltr';
     ctx.fillStyle = CREAM;
@@ -251,7 +266,7 @@
     const gap = 4;
     for (let i = 0; i < 6; i += 1) {
       roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = TILES[i];
+      ctx.fillStyle = tiles[i];
       ctx.fill();
     }
     const brandX = markX + 3 * (tile + gap) + 14;
@@ -271,7 +286,7 @@
     ctx.fillStyle = LINE;
     ctx.fillRect(80, 166, W - 160, 1.5);
 
-    ctx.fillStyle = YELLOW;
+    ctx.fillStyle = tiles[BRAND_ACCENT];
     ctx.fillRect(80, 208, 34, 3);
     ctx.fillStyle = MUTED;
     ctx.font = font(700, 13);
@@ -292,7 +307,7 @@
     const strip = 78;
     for (let i = 0; i < 6; i += 1) {
       roundRect(ctx, 80 + i * (strip + 10), stripY, strip, strip, 16);
-      ctx.fillStyle = TILES[i];
+      ctx.fillStyle = tiles[i];
       ctx.fill();
     }
     ctx.fillStyle = MUTED;
@@ -300,7 +315,7 @@
     tracked(ctx, t('Play offline'), 82, stripY + strip + 30, 2.4);
 
     if (data.badge && Number(data.badge.days) > 0) {
-      const color = data.badge.color || YELLOW;
+      const color = data.badge.color || tiles[BRAND_ACCENT];
       const x = 636;
       const y = 520;
       const w = 364;
@@ -361,7 +376,7 @@
     ctx.fillStyle = CREAM;
     ctx.font = font(800, 24);
     ctx.fillText('MOH23RD.GITHUB.IO/SIXFOLD', 80, 1000);
-    ctx.fillStyle = YELLOW;
+    ctx.fillStyle = tiles[BRAND_ACCENT];
     ctx.font = font(700, 14);
     ctx.textAlign = 'right';
     ctx.fillText(t('Six games. No filler.'), W - 80, 1000);
@@ -379,6 +394,7 @@
     canvas.height = W;
     const ctx = canvas.getContext('2d');
     if (!ctx) return canvas;
+    const tiles = gameColours();
 
     ctx.direction = 'ltr';
     ctx.fillStyle = CREAM;
@@ -403,7 +419,7 @@
     const gap = 4;
     for (let i = 0; i < 6; i += 1) {
       roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = TILES[i];
+      ctx.fillStyle = tiles[i];
       ctx.fill();
     }
     const brandX = markX + 3 * (tile + gap) + 14;
@@ -445,7 +461,7 @@
     ctx.font = font(800, size);
     ctx.fillText(score, 72, 512);
 
-    ctx.fillStyle = YELLOW;
+    ctx.fillStyle = tiles[BRAND_ACCENT];
     ctx.fillRect(82, 534, 118, 9);
 
     ctx.fillStyle = MUTED;
@@ -464,7 +480,7 @@
     const strip = 64;
     for (let i = 0; i < 6; i += 1) {
       roundRect(ctx, 80 + i * (strip + 10), stripY, strip, strip, 15);
-      ctx.fillStyle = TILES[i];
+      ctx.fillStyle = tiles[i];
       ctx.fill();
     }
     ctx.fillStyle = MUTED;
@@ -482,7 +498,7 @@
     ctx.fillStyle = CREAM;
     ctx.font = font(800, 24);
     ctx.fillText('MOH23RD.GITHUB.IO/SIXFOLD', 80, 1000);
-    ctx.fillStyle = YELLOW;
+    ctx.fillStyle = tiles[BRAND_ACCENT];
     ctx.font = font(700, 14);
     ctx.textAlign = 'right';
     ctx.fillText(t('Six games. No filler.'), W - 80, 1000);
