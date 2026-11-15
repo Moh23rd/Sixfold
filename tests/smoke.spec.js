@@ -511,7 +511,7 @@ test.describe('service worker locale cache', () => {
     await page.goto('/');
     await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
 
-    const manifest = '/manifest.webmanifest?v=5.2.0';
+    const manifest = '/manifest.webmanifest?v=6.0.0';
     const cached = (url) => page.evaluate(async (target) => {
       for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
         const cache = await caches.open(name);

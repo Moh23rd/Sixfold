@@ -29,7 +29,7 @@ jobs:
             files: tests/layout.spec.js tests/wordle.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js
     name: Playwright ${{ matrix.group }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify every Playwright spec is assigned
         run: |
           assigned=$(grep -E '^[[:space:]]+files:' .github/workflows/test.yml | sed 's/.*files:[[:space:]]*//' | tr '\n' ' ')
@@ -43,7 +43,7 @@ jobs:
             esac
           done
           echo "All Playwright specs are assigned to a CI group."
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -55,7 +55,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test ${{ matrix.files }}
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.group }}
           path: |
@@ -64,7 +64,7 @@ jobs:
           retention-days: 7
       - name: Upload locale cache footprints
         if: success() && matrix.group == 'core'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: locale-cache-footprints-${{ github.run_id }}-${{ github.run_attempt }}
           path: test-results/**/locale-cache-footprints.json

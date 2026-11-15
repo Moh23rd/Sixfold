@@ -1,6 +1,29 @@
 # Changelog
 
-> Public release label: **v5.0**. The internal build version for this release is **5.2.0**.
+> Public release label: **v5.0**. Current development build: **6.0.0**.
+
+## Unreleased — v6.0 development
+
+Internal build: **6.0.0**
+
+The 6.0 baseline refreshes the development toolchain and CI while the public
+release stays at 5.0 until the 6.0 feature set lands.
+
+### Release engineering
+
+- **Fresh toolchain**: Playwright 1.65, axe-core 4.14 and Capacitor 8.6.2.
+- **Current GitHub Actions**: checkout, setup-node and upload-artifact now use
+  their v7 releases, removing the Node 20 deprecation warnings.
+- **Cache budget guardrails**: successful core jobs retain the per-locale
+  footprint report, compare it with the previous successful baseline, warn in
+  the final 10% of the 2 MiB budget, and publish the drift table in the job
+  summary.
+- **Cleaner release metadata**: the 6.0 development build and public 5.0 label
+  are now checked independently by the release-label test.
+
+### Still to come
+
+- 6.0 feature work and the public release label change.
 
 ## v5.0 — 15 November 2026
 

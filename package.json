@@ -1,6 +1,6 @@
 {
   "name": "sixfold",
-  "version": "5.2.0",
+  "version": "6.0.0",
   "release": "5.0",
   "private": true,
   "license": "GPL-3.0-only",
@@ -20,16 +20,16 @@
     "native:assets": "npx capacitor-assets generate --ios && npx capacitor-assets generate --android"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.10.2",
+    "@axe-core/playwright": "^4.14.0",
     "@capacitor/assets": "^4.0.0",
-    "@capacitor/cli": "^8.6.0",
-    "@playwright/test": "^1.55.0"
+    "@capacitor/cli": "^8.6.2",
+    "@playwright/test": "^1.65.1"
   },
   "dependencies": {
-    "@capacitor/android": "^8.6.0",
+    "@capacitor/android": "^8.6.2",
     "@capacitor/app": "^8.1.2",
-    "@capacitor/core": "^8.6.0",
-    "@capacitor/ios": "^8.6.0",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4"
   }
