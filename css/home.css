@@ -993,6 +993,8 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 }
 
 @media (max-width: 559px) {
+  .home-collection { margin-top: 16px; }
+  html[data-daily="off"] .home-collection { margin-top: 31px; }
   .home-surprise { width: 45px; padding: 0; }
   .home-surprise span { display: none; }
 }
@@ -1035,7 +1037,6 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-six-piece { padding: 0 6px 5px; border-radius: 7px; font-size: 7px; }
   .home-six-caption { margin-top: 8px; font-size: 6px; }
   .home-six-caption span:first-child { display: none; }
-  .home-collection { margin-top: 31px; }
   .home-collection-head { gap: 10px; padding-bottom: 11px; }
   .home-collection h2 { font-size: 31px; }
   .home-collection-note { max-width: 18ch; font-size: 9.5px; }
