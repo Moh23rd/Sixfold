@@ -3,8 +3,16 @@
 (function () {
   'use strict';
 
+  function localize(value) {
+    return window.SixfoldI18n ? window.SixfoldI18n.t(value) : value;
+  }
+
   const $ = function (id) { return document.getElementById(id); };
   const $$ = function (selector) { return Array.from(document.querySelectorAll(selector)); };
+
+  function shareAccent(hex) {
+    return window.MergeTheme && window.MergeTheme.colour ? window.MergeTheme.colour(hex) : hex;
+  }
   const body = document.body;
   const app = document.querySelector('.app');
   const hub = $('hub');
@@ -14,11 +22,12 @@
     fruit: $('fruit'),
     ttt: $('ttt'),
     mines: $('mines'),
-    wordle: $('wordle')
+    wordle: $('wordle'),
+    badges: $('badges')
   };
   const cards = $$('[data-game]');
   const backButtons = $$('[data-back]');
-  if (!app || !hub || !screens.water || !screens.sudoku || !screens.fruit || !screens.ttt || !screens.mines || !screens.wordle) return;
+  if (!app || !hub || !screens.water || !screens.sudoku || !screens.fruit || !screens.ttt || !screens.mines || !screens.wordle || !screens.badges) return;
 
   function load(key, fallback) {
     try {
@@ -38,9 +47,10 @@
     }
   }
 
-  function shuffle(values) {
+  function shuffle(values, rng) {
+    const random = rng || Math.random;
     for (let i = values.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(random() * (i + 1));
       const temp = values[i];
       values[i] = values[j];
       values[j] = temp;
@@ -52,11 +62,17 @@
     return Math.max(min, Math.min(max, value));
   }
 
+  const FONT = '"Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+
   /* ---------- sharing ---------- */
 
   const SHARE_TITLE = 'Sixfold — Six games. No filler.';
   const SHARE_TEXT = 'Sixfold: six games, no filler — an offline pocket arcade of Merge, Sudoku, Tic Tac Toe, Minesweeper, Water Sort and Fruit Merge. No accounts, no ads.';
   let toastTimer = 0;
+  let shareFallbackEl = null;
+  let shareFallbackUrl = '';
+  let shareFallbackOpener = null;
+  let shareFallbackInert = null;
 
   function shareUrl() {
     if (location.protocol !== 'http:' && location.protocol !== 'https:') return '';
@@ -79,24 +95,32 @@
     }, 2300);
   }
 
+  function localizeShare(text) {
+    if (!window.SixfoldI18n) return String(text);
+    const translated = window.SixfoldI18n.t(String(text));
+    return window.SixfoldI18n.number ? window.SixfoldI18n.number(translated) : translated;
+  }
+
   function copyShare(text) {
     const url = shareUrl();
-    const full = url ? text + ' ' + url : text;
+    const localized = localizeShare(text);
+    const full = url ? localized + ' ' + url : localized;
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
-      toast('Copy is not available in this browser.');
+      toast(localize('Copy is not available in this browser.'));
       return;
     }
     navigator.clipboard.writeText(full).then(function () {
-      toast('Copied — paste it anywhere.');
+      toast(localize('Copied — paste it anywhere.'));
     }).catch(function () {
-      toast('Could not copy the text.');
+      toast(localize('Could not copy the text.'));
     });
   }
 
   function share(title, text) {
     const url = shareUrl();
+    const localized = localizeShare(text);
     if (navigator.share) {
-      navigator.share({ title: title || SHARE_TITLE, text: text, url: url || undefined }).catch(function (err) {
+      navigator.share({ title: localize(title || SHARE_TITLE), text: localized, url: url || undefined }).catch(function (err) {
         // Closing the share sheet is a choice, not a failure.
         if (err && err.name === 'AbortError') return;
         copyShare(text);
@@ -106,24 +130,217 @@
     copyShare(text);
   }
 
-  /* Share the generated Sixfold card when the browser can share files, and
-     fall back to the plain text/link share everywhere else. Keeping this in
-     one helper means all six games use the same card and the same fallback. */
+  function closeShareFallback() {
+    if (!shareFallbackEl || shareFallbackEl.hidden) return;
+    shareFallbackEl.hidden = true;
+    document.documentElement.classList.remove('share-fallback-open');
+    if (shareFallbackInert) {
+      shareFallbackInert.inert = false;
+      shareFallbackInert = null;
+    }
+    if (shareFallbackUrl) {
+      URL.revokeObjectURL(shareFallbackUrl);
+      shareFallbackUrl = '';
+    }
+    const opener = shareFallbackOpener;
+    shareFallbackOpener = null;
+    if (opener && opener.isConnected) {
+      try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }
+    }
+  }
+
+  function buildShareFallback() {
+    if (shareFallbackEl) return shareFallbackEl;
+    const el = document.createElement('div');
+    el.className = 'share-fallback';
+    el.id = 'share-fallback';
+    el.hidden = true;
+    el.innerHTML = [
+      '<div class="share-fallback-card" role="dialog" aria-modal="true" aria-labelledby="share-fallback-title" aria-describedby="share-fallback-note">',
+      '  <div class="share-fallback-head"><h2 id="share-fallback-title">Save your result</h2></div>',
+      '  <img class="share-fallback-image" alt="Your Sixfold result card" decoding="async" />',
+      '  <p class="share-fallback-note" id="share-fallback-note"></p>',
+      '  <div class="share-fallback-actions">',
+      '    <a class="btn share-fallback-save" download>Save image</a>',
+      '    <button class="btn ghost share-fallback-done" type="button" data-close>Done</button>',
+      '  </div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(el);
+    el.addEventListener('click', function (event) {
+      if (event.target === el || event.target.closest('[data-close]')) closeShareFallback();
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || el.hidden) return;
+      event.preventDefault();
+      closeShareFallback();
+    });
+    shareFallbackEl = el;
+    return el;
+  }
+
+  function showShareFallback(file, data) {
+    const el = buildShareFallback();
+    const embedded = window.self !== window.top;
+    shareFallbackOpener = document.activeElement;
+    if (shareFallbackUrl) URL.revokeObjectURL(shareFallbackUrl);
+    shareFallbackUrl = URL.createObjectURL(file);
+
+    const image = el.querySelector('.share-fallback-image');
+    image.src = shareFallbackUrl;
+    image.alt = localize('Your Sixfold result card');
+    el.querySelector('#share-fallback-title').textContent = localize('Save your result');
+    const download = el.querySelector('.share-fallback-save');
+    download.href = shareFallbackUrl;
+    download.download = file.name || 'sixfold-result.png';
+    download.textContent = localize('Save image');
+    el.querySelector('.share-fallback-done').textContent = localize('Done');
+    el.querySelector('#share-fallback-note').textContent = embedded
+      ? localize('Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.')
+      : localize('This browser cannot open the native image share sheet. Save the card instead.');
+
+    const screen = document.body.dataset.screen;
+    const background = screen === 'hub'
+      ? document.getElementById('hub')
+      : screen === 'merge'
+        ? document.querySelector('.app')
+        : document.getElementById(screen);
+    if (background && 'inert' in background && !background.inert) {
+      background.inert = true;
+      shareFallbackInert = background;
+    }
+    el.hidden = false;
+    document.documentElement.classList.add('share-fallback-open');
+    window.setTimeout(function () {
+      if (!el.hidden) download.focus({ preventScroll: true });
+    }, 0);
+  }
+
+  function offerShareFallback(file, data, text) {
+    try {
+      showShareFallback(file, data);
+    } catch (err) {
+      copyShare(text);
+    }
+  }
+
+  /* Share the generated Sixfold card when the browser can share files. When
+     the native sheet cannot take an image, show the same card with a save
+     option instead of silently copying text. Keeping this in one helper means
+     all six games use the same card and the same fallback. */
   function shareResult(title, text, data) {
-    if (!window.MergeShareCard || typeof File !== 'function' || !navigator.share || !navigator.canShare) {
+    if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
+        typeof File !== 'function') {
       share(title, text);
       return;
     }
-    window.MergeShareCard.share(data, title, text).then(function (shared) {
-      if (!shared) share(title, text);
-    }).catch(function () {
+    let file;
+    try {
+      file = window.MergeShareCard.fileSync(data);
+    } catch (err) {
       share(title, text);
-    });
+      return;
+    }
+    let canShare = false;
+    if (navigator.share && navigator.canShare) {
+      try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
+    }
+    if (!canShare) {
+      offerShareFallback(file, data, text);
+      return;
+    }
+    let pending;
+    try {
+      // iOS rejects a file share that also carries title/text. Send only the
+      // file so the native image share sheet is allowed to open.
+      pending = navigator.share({ files: [file] });
+    } catch (err) {
+      offerShareFallback(file, data, text);
+      return;
+    }
+    if (pending && typeof pending.catch === 'function') {
+      pending.catch(function (err) {
+        if (err && err.name === 'AbortError') return;
+        offerShareFallback(file, data, text);
+      });
+    }
+  }
+
+  function shareAppData() {
+    let summary = null;
+    try {
+      if (window.SixfoldDaily && window.SixfoldDaily.badgeSummary) {
+        summary = window.SixfoldDaily.badgeSummary();
+      }
+    } catch (err) {}
+    const badge = summary && summary.earned
+      ? { days: summary.earned.days, color: summary.earned.color }
+      : summary && summary.weekly
+        ? { days: 6, color: '#8bbd54', unit: 'GAMES / WEEK' }
+        : null;
+    return { app: true, file: 'sixfold-collection', title: 'Sixfold', badge: badge };
+  }
+
+  function shareAppText() {
+    const data = shareAppData();
+    const badge = data.badge
+      ? ' ' + localize('Your badge') + ': ' +
+        (data.badge.unit
+          ? localize('Perfect six')
+          : localize(data.badge.days + ' day streak')) + '.'
+      : '';
+    return SHARE_TEXT + badge;
+  }
+
+  function shareApp() {
+    const data = shareAppData();
+    const text = shareAppText();
+    if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
+        typeof File !== 'function') {
+      share(SHARE_TITLE, text);
+      return;
+    }
+    let file;
+    try {
+      file = window.MergeShareCard.fileSync(data);
+    } catch (err) {
+      share(SHARE_TITLE, text);
+      return;
+    }
+    let canShare = false;
+    if (navigator.share && navigator.canShare) {
+      try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
+    }
+    if (!canShare) {
+      offerShareFallback(file, data, text);
+      return;
+    }
+    let pending;
+    try {
+      pending = navigator.share({ files: [file] });
+    } catch (err) {
+      offerShareFallback(file, data, text);
+      return;
+    }
+    if (pending && typeof pending.catch === 'function') {
+      pending.catch(function (err) {
+        if (err && err.name === 'AbortError') return;
+        offerShareFallback(file, data, text);
+      });
+    }
+  }
+
+  function shareDaily() {
+    if (!window.SixfoldDaily || !window.SixfoldDaily.shareData) return;
+    const data = window.SixfoldDaily.shareData();
+    shareResult(data.title, data.game + ' · ' + data.label, data);
   }
 
   window.MergeShare = {
     share: share,
     result: shareResult,
+    app: shareApp,
+    daily: shareDaily,
     url: shareUrl,
     toast: toast
   };
@@ -215,10 +432,10 @@
     const el = document.createElement('div');
     el.className = 'coach';
     el.setAttribute('role', 'group');
-    el.setAttribute('aria-label', 'Quick tutorial');
+    el.setAttribute('aria-label', localize('Quick tutorial'));
     el.innerHTML = '<span class="coach-step" aria-hidden="true"></span>' +
       '<p class="coach-text" aria-live="polite"></p>' +
-      '<button class="coach-skip" type="button" aria-label="Skip tutorial" title="Skip tutorial">Skip</button>';
+      '<button class="coach-skip" type="button" aria-label="' + localize('Skip tutorial') + '" title="' + localize('Skip tutorial') + '">' + localize('Skip') + '</button>';
     el.querySelector('.coach-skip').addEventListener('click', function () {
       markCoachSeen(coach.game);
       hideCoach();
@@ -232,10 +449,11 @@
     const step = steps && steps[coach.step];
     if (!step) return;
     coach.el.querySelector('.coach-step').textContent = (coach.step + 1) + '/' + steps.length;
-    coach.el.querySelector('.coach-text').textContent = step.text;
+    coach.el.querySelector('.coach-text').textContent = localize(step.text);
     coach.el.classList.remove('coach-in');
-    void coach.el.offsetWidth;
-    coach.el.classList.add('coach-in');
+    window.requestAnimationFrame(function () {
+      if (coach.el) coach.el.classList.add('coach-in');
+    });
   }
 
   function enterCoach(game) {
@@ -393,6 +611,12 @@
     });
 
     const isMerge = screen === 'merge';
+    // Never make the element that contains focus aria-hidden. Firefox and
+    // Chrome both warn about it, and some screen readers drop the next focus
+    // move. The destination screen gets focus immediately after this call.
+    if (!isMerge && app.contains(document.activeElement)) {
+      try { document.activeElement.blur(); } catch (err) {}
+    }
     app.toggleAttribute('inert', !isMerge);
     if (isMerge) app.removeAttribute('aria-hidden');
     else app.setAttribute('aria-hidden', 'true');
@@ -409,6 +633,9 @@
     if (isMerge) {
       window.dispatchEvent(new Event('resize'));
       const back = $('back-to-games');
+      if (back) back.focus({ preventScroll: true });
+    } else if (screen === 'badges') {
+      const back = $('badges-back');
       if (back) back.focus({ preventScroll: true });
     } else if (screen !== 'hub' && games[screen]) {
       games[screen].activate();
@@ -427,16 +654,29 @@
     fruit: 'Fruit Merge',
     wordle: 'Wordle'
   };
+  const SCREEN_NAMES = Object.assign({ badges: 'Badges' }, GAME_NAMES);
   const VALID_GAMES = Object.keys(GAME_NAMES);
   const PUBLIC_GAMES = VALID_GAMES.filter(function (name) { return name !== 'wordle'; });
 
   function focusLastCard() {
-    const card = document.querySelector('[data-game="' + lastGame + '"]') || document.querySelector('[data-game]');
+    const card = document.querySelector('.home-game[data-game="' + lastGame + '"]') || document.querySelector('.home-game[data-game]');
     if (card) card.focus({ preventScroll: true });
   }
 
   function updateDocumentTitle() {
-    document.title = current === 'hub' ? 'Sixfold — Six games. No filler.' : (GAME_NAMES[current] || 'Sixfold') + ' — Sixfold';
+    document.title = current === 'hub' ? 'Sixfold — Six games. No filler.' : (SCREEN_NAMES[current] || 'Sixfold') + ' — Sixfold';
+  }
+
+  function openBadges() {
+    setScreen('badges');
+    updateDocumentTitle();
+    try {
+      if (!history.state || history.state.game !== 'badges') {
+        history.pushState({ game: 'badges' }, '', '#badges');
+      }
+    } catch (err) {
+      /* file:// or a browser with history restricted */
+    }
   }
 
   function openGame(game) {
@@ -567,7 +807,9 @@
 
   window.addEventListener('popstate', function (event) {
     const screen = event.state && event.state.game ? event.state.game : 'hub';
-    if (screen !== 'hub' && VALID_GAMES.indexOf(screen) !== -1) {
+    if (screen === 'badges') {
+      setScreen('badges');
+    } else if (screen !== 'hub' && VALID_GAMES.indexOf(screen) !== -1) {
       lastGame = screen;
       setScreen(screen);
     } else {
@@ -586,7 +828,8 @@
     }
     setScreen('hub');
     updateDocumentTitle();
-    if (PUBLIC_GAMES.indexOf(initial) !== -1) openGame(initial);
+    if (initial === 'badges') openBadges();
+    else if (PUBLIC_GAMES.indexOf(initial) !== -1) openGame(initial);
   }
 
   cards.forEach(function (card) {
@@ -595,9 +838,7 @@
 
   const hubShare = $('hub-share');
   if (hubShare) {
-    hubShare.addEventListener('click', function () {
-      share(SHARE_TITLE, SHARE_TEXT);
-    });
+    hubShare.addEventListener('click', shareApp);
   }
 
   const surpriseBtn = $('home-surprise');
@@ -715,18 +956,48 @@
   if (sixArt && sixGrid && window.matchMedia &&
       window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
       !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    sixArt.addEventListener('pointermove', function (event) {
-      const rect = sixArt.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
+    let tiltFrame = 0;
+    let tiltRect = null;
+    let tiltPoint = null;
+
+    function paintTilt() {
+      tiltFrame = 0;
+      if (!tiltPoint) return;
+      if (!tiltRect) tiltRect = sixArt.getBoundingClientRect();
+      if (!tiltRect.width || !tiltRect.height) return;
+      const x = (tiltPoint.x - tiltRect.left) / tiltRect.width - 0.5;
+      const y = (tiltPoint.y - tiltRect.top) / tiltRect.height - 0.5;
       sixGrid.style.setProperty('--six-tilt-x', (y * -4.5).toFixed(2) + 'deg');
       sixGrid.style.setProperty('--six-tilt-y', (x * 6.5).toFixed(2) + 'deg');
+    }
+
+    function queueTilt() {
+      if (!tiltFrame) tiltFrame = window.requestAnimationFrame(paintTilt);
+    }
+
+    sixArt.addEventListener('pointerenter', function () {
+      tiltRect = sixArt.getBoundingClientRect();
+      sixGrid.classList.add('is-tilting');
+    });
+    sixArt.addEventListener('pointermove', function (event) {
+      if (event.pointerType === 'touch') return;
+      tiltPoint = { x: event.clientX, y: event.clientY };
+      queueTilt();
     });
     sixArt.addEventListener('pointerleave', function () {
+      tiltPoint = null;
+      tiltRect = null;
+      if (tiltFrame) {
+        window.cancelAnimationFrame(tiltFrame);
+        tiltFrame = 0;
+      }
+      sixGrid.classList.remove('is-tilting');
       sixGrid.style.removeProperty('--six-tilt-x');
       sixGrid.style.removeProperty('--six-tilt-y');
     });
+    // A scroll changes the element's page position without a pointerenter.
+    // Drop the cached box so the next mouse frame measures it again.
+    document.addEventListener('scroll', function () { tiltRect = null; }, { capture: true, passive: true });
   }
 
   backButtons.forEach(function (button) {
@@ -742,7 +1013,17 @@
   games.merge = {
     title: null,
     activate: function () {},
-    deactivate: function () {}
+    deactivate: function () {
+      if (window.MergeGame && window.MergeGame.isDaily && window.MergeGame.isDaily()) {
+        window.MergeGame.endDaily();
+      }
+    },
+    startDaily: function (seed, dateKey) {
+      if (window.MergeGame) window.MergeGame.startDaily(seed, dateKey);
+    },
+    endDaily: function () {
+      if (window.MergeGame) window.MergeGame.endDaily();
+    }
   };
 
   const PLAY_HELP = {
@@ -852,7 +1133,7 @@
       const tools = document.createElement('div');
       tools.className = 'play-tools';
       tools.setAttribute('role', 'group');
-      tools.setAttribute('aria-label', 'Game controls');
+      tools.setAttribute('aria-label', localize('Game controls'));
 
       const hapticBtn = document.createElement('button');
       hapticBtn.type = 'button';
@@ -871,8 +1152,8 @@
       helpBtn.type = 'button';
       helpBtn.className = 'play-tool';
       helpBtn.dataset.playTool = 'help';
-      helpBtn.setAttribute('aria-label', 'How to play ' + name);
-      helpBtn.title = 'How to play ' + name;
+      helpBtn.setAttribute('aria-label', localize('How to play ' + name));
+      helpBtn.title = localize('How to play ' + name);
       helpBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M9.6 9.4a2.6 2.6 0 0 1 5.1.7c0 1.7-2.4 1.9-2.4 3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><circle cx="12" cy="17.3" r="1.05" fill="currentColor" /></svg>';
       helpBtn.addEventListener('click', function () {
         if (guide && window.MergeTheme && window.MergeTheme.openHelp) {
@@ -885,8 +1166,8 @@
       resetBtn.type = 'button';
       resetBtn.className = 'play-tool play-reset';
       resetBtn.dataset.playTool = 'reset';
-      resetBtn.setAttribute('aria-label', 'Reset ' + name + ' data');
-      resetBtn.title = 'Reset ' + name + ' data';
+      resetBtn.setAttribute('aria-label', localize('Reset ' + name + ' data'));
+      resetBtn.title = localize('Reset ' + name + ' data');
       resetBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><path d="M20 4v6h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>';
       resetBtn.addEventListener('click', function () { requestGameReset(screen.id, resetBtn); });
       tools.appendChild(resetBtn);
@@ -900,8 +1181,8 @@
       hapticButtons.forEach(function (button) {
         button.classList.toggle('is-off', !enabled);
         button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-        button.setAttribute('aria-label', enabled ? 'Vibration on' : 'Vibration off');
-        button.title = enabled ? 'Vibration on' : 'Vibration off';
+        button.setAttribute('aria-label', localize(enabled ? 'Vibration on' : 'Vibration off'));
+        button.title = localize(enabled ? 'Vibration on' : 'Vibration off');
       });
     }
 
@@ -955,6 +1236,11 @@
     let solved = false;
     let busy = false;
     let statusTimer = 0;
+    let dailyActive = false;
+    let dailyDate = '';
+    let dailyLevel = 0;
+    let tubeViews = [];
+    let tubeGeometry = [];
 
     function colorOf(index) {
       const base = COLORS[index] || COLORS[0];
@@ -1011,6 +1297,8 @@
     }
 
     function saveState() {
+      // Daily boards are separate from the player's normal saved level.
+      if (dailyActive) return;
       save(STATE_KEY, {
         level: level,
         tubes: cloneTubes(tubes),
@@ -1021,9 +1309,12 @@
     }
 
     function updateStats() {
-      if (levelLabel) levelLabel.textContent = LEVELS[level].tier + ' · Level ' + (level + 1) + ' of ' + LEVELS.length;
-      if (levelValue) levelValue.textContent = String(level + 1);
-      if (movesEl) movesEl.textContent = String(moves);
+      const label = LEVELS[level].tier + ' · Level ' + (level + 1) + ' of ' + LEVELS.length;
+      const levelText = String(level + 1);
+      const movesText = String(moves);
+      if (levelLabel && levelLabel.textContent !== label) levelLabel.textContent = label;
+      if (levelValue && levelValue.textContent !== levelText) levelValue.textContent = levelText;
+      if (movesEl && movesEl.textContent !== movesText) movesEl.textContent = movesText;
     }
 
     function invalidate(index, message) {
@@ -1037,75 +1328,137 @@
       status(message, 2300);
     }
 
-    function render() {
-      if (!tubesEl) return;
-      updateStats();
-      if (winEl) winEl.hidden = !solved;
-      if (statusEl) statusEl.hidden = solved;
-      tubesEl.innerHTML = '';
-      const columns = tubes.length <= 3 ? tubes.length : tubes.length <= 6 ? 3 : 4;
-      tubesEl.style.setProperty('--water-cols', String(columns));
-      tubesEl.dataset.count = String(tubes.length);
+    function setTubeStyle(element, name, value) {
+      if (element.style.getPropertyValue(name) !== value) element.style.setProperty(name, value);
+    }
 
-      tubes.forEach(function (tube, index) {
+    function ensureTubeViews() {
+      let changed = false;
+      while (tubeViews.length < tubes.length) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'water-tube';
-        button.dataset.index = String(index);
-        button.setAttribute('aria-pressed', selected === index ? 'true' : 'false');
-        button.disabled = solved;
-        const visible = tube.slice().reverse().map(function (color) { return colorOf(color).name; }).join(', ');
-        button.setAttribute('aria-label', 'Tube ' + (index + 1) + ', ' +
-          (tube.length ? (visible + ', ' + tube.length + ' of 4 full') : 'empty') +
-          (selected === index ? ', selected' : ''));
-        button.title = tube.length ? visible : 'Empty tube';
-
-        if (selected === index) button.classList.add('is-selected');
-        if (level < 2 && selected >= 0 && selected !== index && canPour(selected, index) > 0) {
-          button.classList.add('is-target');
-        }
-
+        button.dataset.index = String(tubeViews.length);
         const glass = document.createElement('span');
         glass.className = 'water-glass';
-        if (tube.length) {
-          const liquid = document.createElement('span');
-          liquid.className = 'water-liquid';
-          liquid.style.setProperty('--fill', String(tube.length));
-          let below = null;
-          tube.forEach(function (color, layer) {
-            const swatch = colorOf(color);
-            const segment = document.createElement('span');
-            segment.className = 'water-seg' + (layer === tube.length - 1 ? ' water-surface' : '');
-            segment.style.setProperty('--liquid', swatch.hex);
-            segment.style.setProperty('--liquid-deep', swatch.deep);
-            if (below) {
-              segment.style.setProperty('--liquid-below', below.hex);
-              segment.style.setProperty('--liquid-below-deep', below.deep);
-            }
-            segment.setAttribute('aria-hidden', 'true');
-            liquid.appendChild(segment);
-            below = swatch;
-          });
-          glass.appendChild(liquid);
-        }
-
         const shine = document.createElement('span');
         shine.className = 'water-shine';
         shine.setAttribute('aria-hidden', 'true');
         glass.appendChild(shine);
         button.appendChild(glass);
-        button.addEventListener('click', function () { chooseTube(index); });
         tubesEl.appendChild(button);
+        tubeViews.push({ button: button, glass: glass, liquid: null, segments: [] });
+        changed = true;
+      }
+      while (tubeViews.length > tubes.length) {
+        const view = tubeViews.pop();
+        view.button.remove();
+        changed = true;
+      }
+      if (changed) tubeGeometry = [];
+    }
+
+    function updateTubeLiquid(view, tube) {
+      if (!tube.length) {
+        if (view.liquid) {
+          view.liquid.remove();
+          view.liquid = null;
+          view.segments = [];
+        }
+        return;
+      }
+      if (!view.liquid) {
+        const liquid = document.createElement('span');
+        liquid.className = 'water-liquid';
+        liquid.setAttribute('aria-hidden', 'true');
+        view.glass.insertBefore(liquid, view.glass.firstChild);
+        view.liquid = liquid;
+        view.segments = [];
+      }
+      setTubeStyle(view.liquid, '--fill', String(tube.length));
+      while (view.segments.length > tube.length) view.segments.pop().remove();
+      while (view.segments.length < tube.length) {
+        const segment = document.createElement('span');
+        segment.setAttribute('aria-hidden', 'true');
+        view.liquid.appendChild(segment);
+        view.segments.push(segment);
+      }
+      let below = null;
+      tube.forEach(function (color, layer) {
+        const swatch = colorOf(color);
+        const segment = view.segments[layer];
+        const className = 'water-seg' + (layer === tube.length - 1 ? ' water-surface' : '');
+        if (segment.className !== className) segment.className = className;
+        setTubeStyle(segment, '--liquid', swatch.hex);
+        setTubeStyle(segment, '--liquid-deep', swatch.deep);
+        if (below) {
+          setTubeStyle(segment, '--liquid-below', below.hex);
+          setTubeStyle(segment, '--liquid-below-deep', below.deep);
+        } else {
+          segment.style.removeProperty('--liquid-below');
+          segment.style.removeProperty('--liquid-below-deep');
+        }
+        below = swatch;
       });
     }
 
-    function pourStream(fromIndex, toIndex, color, sourceBaseRect, amount, pourMs) {
+    function measureTubeGeometry() {
+      tubeGeometry = tubeViews.map(function (view) {
+        return { glass: view.glass.getBoundingClientRect(), tube: view.button.getBoundingClientRect() };
+      });
+    }
+
+    function cachedTubeGeometry(index) {
+      let item = tubeGeometry[index];
+      if (!item || !item.glass.width || !item.glass.height) {
+        measureTubeGeometry();
+        item = tubeGeometry[index];
+      }
+      return item;
+    }
+
+    function render(liquidTubes) {
+      if (!tubesEl) return;
+      updateStats();
+      if (winEl) winEl.hidden = !solved;
+      if (statusEl) statusEl.hidden = solved;
+      ensureTubeViews();
+      const columns = tubes.length <= 3 ? tubes.length : tubes.length <= 6 ? 3 : 4;
+      const columnsValue = String(columns);
+      if (tubesEl.style.getPropertyValue('--water-cols') !== columnsValue) {
+        tubesEl.style.setProperty('--water-cols', columnsValue);
+      }
+      if (tubesEl.dataset.count !== String(tubes.length)) tubesEl.dataset.count = String(tubes.length);
+
+      tubes.forEach(function (tube, index) {
+        const view = tubeViews[index];
+        const button = view.button;
+        const isTarget = level < 2 && selected >= 0 && selected !== index && canPour(selected, index) > 0;
+        const className = 'water-tube' +
+          (selected === index ? ' is-selected' : '') +
+          (isTarget ? ' is-target' : '');
+        if (button.className !== className) button.className = className;
+        if (button.disabled !== solved) button.disabled = solved;
+        const pressed = selected === index ? 'true' : 'false';
+        if (button.getAttribute('aria-pressed') !== pressed) button.setAttribute('aria-pressed', pressed);
+        const visible = tube.slice().reverse().map(function (color) { return colorOf(color).name; }).join(', ');
+        const label = 'Tube ' + (index + 1) + ', ' +
+          (tube.length ? (visible + ', ' + tube.length + ' of 4 full') : 'empty') +
+          (selected === index ? ', selected' : '');
+        if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
+        const title = tube.length ? visible : 'Empty tube';
+        if (button.title !== title) button.title = title;
+        if (!liquidTubes || liquidTubes.indexOf(index) !== -1) updateTubeLiquid(view, tube);
+      });
+    }
+
+    function pourStream(fromIndex, toIndex, color, sourceGeometry, targetGeometry, amount, pourMs) {
       const from = tubesEl.querySelector('[data-index="' + fromIndex + '"]');
       const to = tubesEl.querySelector('[data-index="' + toIndex + '"]');
       if (!from || !to) return;
       const toGlass = to.querySelector('.water-glass') || to;
-      const a = sourceBaseRect || (from.querySelector('.water-glass') || from).getBoundingClientRect();
-      const b = toGlass.getBoundingClientRect();
+      const a = sourceGeometry ? sourceGeometry.glass : (from.querySelector('.water-glass') || from).getBoundingClientRect();
+      const b = targetGeometry ? targetGeometry.glass : toGlass.getBoundingClientRect();
       const targetCount = Math.min(CAP, tubes[toIndex].length);
       const dx = b.left + b.width / 2;
       const dy = b.bottom - 2 - (b.height - 5) * (targetCount / CAP);
@@ -1208,14 +1561,14 @@
           return;
         }
         selected = index;
-        render();
+        render([]);
         coachEvent('water', 'select');
         status('Now choose a tube with room on top.', 2600);
         return;
       }
       if (selected === index) {
         selected = -1;
-        render();
+        render([]);
         status('Selection cleared.', 1400);
         return;
       }
@@ -1237,11 +1590,12 @@
       solved = isSorted(tubes);
       coachEvent('water', 'pour', { moves: moves });
       saveState();
-      render();
+      render([sourceIndex, index]);
       const sourceEl = tubesEl.querySelector('[data-index="' + sourceIndex + '"]');
       const targetEl = tubesEl.querySelector('[data-index="' + index + '"]');
       const sourceGlass = sourceEl ? sourceEl.querySelector('.water-glass') : null;
-      const sourceBaseRect = sourceGlass ? sourceGlass.getBoundingClientRect() : null;
+      const sourceGeometry = cachedTubeGeometry(sourceIndex);
+      const targetGeometry = cachedTubeGeometry(index);
       const pourMs = amount === 1 ? 360 : Math.min(1000, 340 + amount * 170);
       let drain = null;
       if (sourceEl) {
@@ -1266,13 +1620,13 @@
         targetEl.style.setProperty('--pour-ms', pourMs + 'ms');
         targetEl.classList.add('is-receiving');
       }
-      const sourceRect = sourceEl ? sourceEl.getBoundingClientRect() : null;
-      const targetRect = targetEl ? targetEl.getBoundingClientRect() : null;
+      const sourceRect = sourceGeometry ? sourceGeometry.tube : null;
+      const targetRect = targetGeometry ? targetGeometry.tube : null;
       if (sourceEl && sourceRect && targetRect) {
         sourceEl.style.setProperty('--pour-tilt',
           (targetRect.left + targetRect.width / 2 >= sourceRect.left + sourceRect.width / 2 ? 6 : -6) + 'deg');
       }
-      pourStream(sourceIndex, index, pouredColor, sourceBaseRect, amount, pourMs);
+      pourStream(sourceIndex, index, pouredColor, sourceGeometry, targetGeometry, amount, pourMs);
       busy = true;
       window.setTimeout(function () {
         busy = false;
@@ -1282,6 +1636,7 @@
       }, pourMs + 50);
       if (solved) {
         if (window.MergeCoach) window.MergeCoach.complete('water');
+        if (dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('water', null, dailyDate);
         status('Level clear. Every colour has its own tube.');
         if (window.MergeHaptics) window.MergeHaptics.win();
         if (window.MergeCelebrate) {
@@ -1357,13 +1712,18 @@
 
     function nextLevel() {
       cancelAutoNext();
-      const next = (level + 1) % LEVELS.length;
-      loadLevel(level + 1, LEVELS[next].tier + ' level ' + (next + 1) + '. Take your time.');
+      if (dailyActive) {
+        loadLevel(dailyLevel, 'Daily Sixfold. Same seeded level.');
+        return;
+      }
+      loadLevel(level + 1, 'Take your time.');
     }
 
     undoBtn.addEventListener('click', undo);
     newBtn.addEventListener('click', function () {
-      loadLevel(level, 'Fresh board. Same colours, same calm.');
+      loadLevel(dailyActive ? dailyLevel : level, dailyActive
+        ? 'Daily Sixfold. Same seeded level.'
+        : 'Fresh board. Same colours, same calm.');
     });
     nextBtn.addEventListener('click', nextLevel);
 
@@ -1376,8 +1736,8 @@
           title: 'Water Sort',
           score: moves,
           label: 'MOVES',
-          meta: ['Level ' + (level + 1) + ' of ' + LEVELS.length, 'Every colour sorted'],
-          accent: '#39a9a1'
+          meta: ['Level ' + (level + 1) + ' of ' + LEVELS.length, 'Every colour has its own tube.'],
+          accent: shareAccent('#39a9a1')
         });
       });
     }
@@ -1400,7 +1760,8 @@
       }
       if (key === 'n') {
         event.preventDefault();
-        loadLevel(level + 1, 'Next board. Take your time.');
+        if (dailyActive) loadLevel(dailyLevel, 'Daily Sixfold. Same seeded level.');
+        else loadLevel(level + 1, 'Next board. Take your time.');
         return;
       }
       if (event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'ArrowRight' || event.key === 'ArrowDown') {
@@ -1416,23 +1777,57 @@
     });
 
     window.addEventListener('merge:appearance', function () { render(); });
+    window.addEventListener('resize', function () {
+      render();
+      window.requestAnimationFrame(measureTubeGeometry);
+    });
+
+    function startDaily(seed, dateKey) {
+      if (!window.SixfoldDaily) return;
+      dailyActive = true;
+      dailyDate = dateKey || '';
+      const day = Number(String(dateKey).slice(-2)) || 1;
+      dailyLevel = day % LEVELS.length;
+      loadLevel(dailyLevel, 'Daily Sixfold. Seeded ' + LEVELS[dailyLevel].tier.toLowerCase() + ' level.');
+      status('Daily Sixfold. Clear this seeded level.');
+    }
+
+    function endDaily() {
+      if (!dailyActive) return;
+      dailyActive = false;
+      dailyDate = '';
+      restore();
+    }
+
+    if (tubesEl) {
+      tubesEl.addEventListener('click', function (event) {
+        const button = event.target.closest('.water-tube');
+        if (!button || !tubesEl.contains(button)) return;
+        chooseTube(Number(button.dataset.index));
+      });
+    }
 
     restore();
     games.water = {
       title: title,
       activate: function () {
         render();
+        window.requestAnimationFrame(measureTubeGeometry);
         if (solved) scheduleAutoNext(nextBtn, nextLevel);
         else cancelAutoNext();
       },
       deactivate: function () {
         cancelAutoNext();
-        saveState();
+        if (dailyActive) endDaily();
+        else saveState();
       },
       reset: function () {
+        if (dailyActive) endDaily();
         try { localStorage.removeItem(STATE_KEY); } catch (err) {}
         loadLevel(0, 'Progress reset. Back to level 1.');
-      }
+      },
+      startDaily: startDaily,
+      endDaily: endDaily
     };
   })();
 
@@ -1505,6 +1900,12 @@
     let mode = savedMode && savedMode.mode === 'two' ? 'two' : 'computer';
     let difficulty = savedDifficulty && ['easy', 'sharp', 'perfect'].indexOf(savedDifficulty.difficulty) !== -1
       ? savedDifficulty.difficulty : 'sharp';
+    let dailyActive = false;
+    let dailyDate = '';
+    let dailySeed = '';
+    let normalMode = mode;
+    let normalDifficulty = difficulty;
+    let aiRandom = Math.random;
     let board = Array(9).fill('');
     let turn = 'X';
     let over = false;
@@ -1625,6 +2026,9 @@
       over = true;
       winner = mark;
       if (window.MergeCoach) window.MergeCoach.complete('ttt');
+      if (dailyActive && mode === 'computer' && mark === 'X' && window.SixfoldDaily) {
+        window.SixfoldDaily.complete('ttt', { difficulty: difficulty }, dailyDate);
+      }
       winLine = line;
       if (mode === 'two') {
         if (mark === 'X') twoStats.x += 1;
@@ -1693,7 +2097,7 @@
     function randomMove(state) {
       const empty = [];
       state.forEach(function (mark, index) { if (!mark) empty.push(index); });
-      return empty.length ? empty[Math.floor(Math.random() * empty.length)] : null;
+      return empty.length ? empty[Math.floor(aiRandom() * empty.length)] : null;
     }
 
     function winningMove(state, mark) {
@@ -1733,7 +2137,7 @@
       if (difficulty === 'easy') {
         // Easy mostly plays the first square it likes. It can take a win now
         // and then, but it does not look for a block.
-        if (Math.random() < 0.22) {
+        if (aiRandom() < 0.22) {
           const win = winningMove(board.slice(), 'O');
           if (win !== null) return win;
         }
@@ -1746,11 +2150,11 @@
         if (block !== null) return block;
         // Sharp takes the middle or a corner, with the occasional human-like
         // lapse onto a side so every round does not follow the same script.
-        if (Math.random() < 0.12) return randomMove(board);
+        if (aiRandom() < 0.12) return randomMove(board);
         const strong = [];
         if (!board[4]) strong.push(4);
         [0, 2, 6, 8].forEach(function (index) { if (!board[index]) strong.push(index); });
-        if (strong.length) return strong[Math.floor(Math.random() * strong.length)];
+        if (strong.length) return strong[Math.floor(aiRandom() * strong.length)];
         return randomMove(board);
       }
       // Perfect play can still vary: choose randomly between equally optimal
@@ -1769,7 +2173,7 @@
           bestMoves.push(i);
         }
       }
-      return bestMoves.length ? bestMoves[Math.floor(Math.random() * bestMoves.length)] : null;
+      return bestMoves.length ? bestMoves[Math.floor(aiRandom() * bestMoves.length)] : null;
     }
 
     function scheduleAI() {
@@ -1789,6 +2193,9 @@
     function newRound() {
       cancelAutoNext();
       window.clearTimeout(aiTimer);
+      if (dailyActive && window.SixfoldDaily) {
+        aiRandom = window.SixfoldDaily.seededRandom(dailySeed + '|round');
+      }
       board = Array(9).fill('');
       turn = 'X';
       over = false;
@@ -1796,7 +2203,9 @@
       winLine = null;
       thinking = false;
       render();
-      status(mode === 'two' ? "X's move." : 'Your move. You are X.');
+      status(dailyActive
+        ? 'Daily Sixfold. Your move. You are X.'
+        : mode === 'two' ? "X's move." : 'Your move. You are X.');
     }
 
     function makeBoard() {
@@ -1860,10 +2269,37 @@
           title: winner ? (isTwo ? winner + ' wins' : winner === 'X' ? 'You win' : 'Computer wins') : 'A draw',
           score: isTwo ? (twoStats.x + '–' + twoStats.o) : (stats.wins + '–' + stats.losses),
           label: isTwo ? 'X – O' : 'WINS – LOSSES',
-          meta: [isTwo ? 'Two players' : level + ' computer', draws + (draws === 1 ? ' draw' : ' draws')],
-          accent: '#8bbd54'
+          meta: [isTwo ? '2 players' : level],
+          accent: shareAccent('#e3b94a')
         });
       });
+    }
+
+    function startDaily(seed, dateKey) {
+      if (!window.SixfoldDaily) return;
+      if (!dailyActive) {
+        normalMode = mode;
+        normalDifficulty = difficulty;
+      }
+      dailyActive = true;
+      dailyDate = dateKey || '';
+      dailySeed = seed;
+      mode = 'computer';
+      const day = Number(String(dateKey).slice(-2)) || 1;
+      difficulty = day % 3 === 0 ? 'perfect' : day % 3 === 1 ? 'sharp' : 'easy';
+      aiRandom = window.SixfoldDaily.seededRandom(seed + '|round');
+      newRound();
+      status('Daily Sixfold. Beat the seeded ' + difficulty + ' computer.');
+    }
+
+    function endDaily() {
+      if (!dailyActive) return;
+      dailyActive = false;
+      dailyDate = '';
+      aiRandom = Math.random;
+      mode = normalMode;
+      difficulty = normalDifficulty;
+      newRound();
     }
 
     makeBoard();
@@ -1882,8 +2318,11 @@
         cancelAutoNext();
         window.clearTimeout(aiTimer);
         thinking = false;
+        if (dailyActive) endDaily();
         render();
       },
+      startDaily: startDaily,
+      endDaily: endDaily,
       reset: function () {
         stats = { wins: 0, draws: 0, losses: 0 };
         twoStats = { x: 0, draws: 0, o: 0 };
@@ -1971,6 +2410,10 @@
     let score = 0;
     let best = Number(load(BEST_KEY, 0)) || 0;
     let nextTier = 0;
+    let dailyActive = false;
+    let dailyDate = '';
+    let dailySeed = '';
+    let fruitRandom = Math.random;
     let aimX = W / 2;
     let over = false;
     let running = false;
@@ -1982,6 +2425,10 @@
     let warningShown = false;
     let ui = {};
     let dpr = 1;
+    let backgroundCanvas = null;
+    let backgroundCtx = null;
+    let backgroundKey = '';
+    let fruitSprites = [];
 
     function readUi() {
       const computed = getComputedStyle(document.documentElement);
@@ -1999,11 +2446,66 @@
     function setupCanvas() {
       // A 2× backing store stays sharp on phones without the extra memory a
       // 2.5× canvas costs on every resize and page restore.
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const nextDpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dprChanged = nextDpr !== dpr;
+      dpr = nextDpr;
       canvas.width = Math.round(W * dpr);
       canvas.height = Math.round(H * dpr);
       canvas.style.aspectRatio = W + ' / ' + H;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      backgroundKey = '';
+      if (!fruitSprites.length || dprChanged) buildFruitSprites();
+    }
+
+    function buildFruitSprites() {
+      const previous = ctx;
+      const sprites = [];
+      FRUITS.forEach(function (def, tier) {
+        const size = Math.ceil(def.r * 3.2);
+        const sprite = document.createElement('canvas');
+        sprite.width = Math.round(size * dpr);
+        sprite.height = Math.round(size * dpr);
+        const spriteCtx = sprite.getContext('2d');
+        spriteCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx = spriteCtx;
+        paintFruit({ tier: tier, r: def.r, x: size / 2, y: size / 2, angle: 0 });
+        sprites.push({ canvas: sprite, size: size });
+      });
+      ctx = previous;
+      fruitSprites = sprites;
+    }
+
+    function drawFruitSprite(fruit) {
+      const sprite = fruitSprites[fruit.tier];
+      if (!sprite) return;
+      ctx.save();
+      ctx.translate(fruit.x, fruit.y);
+      ctx.rotate(fruit.angle || 0);
+      ctx.drawImage(sprite.canvas, -sprite.size / 2, -sprite.size / 2, sprite.size, sprite.size);
+      ctx.restore();
+    }
+
+    function drawBackgroundFrame() {
+      if (!backgroundCanvas) {
+        backgroundCanvas = document.createElement('canvas');
+        backgroundCtx = backgroundCanvas.getContext('2d');
+      }
+      const key = [ui.page, ui.panel, ui.card, ui.line, ui.warn, ui.muted, nearTop, dpr].join('|');
+      if (key !== backgroundKey) {
+        const pixelWidth = Math.round(W * dpr);
+        const pixelHeight = Math.round(H * dpr);
+        if (backgroundCanvas.width !== pixelWidth || backgroundCanvas.height !== pixelHeight) {
+          backgroundCanvas.width = pixelWidth;
+          backgroundCanvas.height = pixelHeight;
+        }
+        backgroundCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const previous = ctx;
+        ctx = backgroundCtx;
+        drawBackground();
+        ctx = previous;
+        backgroundKey = key;
+      }
+      ctx.drawImage(backgroundCanvas, 0, 0, W, H);
     }
 
     function randomTier() {
@@ -2011,7 +2513,7 @@
          under three large drops in a row. Large fruit still appear; they are
          simply rarer, as in a tuned Suika-style opening. */
       const weights = [20, 22, 22, 19, 17];
-      let roll = Math.random() * 100;
+      let roll = fruitRandom() * 100;
       for (let i = 0; i < weights.length; i += 1) {
         roll -= weights[i];
         if (roll < 0) return i;
@@ -2328,6 +2830,7 @@
       if (over) return;
       over = true;
       if (window.MergeCoach) window.MergeCoach.complete('fruit');
+      if (dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('fruit', { score: score }, dailyDate);
       if (overlay) overlay.hidden = false;
       if (finalScore) finalScore.textContent = String(score);
       if (finalBest) finalBest.textContent = String(best);
@@ -2419,7 +2922,7 @@
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = nearTop ? ui.warn : ui.muted;
-      ctx.font = '800 8px ui-sans-serif, system-ui, sans-serif';
+      ctx.font = '800 8px ' + FONT;
       ctx.textAlign = 'left';
       ctx.fillText(nearTop ? 'DANGER — MERGE TO MAKE ROOM' : 'KEEP BELOW', LEFT + 12, DANGER - 7);
       ctx.restore();
@@ -2464,7 +2967,7 @@
       }
     }
 
-    function drawFruit(fruit) {
+    function paintFruit(fruit) {
       const def = FRUITS[fruit.tier];
       const r = fruit.r;
       ctx.save();
@@ -2727,10 +3230,10 @@
 
       ctx.globalAlpha = 1;
       const ghost = { x: x, y: 44, r: r, tier: tier, angle: 0 };
-      drawFruit(ghost);
+      drawFruitSprite(ghost);
       ctx.globalAlpha = 1;
       ctx.fillStyle = ui.muted;
-      ctx.font = '800 8px ui-sans-serif, system-ui, sans-serif';
+      ctx.font = '800 8px ' + FONT;
       ctx.textAlign = 'center';
       ctx.restore();
     }
@@ -2753,7 +3256,7 @@
           ctx.fill();
         } else if (effect.type === 'score') {
           ctx.fillStyle = ui.ink;
-          ctx.font = '800 12px ui-sans-serif, system-ui, sans-serif';
+          ctx.font = '800 12px ' + FONT;
           ctx.textAlign = 'center';
           ctx.fillText(effect.text, effect.x, effect.y - (1 - alpha) * 22);
         }
@@ -2762,8 +3265,8 @@
     }
 
     function render() {
-      drawBackground();
-      fruits.forEach(drawFruit);
+      drawBackgroundFrame();
+      fruits.forEach(drawFruitSprite);
       drawEffects();
       drawGuide();
     }
@@ -2814,9 +3317,14 @@
 
     function beginNewRun() {
       cancelAutoNext();
+      if (dailyActive && window.SixfoldDaily) {
+        fruitRandom = window.SixfoldDaily.seededRandom(dailySeed + '|run');
+      }
       newRun();
       startLoop();
-      setStatus('Fresh fruit. Drag to aim, release to drop.');
+      setStatus(dailyActive
+        ? 'Daily Sixfold. Drag to aim, release to drop.'
+        : 'Fresh fruit. Drag to aim, release to drop.');
     }
 
     let drag = null;
@@ -2875,11 +3383,11 @@
       shareBtn.addEventListener('click', function () {
         shareResult('Fruit Merge', 'I scored ' + score + ' in Fruit Merge. My best is ' + best + '. Can you beat it?', {
           game: 'Fruit Merge', number: '06', kind: 'MERGING',
-          title: 'Run complete',
+          title: 'Round complete',
           score: score,
           label: 'POINTS',
-          meta: ['Best ' + best, 'Endless mode'],
-          accent: '#e3b94a'
+          meta: ['Best ' + best],
+          accent: shareAccent('#5b8fd5')
         });
       });
     }
@@ -2906,6 +3414,23 @@
       }
     });
 
+    function startDaily(seed, dateKey) {
+      if (!window.SixfoldDaily) return;
+      dailyActive = true;
+      dailyDate = dateKey || '';
+      dailySeed = seed;
+      beginNewRun();
+      setStatus('Daily Sixfold. Seeded fruit run.');
+    }
+
+    function endDaily() {
+      if (!dailyActive) return;
+      dailyActive = false;
+      dailyDate = '';
+      fruitRandom = Math.random;
+      newRun();
+    }
+
     syncPalette();
     readUi();
     setupCanvas();
@@ -2930,7 +3455,10 @@
           window.cancelAnimationFrame(aimFrame);
           aimFrame = 0;
         }
+        if (dailyActive) endDaily();
       },
+      startDaily: startDaily,
+      endDaily: endDaily,
       reset: function () {
         best = 0;
         try { localStorage.removeItem(BEST_KEY); } catch (err) {}
@@ -2992,6 +3520,11 @@
     let suppressClick = false;
     let cellButtons = [];
     let explodedIndex = -1;
+    let dailyActive = false;
+    let dailyDate = '';
+    let dailySeed = '';
+    let normalDifficulty = difficulty;
+    let mineRandom = Math.random;
 
     function currentLevel() {
       return LEVELS[difficulty];
@@ -3108,6 +3641,9 @@
 
     function reset(message) {
       cancelAutoNext();
+      if (dailyActive && window.SixfoldDaily) {
+        mineRandom = window.SixfoldDaily.seededRandom(dailySeed + '|field');
+      }
       const level = currentLevel();
       root.dataset.difficulty = difficulty;
       cols = level.cols;
@@ -3129,6 +3665,20 @@
       updateStats();
       render();
       status(message || 'Tap a square to begin. Long-press to flag.');
+      if (dailyActive) {
+        // Place the field once, from the date seed, instead of on the first
+        // tap. A seeded numbered opening cell is revealed so every player
+        // gets the same board and a safe foothold.
+        const safeRandom = window.SixfoldDaily.seededRandom(dailySeed + '|opening');
+        const safeIndex = Math.floor(safeRandom() * cells.length);
+        placeMines(safeIndex);
+        const opening = cells.findIndex(function (cell) { return !cell.mine && cell.count > 0; });
+        const fallback = cells.findIndex(function (cell) { return !cell.mine; });
+        started = true;
+        openCell(opening >= 0 ? opening : fallback);
+        startTimer();
+        status('Daily Sixfold. Opening square revealed. Clear the seeded field.');
+      }
     }
 
     function placeMines(safeIndex) {
@@ -3138,7 +3688,7 @@
       for (let i = 0; i < cells.length; i += 1) {
         if (!safe.has(i)) candidates.push(i);
       }
-      shuffle(candidates);
+      shuffle(candidates, mineRandom);
       for (let i = 0; i < Math.min(mineCount, candidates.length); i += 1) {
         cells[candidates[i]].mine = true;
       }
@@ -3190,7 +3740,9 @@
         if (resultTitle) resultTitle.textContent = won ? 'Field cleared.' : 'Mine hit.';
         if (resultCopy) resultCopy.textContent = won
           ? 'Every safe square is open.'
-          : 'Try a fresh field. The first square is always safe.';
+          : dailyActive
+            ? 'Try the same seeded field again.'
+            : 'Try a fresh field. The first square is always safe.';
         if (resultEl) resultEl.hidden = false;
         // On a loss the result card already says "Mine hit"; keeping the status
         // line too made the page taller in landscape and pushed the board off.
@@ -3202,6 +3754,7 @@
       over = true;
       won = win;
       if (window.MergeCoach) window.MergeCoach.complete('mines');
+      if (win && dailyActive && window.SixfoldDaily) window.SixfoldDaily.complete('mines', null, dailyDate);
       explodedIndex = win ? -1 : (Number.isInteger(exploded) ? exploded : -1);
       if (win) {
         cells.forEach(function (cell) {
@@ -3445,10 +3998,32 @@
           title: won ? 'Field cleared' : 'Mine hit',
           score: formatTime(elapsedTime()),
           label: won ? 'TIME' : 'LASTED',
-          meta: [currentLevel().label, won ? 'Every safe square open' : 'The field was revealed'],
-          accent: '#5b8fd5'
+          meta: [currentLevel().label, won ? 'Every safe square is open.' : 'Mine hit.'],
+          accent: shareAccent('#8bbd54')
         });
       });
+    }
+
+    function startDaily(seed, dateKey) {
+      if (!window.SixfoldDaily) return;
+      if (!dailyActive) normalDifficulty = difficulty;
+      dailyActive = true;
+      dailyDate = dateKey || '';
+      dailySeed = seed;
+      const day = Number(String(dateKey).slice(-2)) || 1;
+      difficulty = day % 3 === 0 ? 'hard' : day % 3 === 1 ? 'medium' : 'easy';
+      mineRandom = window.SixfoldDaily.seededRandom(seed + '|field');
+      reset('Daily Sixfold. First tap is safe.');
+      status('Daily Sixfold. Clear the seeded ' + currentLevel().label.toLowerCase() + ' field.');
+    }
+
+    function endDaily() {
+      if (!dailyActive) return;
+      dailyActive = false;
+      dailyDate = '';
+      mineRandom = Math.random;
+      difficulty = normalDifficulty;
+      reset('Daily challenge closed. Fresh normal field.');
     }
 
     reset('Tap a square to begin. Long-press to flag.');
@@ -3468,7 +4043,10 @@
       deactivate: function () {
         cancelAutoNext();
         stopTimer();
+        if (dailyActive) endDaily();
       },
+      startDaily: startDaily,
+      endDaily: endDaily,
       reset: function () {
         difficulty = 'easy';
         try { localStorage.removeItem(DIFFICULTY_KEY); } catch (err) {}
@@ -3495,6 +4073,16 @@
     },
     reset: function () {
       if (window.SixfoldWordle) window.SixfoldWordle.reset();
+    }
+  };
+
+  // The daily layer opens games through the same router as the hub cards.
+  window.MergeGames = {
+    open: openGame,
+    openBadges: openBadges,
+    back: backToHub,
+    startDaily: function (game, seed, dateKey) {
+      if (games[game] && games[game].startDaily) games[game].startDaily(seed, dateKey);
     }
   };
 

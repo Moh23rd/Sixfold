@@ -35,6 +35,37 @@
   <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=4.0.0" />
   <script>
     (function () {
+      // Set the document language before the first paint. The full copy is
+      // applied by i18n.js once the body is parsed.
+      var locale = 'en';
+      try {
+        var supported = ['en', 'es', 'fr', 'de', 'zh-Hans', 'zh-Hant', 'ja', 'ko', 'pt-BR', 'hi', 'kn', 'ar'];
+        function normalize(tag) {
+          var value = String(tag || '').toLowerCase().replace(/_/g, '-');
+          if (!value) return '';
+          if (value.indexOf('zh') === 0) {
+            return /(^|-)hant($|-)|-(tw|hk|mo)($|-)/.test(value) ? 'zh-Hant' : 'zh-Hans';
+          }
+          if (value === 'pt' || value.indexOf('pt-') === 0) return 'pt-BR';
+          var code = value.split('-')[0];
+          return supported.indexOf(code) !== -1 ? code : '';
+        }
+        var savedLocale = normalize(localStorage.getItem('sixfold.locale.v1'));
+        if (savedLocale) locale = savedLocale;
+        else {
+          var languages = navigator.languages || [navigator.language || 'en'];
+          for (var i = 0; i < languages.length; i += 1) {
+            var match = normalize(languages[i]);
+            if (match) { locale = match; break; }
+          }
+        }
+      } catch (err) {}
+      document.documentElement.lang = locale;
+      document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+    })();
+  </script>
+  <script>
+    (function () {
       // A phone captures the installed app's bottom chrome when the app is
       // added. Link the matching light/dark file so a fresh install starts with
       // the right neutral colour.
@@ -66,7 +97,7 @@
       var link = document.createElement('link');
       link.rel = 'manifest';
       link.id = 'manifest-link';
-      link.href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=4.0.0-w3';
+      link.href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=5.2.0';
       document.head.appendChild(link);
 
       // Capture Chrome's install event early enough that the Help panel can
@@ -84,8 +115,9 @@
        rail and then lifts, so an installed app never sees the mark jump. */
     #boot-splash {
       --boot-ink: #3b3833;
-      --boot-muted: rgba(59, 56, 51, 0.58);
+      --boot-muted: rgba(59, 56, 51, 0.82);
       --boot-track: rgba(59, 56, 51, 0.14);
+      font-family: var(--font-ui, "Google Sans Flex", sans-serif);
       position: fixed;
       inset: 0;
       z-index: 1000;
@@ -97,7 +129,7 @@
     }
     html[data-theme="dark"] #boot-splash {
       --boot-ink: #f1eae0;
-      --boot-muted: rgba(241, 234, 224, 0.58);
+      --boot-muted: rgba(241, 234, 224, 0.82);
       --boot-track: rgba(241, 234, 224, 0.18);
     }
     .boot-stage {
@@ -116,7 +148,6 @@
       margin: 0;
       transform: translateX(-50%);
       color: var(--boot-muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 8px;
       font-weight: 700;
       letter-spacing: 0.16em;
@@ -171,9 +202,8 @@
       margin: clamp(20px, 3.2vh, 30px) 0 0;
       margin-right: -0.22em;
       color: var(--boot-ink);
-      font-family: "Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       font-size: clamp(18px, 5.2vw, 25px);
-      font-weight: 800;
+      font-weight: 700;
       line-height: 1;
       letter-spacing: 0.22em;
       text-transform: uppercase;
@@ -269,12 +299,13 @@
   <link rel="apple-touch-startup-image" href="splash/ios-1668x2388-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.0" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=4.0.0" />
-  <link rel="stylesheet" href="css/games.css?v=4.0.0-w10" />
-  <link rel="stylesheet" href="css/home.css?v=4.0.0-w4" />
-  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w9" />
-  <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w13" />
+  <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.1" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="css/styles.css?v=5.2.8" />
+  <link rel="stylesheet" href="css/games.css?v=5.2.8" />
+  <link rel="stylesheet" href="css/home.css?v=4.0.0-w10" />
+  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w16" />
+  <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w15" />
+  <link rel="stylesheet" href="v5.css?v=5.4.2" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -336,7 +367,7 @@
             <svg class="focus-enter" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
             <svg class="focus-exit" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </button>
-          <button class="hub-look" id="appearance" type="button" aria-label="Appearance and colours">
+          <button class="hub-look" id="appearance" type="button" aria-haspopup="dialog" aria-controls="sheet">
             <span class="hub-look-dots" aria-hidden="true"><i></i><i></i><i></i></span>
             <span class="hub-look-copy"><span>Look</span><strong id="hub-palette-label">Warm</strong></span>
             <span class="hub-look-chevron" aria-hidden="true">›</span>
@@ -345,14 +376,15 @@
       </header>
 
       <!-- Bump data-version and replace this list with each release. -->
-      <aside class="whats-new" id="whats-new" data-version="4.0" aria-labelledby="whats-new-title" hidden>
+      <aside class="whats-new" id="whats-new" data-version="5.0" aria-labelledby="whats-new-title" hidden>
         <span class="whats-new-mark" aria-hidden="true">✦</span>
         <div class="whats-new-copy">
-          <p class="whats-new-label" id="whats-new-title">What’s new in 4.0</p>
+          <p class="whats-new-label" id="whats-new-title">What’s new in 5.0</p>
           <ul class="whats-new-list">
-            <li>Sudoku replaces One Line: four difficulties, notes, hints, best times and a board-left landscape layout</li>
-            <li>The six-piece cover builds in one steady pass again, and tapping 01–06 in order works on touch as well as mouse</li>
-            <li>Landscape layouts are tighter across the arcade; Sudoku’s tutorial and controls stay visible on short screens</li>
+            <li>Wordle in all twelve languages: localized word lists, native input for Arabic, Hindi, Kannada, Japanese, Korean and Chinese, and an offline English fallback</li>
+            <li>Wordle offline support: the selected dictionary downloads in the background, and an English fallback round keeps the game playable when it is not cached</li>
+            <li>Arabic and Hindi numerals, right-to-left Arabic, localized dates and share text across every game</li>
+            <li>New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic, with complete catalogs and offline fonts</li>
           </ul>
         </div>
         <button class="whats-new-close" id="whats-new-close" type="button" aria-label="Dismiss what’s new">×</button>
@@ -399,6 +431,59 @@
           </div>
         </div>
       </div>
+
+      <section class="daily" id="daily" aria-labelledby="daily-title">
+        <div class="daily-head">
+          <div class="daily-heading">
+            <p class="daily-kicker">Daily Sixfold</p>
+            <p class="daily-date" id="daily-date">Today</p>
+          </div>
+          <div class="daily-side">
+            <div class="daily-streak" aria-label="Current and best daily streak">
+              <strong id="daily-streak">0</strong>
+              <span>day streak</span>
+              <small>best <b id="daily-best">0</b></small>
+            </div>
+            <div class="daily-badge-wrap">
+              <button class="daily-badge" id="daily-badge" type="button" data-open-badges title="Badges">
+                <span class="daily-badge-mark" aria-hidden="true">★</span>
+                <span class="daily-badge-copy">
+                  <span class="daily-badge-title" id="daily-badge-title">Badge</span>
+                  <span class="daily-badge-value"><b id="daily-badge-value">0</b> <span id="daily-badge-unit">day streak</span></span>
+                </span>
+              </button>
+              <p class="daily-badge-next" id="daily-badge-next" hidden></p>
+              <span class="daily-badge-progress" id="daily-badge-progress" hidden><i id="daily-badge-progress-fill"></i></span>
+            </div>
+            <button class="daily-calendar-btn" id="daily-calendar-open" type="button" aria-haspopup="dialog" aria-controls="daily-calendar" aria-label="30-day calendar" title="30-day calendar">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M8 3.5v4M16 3.5v4M4 10h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><circle cx="9" cy="13.5" r="1" fill="currentColor" /><circle cx="12" cy="13.5" r="1" fill="currentColor" /><circle cx="15" cy="13.5" r="1" fill="currentColor" /><circle cx="9" cy="16.5" r="1" fill="currentColor" /><circle cx="12" cy="16.5" r="1" fill="currentColor" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="daily-feature">
+          <p class="daily-eyebrow"><span id="daily-today">Today</span><span aria-hidden="true">·</span><span class="daily-game-dot" aria-hidden="true"></span><span id="daily-game-kind">Sorting</span></p>
+          <h2 id="daily-title"><span id="daily-game-name">Water Sort</span></h2>
+        </div>
+
+        <div class="daily-actions">
+          <button class="daily-play" id="daily-featured" type="button">
+            <span id="daily-featured-label">Play Water Sort for today</span>
+            <span class="daily-play-arrow" aria-hidden="true">
+              <svg viewBox="0 0 20 20" focusable="false"><path d="M4 10h11M10.5 5.5 15 10l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+          </button>
+          <button class="daily-share" id="daily-share" type="button" aria-label="Share today’s challenge" title="Share today’s challenge">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg>
+          </button>
+        </div>
+        <div class="daily-week" id="daily-week">
+          <span class="daily-week-label">This week</span>
+          <span class="daily-week-track" id="daily-week-track" aria-hidden="true"></span>
+          <span class="daily-week-note" id="daily-week-note">0/6</span>
+        </div>
+        <p class="sr-only" id="daily-live" role="status" aria-live="polite"></p>
+      </section>
 
       <div class="home-collection" id="collection">
         <div class="home-collection-head">
@@ -523,16 +608,41 @@
 
         <footer class="hub-foot"><span>No accounts</span><span>No ads</span><span>Works offline</span></footer>
         <div class="hub-meta">
-          <button class="hub-link" id="hub-about" type="button" aria-haspopup="dialog" aria-controls="about" title="About and privacy">
-            <svg class="hub-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M12 11.2v5.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" /><circle cx="12" cy="7.9" r="1.05" fill="currentColor" /></svg>
-            <span>About &amp; privacy</span>
-            <span class="hub-link-chevron" aria-hidden="true">›</span>
-          </button>
-          <p class="hub-version" id="app-version" aria-label="Sixfold version 4.0">v4.0</p>
+          <div class="hub-meta-links">
+            <button class="hub-link" id="hub-about" type="button" aria-haspopup="dialog" aria-controls="about" title="About and privacy">
+              <svg class="hub-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M12 11.2v5.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" /><circle cx="12" cy="7.9" r="1.05" fill="currentColor" /></svg>
+              <span>About &amp; privacy</span>
+              <span class="hub-link-chevron" aria-hidden="true">›</span>
+            </button>
+            <button class="hub-link" id="hub-badges" type="button" data-open-badges title="Badges">
+              <svg class="hub-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="9" r="5.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="m8.7 13.3-1.5 7 4.8-2.4 4.8 2.4-1.5-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /><path d="m12 6.8.8 1.6 1.8.3-1.3 1.3.3 1.8-1.6-.8-1.6.8.3-1.8-1.3-1.3 1.8-.3z" fill="currentColor" /></svg>
+              <span>Badges</span>
+              <span class="hub-link-chevron" aria-hidden="true">›</span>
+            </button>
+          </div>
+          <p class="hub-version" id="app-version" aria-label="Sixfold version 5.0">v5.0</p>
         </div>
       </div>
     </div>
   </section>
+
+  <section class="play-screen badges-page" id="badges" aria-labelledby="badges-title" hidden>
+    <div class="play-shell badges-shell">
+      <header class="badges-head">
+        <button class="games-home" id="badges-back" data-back type="button" aria-label="Back to Sixfold" title="Back to Sixfold">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+        <div class="badges-heading">
+          <p class="badges-kicker">Daily Sixfold</p>
+          <h1 id="badges-title">Badges</h1>
+        </div>
+        <p class="badges-score" aria-label="Badges collected"><strong id="badges-earned">0</strong><span id="badges-total">/ 6</span></p>
+      </header>
+      <p class="badges-best" id="badges-best"></p>
+      <ul class="badges-grid" id="badges-grid" aria-label="Daily badge collection"></ul>
+    </div>
+  </section>
+
   <main class="app">
     <header class="header">
       <div class="title-block">
@@ -623,6 +733,7 @@
     </footer>
   </main>
 
+
   <section class="play-screen" id="water" aria-labelledby="water-title" hidden>
     <div class="play-shell">
       <header class="play-head">
@@ -645,7 +756,7 @@
         </div>
       </header>
       <div class="play-body">
-      <main class="play-main">
+      <div class="play-main">
         <div class="board-stage">
           <div class="water-board">
             <div class="water-tubes" id="water-tubes" role="group" aria-label="Water Sort tubes"></div>
@@ -659,7 +770,7 @@
             <button class="result-share result-share--labeled" id="water-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
           </div>
         </div>
-      </main>
+      </div>
       <footer class="play-foot">
         <div class="play-actions">
           <button class="play-btn play-btn--ghost" id="water-undo" type="button">Undo</button>
@@ -679,10 +790,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12h12"/><path d="m12 6-6 6 6 6"/></svg>
         </button>
         <span class="play-cart" aria-hidden="true"><span class="play-cart-num">02</span><span class="play-cart-kind">Numbers</span></span>
+        <button class="sudoku-settings-open" id="sudoku-settings-open" type="button" aria-haspopup="dialog" aria-controls="sudoku-settings" aria-label="Sudoku settings" title="Sudoku settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
-            <button class="game-tag play-chip" id="sudoku-level" type="button" aria-haspopup="dialog" aria-controls="sudoku-levels" aria-label="Choose Sudoku difficulty">
+            <button class="game-tag play-chip" id="sudoku-level" type="button" aria-haspopup="dialog" aria-controls="sudoku-levels">
               <span id="sudoku-level-label">Easy</span>
               <span class="play-chip-chevron" aria-hidden="true">›</span>
             </button>
@@ -696,10 +810,14 @@
         </div>
       </header>
       <div class="play-body">
-      <main class="play-main sudoku-main">
+      <div class="play-main sudoku-main">
         <div class="board-stage">
           <div class="sudoku-wrap">
             <div class="sudoku-board" id="sudoku-board" role="grid" aria-label="Sudoku board"></div>
+            <div class="sudoku-paused" id="sudoku-paused" hidden>
+              <p>Paused.</p>
+              <button id="sudoku-resume" type="button">Resume puzzle</button>
+            </div>
             <div class="sudoku-result" id="sudoku-result" role="dialog" aria-labelledby="sudoku-result-title" aria-modal="true" tabindex="-1" hidden>
               <div class="sudoku-result-card">
                 <p class="game-tag">Grid complete</p>
@@ -718,15 +836,25 @@
         </div>
         <div class="play-feedback">
           <p class="play-status sudoku-status" id="sudoku-status" role="status" aria-live="polite">Tap a cell, then a number.</p>
+          <div class="sudoku-hint-panel" id="sudoku-hint-panel" role="status" aria-live="polite" hidden>
+            <strong id="sudoku-hint-title">Naked single</strong>
+            <p id="sudoku-hint-copy"></p>
+            <div class="sudoku-hint-actions">
+              <button id="sudoku-hint-place" type="button">Place digit</button>
+              <button id="sudoku-hint-guide" type="button">Technique guide</button>
+            </div>
+          </div>
         </div>
         <div class="sudoku-pad" id="sudoku-pad" role="group" aria-label="Number pad"></div>
         <div class="sudoku-tools" role="group" aria-label="Sudoku controls">
           <button class="sudoku-tool" id="sudoku-notes" type="button" aria-pressed="false">Notes</button>
+          <button class="sudoku-tool" id="sudoku-auto-notes" type="button">Auto notes</button>
           <button class="sudoku-tool" id="sudoku-erase" type="button">Erase</button>
           <button class="sudoku-tool" id="sudoku-undo" type="button">Undo</button>
           <button class="sudoku-tool" id="sudoku-hint" type="button">Hint</button>
+          <button class="sudoku-tool" id="sudoku-pause" type="button" aria-pressed="false">Pause</button>
         </div>
-      </main>
+      </div>
       <footer class="play-foot">
         <div class="play-actions">
           <button class="play-btn play-btn--solid" id="sudoku-new" type="button">New puzzle</button>
@@ -759,7 +887,7 @@
         </div>
       </header>
       <div class="play-body">
-      <main class="play-main fruit-main">
+      <div class="play-main fruit-main">
         <div class="board-stage">
         <div class="fruit-stage">
           <div class="fruit-hud">
@@ -783,7 +911,7 @@
         <div class="play-feedback">
           <p class="play-status" id="fruit-status" role="status" aria-live="polite">Drag to aim. Release to drop.</p>
         </div>
-      </main>
+      </div>
       <footer class="play-foot">
         <div class="play-actions">
           <button class="play-btn play-btn--solid" id="fruit-new" type="button">New game</button>
@@ -817,7 +945,7 @@
         </div>
       </header>
       <div class="play-body">
-      <main class="play-main ttt-main">
+      <div class="play-main ttt-main">
         <div class="ttt-difficulty" id="ttt-difficulty" role="group" aria-label="Computer difficulty or two players">
           <button type="button" data-ttt-difficulty="easy" aria-pressed="false">Easy</button>
           <button type="button" data-ttt-difficulty="sharp" aria-pressed="true">Sharp</button>
@@ -835,7 +963,7 @@
             <button class="result-share result-share--labeled" id="ttt-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
           </div>
         </div>
-      </main>
+      </div>
       <footer class="play-foot">
         <div class="play-actions">
           <button class="play-btn play-btn--solid" id="ttt-new" type="button">New round</button>
@@ -868,7 +996,7 @@
         </div>
       </header>
       <div class="play-body">
-      <main class="play-main mines-main">
+      <div class="play-main mines-main">
         <div class="mines-toolbar">
           <div class="mines-difficulty" id="mines-difficulty" role="group" aria-label="Board size">
             <button type="button" data-mines-difficulty="easy" aria-pressed="true">Beginner</button>
@@ -892,7 +1020,7 @@
             <button class="result-share result-share--labeled" id="mines-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
           </div>
         </div>
-      </main>
+      </div>
       <footer class="play-foot">
         <div class="play-actions">
           <button class="play-btn play-btn--solid" id="mines-new" type="button">New board</button>
@@ -925,7 +1053,7 @@
         </div>
       </header>
       <div class="play-body wordle-body">
-        <main class="play-main wordle-main">
+        <div class="play-main wordle-main">
           <div class="wordle-board-wrap">
             <div class="wordle-board" id="wordle-board" role="grid" aria-label="Wordle board, 0 of 6 guesses used" aria-rowcount="6" aria-colcount="5" tabindex="0"></div>
             <div class="wordle-result" id="wordle-result" hidden role="dialog" aria-labelledby="wordle-result-title" tabindex="-1">
@@ -942,8 +1070,9 @@
             </div>
           </div>
           <p class="play-status wordle-status" id="wordle-status" role="status" aria-live="polite">Six tries. Five letters. Find the word.</p>
+          <p class="wordle-offline" id="wordle-offline" role="note" aria-live="polite" aria-atomic="true" hidden></p>
           <div class="wordle-keyboard" id="wordle-keyboard" role="group" aria-label="Letter keyboard"></div>
-        </main>
+        </div>
         <footer class="play-foot">
           <div class="play-actions">
             <button class="play-btn play-btn--ghost wordle-new" id="wordle-new" type="button">New game</button>
@@ -962,14 +1091,58 @@
         <button class="sheet-done" id="sheet-done" type="button">Done</button>
       </div>
       <p class="sheet-sub">One look for every game. Saved on this device.</p>
+      <details class="language-picker" id="language-picker">
+        <summary class="language-summary">
+          <span class="language-summary-label">Language</span>
+          <strong id="language-current">English</strong>
+          <span class="language-summary-chevron" aria-hidden="true">›</span>
+        </summary>
+        <div class="seg seg--languages" id="language-seg" role="group" aria-label="Language">
+          <button type="button" data-locale="en" aria-pressed="true">English</button>
+          <button type="button" data-locale="es" aria-pressed="false">Español</button>
+          <button type="button" data-locale="fr" aria-pressed="false">Français</button>
+          <button type="button" data-locale="de" aria-pressed="false">Deutsch</button>
+          <button type="button" data-locale="zh-Hans" aria-pressed="false" lang="zh-Hans">简体中文</button>
+          <button type="button" data-locale="zh-Hant" aria-pressed="false" lang="zh-Hant">繁體中文</button>
+          <button type="button" data-locale="ja" aria-pressed="false" lang="ja">日本語</button>
+          <button type="button" data-locale="ko" aria-pressed="false" lang="ko">한국어</button>
+          <button type="button" data-locale="pt-BR" aria-pressed="false" lang="pt-BR">Português (Brasil)</button>
+          <button type="button" data-locale="hi" aria-pressed="false" lang="hi">हिन्दी</button>
+          <button type="button" data-locale="kn" aria-pressed="false" lang="kn">ಕನ್ನಡ</button>
+          <button type="button" data-locale="ar" aria-pressed="false" lang="ar">العربية</button>
+        </div>
+      </details>
       <p class="sheet-label">Theme</p>
       <div class="seg" id="theme-seg" role="group" aria-label="Theme">
         <button type="button" data-theme-opt="auto" aria-pressed="true">Auto</button>
         <button type="button" data-theme-opt="light" aria-pressed="false">Light</button>
         <button type="button" data-theme-opt="dark" aria-pressed="false">Dark</button>
+      </div>        <p class="sheet-label">Colours</p>
+      <div class="palettes" id="palettes" role="group" aria-label="Colours"></div>
+      <details class="settings-disclosure" id="accessibility-settings">
+        <summary class="settings-summary">
+          <span>Accessibility</span>
+          <span class="settings-summary-chevron" aria-hidden="true">›</span>
+        </summary>
+        <div class="settings-list">
+          <button class="setting-row" type="button" data-setting="highContrast" aria-pressed="false"><span class="setting-copy"><strong>High contrast</strong><small>Stronger ink, borders and controls.</small></span><span class="setting-state">Off</span></button>
+          <button class="setting-row" type="button" data-setting="colorblind" aria-pressed="false"><span class="setting-copy"><strong>Colour-blind cues</strong><small>Patterns and symbols alongside colour.</small></span><span class="setting-state">Off</span></button>
+        </div>
+      </details>
+      <p class="sheet-label">Home</p>
+      <div class="settings-list">
+        <button class="setting-row" type="button" data-setting="dailyPuzzle" aria-pressed="true"><span class="setting-copy"><strong>Daily Sixfold</strong><small>Show today’s six games on the hub.</small></span><span class="setting-state">On</span></button>
+        <button class="setting-row" type="button" data-setting="dailyReminder" aria-pressed="false"><span class="setting-copy"><strong>Daily reminder</strong><small>One local nudge at 9:00 while Sixfold is open.</small></span><span class="setting-state">Off</span></button>
+        <p class="sheet-note" id="daily-reminder-status" role="status" aria-live="polite"></p>
       </div>
-      <p class="sheet-label">Colours</p>
-      <div class="palettes" id="palettes"></div>
+      <p class="sheet-label">Backup</p>
+      <p class="sheet-note">Keep a copy of every board, score, streak and setting. A backup is a normal JSON file and stays on this device until you share it. Moving to a new phone? Export here, then restore there.</p>
+      <div class="backup-actions">
+        <button class="btn" id="backup-export" type="button">Export backup</button>
+        <button class="btn ghost" id="backup-import-open" type="button">Restore backup</button>
+        <input id="backup-import" type="file" accept="application/json,.json" hidden />
+      </div>
+      <p class="sheet-note" id="backup-status" role="status" aria-live="polite"></p>
       <p class="sheet-label">This device</p>
       <p class="sheet-note">Erase every game, score, streak, saved shape and appearance choice. Nothing outside Sixfold is touched.</p>
       <button class="btn wipe-open" id="wipe-open" type="button">Erase all data</button>
@@ -1059,10 +1232,11 @@
       <section class="sheet-block">
         <p class="sheet-label">About &amp; privacy</p>
         <p class="sheet-note">No accounts, ads or tracking. Your board, best scores and appearance choices stay on this device. Each game has its own reset in its tool row, so clearing one game never touches the others. Your light/dark choice is also remembered in a first-party cookie so an installed app can choose matching launch chrome.</p>
-        <p class="sheet-note">Questions, bug reports or feedback?<br /><a class="contact-link" href="mailto:mohrd9685@gmail.com">Email mohrd9685@gmail.com</a></p>
+        <p class="sheet-note">Questions, bug reports or feedback?<br /><a class="contact-link" href="https://github.com/Moh23rd/Sixfold/discussions" target="_blank" rel="noopener">Open a discussion</a><br /><a class="contact-link" href="https://github.com/Moh23rd/Sixfold/issues/new/choose" target="_blank" rel="noopener">Report a bug or send feedback</a></p>
+        <p class="sheet-note">A backup is yours: export it from Look &amp; feel whenever you want a copy.</p>
         <p class="sheet-note">Release notes live in <a class="contact-link" href="https://github.com/Moh23rd/Sixfold/releases">GitHub Releases</a>.</p>
         <p class="sheet-note"><a class="contact-link" href="licenses.html">Licenses &amp; source</a></p>
-        <p class="sheet-note version-note">Version 4.0</p>
+        <p class="sheet-note version-note">Version 5.0</p>
       </section>
     </div>
   </div>
@@ -1079,18 +1253,112 @@
     </div>
   </div>
 
+  <div class="sheet" id="sudoku-settings" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sudoku-settings-title">
+      <div class="sheet-head">
+        <h2 id="sudoku-settings-title">Sudoku settings</h2>
+        <button class="sheet-done" data-close type="button">Done</button>
+      </div>
+      <p class="sheet-sub">Saved on this device for every Sudoku puzzle.</p>
+      <p class="sheet-label">Accessibility</p>
+      <div class="settings-list">
+        <button class="setting-row" type="button" data-setting="largeDigits" aria-pressed="false"><span class="setting-copy"><strong>Larger Sudoku digits</strong><small>Bigger entries and notes on the grid.</small></span><span class="setting-state">Off</span></button>
+        <button class="setting-row" type="button" data-setting="leftHanded" aria-pressed="false"><span class="setting-copy"><strong>Left-handed Sudoku</strong><small>Board on the right in landscape.</small></span><span class="setting-state">Off</span></button>
+        <button class="setting-row" type="button" data-setting="hideTimer" aria-pressed="false"><span class="setting-copy"><strong>Hide timer</strong><small>Play Sudoku without a clock in view.</small></span><span class="setting-state">Off</span></button>
+        <button class="setting-row" type="button" data-setting="checkMistakes" aria-pressed="false"><span class="setting-copy"><strong>Check mistakes</strong><small>Mark Sudoku entries that do not fit.</small></span><span class="setting-state">Off</span></button>
+      </div>
+      <p class="sheet-label">Sudoku input</p>
+      <div class="seg" id="input-mode-seg" role="group" aria-label="Sudoku input order">
+        <button type="button" data-setting-input="cell" aria-pressed="true">Cell first</button>
+        <button type="button" data-setting-input="digit" aria-pressed="false">Digit first</button>
+      </div>
+      <p class="sheet-note">Cell first selects a square, then a number. Digit first arms a number, then you tap its square.</p>
+    </div>
+  </div>
+
+  <div class="sheet" id="daily-calendar" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="daily-calendar-title">
+      <div class="sheet-head">
+        <h2 id="daily-calendar-title">Daily calendar</h2>
+        <button class="sheet-done" data-close type="button">Done</button>
+      </div>
+      <p class="sheet-sub">The last 30 local days. Each date features one game; completed days are marked.</p>
+      <div class="daily-calendar-grid" id="daily-calendar-grid" role="group" aria-label="Last 30 daily picks"></div>
+      <div class="daily-day-detail">
+        <h3 id="daily-day-title">Today</h3>
+        <p id="daily-day-copy"></p>
+        <button class="btn" id="daily-day-play" type="button">Play this Sudoku</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="sudoku-guide" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sudoku-guide-title">
+      <div class="sheet-head">
+        <h2 id="sudoku-guide-title">Technique guide</h2>
+        <button class="sheet-done" data-close type="button">Done</button>
+      </div>
+      <p class="sheet-sub">Short, repeatable moves. Use Auto notes to fill candidates, then look for these patterns.</p>
+      <ul class="sudoku-guide-list">
+        <li><strong>Naked single</strong><p>One empty cell accepts only one digit. Every other digit already appears in its row, column or box.</p></li>
+        <li><strong>Hidden single</strong><p>Within a row, column or box, a digit fits in only one cell. The cell may have other candidates, but this digit has nowhere else to go.</p></li>
+        <li><strong>Naked pair</strong><p>Two cells in one unit contain the same two candidates. Those two digits can be removed from the other cells in that unit.</p></li>
+        <li><strong>Pointing pair</strong><p>Inside a box, a digit’s candidates sit in one row or column. Remove that digit from the rest of that row or column.</p></li>
+        <li><strong>Box-line reduction</strong><p>In a row or column, a digit’s candidates sit inside one box. Remove that digit from the other cells of that box.</p></li>
+        <li><strong>X-Wing</strong><p>Two rows both confine a digit to the same two columns. Those columns can lose that digit everywhere else. The same idea works with two columns and two rows.</p></li>
+      </ul>
+      <p class="sheet-note">When no simple single is available, Hint will still keep you moving and say that it is revealing a cell.</p>
+    </div>
+  </div>
+
+  <aside class="update-banner" id="update-banner" role="status" aria-live="polite" hidden>
+    <p class="update-copy">A new Sixfold is ready. Reload to use it.</p>
+    <button class="update-reload" id="update-reload" type="button">Reload</button>
+    <button class="update-later" id="update-later" type="button">Later</button>
+  </aside>
+
+  <aside class="daily-finish" id="daily-finish" aria-live="polite" hidden>
+    <span class="daily-finish-medal" aria-hidden="true"></span>
+    <div class="daily-finish-copy">
+      <strong id="daily-finish-title">Challenge finished</strong>
+      <span id="daily-finish-copy"></span>
+    </div>
+    <button class="daily-finish-badges" type="button" data-open-badges>Badges</button>
+    <button class="daily-finish-close" id="daily-finish-close" type="button" aria-label="Dismiss">×</button>
+  </aside>
+
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+  <script src="settings.js?v=5.2.3"></script>
   <script src="js/haptics.js?v=4.0.0"></script>
   <script src="js/overscroll.js?v=4.0.0"></script>
   <script src="js/celebrate.js?v=4.0.0"></script>
-  <script src="js/sharecard.js?v=4.0.0"></script>
-  <script src="js/theme.js?v=4.0.0"></script>
-  <script src="js/game.js?v=4.0.0-w4"></script>
+  <script src="js/sharecard.js?v=5.2.7"></script>
+  <script src="js/theme.js?v=5.2.0"></script>
+  <script src="js/game.js?v=5.2.5"></script>
   <script src="js/install.js?v=4.0.0"></script>
-  <script src="js/sudoku.js?v=4.0.0-w4"></script>
-  <script src="js/games.js?v=4.0.0-w14"></script>
-  <script src="js/wordle-loader.js?v=4.0.0-w4"></script>
+  <script src="js/sudoku.js?v=5.2.6"></script>
+  <script src="js/games.js?v=5.2.8"></script>
+  <script src="daily.js?v=5.3.9"></script>
+  <script src="js/badges.js?v=1.0.1"></script>
+  <script src="update.js?v=5.1.0"></script>
+  <script src="i18n-fr.js?v=5.4.4"></script>
+  <script src="i18n-de.js?v=5.4.4"></script>
+  <script src="i18n-zh-hans.js?v=5.4.4"></script>
+  <script src="i18n-zh-hant.js?v=5.4.4"></script>
+  <script src="i18n-ja.js?v=5.4.4"></script>
+  <script src="i18n-ko.js?v=5.4.4"></script>
+  <script src="i18n-pt-br.js?v=5.4.4"></script>
+  <script src="i18n-hi.js?v=5.4.4"></script>
+  <script src="i18n-kn.js?v=5.4.4"></script>
+  <script src="i18n-ar.js?v=5.4.4"></script>
+  <script src="i18n-patterns.js?v=5.4.4"></script>
+  <script src="i18n.js?v=5.4.4"></script>
+  <script src="native.js?v=5.1.0"></script>
+  <script src="js/wordle-loader.js?v=5.2.5-wordle"></script>
   <script>
     (function () {
       var splash = document.getElementById('boot-splash');
@@ -1131,9 +1399,11 @@
     })();
   </script>
   <script>
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js').catch(function () {});
+        navigator.serviceWorker.register('sw.js').then(function (registration) {
+          try { window.dispatchEvent(new CustomEvent('sixfold:sw', { detail: registration })); } catch (err) {}
+        }).catch(function () {});
       });
     }
   </script>

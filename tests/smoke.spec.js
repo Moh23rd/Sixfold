@@ -1,0 +1,301 @@
+const { test, expect } = require('@playwright/test');
+const { LOCALES, chooseLocale } = require('./helpers');
+
+test('all six hub cards open their game screen', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.home-game[data-game="merge"]');
+  const expected = {
+    merge: 'Merge',
+    sudoku: 'Sudoku',
+    ttt: 'Tic Tac Toe',
+    mines: 'Minesweeper',
+    water: 'Water Sort',
+    fruit: 'Fruit Merge'
+  };
+  for (const [game, title] of Object.entries(expected)) {
+    await page.locator('.home-game[data-game="' + game + '"]').click();
+    await expect(page.locator('body')).toHaveAttribute('data-screen', game);
+    if (game === 'merge') {
+      await expect(page.locator('main.app')).toBeVisible();
+      await expect(page.locator('main.app h1')).toContainText(title);
+      await page.locator('#back-to-games').click();
+    } else {
+      await expect(page.locator('#' + game)).toBeVisible();
+      await expect(page.locator('#' + game + '-title')).toContainText(title);
+      await page.locator('#' + game + ' [data-back]').first().click();
+    }
+    await expect(page.locator('#hub')).toBeVisible();
+  }
+});
+
+test('Daily Sixfold picks a date-seeded featured game', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#daily')).toBeVisible();
+  await expect(page.locator('#daily-date')).not.toBeEmpty();
+  await expect(page.locator('#daily-games')).toHaveCount(0);
+  await expect(page.locator('.daily-feature')).toHaveCount(1);
+
+  const info = await page.evaluate(() => {
+    const picks = [];
+    for (let day = 1; day <= 12; day += 1) {
+      const date = new Date(2026, 0, day);
+      const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+      picks.push(window.SixfoldDaily.featuredGame(key));
+    }
+    const current = window.SixfoldDaily.featuredGame(window.SixfoldDaily.todayKey());
+    return {
+      varied: new Set(picks).size,
+      current: current,
+      buttonGame: document.getElementById('daily-featured').dataset.game,
+      buttonText: document.getElementById('daily-featured-label').textContent
+    };
+  });
+  expect(info.varied, 'the seeded featured game should vary by day').toBeGreaterThan(1);
+  expect(info.buttonGame).toBe(info.current);
+  expect(info.buttonText).not.toBe('Play daily Sudoku');
+
+  await page.locator('#daily-featured').click();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', info.current);
+});
+
+test('daily calendar shows the selected day\'s game', async ({ page }) => {
+  await page.goto('/');
+  const expected = await page.evaluate(() => {
+    const labels = {
+      merge: ['Merge', 'Numbers'],
+      sudoku: ['Sudoku', 'Numbers'],
+      ttt: ['Tic Tac Toe', 'Classic'],
+      mines: ['Minesweeper', 'Logic'],
+      water: ['Water Sort', 'Sorting'],
+      fruit: ['Fruit Merge', 'Merging']
+    };
+    let key = window.SixfoldDaily.todayKey();
+    let game = 'sudoku';
+    for (let i = 0; i < 30 && game === 'sudoku'; i += 1) {
+      key = window.SixfoldDaily.shiftKey(key, -1);
+      game = window.SixfoldDaily.featuredGame(key);
+    }
+    return { key: key, game: game, label: labels[game][0], kind: labels[game][1] };
+  });
+
+  await page.locator('#daily-calendar-open').click();
+  await expect(page.locator('#daily-calendar')).toBeVisible();
+  const day = page.locator('.daily-day[data-date="' + expected.key + '"]');
+  await day.click();
+  await expect(day).toHaveClass(/is-selected/);
+  await expect(page.locator('#daily-day-title')).toContainText(expected.label);
+  await expect(page.locator('#daily-day-copy')).toHaveText(expected.kind);
+  expect(expected.game).not.toBe('sudoku');
+  await expect(page.locator('#daily-day-play')).toBeVisible();
+  await expect(page.locator('#daily-day-play')).toContainText('Replay');
+});
+
+test('daily milestone badge is earned from the best streak', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem('sixfold.daily.v1', JSON.stringify({ days: {}, best: 7 }));
+  });
+  await page.reload();
+  await expect(page.locator('#daily-badge')).toHaveClass(/is-earned/);
+  await expect(page.locator('#daily-badge-value')).toHaveText('7');
+  await expect(page.locator('#daily-badge-next')).toContainText('30');
+});
+
+test('earned badge progress never grows wider than the badge', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem('sixfold.daily.v1', JSON.stringify({ days: {}, best: 7 }));
+  });
+  await page.reload();
+  await expect(page.locator('#daily-badge-next')).toBeVisible();
+
+  const measure = () => page.evaluate(() => {
+    const badge = document.getElementById('daily-badge').getBoundingClientRect();
+    const progress = document.getElementById('daily-badge-progress').getBoundingClientRect();
+    return {
+      badgeWidth: badge.width,
+      badgeLeft: badge.left,
+      badgeRight: badge.right,
+      progressWidth: progress.width,
+      progressLeft: progress.left,
+      progressRight: progress.right
+    };
+  });
+
+  const earned = await measure();
+  expect(earned.progressWidth).toBeCloseTo(earned.badgeWidth, 1);
+  expect(earned.progressLeft).toBeCloseTo(earned.badgeLeft, 1);
+  expect(earned.progressRight).toBeCloseTo(earned.badgeRight, 1);
+
+  // A longer next-badge line must widen the badge with the track, not leave
+  // the track hanging past the badge edge.
+  await page.evaluate(() => {
+    const next = document.getElementById('daily-badge-next');
+    next.hidden = false;
+    next.textContent = '265 days to 365 · keep going';
+  });
+  const stretched = await measure();
+  expect(stretched.progressWidth).toBeCloseTo(stretched.badgeWidth, 1);
+  expect(stretched.progressLeft).toBeCloseTo(stretched.badgeLeft, 1);
+  expect(stretched.progressRight).toBeCloseTo(stretched.badgeRight, 1);
+});
+
+test('daily section can be hidden and restored from Look & feel', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#daily')).toBeVisible();
+  await page.locator('#appearance').click();
+  await expect(page.locator('#sheet')).toBeVisible();
+  await page.locator('[data-setting="dailyPuzzle"]').click();
+  await expect(page.locator('#daily')).toBeHidden();
+
+  await page.reload();
+  await expect(page.locator('#daily')).toBeHidden();
+  await page.locator('#appearance').click();
+  await expect(page.locator('[data-setting="dailyPuzzle"]')).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('[data-setting="dailyPuzzle"]').click();
+  await expect(page.locator('#daily')).toBeVisible();
+});
+
+ test('Sudoku settings live in the Sudoku screen', async ({ page }) => {
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  await expect(page.locator('#sheet [data-setting="largeDigits"]')).toHaveCount(0);
+
+  await page.locator('#sudoku-settings-open').click();
+  await expect(page.locator('#sudoku-settings')).toBeVisible();
+  await page.locator('#sudoku-settings [data-setting="largeDigits"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-large-digits', 'on');
+  await page.locator('#sudoku-settings .sheet-done').click();
+  await expect(page.locator('#sudoku-settings')).toBeHidden();
+});
+
+test('Arabic, Hindi and Kannada interface numbers use native digits', async ({ page }) => {
+  await page.goto('/');
+  for (const [locale, zero, digitPattern] of [
+    ['ar', '٠', /[٠-٩]/],
+    ['hi', '०', /[०-९]/],
+    ['kn', '೦', /[೦-೯]/]
+  ]) {
+    await page.evaluate((next) => localStorage.setItem('sixfold.locale.v1', next), locale);
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    await expect(page.locator('#daily-streak')).toHaveText(zero);
+    const date = await page.locator('#daily-date').innerText();
+    expect(date).toMatch(digitPattern);
+    expect(date).not.toMatch(/[0-9]/);
+  }
+});
+
+test('Sudoku hint opens the learning panel', async ({ page }) => {
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  await page.locator('#sudoku-hint').click();
+  await expect(page.locator('#sudoku-hint-panel')).toBeVisible();
+  await expect(page.locator('#sudoku-hint-title')).not.toBeEmpty();
+  await expect(page.locator('#sudoku-hint-copy')).not.toBeEmpty();
+});
+
+test('appearance settings update the document and backup downloads', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#appearance').click();
+  await expect(page.locator('#sheet')).toBeVisible();
+  await expect(page.locator('#accessibility-settings')).not.toHaveAttribute('open', '');
+  await expect(page.locator('[data-setting="sound"]')).toHaveCount(0);
+  await page.locator('#accessibility-settings summary').click();
+  await expect(page.locator('#accessibility-settings')).toHaveAttribute('open', '');
+  await page.locator('[data-setting="highContrast"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-contrast', 'high');
+  await page.locator('[data-setting="highContrast"]').click();
+  await expect(page.locator('html')).not.toHaveAttribute('data-contrast', 'high');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#backup-export').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^sixfold-backup-.*\.json$/);
+});
+
+test('language switch to Spanish survives a reload', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await page.locator('#appearance').click();
+  await expect(page.locator('#sheet')).toBeVisible();
+  await expect(page.locator('#language-picker')).not.toHaveAttribute('open', '');
+  await expect(page.locator('#language-seg')).toBeHidden();
+
+  const switched = page.waitForEvent('load');
+  await chooseLocale(page, 'es');
+  await switched;
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  await expect(page.locator('#daily-today')).toHaveText('Hoy');
+  expect(await page.evaluate(() => localStorage.getItem('sixfold.locale.v1'))).toBe('es');
+
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  await expect(page.locator('#daily-today')).toHaveText('Hoy');
+
+  await page.locator('#appearance').click();
+  await expect(page.locator('#sheet')).toBeVisible();
+  await expect(page.locator('[data-locale="es"]')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('language switch back to English survives a reload', async ({ page }) => {
+  // Seed Spanish once. addInitScript re-runs on every navigation and would
+  // overwrite the English choice that this test is verifying.
+  await page.goto('/');
+  await page.evaluate(() => localStorage.setItem('sixfold.locale.v1', 'es'));
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+  await page.locator('#appearance').click();
+  await expect(page.locator('#sheet')).toBeVisible();
+
+  const switched = page.waitForEvent('load');
+  await chooseLocale(page, 'en');
+  await switched;
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('#daily-today')).toHaveText('Today');
+  expect(await page.evaluate(() => localStorage.getItem('sixfold.locale.v1'))).toBe('en');
+
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('#daily-today')).toHaveText('Today');
+
+  await page.locator('#appearance').click();
+  await expect(page.locator('#sheet')).toBeVisible();
+  await expect(page.locator('[data-locale="en"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-locale="es"]')).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('every added language switches from settings and persists', async ({ page }) => {
+  // Every added locale, each with a full reload in and out of the picker.
+  test.setTimeout(180000);
+  await page.goto('/');
+  for (const locale of LOCALES.filter((code) => code !== 'en')) {
+    await expect(page.locator('#boot-splash')).toBeHidden();
+    await page.locator('#appearance').click();
+    await expect(page.locator('#sheet')).toBeVisible();
+    const switched = page.waitForEvent('load');
+    await chooseLocale(page, locale);
+    await switched;
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
+    const today = await page.evaluate(() => SixfoldI18n.t('Today'));
+    await expect(page.locator('#daily-today')).toHaveText(today);
+    expect(await page.evaluate(() => localStorage.getItem('sixfold.locale.v1'))).toBe(locale);
+
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    await expect(page.locator('#daily-today')).toHaveText(today);
+    await expect(page.locator('#boot-splash')).toBeHidden();
+    await page.locator('#appearance').click();
+    await expect(page.locator('[data-locale="' + locale + '"]')).toHaveAttribute('aria-pressed', 'true');
+
+    const reset = page.waitForEvent('load');
+    await chooseLocale(page, 'en');
+    await reset;
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    expect(await page.evaluate(() => localStorage.getItem('sixfold.locale.v1'))).toBe('en');
+  }
+});

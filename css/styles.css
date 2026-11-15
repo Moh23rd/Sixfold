@@ -1,17 +1,90 @@
 /* Google Sans Flex is Google's open-source Material 3 Expressive face. The
-   shipped file keeps the rounded terminals, weight and optical size; the
-   unused language subsets and axes are trimmed away. */
+   shipped file keeps the rounded terminals, weight and optical size, and
+   includes Latin-1 and Latin Extended-A so accented English, Spanish, French
+   and German copy stays in the same face instead of falling back. */
 @font-face {
   font-family: "Google Sans Flex";
-  src: url("../fonts/google-sans-flex.woff2?v=4.0.0") format("woff2");
+  src: url("../fonts/google-sans-flex.woff2?v=4.0.1") format("woff2");
   font-weight: 100 1000;
   font-style: normal;
   font-display: swap;
 }
 
+/* Noto Sans Script families, subset to the glyphs used by each catalog. They
+   sit behind Google Sans Flex in the locale-specific stacks below, so Latin
+   brand names keep the app face while CJK, Devanagari and Arabic use a face
+   designed for the script. All are OFL; see fonts/OFL-Noto.txt. */
+@font-face {
+  font-family: "Sixfold SC";
+  src: url("../fonts/sixfold-sc.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sixfold TC";
+  src: url("../fonts/sixfold-tc.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sixfold JP";
+  src: url("../fonts/sixfold-jp.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sixfold KR";
+  src: url("../fonts/sixfold-kr.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sixfold Devanagari";
+  src: url("../fonts/sixfold-devanagari.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sixfold Kannada";
+  src: url("../fonts/sixfold-kannada.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sixfold Arabic";
+  src: url("../fonts/sixfold-arabic.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Sixfold Arabic Digits";
+  src: url("../fonts/sixfold-arabic-digits.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0660-0669;
+}
+@font-face {
+  font-family: "Sixfold Devanagari Digits";
+  src: url("../fonts/sixfold-devanagari-digits.woff2?v=5.1.4") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0966-096F;
+}
+
 :root {
   --font-ui: "Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* One family for display, UI and numeric labels. The locale blocks below add
+     only the script fallbacks needed for glyphs Google Sans Flex does not ship. */
   color-scheme: light;
 
   /* page chrome — one flat colour, identical to the manifest and theme-color,
@@ -51,12 +124,53 @@
   --t512: #dcab30;
   --t1024: #cf9822;
   --t2048: #b9801a;
+
+  /* Collection accents — one colour per cover piece, in cover order. */
+  --g1: #e85f3b;
+  --g2: #e3a92f;
+  --g3: #8bbd54;
+  --g4: #39a9a1;
+  --g5: #5b8fd5;
+  --g6: #9a6bb5;
+  --six-1: var(--g1);
+  --six-2: var(--t8);
+  --six-3: var(--t256);
+  --six-4: var(--g3);
+  --six-5: var(--g4);
+  --six-6: var(--g5);
+
   --ink-tile-low: #857a6b;
   --ink-tile-high: #fdfbf7;
 
   --pad: clamp(8px, 2.4vw, 13px);
   --gap: clamp(7px, 2vw, 11px);
 }
+
+html[lang="zh-Hans"] {
+  --font-ui: "Google Sans Flex", "Sixfold SC", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+html[lang="zh-Hant"] {
+  --font-ui: "Google Sans Flex", "Sixfold TC", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+html[lang="ja"] {
+  --font-ui: "Google Sans Flex", "Sixfold JP", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+html[lang="ko"] {
+  --font-ui: "Google Sans Flex", "Sixfold KR", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+html[lang="hi"] {
+  --font-ui: "Google Sans Flex", "Sixfold Devanagari", "Sixfold Devanagari Digits", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+html[lang="kn"] {
+  --font-ui: "Google Sans Flex", "Sixfold Kannada", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+html[lang="ar"] {
+  --font-ui: "Google Sans Flex", "Sixfold Arabic", "Sixfold Arabic Digits", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+/* Arabic joins letters; added tracking pulls the joins apart and reads as a
+   rendering fault. Let the script set its own rhythm. */
+html[lang="ar"] * { letter-spacing: normal !important; }
 
 html[data-theme="dark"] {
   color-scheme: dark;
@@ -185,9 +299,9 @@ html[data-theme="dark"] body::after {
 
 h1 {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(30px, 8.2vw, 38px);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.018em;
   line-height: 0.95;
   text-transform: uppercase;
@@ -854,11 +968,20 @@ html.sheet-open body { overflow: hidden; }
   box-shadow: var(--ghost-shadow);
 }
 
+/* Four language names do not fit comfortably on one 320px row. Two columns
+   keep every label on one line without shrinking the tap targets. */
+.seg--languages {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .seg button {
+  min-width: 0;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
-  padding: 9px 0;
+  padding: 9px 4px;
+  overflow-wrap: anywhere;
   border: 0;
   border-radius: 9px;
   background: transparent;
@@ -927,12 +1050,15 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
   min-height: 44px;
   margin-top: 9px;
   padding: 0 14px;
+  border: 0;
   border-radius: 10px;
   background: var(--seg-bg);
   box-shadow: var(--ghost-shadow);
   color: var(--ink);
+  font: inherit;
   font-size: 12.5px;
   font-weight: 700;
+  cursor: pointer;
   text-decoration: none;
   touch-action: manipulation;
   transition: transform 120ms ease;
@@ -1000,6 +1126,15 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
   .scores { width: 150px; gap: 5px; margin-left: auto; }
   .sub { font-size: 11.5px; }
   #new-game { padding: 12px 10px; }
+}
+
+/* Long localized stat names (Spanish "Movimientos", German labels) need the
+   full row width on phones. The three cards drop below the title rather than
+   overflowing the header or clipping a word. */
+@media (max-width: 480px) {
+  .header { flex-wrap: wrap; }
+  .scores { width: 100%; margin-top: 6px; margin-left: 0; }
+  .label { font-size: 8.5px; letter-spacing: 0.08em; }
 }
 
 /* Keep every control at a comfortable native-sized 44px target on the

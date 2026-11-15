@@ -4,3 +4,17 @@ Thumbs.db
 node_modules/
 .env
 .env.*
+beta-build/
+test-results/
+playwright-report/
+artifacts/
+
+# Capacitor build output and local native tooling
+native/www/
+android/.gradle/
+android/app/build/
+android/build/
+ios/App/Pods/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/DerivedData/

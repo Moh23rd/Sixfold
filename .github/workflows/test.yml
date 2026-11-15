@@ -1,0 +1,76 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: axe-light
+            files: tests/axe-light.spec.js
+          - group: axe-dark
+            files: tests/axe-dark.spec.js
+          - group: axe-states
+            files: tests/axe-states.spec.js
+          - group: core
+            files: tests/smoke.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/release-labels.spec.js
+          - group: games
+            files: tests/layout.spec.js tests/wordle.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js
+    name: Playwright ${{ matrix.group }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify every Playwright spec is assigned
+        run: |
+          assigned=$(grep -E '^[[:space:]]+files:' .github/workflows/test.yml | sed 's/.*files:[[:space:]]*//' | tr '\n' ' ')
+          for spec in tests/*.spec.js; do
+            case " $assigned " in
+              *" $spec "*) ;;
+              *)
+                echo "::error file=$spec::Playwright spec is not assigned to a CI group"
+                exit 1
+                ;;
+            esac
+          done
+          echo "All Playwright specs are assigned to a CI group."
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Audit localization catalogs
+        run: npm run test:i18n
+      - name: Audit Wordle dictionaries
+        run: npm run audit:wordle
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test ${{ matrix.files }}
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.group }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  check:
+    name: check
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all Playwright shards passed
+        env:
+          RESULT: ${{ needs.test.result }}
+        run: |
+          echo "Playwright matrix: $RESULT"
+          test "$RESULT" = "success"

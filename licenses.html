@@ -6,9 +6,11 @@
   <meta name="color-scheme" content="light dark" />
   <meta name="robots" content="noindex" />
   <title>Licenses — Sixfold</title>
+  <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.1" as="font" type="font/woff2" crossorigin />
   <style>
     :root {
       color-scheme: light dark;
+      --font-ui: "Sixfold Sans", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       --page: #f6f1e8;
       --panel: #fbf7f0;
       --ink: #2f2b26;
@@ -38,7 +40,7 @@
       padding: 0 22px max(34px, env(safe-area-inset-bottom));
       background: var(--page);
       color: var(--ink);
-      font-family: "Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-family: var(--font-ui);
       line-height: 1.55;
     }
     a { color: var(--accent); text-underline-offset: 3px; }
@@ -57,7 +59,6 @@
     .kicker {
       margin: 34px 0 4px;
       color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 10px;
       font-weight: 800;
       letter-spacing: 0.15em;
@@ -92,7 +93,7 @@
       border-radius: 14px;
       background: var(--panel);
       color: var(--ink);
-      font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font: 11px/1.55 var(--font-ui);
       white-space: pre-wrap;
     }
     footer {
@@ -125,6 +126,18 @@
       <a href="LICENSE">LICENSE</a>
       <a href="APPSTORE-EXCEPTION.md">APPSTORE-EXCEPTION.md</a>
     </div>
+
+    <section aria-labelledby="dictionary-title">
+      <h2 id="dictionary-title">Wordle dictionary sources</h2>
+      <p class="section-note">Third-party word data and the licenses recorded by the dictionary packs.</p>
+      <ul>
+        <li><a href="https://github.com/Hugo0/wordle" target="_blank" rel="noopener">Wordle Global</a> — MIT code; contributed word lists may carry their own terms.</li>
+        <li><a href="https://github.com/rspeer/wordfreq" target="_blank" rel="noopener">wordfreq</a> — Apache-2.0 code; data files are CC BY-SA 4.0.</li>
+        <li><a href="https://github.com/sen-ltd/wordle-jp" target="_blank" rel="noopener">Wordle JP</a> — MIT.</li>
+        <li><a href="https://github.com/Omkar-Shetkar/wordle-kannada" target="_blank" rel="noopener">Wordle Kannada</a> — MIT, Copyright (c) 2022 Hannah Park.</li>
+      </ul>
+      <p>The dictionaries are filtered to five user-perceived characters. Answer and valid-guess pools are both filtered against <code>scripts/wordle-audit-policy.json</code>; valid lists remain larger than the answer pools. Repository modifications are GPL-3.0-only, while the source data remains under the licenses above. Reference revisions and checked-in hashes are recorded in <code>WORDLE-SOURCES.json</code>; the original extraction revision is not recoverable from this tree.</p>
+    </section>
 
     <section aria-labelledby="gpl-title">
       <h2 id="gpl-title">GNU General Public License v3.0</h2>
@@ -846,5 +859,20 @@ distribute any particular app.
     <span>Sixfold · GPL-3.0-only</span>
     <span><a href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener">Source code</a></span>
   </footer>
+  <script>
+    // Load the bundled Google Sans Flex face directly; the standalone legal page
+    // does not use the app's stylesheet font-loading/recovery path.
+    (function () {
+      if (!window.FontFace || !document.fonts) return;
+      var face = new FontFace('Sixfold Sans Web', 'url("fonts/google-sans-flex.woff2?v=4.0.1")', {
+        weight: '100 1000',
+        display: 'swap'
+      });
+      face.load().then(function (loaded) {
+        document.fonts.add(loaded);
+        document.documentElement.style.setProperty('--font-ui', '"Sixfold Sans Web", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif');
+      }).catch(function () {});
+    })();
+  </script>
 </body>
 </html>

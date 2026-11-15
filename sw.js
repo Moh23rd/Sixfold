@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
-// 4.0: rebuilds the six-piece cover and ships the Sudoku release.
-const VERSION = 'sixfold-4.0.2';
+// Internal build 5.2.0: localized share cards, consistent script fonts and digit faces.
+const VERSION = 'sixfold-5.2.0';
 // Cache Storage is shared by every app on the origin. Only remove Sixfold's
 // own older caches, never another project's offline data.
 const CACHE_PREFIX = 'sixfold-';
@@ -9,12 +9,22 @@ const CACHE_PREFIX = 'sixfold-';
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
 const ASSET = '4.0.0';
-const GAME_CODE = '4.0.0-w4';
-const GAMES_CSS = '4.0.0-w10';
-const POLISH_CSS = '4.0.0-w9';
-const GAMES_JS = '4.0.0-w14';
-const SUDOKU_CSS = '4.0.0-w13';
-const HOME_CSS = '4.0.0-w4';
+const SHARE_CARD = '5.2.7';
+const STYLE_ASSET = '5.2.8';
+const FONT_ASSET = '4.0.1';
+const THEME_JS = '5.2.0';
+const GAME_CODE = '5.2.5';
+const WORDLE_CODE = '5.2.5-wordle';
+const SUDOKU_GAME_CODE = '5.2.6';
+const LOCALE_FONT = '5.1.4';
+const GAMES_CSS = '5.2.8';
+const POLISH_CSS = '4.0.0-w16';
+const GAMES_JS = '5.2.8';
+const SUDOKU_CSS = '4.0.0-w15';
+const V5_CSS = '5.4.2';
+const HOME_CSS = '4.0.0-w10';
+const DAILY_CODE = '5.3.9';
+const I18N_CODE = '5.4.4';
 
 const SHELL = [
   './',
@@ -22,32 +32,61 @@ const SHELL = [
   './licenses.html',
   './LICENSE',
   './APPSTORE-EXCEPTION.md',
-  './css/styles.css?v=' + ASSET,
-  './js/theme.js?v=' + ASSET,
+  './css/styles.css?v=' + STYLE_ASSET,
+  './js/theme.js?v=' + THEME_JS,
   './js/game.js?v=' + GAME_CODE,
   './js/haptics.js?v=' + ASSET,
   './js/overscroll.js?v=' + ASSET,
   './js/celebrate.js?v=' + ASSET,
-  './js/sharecard.js?v=' + ASSET,
+  './js/sharecard.js?v=' + SHARE_CARD,
   './js/install.js?v=' + ASSET,
   './css/games.css?v=' + GAMES_CSS,
   './css/home.css?v=' + HOME_CSS,
   './css/polish.css?v=' + POLISH_CSS,
   './css/sudoku.css?v=' + SUDOKU_CSS,
-  './js/sudoku.js?v=' + GAME_CODE,
+  './v5.css?v=' + V5_CSS,
+  './settings.js?v=5.2.3',
+  './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
-  './js/wordle-loader.js?v=' + GAME_CODE,
+  './daily.js?v=' + DAILY_CODE,
+  './js/badges.js?v=1.0.1',
+  './update.js?v=5.1.0',
+  './i18n-fr.js?v=' + I18N_CODE,
+  './i18n-de.js?v=' + I18N_CODE,
+  './i18n-zh-hans.js?v=' + I18N_CODE,
+  './i18n-zh-hant.js?v=' + I18N_CODE,
+  './i18n-ja.js?v=' + I18N_CODE,
+  './i18n-ko.js?v=' + I18N_CODE,
+  './i18n-pt-br.js?v=' + I18N_CODE,
+  './i18n-hi.js?v=' + I18N_CODE,
+  './i18n-kn.js?v=' + I18N_CODE,
+  './i18n-ar.js?v=' + I18N_CODE,
+  './i18n-patterns.js?v=' + I18N_CODE,
+  './i18n.js?v=' + I18N_CODE,
+  './native.js?v=5.1.0',
+  './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the
-  // offline shell so unlocking it works with no connection.
-  './js/wordle-words.js?v=' + GAME_CODE,
-  './js/wordle.js?v=' + GAME_CODE,
+  // offline shell so unlocking it works with no connection. The active locale
+  // pack is not in the first install; it is cached after its first fetch.
+  './js/wordle-words.js?v=' + WORDLE_CODE,
+  './wordle-i18n.js?v=' + WORDLE_CODE,
+  './js/wordle.js?v=' + WORDLE_CODE,
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-1024.png',
   './icons/icon-maskable-512.png',
   './icons/icon-maskable-1024.png',
-  './fonts/google-sans-flex.woff2?v=' + ASSET
+  './fonts/google-sans-flex.woff2?v=' + FONT_ASSET,
+  './fonts/sixfold-sc.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-tc.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-jp.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-kr.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-devanagari.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-kannada.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-arabic.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-arabic-digits.woff2?v=' + LOCALE_FONT,
+  './fonts/sixfold-devanagari-digits.woff2?v=' + LOCALE_FONT
 ];
 
 self.addEventListener('install', (event) => {
@@ -134,8 +173,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() =>
-          caches
-            .match(page)
+          caches.match(page)
             .then((cached) => cached || caches.match('./index.html'))
             .then((cached) => cached || caches.match('./'))
         )
@@ -170,6 +208,24 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
+    })
+  );
+});
+
+// The page shows the local daily nudge through its registration. A tag on the
+// notification replaces an older one instead of stacking reminders.
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || './#daily';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windows) {
+      for (let i = 0; i < windows.length; i += 1) {
+        if ('focus' in windows[i]) {
+          windows[i].navigate(target).catch(function () {});
+          return windows[i].focus();
+        }
+      }
+      return self.clients.openWindow(target);
     })
   );
 });

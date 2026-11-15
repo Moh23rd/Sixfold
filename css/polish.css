@@ -20,7 +20,15 @@
   .home-six {
     transform: rotate(-3deg) rotateX(var(--six-tilt-x, 0deg)) rotateY(var(--six-tilt-y, 0deg));
     transform-style: preserve-3d;
-    transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* The tilt is pointer-driven, so keep it on its own compositor layer only
+     while the pointer is over the cover. A permanent will-change layer and a
+     420ms transition made every mouse event retarget a long animation, which
+     is what felt sticky on desktop. */
+  .home-six.is-tilting {
+    transition-duration: 70ms;
     will-change: transform;
   }
 
@@ -28,12 +36,11 @@
     cursor: pointer;
     touch-action: manipulation;
     user-select: none;
-    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), filter 240ms ease;
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .home-six-piece:hover {
     transform: translateY(-3px);
-    filter: brightness(1.045);
   }
 
   .home-six-piece:active { transform: translateY(0) scale(0.975); }
@@ -68,9 +75,10 @@
 
   .result-share:hover { transform: translateY(-1px); }
 
-  .tile,
-  .water-glass,
-  .one-node { will-change: transform; backface-visibility: hidden; }
+  /* Merge tiles already get will-change in styles.css. Promoting every water
+     glass and every Minesweeper node created hundreds of compositor layers on
+     desktop, especially on the Expert board, and made the game animations
+     stutter. Transform transitions alone are enough here. */
 }
 
 /* A tap is a brief press, not an animation. Keeping it off the animation
@@ -121,7 +129,8 @@
 
 #wordle {
   --cart: var(--g6, #9a6bb5);
-  --cart-ink: var(--home-accent-ink, #211d18);
+  /* A darker ink keeps the tiny cartridge label above 4.5:1 on purple. */
+  --cart-ink: #14110d;
   --wordle-correct: #4c8a55;
   --wordle-present: #b38425;
   --wordle-absent: #746d61;
@@ -183,7 +192,7 @@ html[data-theme="dark"] #wordle {
   border-radius: 8px;
   background: var(--wordle-tile);
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(18px, 4.8dvh, 30px);
   font-weight: 800;
   line-height: 1;
@@ -250,6 +259,22 @@ html[data-theme="dark"] #wordle {
 
 .wordle-status { min-height: 17px; }
 
+.wordle-offline {
+  width: min(100%, 380px);
+  margin: -2px 0 0;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--wordle-present) 34%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--wordle-present) 9%, transparent);
+  color: var(--muted-strong);
+  font-size: 11.5px;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.wordle-offline[hidden] { display: none; }
+
 .wordle-keyboard {
   display: grid;
   gap: clamp(5px, 0.9dvh, 7px);
@@ -264,6 +289,56 @@ html[data-theme="dark"] #wordle {
   gap: clamp(5px, 1vw, 7px);
 }
 
+/* Arabic, Hindi, Japanese, Korean and Chinese use the device's own input
+   method instead of a cramped invented letter grid. The field keeps the same
+   visual weight as a key row and the Enter key stays a separate action. */
+.wordle-keyboard--ime {
+  width: min(100%, 500px);
+}
+
+.wordle-ime {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(5px, 1vw, 7px);
+  width: 100%;
+  min-width: 0;
+}
+
+.wordle-ime-input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  height: clamp(38px, 5.2dvh, 48px);
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  border-radius: 7px;
+  background: var(--wordle-key);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: clamp(15px, 2.2dvh, 19px);
+  font-weight: 700;
+  text-align: center;
+}
+
+.wordle-ime-input::placeholder {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 1;
+}
+
+.wordle-ime-input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.wordle-ime .wordle-key {
+  flex: 0 0 auto;
+  min-width: 68px;
+  padding-inline: 12px;
+  font-size: clamp(10px, 1.4dvh, 12px);
+}
+
 .wordle-key {
   display: grid;
   place-items: center;
@@ -276,7 +351,7 @@ html[data-theme="dark"] #wordle {
   background: var(--wordle-key);
   box-shadow: 0 2px 0 color-mix(in srgb, var(--ink) 9%, transparent);
   color: var(--ink);
-  font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace);
+  font-family: var(--font-ui);
   font-size: clamp(11px, 1.6dvh, 14px);
   font-weight: 800;
   line-height: 1;
@@ -300,7 +375,9 @@ html[data-theme="dark"] #wordle {
 .wordle-key.wordle-key--enter {
   border-color: var(--cart);
   background: var(--cart);
-  color: var(--cart-ink);
+  /* Darker than --cart-ink so the small Enter label clears 4.5:1 on the
+     purple key (4.61:1 at 11.8px). */
+  color: #14110d;
   font-weight: 900;
   box-shadow: 0 2px 0 color-mix(in srgb, var(--cart) 62%, #000);
 }
@@ -402,6 +479,11 @@ html[data-theme="dark"] #wordle {
 
 @media (max-width: 380px) {
   .wordle-board-wrap { width: min(100%, 286px, 39dvh); }
+  /* The offline notice adds a third line at 320px, which pushed the last key
+     row below the fixed play frame. Give that state a little more room. */
+  #wordle:has(.wordle-offline:not([hidden])) .wordle-board-wrap {
+    width: min(100%, 250px, 34dvh);
+  }
   .wordle-key { height: 34px; border-radius: 6px; }
   .wordle-key-row { gap: 4px; }
   .wordle-status { font-size: 10.5px; }
@@ -650,7 +732,7 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
   border-radius: 5px;
   color: color-mix(in srgb, var(--win-accent, var(--ink)) 72%, var(--ink));
   background: color-mix(in srgb, var(--win-accent, var(--ink)) 8%, var(--sheet-bg, var(--card)));
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-family: var(--font-ui);
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -748,7 +830,7 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
   display: block;
   margin-bottom: 3px;
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(20px, 5.8vw, 24px);
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -989,7 +1071,7 @@ html.hidden-reveal-open body {
 .hidden-reveal-kicker,
 .hidden-reveal-foot {
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -1009,14 +1091,14 @@ html.hidden-reveal-open body {
   width: 6px;
   height: 6px;
   border-radius: 2px;
-  background: var(--g1);
+  background: var(--six-1);
 }
 
-.hidden-reveal-pips i:nth-child(2) { background: var(--t8); }
-.hidden-reveal-pips i:nth-child(3) { background: var(--g2); }
-.hidden-reveal-pips i:nth-child(4) { background: var(--g3); }
-.hidden-reveal-pips i:nth-child(5) { background: var(--g4); }
-.hidden-reveal-pips i:nth-child(6) { background: var(--g5); }
+.hidden-reveal-pips i:nth-child(2) { background: var(--six-2); }
+.hidden-reveal-pips i:nth-child(3) { background: var(--six-3); }
+.hidden-reveal-pips i:nth-child(4) { background: var(--six-4); }
+.hidden-reveal-pips i:nth-child(5) { background: var(--six-5); }
+.hidden-reveal-pips i:nth-child(6) { background: var(--six-6); }
 
 .hidden-reveal-tiles {
   display: flex;
@@ -1036,7 +1118,7 @@ html.hidden-reveal-open body {
   background: var(--card);
   box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--ink) 10%, transparent);
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(20px, 6vw, 25px);
   font-weight: 800;
   line-height: 1;
@@ -1080,7 +1162,7 @@ html.hidden-reveal-open body {
 .hidden-reveal-eyebrow {
   margin: 0 0 4px;
   color: var(--g6, #9a6bb5);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -1091,7 +1173,7 @@ html.hidden-reveal-open body {
 .hidden-reveal h2 {
   margin: 0;
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(27px, 7.5vw, 34px);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -1201,3 +1283,15 @@ html.home-ready .six-4 { animation-delay: 310ms; }
 html.home-ready .six-5 { animation-delay: 380ms; }
 html.home-ready .six-6 { animation-delay: 450ms; }
 html.home-ready .home-six-caption { animation-delay: 500ms; }
+
+/* Keep short descriptions from stranding a single word on their last line. */
+.play-intro .sub,
+.home-game-desc,
+.header .sub {
+  text-wrap: balance;
+}
+
+/* Longer settings copy reads better with a short final line avoided. */
+.sheet-note {
+  text-wrap: pretty;
+}

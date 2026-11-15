@@ -1,5 +1,215 @@
 # Changelog
 
+> Public release label: **v5.0**. The internal build version for this release is **5.2.0**.
+
+## v5.0 — 15 November 2026
+
+Internal build: **5.2.0**
+
+5.0 is the twelve-language Daily Sixfold release. It rolls up every change
+since 4.0: Wordle in every interface language, Daily Sixfold, Sudoku Learn,
+twelve languages including Spanish, native wrappers, and one coherent finish
+across the hub, games and generated share cards.
+
+### Also since 4.0
+
+- **Spanish localization and the language switch**, plus **native Android and
+  iOS wrappers** built with Capacitor 8, native splash/status-bar handling,
+  store listings, review notes and privacy material.
+- **Daily Sixfold**: a date-seeded featured game, a 30-day archive, a local
+  streak and best, milestone badges and reminders, spoiler-free daily sharing,
+  and daily runs kept separate from normal saves.
+- **Sudoku Learn**, technique-aware hints, auto-notes, mistake checking, pause
+  and resume, plus high-contrast, colour-blind, left-handed and larger-digit
+  controls. Backup/restore, persistent storage and the update prompt complete
+  the collection shell.
+- **GPL-3.0-only licensing**, the App Store additional permission, the in-app
+  licences view and the localized store and privacy material.
+- **Share and settings polish**: image sharing falls back to a save-card flow
+  when the platform blocks it; share text and cards follow the selected
+  language; accessibility options collapse into one row and interface sounds
+  are gone; the What’s New panel is localized and fits 320px/RTL.
+- **Performance and motion**: Water Sort updates only changed tubes, game art is
+  cached between moves, Fruit Merge caps DPR and batches aim redraws, and the
+  expanded reduced-motion paths keep every new transition still when asked.
+- **One six-colour palette** across the hub, game results and generated share
+  cards, with **Google Sans Flex** on headings, the wordmark, labels and cards.
+- **A release-quality finish**: balanced short copy, quieter Daily badges, the
+  earned-badge progress aligned to the badge, Wordle cartridge and Tic Tac Toe
+  contrast fixes found by the expanded axe coverage, and smoother Daily
+  progress and badge state transitions.
+- **Broader verification**: axe scans for Wordle and every result overlay in
+  light and dark, a 320px locale layout pass, share-card palette checks, and
+  the complete Playwright suite in CI.
+
+### Changed
+
+- **Daily Sixfold** now uses the same flat paper surfaces and hard edge as the
+  rest of the hub, with no gradient wash. The section can be hidden from
+  **Look & feel → Home** without losing streaks or check-ins.
+- **The language picker** is a compact collapsed row that expands only when
+  needed, instead of showing every language at once.
+- **Sudoku settings** — larger digits, left-handed layout, hidden timer,
+  mistake checking and input order — moved from the hub sheet into a
+  **Sudoku settings** sheet on the Sudoku screen.
+
+### Fixed
+
+- Wordle now opens with the English word list when the selected language's
+  dictionary has not been cached yet, such as the first visit while offline,
+  instead of failing to load the game. That fallback round has its own save,
+  separate from both the English game and localized games, so reconnecting
+  starts the language's own round without touching an English round.
+- Wordle shows a small localized note when an offline round is using the
+  English word list, explaining that the selected language’s dictionary is
+  unavailable offline and that the fallback round is saved separately.
+- Interface numbers now use Arabic-Indic digits in Arabic and Devanagari
+  digits in Hindi, including scores, timers, daily counters and Sudoku
+  digits, while dates and share text use the same locale-aware numerals.
+- Share cards now follow the selected interface language: card chrome,
+  game titles, labels, metadata, fallback copy and generated PNGs are all
+  localized, with script-specific fonts and overflow-safe text fitting.
+- Arabic and Hindi share cards now render their native numerals from bundled
+  digit faces instead of losing the score and level digits.
+- Sudoku share cards show the hint count again, localized with the active
+  interface language.
+- Unified headings, the wordmark, game labels and generated share cards on
+  Google Sans Flex, with one consistent face across the app.
+
+### Added
+
+- **Wordle pack prefetch**: after an online visit or a language change, the
+  active language's dictionary is downloaded in the background and retried
+  when the connection returns, so offline play opens in the selected language
+  before the game is first launched.
+- **Wordle dictionary audit**: `npm run audit:wordle` enforces five-grapheme
+  entries, duplicate-free arrays, answer/guess consistency, IME mode and
+  keyboard-row coverage, then reports provenance and answer-pool policy
+  findings from a reviewed denylist. It runs in CI; `--strict` additionally
+  gates the known review findings. See [WORDLE-AUDIT.md](WORDLE-AUDIT.md).
+- **Wordle all-locale matrix**: the Playwright suite now wins a Wordle round in
+  every interface language, covering native IME entry, Arabic RTL, localized
+  Arabic/Hindi digits and the copied share text. The matrix takes about 1.3
+  minutes locally, keeping the 20-minute CI job within budget.
+- **Multilingual Wordle**: the hidden game now has localized board copy,
+  result text and five-character dictionaries for all twelve interface
+  languages, with a native input method for scripts that do not use the
+  on-screen letter grid. Only the active language's dictionary is downloaded
+  and cached.
+- **Localization audit in CI**: `npm run test:i18n` checks every catalog against
+  the English source for missing or unknown keys, empty copy and mismatched
+  numbered placeholders, including the shared dynamic-copy templates. It also
+  guards the Wordle strings and all twelve locale dictionaries.
+- **Localized store listings and privacy policies** for Simplified and
+  Traditional Chinese, Japanese, Korean, Brazilian Portuguese, Hindi and
+  Arabic, alongside the English and Spanish store copy.
+- **Eight more interface languages**: Simplified and Traditional Chinese,
+  Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic. Each includes a
+  complete catalog for the hub, all six games, settings, help, accessibility
+  labels, validation messages, game status lines, dates and daily share text.
+  Arabic switches the interface to right-to-left.
+- **Offline script fonts** for Chinese, Japanese, Korean, Devanagari, Kannada and
+  Arabic, subset to the characters Sixfold actually uses, so translated screens keep a
+  consistent face without a network request.
+- **French and German localization**: complete catalogs for the hub, all six
+  games, settings, help, accessibility labels, validation messages, game
+  status lines, dates and daily share text. The language picker now offers
+  twelve languages in a responsive grid on phones.
+- **Locale layout tests** at 320px and 390px for every language, checking for
+  clipped text and horizontal overflow alongside the existing light/dark axe
+  scans.
+
+## 5.1.0 — 12 November 2026
+
+5.1 adds Spanish localization and native app-store wrappers while keeping the
+game offline, account-free and free of ads or tracking.
+
+### Added
+
+- **Spanish localization**: an English/Spanish catalog covering the hub, game
+  screens, settings, help, accessibility labels, validation messages, game
+  status lines, dates and daily share text.
+- **Language switch** in Look & feel, with the choice persisted on the device.
+  The first visit follows the device language.
+- **Native Android and iOS projects** generated with Capacitor 8, using the
+  same app id `com.moh23rd.sixfold`, branded icons and light/dark splash
+  screens.
+- **Native-only plugin bundle** for the launch screen, status-bar colours and
+  Android back navigation. The PWA never loads Capacitor core.
+- **Native release material**: build and signing notes, English and Spanish
+  store listings, review answers and a privacy policy.
+- **Native build scripts** that stage only the public static shell and keep
+  `native/www` reproducible.
+
+### Changed
+
+- The app version, service-worker cache and native build numbers move to
+  5.1.0 / 510.
+- The service worker is disabled inside the native shells; local storage and
+  the existing save format are unchanged.
+- Store-facing privacy copy now states that the Android WebView declares
+  internet permission but the app sends no gameplay or personal data.
+
+### Not shipped in this workspace
+
+- No signed Android or iOS binary and no store upload. Both require the
+  platform toolchains, signing identities and store accounts.
+
+### Still deliberately out of scope
+
+- No accounts, ads, subscriptions, global leaderboard or server-dependent
+  daily puzzle.
+- No friend-to-friend challenge inbox; the daily share link remains the first
+  challenge primitive.
+
+## 5.0.0 — 11 November 2026
+
+5.0 is the Daily Sixfold release. It adds a reason to come back each day
+without adding accounts, ads, tracking or a server.
+
+### Added
+
+- **Daily Sixfold**: a date-seeded challenge in every game — a seeded Merge
+  board, Sudoku grid, Tic Tac Toe computer, Minesweeper field, Water Sort level
+  and Fruit Merge run — plus a local streak, a best streak and a 30-day
+  calendar. It works offline.
+- **Daily runs stay separate**: a daily board never overwrites the player’s
+  normal saved game, and only a finished daily challenge checks off the slot.
+- **Daily Sudoku archive**: every date in the calendar produces the same seeded
+  grid, and past days can be replayed.
+- **Spoiler-free daily sharing**: a link carries the date, not the solution.
+- **Sudoku Learn mode**: technique-aware hints for naked and hidden singles,
+  auto-notes, optional mistake checking, a technique guide and a richer
+  post-game summary.
+- **Accessibility controls**: high contrast, colour-blind cues, larger Sudoku
+  digits, left-handed landscape layout, timer hiding and cell-first or
+  digit-first number entry.
+- **Sudoku pause/resume**, so the timer can be stopped during a break.
+- **Backup and restore**: a JSON export of every board, score, streak and
+  setting, and a guarded restore flow.
+- **Persistent storage**: `navigator.storage.persist()` is requested where the
+  browser supports it.
+- **Update prompt**: a waiting service worker can be applied without a hard
+  refresh.
+- **Playwright and axe test suite**, plus GitHub Actions CI.
+- **Feedback routes**: in-app Discussions and issue links, with bug and idea
+  templates.
+
+### Changed
+
+- Sudoku hints now teach a technique before offering to place a digit. When no
+  single is available, the panel says that it is revealing a cell.
+- Daily progress is part of the collection shell, not a separate mode.
+- Settings and backup live together under Look & feel.
+
+### Still deliberately out of scope
+
+- No accounts, ads, subscriptions, global leaderboard or server-dependent
+  daily puzzle.
+- Localization, a native app-store wrapper and a friend-to-friend challenge
+  inbox remain separate future work; the daily share link is the first
+  challenge primitive.
+
 ## 4.0.0 — 11 November 2026
 
 4.0 is the Sudoku release. It rolls up every change since Sixfold 3.0,
