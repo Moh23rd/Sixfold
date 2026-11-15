@@ -723,31 +723,8 @@
     return all;
   }
 
-  // Match a browser language tag to one of our catalogs. Chinese needs script
-  // resolution because zh-CN and zh-TW are not interchangeable; Portuguese is
-  // Brazilian in this collection, so every Portuguese tag maps to pt-BR.
-  function normalize(tag) {
-    var value = String(tag || '').toLowerCase().replace(/_/g, '-');
-    if (!value) return '';
-    if (value.indexOf('zh') === 0) {
-      return /(^|-)hant($|-)|-(tw|hk|mo)($|-)/.test(value) ? 'zh-Hant' : 'zh-Hans';
-    }
-    if (value === 'pt' || value.indexOf('pt-') === 0) return 'pt-BR';
-    var code = value.split('-')[0];
-    return SUPPORTED[code] ? code : '';
-  }
-
   function detect() {
-    try {
-      var saved = normalize(localStorage.getItem(KEY));
-      if (saved) return saved;
-      var languages = navigator.languages || [navigator.language || 'en'];
-      for (var i = 0; i < languages.length; i += 1) {
-        var match = normalize(languages[i]);
-        if (match) return match;
-      }
-    } catch (err) {}
-    return 'en';
+    return window.SixfoldLocale ? window.SixfoldLocale.detect() : 'en';
   }
 
   function word(value) {
@@ -886,8 +863,29 @@
     loadFace(face.digits);
   }
 
+  function cacheActiveLocale() {
+    if (!navigator.serviceWorker || !navigator.onLine || !window.SixfoldLocale) return;
+    var files = window.SixfoldLocale.assets(locale);
+    if (!files.length) return;
+    var warmed = false;
+    function warm() {
+      if (warmed) return;
+      warmed = true;
+      files.forEach(function (file) {
+        fetch(file + '?v=' + window.SixfoldLocale.VERSION, { cache: 'force-cache' }).catch(function () {});
+      });
+    }
+    // The first visit has no controller yet. Let the worker claim the page,
+    // then cache the one pack this reader can actually open offline.
+    navigator.serviceWorker.addEventListener('controllerchange', warm, { once: true });
+    navigator.serviceWorker.ready.then(function () {
+      if (navigator.serviceWorker.controller) warm();
+    }).catch(function () {});
+  }
+
   function init() {
     ensureScriptFace();
+    cacheActiveLocale();
     translateHead();
     translateTree(document.body);
     bindLanguage();
