@@ -18,12 +18,12 @@ const WORDLE_CODE = '5.2.5-wordle';
 const SUDOKU_GAME_CODE = '5.2.6';
 const LOCALE_FONT = '5.1.4';
 const GAMES_CSS = '5.2.7';
-const POLISH_CSS = '4.0.0-w14';
+const POLISH_CSS = '4.0.0-w15';
 const GAMES_JS = '5.2.8';
 const SUDOKU_CSS = '4.0.0-w15';
 const V5_CSS = '5.3.9';
 const HOME_CSS = '4.0.0-w10';
-const DAILY_CODE = '5.3.8';
+const DAILY_CODE = '5.3.9';
 const I18N_CODE = '5.4.4';
 
 const SHELL = [

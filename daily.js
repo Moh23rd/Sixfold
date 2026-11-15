@@ -460,9 +460,12 @@
       badge.setAttribute('aria-label', tr(earned ? 'Badge' : 'Next badge') + ': ' + number(shown) + ' ' + tr('day streak'));
     }
     if (badgeNext) {
-      badgeNext.hidden = !next;
-      badgeNext.textContent = next
-        ? (earned ? number(next - best) + ' ' + tr('days to') + ' ' + number(next) : tr('Next badge') + ' · ' + number(next))
+      // Before a badge is earned, the badge itself already says "Next badge"
+      // and the progress bar shows how far along it is. Repeating that in a
+      // second line only adds noise; after earning one, show the way to the next.
+      badgeNext.hidden = !next || !earned;
+      badgeNext.textContent = next && earned
+        ? number(next - best) + ' ' + tr('days to') + ' ' + number(next)
         : '';
     }
     if (badgeProgress && badgeFill) {

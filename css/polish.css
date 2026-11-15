@@ -1282,3 +1282,15 @@ html.home-ready .six-4 { animation-delay: 310ms; }
 html.home-ready .six-5 { animation-delay: 380ms; }
 html.home-ready .six-6 { animation-delay: 450ms; }
 html.home-ready .home-six-caption { animation-delay: 500ms; }
+
+/* Keep short descriptions from stranding a single word on their last line. */
+.play-intro .sub,
+.home-game-desc,
+.header .sub {
+  text-wrap: balance;
+}
+
+/* Longer settings copy reads better with a short final line avoided. */
+.sheet-note {
+  text-wrap: pretty;
+}
