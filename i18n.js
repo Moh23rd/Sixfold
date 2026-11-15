@@ -847,7 +847,7 @@
     try {
       if (document.fonts.check('16px "' + face.family + '"', face.sample)) return;
     } catch (err) {}
-    fetch('fonts/' + face.file)
+    fetch('fonts/' + face.file, { headers: { 'X-Sixfold-Active-Face': '1' } })
       .then(function (response) { return response.arrayBuffer(); })
       .then(function (buffer) {
         var loaded = new window.FontFace(face.family, buffer, { weight: '400', style: 'normal', display: 'swap' });
@@ -863,14 +863,43 @@
     loadFace(face.digits);
   }
 
+  function announceLocale() {
+    if (!navigator.serviceWorker || !window.SixfoldLocale) return;
+    navigator.serviceWorker.ready.then(function (registration) {
+      var worker = registration.active || navigator.serviceWorker.controller;
+      if (worker) worker.postMessage({ type: 'sixfold-active-locale', locale: locale });
+    }).catch(function () {});
+  }
+
+  function warmScriptFace() {
+    var face = SCRIPT_FACE[locale];
+    if (!face) return;
+    [face, face.digits].forEach(function (item) {
+      if (!item) return;
+      fetch('fonts/' + item.file, {
+        cache: 'force-cache',
+        headers: { 'X-Sixfold-Active-Face': '1' }
+      }).catch(function () {});
+    });
+  }
+
   function cacheActiveLocale() {
-    if (!navigator.serviceWorker || !navigator.onLine || !window.SixfoldLocale) return;
+    if (!navigator.serviceWorker || !window.SixfoldLocale) return;
+    // Even English and Spanish have no separate catalog but still need to tell
+    // the worker which dictionaries and script faces are now disposable.
+    announceLocale();
+    if (!navigator.onLine) return;
     var files = window.SixfoldLocale.assets(locale);
     if (!files.length) return;
     var warmed = false;
     function warm() {
       if (warmed) return;
       warmed = true;
+      announceLocale();
+      // The first visit may fetch the script face before the worker controls
+      // the page. Fetch it again once controlled so the active face is in the
+      // offline cache without shipping every script face in the shell.
+      warmScriptFace();
       files.forEach(function (file) {
         fetch(file + '?v=' + window.SixfoldLocale.VERSION, { cache: 'force-cache' }).catch(function () {});
       });

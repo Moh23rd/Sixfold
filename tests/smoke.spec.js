@@ -1,5 +1,11 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
 const { LOCALES, chooseLocale } = require('./helpers');
+
+const SW_SOURCE = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+const SHELL_BLOCK = SW_SOURCE.match(/const SHELL = \[([\s\S]*?)\n\];/)[1];
+const SHELL_ENTRIES = (SHELL_BLOCK.match(/^  ['"]/gm) || []).length;
 
 test('all six hub cards open their game screen', async ({ page }) => {
   await page.goto('/');
@@ -336,6 +342,7 @@ test.describe('service worker locale cache', () => {
   });
 
   test('a new worker prunes stale versioned assets', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('sixfold.locale.v1', 'fr'));
     await page.goto('/');
     await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
     const currentLocaleVersion = await page.evaluate(() => window.SixfoldLocale.VERSION);
@@ -379,5 +386,172 @@ test.describe('service worker locale cache', () => {
     const paths = await cachedPaths();
     expect(paths).toContain('/index.html');
     expect(paths).toContain('/i18n-fr.js?v=' + currentLocaleVersion);
+  });
+
+  test('runtime caching stays an allowlist and within its entry budget', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+
+    const probe = '/splash/ios-640x1136-light.png?probe=' + Date.now();
+    await page.evaluate(async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Probe asset is missing');
+      await response.blob();
+    }, probe);
+    await page.waitForTimeout(400);
+
+    const paths = await page.evaluate(async () => {
+      const paths = [];
+      for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) {
+          const url = new URL(request.url);
+          paths.push(url.pathname + url.search);
+        }
+      }
+      return paths;
+    });
+
+    expect(paths.some((entry) => entry.indexOf('?probe=') !== -1)).toBe(false);
+    expect(paths.length).toBeLessThanOrEqual(SHELL_ENTRIES + 13);
+  });
+
+  test('keeps only the selected script face', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('sixfold.locale.v1', 'ja'));
+    await page.reload();
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+
+    const scriptFonts = () => page.evaluate(async () => {
+      const fonts = [];
+      for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) {
+          const pathname = new URL(request.url).pathname;
+          if (pathname.indexOf('/fonts/sixfold-') === 0) fonts.push(pathname);
+        }
+      }
+      return [...new Set(fonts)].sort();
+    });
+
+    await expect.poll(scriptFonts).toEqual(['/fonts/sixfold-jp.woff2']);
+
+    // The picker renders every language name; those font downloads must not
+    // turn into offline cache entries for a Japanese reader.
+    await page.locator('#appearance').click();
+    await page.locator('#language-picker summary').click();
+    await page.waitForTimeout(500);
+    await expect.poll(scriptFonts).toEqual(['/fonts/sixfold-jp.woff2']);
+
+    await page.evaluate(() => localStorage.setItem('sixfold.locale.v1', 'en'));
+    await page.reload();
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+    await expect.poll(scriptFonts).toEqual([]);
+  });
+
+  test('caches the selected script face on a first visit', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('sixfold.locale.v1', 'ja'));
+    await page.goto('/');
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+
+    const scriptFonts = () => page.evaluate(async () => {
+      const fonts = [];
+      for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) {
+          const pathname = new URL(request.url).pathname;
+          if (pathname.indexOf('/fonts/sixfold-') === 0) fonts.push(pathname);
+        }
+      }
+      return [...new Set(fonts)].sort();
+    });
+
+    await expect.poll(scriptFonts).toEqual(['/fonts/sixfold-jp.woff2']);
+    await page.context().setOffline(true);
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+    await expect.poll(scriptFonts).toEqual(['/fonts/sixfold-jp.woff2']);
+  });
+
+  test('a failed shell install leaves the live cache unchanged', async ({ page, context }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+    const cachedPaths = () => page.evaluate(async () => {
+      const paths = [];
+      for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) {
+          const url = new URL(request.url);
+          paths.push(url.pathname + url.search);
+        }
+      }
+      return paths.sort();
+    });
+    const before = await cachedPaths();
+
+    await context.route('**/css/home.css*', (route) => route.abort());
+    await page.evaluate(async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+
+    await expect.poll(() => page.evaluate(async () => {
+      return Boolean(await navigator.serviceWorker.getRegistration());
+    })).toBe(false);
+    const after = await cachedPaths();
+    const cacheNames = await page.evaluate(async () => {
+      return (await caches.keys()).filter((value) => value.startsWith('sixfold-'));
+    });
+    expect(after).toEqual(before);
+    expect(cacheNames.some((name) => name.endsWith('-install'))).toBe(false);
+  });
+
+  test('trims an oversized runtime entry', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+
+    const manifest = '/manifest.webmanifest?v=5.2.0';
+    const cached = (url) => page.evaluate(async (target) => {
+      for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
+        const cache = await caches.open(name);
+        if (await cache.match(target)) return true;
+      }
+      return false;
+    }, url);
+
+    await page.evaluate(async (url) => {
+      const name = (await caches.keys()).find((value) => value.startsWith('sixfold-'));
+      if (!name) throw new Error('No Sixfold cache');
+      const cache = await caches.open(name);
+      await cache.put(new Request(url), new Response('x'.repeat(2.5 * 1024 * 1024)));
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration || !registration.active) throw new Error('No active worker');
+      registration.active.postMessage({ type: 'sixfold-active-locale', locale: 'en' });
+    }, manifest);
+
+    await expect.poll(() => cached(manifest)).toBe(false);
+  });
+
+  test('an install leaves no staging cache behind', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+    const stagingName = await page.evaluate(async () => {
+      const name = (await caches.keys()).find((value) => value.startsWith('sixfold-'));
+      if (!name) throw new Error('No Sixfold cache');
+      const staging = name + '-install';
+      const cache = await caches.open(staging);
+      await cache.put('/staging-probe.js', new Response('probe'));
+      return staging;
+    });
+
+    await page.evaluate(async () => {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    });
+    await page.reload();
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+
+    await expect.poll(() => page.evaluate(async (name) => (await caches.keys()).includes(name), stagingName)).toBe(false);
   });
 });
