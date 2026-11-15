@@ -90,24 +90,24 @@ const SHELL = [
   './css/home.css?v=' + HOME_CSS,
   './css/polish.css?v=' + POLISH_CSS,
   './css/sudoku.css?v=' + SUDOKU_CSS,
-  './v5.css?v=' + V5_CSS,
-  './settings.js?v=5.2.3',
+  './css/v5.css?v=' + V5_CSS,
+  './js/settings.js?v=5.2.3',
   './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
-  './daily.js?v=' + DAILY_CODE,
+  './js/daily.js?v=' + DAILY_CODE,
   './js/badges.js?v=1.0.1',
-  './update.js?v=5.1.0',
+  './js/update.js?v=5.1.0',
   // Locale catalogs are not in the install shell. The page loads only the
   // active catalog; i18n.js warms that catalog after the worker controls it.
-  './i18n-locale.js?v=' + I18N_CODE,
-  './i18n.js?v=' + I18N_CODE,
-  './native.js?v=5.1.0',
+  './i18n/i18n-locale.js?v=' + I18N_CODE,
+  './i18n/i18n.js?v=' + I18N_CODE,
+  './js/native.js?v=5.1.0',
   './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the
   // offline shell so unlocking it works with no connection. The active locale
   // pack and script face are cached after their first fetch.
   './js/wordle-words.js?v=' + WORDLE_CODE,
-  './wordle-i18n.js?v=' + WORDLE_CODE,
+  './i18n/wordle-i18n.js?v=' + WORDLE_CODE,
   './js/wordle.js?v=' + WORDLE_CODE,
   './icons/icon-180.png',
   './icons/icon-192.png',

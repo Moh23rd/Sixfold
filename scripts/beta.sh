@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 OUT="$ROOT/beta-build"
 PORT="${PORT:-4173}"
 SERVE=1
@@ -18,9 +18,9 @@ usage() {
   cat <<'EOF'
 Build a beta preview of the current working tree, then serve it locally.
 
-  ./beta.sh              build into beta-build/ and serve on http://localhost:4173
-  ./beta.sh --build      build only
-  ./beta.sh --port 5000  serve on another port (or set PORT)
+  ./scripts/beta.sh              build into beta-build/ and serve on http://localhost:4173
+  ./scripts/beta.sh --build      build only
+  ./scripts/beta.sh --port 5000  serve on another port (or set PORT)
 
 A beta never changes the app version, the offline cache name, tags or the
 published release. beta-build/ is gitignored and is not deployed.

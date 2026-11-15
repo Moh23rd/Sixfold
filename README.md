@@ -40,14 +40,13 @@ based, so another language can be added without rewriting the markup.
 
 ## Native apps
 
-The same web release is wrapped with Capacitor 8 for Android and iOS. The
-native projects live in `android/` and `ios/`; `native/` holds the build notes,
-store listing copy, review notes and privacy policy. Native builds stage the
-static shell through `npm run native:sync`, disable the service worker and use
-the official splash, status-bar and back-button plugins.
+The same web release can be wrapped with Capacitor 8 for Android and iOS. The
+staging recipe in `scripts/build-native.mjs` assembles the static shell and the
+native-only plugin bundle; the web build itself remains dependency-free.
 
-The native binaries have not been signed or uploaded: those steps need a macOS
-machine, Xcode and the store accounts. See [native/README.md](native/README.md).
+Generated native projects, signed binaries and store uploads are not checked
+in. Those steps need a local Capacitor install, Android Studio or Xcode, the
+store accounts and a macOS machine for iOS.
 
 ## A small, considered arcade
 
@@ -108,46 +107,54 @@ Open `http://localhost:8000`. Opening `index.html` directly still plays, but off
 
 ## Project structure
 
-```
-index.html                 hub, game screens, help, install and rules sheets
-licenses.html              licence and App Store notice
-css/styles.css             shared shell, theme tokens and the 2048 board
-css/home.css               hub layout, six-piece intro and cartridge cards
-css/games.css              in-game screens and controls
-css/polish.css             motion, result cards and Wordle styles
-css/sudoku.css             Sudoku board, pad, result and difficulty styles
-v5.css                     Daily Sixfold, settings, learning and update surfaces
-daily.js                   daily set, streak, calendar and share link
-settings.js                accessibility, input order, persistence and backup
-update.js                  service-worker update prompt
-js/game.js                 Merge (2048)
-js/games.js                Water Sort, Sudoku adapter, Fruit Merge, Tic Tac Toe, Minesweeper
-js/sudoku.js               Sudoku generator, solver, controls and saved progress
-i18n-locale.js             shared locale resolution for the loader and the interface
-i18n.js                    locale registry, English catalog, locale-aware rendering and the language switch
-i18n-fr.js, i18n-de.js     Complete French and German message and game-status catalogs
-i18n-zh-hans.js … i18n-ar.js  Complete Chinese, Japanese, Korean, Portuguese, Hindi, Kannada and Arabic catalogs
-i18n-patterns.js           shared templates for game-status and dynamic copy
-native.js                  native splash, system bars and Android back navigation
-capacitor.config.json      Capacitor app id, web bundle and splash settings
-native/                    wrapper build notes, store listings, review notes and privacy policy
-android/, ios/             generated Capacitor native projects
-scripts/build-native.mjs   stages the static shell and native-only plugin bundle
-js/wordle.js               the hidden five-letter game and its saved stats
-js/wordle-words.js         offline answer and accepted-guess lists
-wordle-i18n.js             localized Wordle copy
-wordle-locales/            lazy per-locale Wordle dictionaries
-js/wordle-loader.js        loads the hidden game and the active dictionary
-js/theme.js                palettes, light/dark, focus and appearance controls
-js/overscroll.js           Android stretch overscroll on the hub
-js/celebrate.js            result flourish and stamped seals
-js/sharecard.js            share-card drawing for every game
-sw.js                      offline cache (bump VERSION when assets change)
-manifest*.webmanifest      install metadata for light and dark chrome
-icons/, splash/, fonts/    app icons, iOS launch images and the typeface
+```text
+index.html                    hub, game screens, help, install and rules sheets
+licenses.html                 licence, dictionary attribution and App Store notice
+sw.js                         offline shell, active-locale pruning and cache budget
+manifest.webmanifest          install metadata for light chrome
+manifest-dark.webmanifest     install metadata for dark chrome
+og-image.png                  social preview image
+WORDLE-SOURCES.json           pinned dictionary provenance and hashes
+
+css/styles.css                shared shell, theme tokens and the 2048 board
+css/home.css                  hub layout, six-piece intro and cartridge cards
+css/games.css                 in-game screens and controls
+css/polish.css                motion, result cards and Wordle styles
+css/sudoku.css                Sudoku board, pad, result and difficulty styles
+css/v5.css                    Daily Sixfold, settings, learning and update surfaces
+
+js/daily.js                   daily set, streak, calendar and share link
+js/settings.js                accessibility, input order, persistence and backup
+js/update.js                  service-worker update prompt
+js/native.js                  native splash, system bars and Android back navigation
+js/game.js                    Merge (2048)
+js/games.js                   Water Sort, Sudoku adapter, Fruit Merge, Tic Tac Toe and Minesweeper
+js/sudoku.js                  Sudoku generator, solver, controls and saved progress
+js/theme.js                   palettes, light/dark, focus and appearance controls
+js/overscroll.js              Android stretch overscroll on the hub
+js/celebrate.js               result flourish and stamped seals
+js/sharecard.js               share-card drawing for every game
+js/badges.js                  daily badge collection
+js/haptics.js                 vibration controls
+js/install.js                 install prompt and Chrome install recovery
+js/wordle.js                  the hidden five-letter game and its saved stats
+js/wordle-words.js            offline English answer and accepted-guess lists
+js/wordle-loader.js           lazy hidden-game and active-dictionary loader
+
+i18n/i18n-locale.js           locale detection shared by the loader and interface
+i18n/i18n.js                  locale registry, English catalog and locale-aware rendering
+i18n/i18n-fr.js, i18n-de.js   Complete French and German message and game-status catalogs
+i18n/i18n-zh-hans.js … i18n-ar.js  Chinese, Japanese, Korean, Portuguese, Hindi, Kannada and Arabic catalogs
+i18n/i18n-patterns.js         shared templates for game-status and dynamic copy
+i18n/wordle-i18n.js           localized Wordle copy
+
+wordle-locales/               lazy per-locale Wordle dictionaries
+scripts/                      i18n and dictionary audits, native staging and beta preview
+tests/                        Playwright end-to-end, layout and accessibility coverage
+icons/, splash/, fonts/       app icons, iOS launch images and bundled typefaces
 ```
 
-The site is published with GitHub Pages from the `main` branch root. No build step is required.
+The site is published with GitHub Pages from the `main` branch root. No build step is required, and the service worker caches only the active language's catalogs, dictionary and script face.
 
 ## Release notes
 

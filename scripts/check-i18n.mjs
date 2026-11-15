@@ -2,10 +2,10 @@
 /*
  * Catalog completeness and placeholder audit.
  *
- * English strings in i18n.js are the source of truth. Every translated
+ * English strings in i18n/i18n.js are the source of truth. Every translated
  * catalog must contain exactly the same message keys, with the same numbered
  * placeholders, and no empty copy. The newer catalogs use a named template
- * table; those templates must match i18n-patterns.js in both keys and
+ * table; those templates must match i18n/i18n-patterns.js in both keys and
  * placeholders. This catches a missing translation before the UI silently
  * falls back to English, and catches a template that drops or renumbers an
  * argument before it produces a broken status line at runtime.
@@ -33,7 +33,7 @@ function evaluate(file, context) {
 function extract(source, label, pattern) {
   const match = source.match(pattern);
   if (!match) {
-    throw new Error('Could not locate ' + label + ' in i18n.js');
+    throw new Error('Could not locate ' + label + ' in i18n/i18n.js');
   }
   return vm.runInNewContext('(' + match[1] + ')');
 }
@@ -189,7 +189,7 @@ function checkMeta(locale, meta) {
   }
 }
 
-const i18nSource = read('i18n.js');
+const i18nSource = read('i18n/i18n.js');
 const english = extract(
   i18nSource,
   'the English message catalog',
@@ -202,17 +202,17 @@ const supported = extract(
 );
 
 const window = {};
-evaluate('i18n-patterns.js', { window });
+evaluate('i18n/i18n-patterns.js', { window });
 const sourceText = window.SixfoldPatterns && window.SixfoldPatterns.text;
 if (!sourceText) {
-  console.error('i18n-patterns.js does not expose SixfoldPatterns.text');
+  console.error('i18n/i18n-patterns.js does not expose SixfoldPatterns.text');
   process.exit(1);
 }
 
 const catalogWindow = {};
-for (const file of readdirSync(root)) {
+for (const file of readdirSync(join(root, 'i18n'))) {
   if (!/^i18n-.*\.js$/.test(file) || file === 'i18n.js' || file === 'i18n-patterns.js') continue;
-  evaluate(file, { window: catalogWindow });
+  evaluate('i18n/' + file, { window: catalogWindow });
 }
 const catalogs = catalogWindow.SixfoldCatalogs || {};
 
@@ -259,7 +259,7 @@ for (const locale of targets) {
 // Wordle keeps the English source strings and every translation in its own
 // catalog. Validate the same keys and named placeholders as the main catalogs.
 const wordleWindow = {};
-evaluate('wordle-i18n.js', { window: wordleWindow });
+evaluate('i18n/wordle-i18n.js', { window: wordleWindow });
 const wordleStrings = wordleWindow.SixfoldWordleStrings || {};
 const expectedWordleLocales = Object.keys(supported).sort();
 const actualWordleLocales = Object.keys(wordleStrings).sort();

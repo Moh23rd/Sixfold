@@ -9,7 +9,7 @@ const WORDLE_KEY = 'Wordle in all twelve languages: localized word lists, native
 const LANGUAGES_KEY = 'New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic, with complete catalogs and offline fonts';
 
 test('public language copy matches the twelve supported locales', () => {
-  const i18n = read('i18n.js');
+  const i18n = read('i18n/i18n.js');
   const supported = i18n.match(/var SUPPORTED = \{([\s\S]*?)\n  \};/);
   expect(supported, 'SUPPORTED locale table').not.toBeNull();
 
@@ -19,10 +19,10 @@ test('public language copy matches the twelve supported locales', () => {
   expect(locales, 'supported locales').toContain('kn');
 
   const catalogs = [
-    'i18n.js',
+    'i18n/i18n.js',
     ...locales
       .filter((locale) => locale !== 'en' && locale !== 'es')
-      .map((locale) => 'i18n-' + locale.toLowerCase() + '.js')
+      .map((locale) => 'i18n/i18n-' + locale.toLowerCase() + '.js')
   ];
   expect(catalogs, 'non-English catalog files').toHaveLength(11);
   for (const catalog of catalogs) {

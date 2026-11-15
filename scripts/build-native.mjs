@@ -10,30 +10,11 @@ const files = [
   'licenses.html',
   'LICENSE',
   'APPSTORE-EXCEPTION.md',
-  'v5.css',
-  'daily.js',
-  'i18n.js',
-  'i18n-locale.js',
-  'i18n-fr.js',
-  'i18n-de.js',
-  'i18n-zh-hans.js',
-  'i18n-zh-hant.js',
-  'i18n-ja.js',
-  'i18n-ko.js',
-  'i18n-pt-br.js',
-  'i18n-hi.js',
-  'i18n-kn.js',
-  'i18n-ar.js',
-  'i18n-patterns.js',
-  'native.js',
-  'settings.js',
-  'update.js',
-  'wordle-i18n.js',
   'manifest.webmanifest',
   'manifest-dark.webmanifest'
 ];
 
-const directories = ['css', 'js', 'fonts', 'icons', 'splash', 'wordle-locales'];
+const directories = ['css', 'i18n', 'js', 'fonts', 'icons', 'splash', 'wordle-locales'];
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
@@ -57,9 +38,9 @@ const pluginBundle = pluginSources.map(function (file) {
 writeFileSync(join(out, 'native-plugins.js'), pluginBundle);
 
 let shell = readFileSync(join(out, 'index.html'), 'utf8');
-const nativeScript = /([ \t]*)<script src="native\.js\?v=[^"]+"><\/script>/;
+const nativeScript = /([ \t]*)<script src="js\/native\.js\?v=[^"]+"><\/script>/;
 if (!nativeScript.test(shell)) {
-  throw new Error('native shell: could not find the native.js script tag');
+  throw new Error('native shell: could not find the js/native.js script tag');
 }
 shell = shell.replace(nativeScript, function (tag, indent) {
   return indent + '<script src="native-plugins.js"></script>\n' + tag;
