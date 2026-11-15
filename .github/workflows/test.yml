@@ -61,3 +61,16 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  check:
+    name: check
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all Playwright shards passed
+        env:
+          RESULT: ${{ needs.test.result }}
+        run: |
+          echo "Playwright matrix: $RESULT"
+          test "$RESULT" = "success"
