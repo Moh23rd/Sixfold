@@ -3832,10 +3832,6 @@ html[data-theme="dark"] .reset-confirm:hover {
    colour, so the browser and phone chrome always match --page exactly.
    ========================================================================== */
 
-:root {
-  --font-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Google Sans Flex", monospace;
-}
-
 .hub h1 {
   max-width: none;
   font-size: clamp(42px, 10.2vw, 76px);
@@ -3852,7 +3848,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   padding-top: 18px;
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.07em;
@@ -3916,7 +3912,7 @@ html[data-theme="dark"] .reset-confirm:hover {
 
 .whats-new-label {
   color: var(--ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -4040,7 +4036,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   background: var(--cart);
   box-shadow: inset 0 -2px 0 rgba(33, 29, 24, 0.16);
   color: var(--cart-ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -4114,7 +4110,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
 .play-win p { padding-left: 2px; }
 
 .play-win strong {
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-weight: 800;
   letter-spacing: -0.015em;
 }

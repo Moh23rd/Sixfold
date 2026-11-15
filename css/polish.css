@@ -191,7 +191,7 @@ html[data-theme="dark"] #wordle {
   border-radius: 8px;
   background: var(--wordle-tile);
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(18px, 4.8dvh, 30px);
   font-weight: 800;
   line-height: 1;
@@ -313,7 +313,7 @@ html[data-theme="dark"] #wordle {
   border-radius: 7px;
   background: var(--wordle-key);
   color: var(--ink);
-  font-family: var(--font-ui, var(--font-display));
+  font-family: var(--font-ui);
   font-size: clamp(15px, 2.2dvh, 19px);
   font-weight: 700;
   text-align: center;
@@ -350,7 +350,7 @@ html[data-theme="dark"] #wordle {
   background: var(--wordle-key);
   box-shadow: 0 2px 0 color-mix(in srgb, var(--ink) 9%, transparent);
   color: var(--ink);
-  font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace);
+  font-family: var(--font-ui);
   font-size: clamp(11px, 1.6dvh, 14px);
   font-weight: 800;
   line-height: 1;
@@ -731,7 +731,7 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
   border-radius: 5px;
   color: color-mix(in srgb, var(--win-accent, var(--ink)) 72%, var(--ink));
   background: color-mix(in srgb, var(--win-accent, var(--ink)) 8%, var(--sheet-bg, var(--card)));
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-family: var(--font-ui);
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -829,7 +829,7 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
   display: block;
   margin-bottom: 3px;
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(20px, 5.8vw, 24px);
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -1070,7 +1070,7 @@ html.hidden-reveal-open body {
 .hidden-reveal-kicker,
 .hidden-reveal-foot {
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -1117,7 +1117,7 @@ html.hidden-reveal-open body {
   background: var(--card);
   box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--ink) 10%, transparent);
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(20px, 6vw, 25px);
   font-weight: 800;
   line-height: 1;
@@ -1161,7 +1161,7 @@ html.hidden-reveal-open body {
 .hidden-reveal-eyebrow {
   margin: 0 0 4px;
   color: var(--g6, #9a6bb5);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -1172,7 +1172,7 @@ html.hidden-reveal-open body {
 .hidden-reveal h2 {
   margin: 0;
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: clamp(27px, 7.5vw, 34px);
   font-weight: 800;
   letter-spacing: -0.04em;

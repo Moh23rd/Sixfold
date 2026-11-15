@@ -117,6 +117,7 @@
       --boot-ink: #3b3833;
       --boot-muted: rgba(59, 56, 51, 0.82);
       --boot-track: rgba(59, 56, 51, 0.14);
+      font-family: var(--font-ui, "Google Sans Flex", sans-serif);
       position: fixed;
       inset: 0;
       z-index: 1000;
@@ -147,7 +148,6 @@
       margin: 0;
       transform: translateX(-50%);
       color: var(--boot-muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 8px;
       font-weight: 700;
       letter-spacing: 0.16em;
@@ -202,7 +202,6 @@
       margin: clamp(20px, 3.2vh, 30px) 0 0;
       margin-right: -0.22em;
       color: var(--boot-ink);
-      font-family: "Space Grotesk", "Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       font-size: clamp(18px, 5.2vw, 25px);
       font-weight: 700;
       line-height: 1;
@@ -300,14 +299,13 @@
   <link rel="apple-touch-startup-image" href="splash/ios-1668x2388-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="preload" href="fonts/space-grotesk-700.woff2?v=5.0.0" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.1" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=5.2.6" />
-  <link rel="stylesheet" href="css/games.css?v=5.2.4" />
-  <link rel="stylesheet" href="css/home.css?v=4.0.0-w7" />
-  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w12" />
-  <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w13" />
-  <link rel="stylesheet" href="v5.css?v=5.3.6" />
+  <link rel="stylesheet" href="css/styles.css?v=5.2.7" />
+  <link rel="stylesheet" href="css/games.css?v=5.2.5" />
+  <link rel="stylesheet" href="css/home.css?v=4.0.0-w8" />
+  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w13" />
+  <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w14" />
+  <link rel="stylesheet" href="v5.css?v=5.3.7" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -1341,7 +1339,7 @@
   <script src="js/game.js?v=5.2.4"></script>
   <script src="js/install.js?v=4.0.0"></script>
   <script src="js/sudoku.js?v=5.2.5"></script>
-  <script src="js/games.js?v=5.2.4"></script>
+  <script src="js/games.js?v=5.2.6"></script>
   <script src="daily.js?v=5.3.6"></script>
   <script src="js/badges.js?v=1.0.1"></script>
   <script src="update.js?v=5.1.0"></script>

@@ -58,6 +58,8 @@
     return Math.max(min, Math.min(max, value));
   }
 
+  const FONT = '"Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+
   /* ---------- sharing ---------- */
 
   const SHARE_TITLE = 'Sixfold — Six games. No filler.';
@@ -2916,7 +2918,7 @@
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = nearTop ? ui.warn : ui.muted;
-      ctx.font = '800 8px ui-sans-serif, system-ui, sans-serif';
+      ctx.font = '800 8px ' + FONT;
       ctx.textAlign = 'left';
       ctx.fillText(nearTop ? 'DANGER — MERGE TO MAKE ROOM' : 'KEEP BELOW', LEFT + 12, DANGER - 7);
       ctx.restore();
@@ -3227,7 +3229,7 @@
       drawFruitSprite(ghost);
       ctx.globalAlpha = 1;
       ctx.fillStyle = ui.muted;
-      ctx.font = '800 8px ui-sans-serif, system-ui, sans-serif';
+      ctx.font = '800 8px ' + FONT;
       ctx.textAlign = 'center';
       ctx.restore();
     }
@@ -3250,7 +3252,7 @@
           ctx.fill();
         } else if (effect.type === 'score') {
           ctx.fillStyle = ui.ink;
-          ctx.font = '800 12px ui-sans-serif, system-ui, sans-serif';
+          ctx.font = '800 12px ' + FONT;
           ctx.textAlign = 'center';
           ctx.fillText(effect.text, effect.x, effect.y - (1 - alpha) * 22);
         }
