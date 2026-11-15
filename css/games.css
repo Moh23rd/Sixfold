@@ -1801,8 +1801,9 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
   white-space: nowrap;
 }
 
-.ttt-difficulty button.is-inactive { opacity: 0.45; }
-.ttt-difficulty button.is-inactive:hover { opacity: 0.72; }
+/* In two-player mode the levels still switch back to the computer, so they
+   stay readable instead of being dimmed like disabled controls. */
+.ttt-difficulty button.is-inactive:hover { color: var(--ink); }
 
 .ttt-difficulty button[aria-pressed="true"] {
   background: transparent;

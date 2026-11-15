@@ -129,7 +129,8 @@
 
 #wordle {
   --cart: var(--g6, #9a6bb5);
-  --cart-ink: var(--home-accent-ink, #211d18);
+  /* A darker ink keeps the tiny cartridge label above 4.5:1 on purple. */
+  --cart-ink: #14110d;
   --wordle-correct: #4c8a55;
   --wordle-present: #b38425;
   --wordle-absent: #746d61;
