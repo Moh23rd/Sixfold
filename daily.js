@@ -15,16 +15,6 @@
     fruit: { label: 'Fruit Merge', kind: 'Merging', goal: 'Finish today’s run' }
   };
 
-  // The six are coloured in cover order, so the daily dots follow the same
-  // tokens the hub and every game cartridge use.
-  const GAME_TOKEN = {
-    merge: '--g1',
-    sudoku: '--t8',
-    ttt: '--t256',
-    mines: '--g3',
-    water: '--g4',
-    fruit: '--g5'
-  };
   const MAX_ARCHIVE = 30;
   // Milestones follow the widely used 7 / 30 / 100 / 365 rhythm, with a
   // shorter 3-day first step so a new player can earn a badge without waiting
@@ -106,10 +96,18 @@
     try { return window.SixfoldI18n ? window.SixfoldI18n.number(value) : String(value); } catch (err) { return String(value); }
   }
 
+  // Resolve the same --six token the hub and cartridges use. The alias can be
+  // one level deep (--six-1 -> --g1), so follow it before handing the canvas a
+  // concrete colour.
   function gameColor(game) {
-    const token = GAME_TOKEN[game];
-    if (!token) return '#e85f3b';
-    return getComputedStyle(document.documentElement).getPropertyValue(token).trim() || '#e85f3b';
+    const index = ORDER.indexOf(game);
+    if (index === -1) return '#e85f3b';
+    const root = document.documentElement;
+    const styles = getComputedStyle(root);
+    let value = styles.getPropertyValue('--six-' + (index + 1)).trim();
+    const alias = /^var\(\s*(--[\w-]+)\s*\)$/.exec(value);
+    if (alias) value = styles.getPropertyValue(alias[1]).trim();
+    return value || '#e85f3b';
   }
 
   function pretty(key) {

@@ -2266,7 +2266,7 @@
           score: isTwo ? (twoStats.x + '–' + twoStats.o) : (stats.wins + '–' + stats.losses),
           label: isTwo ? 'X – O' : 'WINS – LOSSES',
           meta: [isTwo ? '2 players' : level],
-          accent: '#8bbd54'
+          accent: '#e3b94a'
         });
       });
     }
@@ -3383,7 +3383,7 @@
           score: score,
           label: 'POINTS',
           meta: ['Best ' + best],
-          accent: '#e3b94a'
+          accent: '#5b8fd5'
         });
       });
     }
@@ -3995,7 +3995,7 @@
           score: formatTime(elapsedTime()),
           label: won ? 'TIME' : 'LASTED',
           meta: [currentLevel().label, won ? 'Every safe square is open.' : 'Mine hit.'],
-          accent: '#5b8fd5'
+          accent: '#8bbd54'
         });
       });
     }

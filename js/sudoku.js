@@ -1187,7 +1187,7 @@
       : hintWord('No hints');
     const dailyText = dailyKey ? 'Daily Sixfold ' + prettyDaily(dailyKey) + ': ' : '';
     const message = dailyText + 'I solved a ' + label + ' Sudoku in ' + formatTime(time) + ' with ' + hintText + '. Can you?';
-    const accent = window.MergeTheme && window.MergeTheme.colour ? window.MergeTheme.colour('#39a9a1') : '#39a9a1';
+    const accent = window.MergeTheme && window.MergeTheme.colour ? window.MergeTheme.colour('#efb07a') : '#efb07a';
     if (window.MergeShare && window.MergeShare.result) {
       window.MergeShare.result('Sudoku', message, {
         game: 'Sudoku', number: '02', kind: 'LOGIC', title: dailyKey ? 'Daily Sudoku' : 'Sudoku',

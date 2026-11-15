@@ -528,7 +528,7 @@ html.home-ready .home-six-caption {
   width: 4px;
   height: 4px;
   border-radius: 1px;
-  background: var(--g1);
+  background: var(--six-1);
   transform: translateY(-50%) rotate(45deg);
 }
 
@@ -812,13 +812,20 @@ html.home-ready .home-six-caption {
 }
 
 .home-game-play::after {
-  content: "→";
-  font-size: 10px;
-  line-height: 1;
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(-45deg);
   transition: transform 160ms ease;
 }
 
-.home-game:hover .home-game-play::after { transform: translateX(2px); }
+.home-game:hover .home-game-play::after { transform: translateX(2px) rotate(-45deg); }
+
+html[dir="rtl"] .home-game-play::after { transform: rotate(135deg); }
+html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(-2px) rotate(135deg); }
 
 /* ---------- install notice ---------- */
 
@@ -870,8 +877,8 @@ html.home-ready .home-six-caption {
   background: var(--six-1);
 }
 
-.hub-foot span:nth-child(2)::before { background: var(--six-4); }
-.hub-foot span:nth-child(3)::before { background: var(--six-5); }
+.hub-foot span:nth-child(2)::before { background: var(--six-2); }
+.hub-foot span:nth-child(3)::before { background: var(--six-3); }
 
 .hub-meta {
   display: flex;
