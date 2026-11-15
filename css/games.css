@@ -4006,12 +4006,12 @@ html[data-theme="dark"] .reset-confirm:hover {
 
 /* ---------- cartridge identity inside every game ---------- */
 
-.app { --cart: var(--t16); --cart-ink: var(--home-accent-ink, #211d18); }
-#water { --cart: var(--g4, #39a9a1); --cart-ink: var(--home-accent-ink, #211d18); }
-#sudoku { --cart: var(--g1, #e85f3b); --cart-ink: var(--home-accent-ink, #211d18); }
-#fruit { --cart: var(--g2, #e3a92f); --cart-ink: var(--home-accent-ink, #211d18); }
-#ttt { --cart: var(--g3, #8bbd54); --cart-ink: var(--home-accent-ink, #211d18); }
-#mines { --cart: var(--g5, #5b8fd5); --cart-ink: var(--home-accent-ink, #211d18); }
+.app { --cart: var(--six-1); --cart-ink: var(--home-accent-ink, #211d18); }
+#sudoku { --cart: var(--six-2); --cart-ink: var(--home-accent-ink, #211d18); }
+#ttt { --cart: var(--six-3); --cart-ink: var(--home-accent-ink, #211d18); }
+#mines { --cart: var(--six-4); --cart-ink: var(--home-accent-ink, #211d18); }
+#water { --cart: var(--six-5); --cart-ink: var(--home-accent-ink, #211d18); }
+#fruit { --cart: var(--six-6); --cart-ink: var(--home-accent-ink, #211d18); }
 html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
 
 .play-cart-row {

@@ -300,12 +300,12 @@
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.1" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=5.2.7" />
-  <link rel="stylesheet" href="css/games.css?v=5.2.5" />
-  <link rel="stylesheet" href="css/home.css?v=4.0.0-w8" />
-  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w13" />
-  <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w14" />
-  <link rel="stylesheet" href="v5.css?v=5.3.7" />
+  <link rel="stylesheet" href="css/styles.css?v=5.2.8" />
+  <link rel="stylesheet" href="css/games.css?v=5.2.6" />
+  <link rel="stylesheet" href="css/home.css?v=4.0.0-w9" />
+  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w14" />
+  <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w15" />
+  <link rel="stylesheet" href="v5.css?v=5.3.8" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -462,14 +462,16 @@
         </div>
 
         <div class="daily-feature">
-          <p class="daily-eyebrow"><span id="daily-today">Today</span><span aria-hidden="true">·</span><span id="daily-game-kind">Sorting</span></p>
+          <p class="daily-eyebrow"><span id="daily-today">Today</span><span aria-hidden="true">·</span><span class="daily-game-dot" aria-hidden="true"></span><span id="daily-game-kind">Sorting</span></p>
           <h2 id="daily-title"><span id="daily-game-name">Water Sort</span></h2>
         </div>
 
         <div class="daily-actions">
           <button class="daily-play" id="daily-featured" type="button">
             <span id="daily-featured-label">Play Water Sort for today</span>
-            <span class="daily-play-arrow" aria-hidden="true">→</span>
+            <span class="daily-play-arrow" aria-hidden="true">
+              <svg viewBox="0 0 20 20" focusable="false"><path d="M4 10h11M10.5 5.5 15 10l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
           </button>
           <button class="daily-share" id="daily-share" type="button" aria-label="Share today’s challenge" title="Share today’s challenge">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg>
@@ -1340,7 +1342,7 @@
   <script src="js/install.js?v=4.0.0"></script>
   <script src="js/sudoku.js?v=5.2.5"></script>
   <script src="js/games.js?v=5.2.6"></script>
-  <script src="daily.js?v=5.3.6"></script>
+  <script src="daily.js?v=5.3.7"></script>
   <script src="js/badges.js?v=1.0.1"></script>
   <script src="update.js?v=5.1.0"></script>
   <script src="i18n-fr.js?v=5.4.4"></script>

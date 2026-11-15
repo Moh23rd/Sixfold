@@ -1,7 +1,7 @@
 /* ---------- sudoku ---------- */
 
 #sudoku {
-  --cart: var(--g1, #e85f3b);
+  --cart: var(--six-2);
   --cart-ink: var(--home-accent-ink, #211d18);
 }
 
@@ -330,7 +330,7 @@
 .mini-sudoku i:nth-child(1),
 .mini-sudoku i:nth-child(5),
 .mini-sudoku i:nth-child(9) {
-  background: var(--g1, #e85f3b);
+  background: var(--six-2);
   color: var(--home-accent-ink, #211d18);
 }
 

@@ -10,20 +10,20 @@ const CACHE_PREFIX = 'sixfold-';
 // files that were never cached.
 const ASSET = '4.0.0';
 const SHARE_CARD = '5.2.5';
-const STYLE_ASSET = '5.2.7';
+const STYLE_ASSET = '5.2.8';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '5.2.0';
 const GAME_CODE = '5.2.4';
 const WORDLE_CODE = '5.2.4-wordle';
 const SUDOKU_GAME_CODE = '5.2.5';
 const LOCALE_FONT = '5.1.4';
-const GAMES_CSS = '5.2.5';
-const POLISH_CSS = '4.0.0-w13';
+const GAMES_CSS = '5.2.6';
+const POLISH_CSS = '4.0.0-w14';
 const GAMES_JS = '5.2.6';
-const SUDOKU_CSS = '4.0.0-w14';
-const V5_CSS = '5.3.7';
-const HOME_CSS = '4.0.0-w8';
-const DAILY_CODE = '5.3.6';
+const SUDOKU_CSS = '4.0.0-w15';
+const V5_CSS = '5.3.8';
+const HOME_CSS = '4.0.0-w9';
+const DAILY_CODE = '5.3.7';
 const I18N_CODE = '5.4.4';
 
 const SHELL = [

@@ -18,23 +18,42 @@
 /* ---------- Daily Sixfold ---------- */
 
 .daily {
-  --daily-accent: var(--t16);
+  --daily-accent: var(--ink);
+  --daily-ink: var(--page);
   position: relative;
   overflow: hidden;
   margin: 30px 0 6px;
   padding: clamp(14px, 2.4vw, 20px);
   border: 1px solid var(--home-rule);
-  border-top: 4px solid var(--daily-accent);
+  border-top: 0;
   border-radius: 14px;
   background: color-mix(in srgb, var(--card) 86%, var(--page));
   box-shadow: 0 3px 0 var(--home-hard);
 }
 
-.daily[data-daily-game="sudoku"] { --daily-accent: var(--g1); }
-.daily[data-daily-game="ttt"] { --daily-accent: var(--g3); }
-.daily[data-daily-game="mines"] { --daily-accent: var(--g5); }
-.daily[data-daily-game="water"] { --daily-accent: var(--g4); }
-.daily[data-daily-game="fruit"] { --daily-accent: var(--g2); }
+/* The daily carries the whole collection, not just today's game. */
+.daily::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--six-1) 0 16.6667%,
+    var(--six-2) 16.6667% 33.3333%,
+    var(--six-3) 33.3333% 50%,
+    var(--six-4) 50% 66.6667%,
+    var(--six-5) 66.6667% 83.3333%,
+    var(--six-6) 83.3333% 100%
+  );
+}
+
+.daily[data-daily-game="merge"] { --daily-game: var(--six-1); }
+.daily[data-daily-game="sudoku"] { --daily-game: var(--six-2); }
+.daily[data-daily-game="ttt"] { --daily-game: var(--six-3); }
+.daily[data-daily-game="mines"] { --daily-game: var(--six-4); }
+.daily[data-daily-game="water"] { --daily-game: var(--six-5); }
+.daily[data-daily-game="fruit"] { --daily-game: var(--six-6); }
 
 html[data-daily="off"] #daily { display: none; }
 
@@ -245,6 +264,16 @@ html[data-daily="off"] #daily { display: none; }
   text-transform: uppercase;
 }
 
+.daily-game-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 2px;
+  background: var(--daily-game, var(--ink));
+  transform: rotate(45deg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
 .daily h2 {
   margin: 0;
   font-size: clamp(27px, 5vw, 42px);
@@ -320,6 +349,13 @@ html[data-daily="off"] #daily { display: none; }
   border-radius: 50%;
 }
 
+.daily-week-dot[data-game="merge"] { --dot-color: var(--six-1); }
+.daily-week-dot[data-game="sudoku"] { --dot-color: var(--six-2); }
+.daily-week-dot[data-game="ttt"] { --dot-color: var(--six-3); }
+.daily-week-dot[data-game="mines"] { --dot-color: var(--six-4); }
+.daily-week-dot[data-game="water"] { --dot-color: var(--six-5); }
+.daily-week-dot[data-game="fruit"] { --dot-color: var(--six-6); }
+
 .daily-week-dot.is-done {
   border-color: var(--dot-color, var(--ink));
   background: var(--dot-color, var(--ink));
@@ -357,39 +393,50 @@ html[data-daily="off"] #daily { display: none; }
   width: 100%;
   min-height: 50px;
   margin-top: 14px;
-  padding: 0 13px 0 16px;
+  padding: 0 10px 0 16px;
   border: 0;
   border-radius: 12px;
   background: var(--daily-accent);
-  color: var(--home-accent-ink, var(--ink));
+  color: var(--daily-ink);
   font: inherit;
   font-size: 13.5px;
   font-weight: 800;
   letter-spacing: -0.01em;
   text-align: start;
-  box-shadow: 0 3px 0 color-mix(in srgb, var(--daily-accent) 62%, var(--ink));
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--ink) 72%, #000);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 140ms ease, filter 180ms ease;
+  transition: transform 140ms ease, background-color 180ms ease;
 }
 
-.daily-play:hover { filter: brightness(1.03); }
-.daily-play:active { transform: translateY(2px); box-shadow: 0 1px 0 color-mix(in srgb, var(--daily-accent) 62%, var(--ink)); }
+.daily-play:hover { background: color-mix(in srgb, var(--daily-accent) 92%, var(--page)); }
+.daily-play:active { transform: translateY(2px); box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 72%, #000); }
 .daily-play:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 .daily-play-arrow {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   flex: none;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--home-accent-ink, var(--ink)) 14%, transparent);
-  font-size: 16px;
-  line-height: 1;
+  background: color-mix(in srgb, var(--daily-ink) 16%, transparent);
+  transition: transform 160ms ease;
 }
 
+.daily-play-arrow svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.daily-play:hover .daily-play-arrow { transform: translateX(2px); }
+
+html[dir="rtl"] .daily-play-arrow svg { transform: scaleX(-1); }
+html[dir="rtl"] .daily-play:hover .daily-play-arrow { transform: translateX(-2px); }
+
 .daily.is-done .daily-play {
+  --daily-ink: var(--ink);
   background: color-mix(in srgb, var(--daily-accent) 30%, var(--panel));
   color: var(--ink);
   box-shadow: 0 3px 0 color-mix(in srgb, var(--ink) 12%, transparent);
@@ -466,7 +513,12 @@ html[data-daily="off"] #daily { display: none; }
   background: color-mix(in srgb, var(--ink) 16%, transparent);
 }
 
-.daily-day-dots b.on { background: var(--g1); }
+.daily-day-dots b.on:nth-child(1) { background: var(--six-1); }
+.daily-day-dots b.on:nth-child(2) { background: var(--six-2); }
+.daily-day-dots b.on:nth-child(3) { background: var(--six-3); }
+.daily-day-dots b.on:nth-child(4) { background: var(--six-4); }
+.daily-day-dots b.on:nth-child(5) { background: var(--six-5); }
+.daily-day-dots b.on:nth-child(6) { background: var(--six-6); }
 
 .daily-day-detail {
   margin-top: 12px;

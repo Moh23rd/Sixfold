@@ -1090,14 +1090,14 @@ html.hidden-reveal-open body {
   width: 6px;
   height: 6px;
   border-radius: 2px;
-  background: var(--g1);
+  background: var(--six-1);
 }
 
-.hidden-reveal-pips i:nth-child(2) { background: var(--t8); }
-.hidden-reveal-pips i:nth-child(3) { background: var(--g2); }
-.hidden-reveal-pips i:nth-child(4) { background: var(--g3); }
-.hidden-reveal-pips i:nth-child(5) { background: var(--g4); }
-.hidden-reveal-pips i:nth-child(6) { background: var(--g5); }
+.hidden-reveal-pips i:nth-child(2) { background: var(--six-2); }
+.hidden-reveal-pips i:nth-child(3) { background: var(--six-3); }
+.hidden-reveal-pips i:nth-child(4) { background: var(--six-4); }
+.hidden-reveal-pips i:nth-child(5) { background: var(--six-5); }
+.hidden-reveal-pips i:nth-child(6) { background: var(--six-6); }
 
 .hidden-reveal-tiles {
   display: flex;

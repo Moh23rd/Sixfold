@@ -124,6 +124,21 @@
   --t512: #dcab30;
   --t1024: #cf9822;
   --t2048: #b9801a;
+
+  /* Collection accents — one colour per cover piece, in cover order. */
+  --g1: #e85f3b;
+  --g2: #e3a92f;
+  --g3: #8bbd54;
+  --g4: #39a9a1;
+  --g5: #5b8fd5;
+  --g6: #9a6bb5;
+  --six-1: var(--g1);
+  --six-2: var(--t8);
+  --six-3: var(--t256);
+  --six-4: var(--g3);
+  --six-5: var(--g4);
+  --six-6: var(--g5);
+
   --ink-tile-low: #857a6b;
   --ink-tile-high: #fdfbf7;
 

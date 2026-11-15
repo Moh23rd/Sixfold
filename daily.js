@@ -7,12 +7,23 @@
   const KEY = 'sixfold.daily.v1';
   const ORDER = ['merge', 'sudoku', 'ttt', 'mines', 'water', 'fruit'];
   const GAMES = {
-    merge: { label: 'Merge', kind: 'Numbers', goal: 'Finish seeded 4 × 4', color: '#e85f3b' },
-    sudoku: { label: 'Sudoku', kind: 'Numbers', goal: 'Solve the daily grid', color: '#e3b94a' },
-    ttt: { label: 'Tic Tac Toe', kind: 'Classic', goal: 'Beat today’s computer', color: '#8bbd54' },
-    mines: { label: 'Minesweeper', kind: 'Logic', goal: 'Clear today’s field', color: '#5b8fd5' },
-    water: { label: 'Water Sort', kind: 'Sorting', goal: 'Clear today’s level', color: '#39a9a1' },
-    fruit: { label: 'Fruit Merge', kind: 'Merging', goal: 'Finish today’s run', color: '#e3b94a' }
+    merge: { label: 'Merge', kind: 'Numbers', goal: 'Finish seeded 4 × 4' },
+    sudoku: { label: 'Sudoku', kind: 'Numbers', goal: 'Solve the daily grid' },
+    ttt: { label: 'Tic Tac Toe', kind: 'Classic', goal: 'Beat today’s computer' },
+    mines: { label: 'Minesweeper', kind: 'Logic', goal: 'Clear today’s field' },
+    water: { label: 'Water Sort', kind: 'Sorting', goal: 'Clear today’s level' },
+    fruit: { label: 'Fruit Merge', kind: 'Merging', goal: 'Finish today’s run' }
+  };
+
+  // The six are coloured in cover order, so the daily dots follow the same
+  // tokens the hub and every game cartridge use.
+  const GAME_TOKEN = {
+    merge: '--g1',
+    sudoku: '--t8',
+    ttt: '--t256',
+    mines: '--g3',
+    water: '--g4',
+    fruit: '--g5'
   };
   const MAX_ARCHIVE = 30;
   // Milestones follow the widely used 7 / 30 / 100 / 365 rhythm, with a
@@ -93,6 +104,12 @@
 
   function number(value) {
     try { return window.SixfoldI18n ? window.SixfoldI18n.number(value) : String(value); } catch (err) { return String(value); }
+  }
+
+  function gameColor(game) {
+    const token = GAME_TOKEN[game];
+    if (!token) return '#e85f3b';
+    return getComputedStyle(document.documentElement).getPropertyValue(token).trim() || '#e85f3b';
   }
 
   function pretty(key) {
@@ -467,7 +484,7 @@
       ORDER.forEach(function (game) {
         const dot = document.createElement('i');
         dot.className = 'daily-week-dot' + (week.games.indexOf(game) !== -1 ? ' is-done' : '');
-        dot.style.setProperty('--dot-color', GAMES[game].color);
+        dot.dataset.game = game;
         weekTrack.appendChild(dot);
       });
       if (weekNote) weekNote.textContent = week.complete ? tr('Perfect six') : number(week.count) + '/' + number(week.total);
@@ -565,7 +582,7 @@
       goal: tr(GAMES[game].goal),
       date: key,
       label: pretty(key),
-      color: GAMES[game].color,
+      color: gameColor(game),
       index: ORDER.indexOf(game),
       file: 'sixfold-daily-' + key,
       url: 'https://moh23rd.github.io/Sixfold/?daily=' + key
