@@ -22,7 +22,7 @@ const POLISH_CSS = '4.0.0-w16';
 const GAMES_JS = '5.2.8';
 const SUDOKU_CSS = '4.0.0-w15';
 const V5_CSS = '5.4.2';
-const HOME_CSS = '4.0.0-w10';
+const HOME_CSS = '4.0.0-w11';
 const DAILY_CODE = '5.3.9';
 const I18N_CODE = '5.4.5';
 
