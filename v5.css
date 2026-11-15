@@ -115,6 +115,9 @@ html[data-daily="off"] #daily { display: none; }
 
 .daily-badge {
   display: flex;
+  /* The progress track spans this wrapper. Stretch the badge too, so a long
+     next-badge line can never make the track wider than the badge itself. */
+  align-self: stretch;
   align-items: center;
   gap: 5px;
   padding: 4px 6px;
