@@ -20,10 +20,12 @@ jobs:
             files: tests/axe-light.spec.js
           - group: axe-dark
             files: tests/axe-dark.spec.js
+          - group: axe-states
+            files: tests/axe-states.spec.js
           - group: core
-            files: tests/smoke.spec.js tests/whats-new.spec.js
+            files: tests/smoke.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/release-labels.spec.js
           - group: games
-            files: tests/layout.spec.js tests/wordle.spec.js
+            files: tests/layout.spec.js tests/wordle.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js
     name: Playwright ${{ matrix.group }}
     steps:
       - uses: actions/checkout@v4
