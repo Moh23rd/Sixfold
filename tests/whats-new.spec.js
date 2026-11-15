@@ -38,6 +38,18 @@ test.describe('What’s New 5.0', () => {
         });
       }
 
+      // First visit stays a one-line release note: the collection is visible
+      // before the reader asks for the changelog. Opening it reveals the list.
+      const details = panel.locator('.whats-new-details');
+      expect(await details.getAttribute('open'), locale + ' starts collapsed').toBeNull();
+      await expect(panel.locator('.whats-new-list')).toBeHidden();
+      const collapsedHeight = await panel.evaluate((element) => Math.round(element.getBoundingClientRect().height));
+      expect(collapsedHeight, locale + ' collapsed panel height').toBeLessThanOrEqual(64);
+
+      await details.locator('summary').click();
+      await expect(details).toHaveAttribute('open', '');
+      await expect(panel.locator('.whats-new-list')).toBeVisible();
+
       await page.setViewportSize({ width: 320, height: 720 });
       await expectNoClippedText(page, LANGUAGE_NAMES[locale] + ' What’s New at 320px', '#whats-new');
 

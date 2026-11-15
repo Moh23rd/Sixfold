@@ -17,14 +17,14 @@ const GAME_CODE = '5.2.5';
 const WORDLE_CODE = '5.2.5-wordle';
 const SUDOKU_GAME_CODE = '5.2.6';
 const LOCALE_FONT = '5.1.4';
-const GAMES_CSS = '5.2.8';
+const GAMES_CSS = '5.2.9';
 const POLISH_CSS = '4.0.0-w16';
 const GAMES_JS = '5.2.8';
 const SUDOKU_CSS = '4.0.0-w15';
 const V5_CSS = '5.4.2';
 const HOME_CSS = '4.0.0-w10';
 const DAILY_CODE = '5.3.9';
-const I18N_CODE = '5.4.4';
+const I18N_CODE = '5.4.5';
 
 const SHELL = [
   './',
@@ -51,17 +51,9 @@ const SHELL = [
   './daily.js?v=' + DAILY_CODE,
   './js/badges.js?v=1.0.1',
   './update.js?v=5.1.0',
-  './i18n-fr.js?v=' + I18N_CODE,
-  './i18n-de.js?v=' + I18N_CODE,
-  './i18n-zh-hans.js?v=' + I18N_CODE,
-  './i18n-zh-hant.js?v=' + I18N_CODE,
-  './i18n-ja.js?v=' + I18N_CODE,
-  './i18n-ko.js?v=' + I18N_CODE,
-  './i18n-pt-br.js?v=' + I18N_CODE,
-  './i18n-hi.js?v=' + I18N_CODE,
-  './i18n-kn.js?v=' + I18N_CODE,
-  './i18n-ar.js?v=' + I18N_CODE,
-  './i18n-patterns.js?v=' + I18N_CODE,
+  // Locale catalogs are not in the install shell. The page loads only the
+  // active catalog; i18n.js warms that catalog after the worker controls it.
+  './i18n-locale.js?v=' + I18N_CODE,
   './i18n.js?v=' + I18N_CODE,
   './native.js?v=5.1.0',
   './js/wordle-loader.js?v=' + WORDLE_CODE,

@@ -299,3 +299,39 @@ test('every added language switches from settings and persists', async ({ page }
     expect(await page.evaluate(() => localStorage.getItem('sixfold.locale.v1'))).toBe('en');
   }
 });
+
+test('first visit loads only the active language catalog', async ({ page }) => {
+  const catalogs = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (/\/i18n-(fr|de|zh-hans|zh-hant|ja|ko|pt-br|hi|kn|ar)\.js$/.test(url.pathname)) catalogs.push(url.pathname);
+  });
+  await page.addInitScript(() => localStorage.setItem('sixfold.locale.v1', 'fr'));
+  await page.goto('/');
+  await page.waitForFunction(() => window.SixfoldI18n && document.documentElement.lang === 'fr');
+  await expect.poll(() => catalogs.slice()).toEqual(['/i18n-fr.js']);
+});
+
+test.describe('service worker locale cache', () => {
+  test.use({ serviceWorkers: 'allow' });
+
+  test('installs without unused catalogs and warms only the active pack', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('sixfold.locale.v1', 'fr'));
+    await page.goto('/');
+    await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+
+    const cachedLocaleFiles = () => page.evaluate(async () => {
+      const files = [];
+      for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
+        const cache = await caches.open(name);
+        for (const request of await cache.keys()) {
+          const path = new URL(request.url).pathname;
+          if (/^\/i18n-(?!locale\.js$|js$)/.test(path)) files.push(path);
+        }
+      }
+      return [...new Set(files)].sort();
+    });
+
+    await expect.poll(cachedLocaleFiles).toEqual(['/i18n-fr.js', '/i18n-patterns.js']);
+  });
+});

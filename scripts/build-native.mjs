@@ -13,6 +13,7 @@ const files = [
   'v5.css',
   'daily.js',
   'i18n.js',
+  'i18n-locale.js',
   'i18n-fr.js',
   'i18n-de.js',
   'i18n-zh-hans.js',
