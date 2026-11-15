@@ -165,8 +165,11 @@ test('records the installed Cache Storage footprint for all twelve locales', asy
   };
   console.log('[cache footprint] ceiling ' + (MAX_LOCALE_BYTES / 1024).toFixed(0) + ' KiB per locale');
 
-  await testInfo.attach('locale-cache-footprints.json', {
-    body: JSON.stringify(report, null, 2),
+  const reportPath = testInfo.outputPath('locale-cache-footprints.json');
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+  await testInfo.attach('locale-cache-footprints', {
+    path: reportPath,
     contentType: 'application/json'
   });
 
