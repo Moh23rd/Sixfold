@@ -11,11 +11,13 @@
 }
 
 /* The display face gives the wordmark and large headings their geometric,
-   playful character. Google Sans Flex stays on UI and body copy. */
+   playful character. Google Sans Flex stays on UI and body copy. Only the 700
+   cut ships; register it across the display range so 800-weight headings use
+   the same outline instead of a synthetic or missing bold face. */
 @font-face {
   font-family: "Space Grotesk";
   src: url("../fonts/space-grotesk-700.woff2?v=5.0.0") format("woff2");
-  font-weight: 700;
+  font-weight: 700 800;
   font-style: normal;
   font-display: swap;
 }

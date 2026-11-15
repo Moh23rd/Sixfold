@@ -10,7 +10,7 @@ const CACHE_PREFIX = 'sixfold-';
 // files that were never cached.
 const ASSET = '4.0.0';
 const SHARE_CARD = '5.2.5';
-const STYLE_ASSET = '5.2.5';
+const STYLE_ASSET = '5.2.6';
 const FONT_ASSET = '4.0.1';
 const DISPLAY_FONT = '5.0.0';
 const THEME_JS = '5.2.0';
