@@ -40,6 +40,8 @@ fallback and prefetch, localized numerals, and a CI audit for the word data.
   digit faces instead of losing the score and level digits.
 - Sudoku share cards show the hint count again, localized with the active
   interface language.
+- Restored the Space Grotesk display face for headings and the wordmark while
+  keeping Google Sans Flex for UI and body copy.
 
 ### Added
 

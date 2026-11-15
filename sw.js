@@ -10,8 +10,9 @@ const CACHE_PREFIX = 'sixfold-';
 // files that were never cached.
 const ASSET = '4.0.0';
 const SHARE_CARD = '5.2.5';
-const STYLE_ASSET = '5.2.4';
+const STYLE_ASSET = '5.2.5';
 const FONT_ASSET = '4.0.1';
+const DISPLAY_FONT = '5.0.0';
 const THEME_JS = '5.2.0';
 const GAME_CODE = '5.2.4';
 const WORDLE_CODE = '5.2.4-wordle';
@@ -22,7 +23,7 @@ const POLISH_CSS = '4.0.0-w12';
 const GAMES_JS = '5.2.4';
 const SUDOKU_CSS = '4.0.0-w13';
 const V5_CSS = '5.3.6';
-const HOME_CSS = '4.0.0-w6';
+const HOME_CSS = '4.0.0-w7';
 const DAILY_CODE = '5.3.6';
 const I18N_CODE = '5.4.4';
 
@@ -77,6 +78,7 @@ const SHELL = [
   './icons/icon-1024.png',
   './icons/icon-maskable-512.png',
   './icons/icon-maskable-1024.png',
+  './fonts/space-grotesk-700.woff2?v=' + DISPLAY_FONT,
   './fonts/google-sans-flex.woff2?v=' + FONT_ASSET,
   './fonts/sixfold-sc.woff2?v=' + LOCALE_FONT,
   './fonts/sixfold-tc.woff2?v=' + LOCALE_FONT,

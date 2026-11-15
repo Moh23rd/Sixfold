@@ -10,6 +10,16 @@
   font-display: swap;
 }
 
+/* The display face gives the wordmark and large headings their geometric,
+   playful character. Google Sans Flex stays on UI and body copy. */
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("../fonts/space-grotesk-700.woff2?v=5.0.0") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Noto Sans Script families, subset to the glyphs used by each catalog. They
    sit behind Google Sans Flex in the locale-specific stacks below, so Latin
    brand names keep the app face while CJK, Devanagari and Arabic use a face
@@ -83,7 +93,7 @@
 
 :root {
   --font-ui: "Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   color-scheme: light;
 
   /* page chrome — one flat colour, identical to the manifest and theme-color,
@@ -132,37 +142,37 @@
 
 html[lang="zh-Hans"] {
   --font-ui: "Google Sans Flex", "Sixfold SC", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", "Sixfold SC", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Google Sans Flex", "Sixfold SC", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Sixfold SC", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Google Sans Flex", monospace;
 }
 html[lang="zh-Hant"] {
   --font-ui: "Google Sans Flex", "Sixfold TC", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", "Sixfold TC", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Google Sans Flex", "Sixfold TC", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Sixfold TC", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Google Sans Flex", monospace;
 }
 html[lang="ja"] {
   --font-ui: "Google Sans Flex", "Sixfold JP", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", "Sixfold JP", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Google Sans Flex", "Sixfold JP", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Sixfold JP", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Google Sans Flex", monospace;
 }
 html[lang="ko"] {
   --font-ui: "Google Sans Flex", "Sixfold KR", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", "Sixfold KR", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Google Sans Flex", "Sixfold KR", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Sixfold KR", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Google Sans Flex", monospace;
 }
 html[lang="hi"] {
   --font-ui: "Google Sans Flex", "Sixfold Devanagari", "Sixfold Devanagari Digits", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", "Sixfold Devanagari", "Sixfold Devanagari Digits", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Google Sans Flex", "Sixfold Devanagari", "Sixfold Devanagari Digits", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Sixfold Devanagari", "Sixfold Devanagari Digits", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Google Sans Flex", monospace;
 }
 html[lang="kn"] {
   --font-ui: "Google Sans Flex", "Sixfold Kannada", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", "Sixfold Kannada", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Google Sans Flex", "Sixfold Kannada", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Sixfold Kannada", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Google Sans Flex", monospace;
 }
 html[lang="ar"] {
   --font-ui: "Google Sans Flex", "Sixfold Arabic", "Sixfold Arabic Digits", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Google Sans Flex", "Sixfold Arabic", "Sixfold Arabic Digits", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Google Sans Flex", "Sixfold Arabic", "Sixfold Arabic Digits", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Sixfold Arabic", "Sixfold Arabic Digits", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Google Sans Flex", monospace;
 }
 
@@ -299,7 +309,7 @@ h1 {
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(30px, 8.2vw, 38px);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.018em;
   line-height: 0.95;
   text-transform: uppercase;
