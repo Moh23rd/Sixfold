@@ -82,25 +82,28 @@ const SHELL = [
 ];
 
 /* A build reuses the cache name so an installed app keeps its offline shell.
-   Versioned URLs from older builds would otherwise stay forever, so drop any
-   entry whose version is not part of this build. Dynamic locale and Wordle
-   packs are kept while they match the current asset versions. */
+   Versioned URLs from older builds would otherwise stay forever, so keep only
+   the current shell and current dynamic packs, and drop the rest. Matching by
+   path matters because unrelated assets reuse the same version string. */
 async function pruneStaleAssets() {
   const cache = await caches.open(VERSION);
   const requests = await cache.keys();
   const keep = new Set(SHELL.map((entry) => new URL(entry, self.registration.scope).href));
-  const versions = new Set([I18N_CODE, WORDLE_CODE]);
 
-  SHELL.forEach((entry) => {
-    const version = new URL(entry, self.registration.scope).searchParams.get('v');
-    if (version) versions.add(version);
-  });
+  function isCurrentDynamic(url) {
+    const version = url.searchParams.get('v');
+    if (!version) return false;
+    if (url.pathname.endsWith('/i18n-patterns.js')) return version === I18N_CODE;
+    if (/\/i18n-[a-z-]+\.js$/.test(url.pathname)) return version === I18N_CODE;
+    if (/\/wordle-locales\/[^/]+\.js$/.test(url.pathname)) return version === WORDLE_CODE;
+    if (/\/manifest(?:-dark)?\.webmanifest$/.test(url.pathname)) return version === THEME_JS;
+    return false;
+  }
 
   await Promise.all(
     requests.map((request) => {
       const url = new URL(request.url);
-      const version = url.searchParams.get('v');
-      if (!version || keep.has(url.href) || versions.has(version)) return undefined;
+      if (!url.searchParams.has('v') || keep.has(url.href) || isCurrentDynamic(url)) return undefined;
       return cache.delete(request);
     })
   );

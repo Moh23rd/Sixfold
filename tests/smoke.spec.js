@@ -346,6 +346,7 @@ test.describe('service worker locale cache', () => {
       const cache = await caches.open(name);
       await cache.put(new Request('/css/home.css?v=4.0.0-w10'), new Response('stale css'));
       await cache.put(new Request('/i18n-fr.js?v=4.0.0'), new Response('stale catalog'));
+      await cache.put(new Request('/wordle-locales/fr.js?v=4.0.0'), new Response('stale wordle pack'));
       await cache.put(new Request('/i18n-fr.js?v=' + version), new Response('current catalog'));
     }, currentLocaleVersion);
 
@@ -368,13 +369,15 @@ test.describe('service worker locale cache', () => {
       return paths;
     });
 
-    await expect.poll(cachedPaths).toEqual(expect.not.arrayContaining([
-      '/css/home.css?v=4.0.0-w10',
-      '/i18n-fr.js?v=4.0.0',
-    ]));
-    await expect.poll(cachedPaths).toEqual(expect.arrayContaining([
-      '/index.html',
-      '/i18n-fr.js?v=' + currentLocaleVersion,
-    ]));
+    await expect.poll(async () => {
+      const paths = await cachedPaths();
+      return paths.includes('/css/home.css?v=4.0.0-w10') ||
+        paths.includes('/i18n-fr.js?v=4.0.0') ||
+        paths.includes('/wordle-locales/fr.js?v=4.0.0');
+    }).toBe(false);
+
+    const paths = await cachedPaths();
+    expect(paths).toContain('/index.html');
+    expect(paths).toContain('/i18n-fr.js?v=' + currentLocaleVersion);
   });
 });
