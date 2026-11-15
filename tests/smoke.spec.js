@@ -101,6 +101,45 @@ test('daily milestone badge is earned from the best streak', async ({ page }) =>
   await expect(page.locator('#daily-badge-next')).toContainText('30');
 });
 
+test('earned badge progress never grows wider than the badge', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem('sixfold.daily.v1', JSON.stringify({ days: {}, best: 7 }));
+  });
+  await page.reload();
+  await expect(page.locator('#daily-badge-next')).toBeVisible();
+
+  const measure = () => page.evaluate(() => {
+    const badge = document.getElementById('daily-badge').getBoundingClientRect();
+    const progress = document.getElementById('daily-badge-progress').getBoundingClientRect();
+    return {
+      badgeWidth: badge.width,
+      badgeLeft: badge.left,
+      badgeRight: badge.right,
+      progressWidth: progress.width,
+      progressLeft: progress.left,
+      progressRight: progress.right
+    };
+  });
+
+  const earned = await measure();
+  expect(earned.progressWidth).toBeCloseTo(earned.badgeWidth, 1);
+  expect(earned.progressLeft).toBeCloseTo(earned.badgeLeft, 1);
+  expect(earned.progressRight).toBeCloseTo(earned.badgeRight, 1);
+
+  // A longer next-badge line must widen the badge with the track, not leave
+  // the track hanging past the badge edge.
+  await page.evaluate(() => {
+    const next = document.getElementById('daily-badge-next');
+    next.hidden = false;
+    next.textContent = '265 days to 365 · keep going';
+  });
+  const stretched = await measure();
+  expect(stretched.progressWidth).toBeCloseTo(stretched.badgeWidth, 1);
+  expect(stretched.progressLeft).toBeCloseTo(stretched.badgeLeft, 1);
+  expect(stretched.progressRight).toBeCloseTo(stretched.badgeRight, 1);
+});
+
 test('daily section can be hidden and restored from Look & feel', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#daily')).toBeVisible();

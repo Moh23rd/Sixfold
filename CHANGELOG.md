@@ -2,12 +2,45 @@
 
 > Public release label: **v5.0**. The internal build version for this release is **5.2.0**.
 
-## v5.0 — 13 November 2026
+## v5.0 — 15 November 2026
 
 Internal build: **5.2.0**
 
-This release brings Wordle to every interface language, with offline dictionary
-fallback and prefetch, localized numerals, and a CI audit for the word data.
+5.0 is the twelve-language Daily Sixfold release. It rolls up every change
+since 4.0: Wordle in every interface language, Daily Sixfold, Sudoku Learn,
+twelve languages including Spanish, native wrappers, and one coherent finish
+across the hub, games and generated share cards.
+
+### Also since 4.0
+
+- **Spanish localization and the language switch**, plus **native Android and
+  iOS wrappers** built with Capacitor 8, native splash/status-bar handling,
+  store listings, review notes and privacy material.
+- **Daily Sixfold**: a date-seeded featured game, a 30-day archive, a local
+  streak and best, milestone badges and reminders, spoiler-free daily sharing,
+  and daily runs kept separate from normal saves.
+- **Sudoku Learn**, technique-aware hints, auto-notes, mistake checking, pause
+  and resume, plus high-contrast, colour-blind, left-handed and larger-digit
+  controls. Backup/restore, persistent storage and the update prompt complete
+  the collection shell.
+- **GPL-3.0-only licensing**, the App Store additional permission, the in-app
+  licences view and the localized store and privacy material.
+- **Share and settings polish**: image sharing falls back to a save-card flow
+  when the platform blocks it; share text and cards follow the selected
+  language; accessibility options collapse into one row and interface sounds
+  are gone; the What’s New panel is localized and fits 320px/RTL.
+- **Performance and motion**: Water Sort updates only changed tubes, game art is
+  cached between moves, Fruit Merge caps DPR and batches aim redraws, and the
+  expanded reduced-motion paths keep every new transition still when asked.
+- **One six-colour palette** across the hub, game results and generated share
+  cards, with **Google Sans Flex** on headings, the wordmark, labels and cards.
+- **A release-quality finish**: balanced short copy, quieter Daily badges, the
+  earned-badge progress aligned to the badge, Wordle cartridge and Tic Tac Toe
+  contrast fixes found by the expanded axe coverage, and smoother Daily
+  progress and badge state transitions.
+- **Broader verification**: axe scans for Wordle and every result overlay in
+  light and dark, a 320px locale layout pass, share-card palette checks, and
+  the complete Playwright suite in CI.
 
 ### Changed
 

@@ -128,6 +128,7 @@ html[data-daily="off"] #daily { display: none; }
   border: 1px solid color-mix(in srgb, var(--t256) 45%, var(--home-rule, var(--line)));
   border-radius: 9px;
   background: color-mix(in srgb, var(--t256) 10%, var(--panel));
+  transition: background-color 180ms ease, border-color 180ms ease;
 }
 
 .daily-badge-mark {
@@ -219,6 +220,7 @@ html[data-daily="off"] #daily { display: none; }
   height: 100%;
   border-radius: inherit;
   background: var(--t256);
+  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .daily-badge.is-new {
@@ -954,6 +956,8 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .daily-badge,
+  .daily-badge-progress i,
   .daily-badge.is-new,
   .daily-play,
   .daily-calendar-btn { animation: none; transition: none; }
