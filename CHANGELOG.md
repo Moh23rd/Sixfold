@@ -32,6 +32,9 @@ across the hub, games and generated share cards.
 - **Performance and motion**: Water Sort updates only changed tubes, game art is
   cached between moves, Fruit Merge caps DPR and batches aim redraws, and the
   expanded reduced-motion paths keep every new transition still when asked.
+- **A lighter first visit**: the What’s New panel is a compact disclosure,
+  startup loads only the active language catalog, and the service worker warms
+  that pack instead of downloading every locale.
 - **One six-colour palette** across the hub, game results and generated share
   cards, with **Google Sans Flex** on headings, the wordmark, labels and cards.
 - **A release-quality finish**: balanced short copy, quieter Daily badges, the
@@ -47,6 +50,8 @@ across the hub, games and generated share cards.
 - **Daily Sixfold** now uses the same flat paper surfaces and hard edge as the
   rest of the hub, with no gradient wash. The section can be hidden from
   **Look & feel → Home** without losing streaks or check-ins.
+- **Home spacing** — on phones, the Daily card now sits 22px above The
+  Collection; hiding the Daily keeps the previous 31px gap after the ticker.
 - **The language picker** is a compact collapsed row that expands only when
   needed, instead of showing every language at once.
 - **Sudoku settings** — larger digits, left-handed layout, hidden timer,
