@@ -17,7 +17,7 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **Cache budget guardrails**: successful core jobs retain the per-locale
   footprint report, compare it with the previous successful baseline, warn in
   the final 10% of the 2 MiB budget, and publish the drift table in the job
-  summary.
+  summary. A focused test covers the near-ceiling warning and summary output.
 - **Cleaner release metadata**: the 6.0 development build and public 5.0 label
   are now checked independently by the release-label test.
 

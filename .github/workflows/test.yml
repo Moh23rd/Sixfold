@@ -24,7 +24,7 @@ jobs:
           - group: axe-states
             files: tests/axe-states.spec.js
           - group: core
-            files: tests/smoke.spec.js tests/cache-footprint.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/release-labels.spec.js
+            files: tests/smoke.spec.js tests/cache-footprint.spec.js tests/cache-footprint-drift.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/release-labels.spec.js
           - group: games
             files: tests/layout.spec.js tests/wordle.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js
     name: Playwright ${{ matrix.group }}
@@ -86,30 +86,56 @@ jobs:
           # back to the default branch so its first run still has a baseline.
           find_baseline() {
             local branch="$1"
-            local run_id artifact
+            local run_id artifact runs_file
+            runs_file=$(mktemp)
+            if ! gh run list --repo "$GITHUB_REPOSITORY" --workflow test.yml --branch "$branch" --status success --limit 50 \
+              --json databaseId --jq ".[] | select(.databaseId != ${CURRENT_RUN_ID}) | .databaseId" > "$runs_file"; then
+              echo "::error title=Cache footprint baseline lookup failed::Could not list successful runs on ${branch}."
+              rm -f "$runs_file"
+              return 2
+            fi
             while read -r run_id; do
               [ -n "$run_id" ] || continue
-              artifact=$(gh api \
+              if ! artifact=$(gh api \
                 "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
-                --jq '[.artifacts[] | select(.expired == false) | select(.name | startswith("locale-cache-footprints-"))] | sort_by(.created_at) | reverse | .[0].name // empty')
+                --jq '[.artifacts[] | select(.expired == false) | select(.name | startswith("locale-cache-footprints-"))] | sort_by(.created_at) | reverse | .[0].name // empty'); then
+                echo "::error title=Cache footprint baseline lookup failed::Could not list artifacts for run ${run_id}."
+                rm -f "$runs_file"
+                return 2
+              fi
               if [ -n "$artifact" ]; then
                 echo "Comparing against ${artifact} from run ${run_id} on ${branch}."
-                gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "$artifact" --dir previous-footprints
+                if ! gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "$artifact" --dir previous-footprints; then
+                  echo "::error title=Cache footprint baseline lookup failed::Could not download ${artifact} from run ${run_id}."
+                  rm -f "$runs_file"
+                  return 2
+                fi
+                rm -f "$runs_file"
                 return 0
               fi
-            done < <(gh run list --repo "$GITHUB_REPOSITORY" --workflow test.yml --branch "$branch" --status success --limit 50 \
-              --json databaseId --jq ".[] | select(.databaseId != ${CURRENT_RUN_ID}) | .databaseId")
+            done < "$runs_file"
+            rm -f "$runs_file"
             return 1
           }
 
           default_branch="${DEFAULT_BRANCH:-main}"
           if find_baseline "$BRANCH"; then
             echo "baseline=true" >> "$GITHUB_OUTPUT"
-          elif [ "$BRANCH" = "$default_branch" ] || ! find_baseline "$default_branch"; then
-            echo "::warning title=Cache footprint baseline unavailable::No earlier successful run with a locale-cache-footprints artifact was found; this run establishes the baseline."
-            echo "baseline=false" >> "$GITHUB_OUTPUT"
           else
-            echo "baseline=true" >> "$GITHUB_OUTPUT"
+            branch_status=$?
+            if [ "$branch_status" -eq 2 ]; then
+              exit 1
+            fi
+            if [ "$BRANCH" != "$default_branch" ] && find_baseline "$default_branch"; then
+              echo "baseline=true" >> "$GITHUB_OUTPUT"
+            else
+              default_status=$?
+              if [ "$default_status" -eq 2 ]; then
+                exit 1
+              fi
+              echo "::warning title=Cache footprint baseline unavailable::No earlier successful run with a locale-cache-footprints artifact was found; this run establishes the baseline."
+              echo "baseline=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
       - name: Check locale cache footprint drift
         if: success() && matrix.group == 'core'
