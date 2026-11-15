@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   test:
@@ -69,6 +70,62 @@ jobs:
           path: test-results/**/locale-cache-footprints.json
           if-no-files-found: error
           retention-days: 90
+      - name: Download previous locale cache footprints
+        id: previous-footprints
+        if: success() && matrix.group == 'core'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          mkdir -p previous-footprints
+
+          # Prefer the latest successful run on this branch. A new branch falls
+          # back to the default branch so its first run still has a baseline.
+          find_baseline() {
+            local branch="$1"
+            local run_id artifact
+            while read -r run_id; do
+              [ -n "$run_id" ] || continue
+              artifact=$(gh api \
+                "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
+                --jq '[.artifacts[] | select(.expired == false) | select(.name | startswith("locale-cache-footprints-"))] | sort_by(.created_at) | reverse | .[0].name // empty')
+              if [ -n "$artifact" ]; then
+                echo "Comparing against ${artifact} from run ${run_id} on ${branch}."
+                gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "$artifact" --dir previous-footprints
+                return 0
+              fi
+            done < <(gh run list --repo "$GITHUB_REPOSITORY" --workflow test.yml --branch "$branch" --status success --limit 50 \
+              --json databaseId --jq ".[] | select(.databaseId != ${CURRENT_RUN_ID}) | .databaseId")
+            return 1
+          }
+
+          default_branch="${DEFAULT_BRANCH:-main}"
+          if find_baseline "$BRANCH"; then
+            echo "baseline=true" >> "$GITHUB_OUTPUT"
+          elif [ "$BRANCH" = "$default_branch" ] || ! find_baseline "$default_branch"; then
+            echo "::warning title=Cache footprint baseline unavailable::No earlier successful run with a locale-cache-footprints artifact was found; this run establishes the baseline."
+            echo "baseline=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "baseline=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check locale cache footprint drift
+        if: success() && matrix.group == 'core'
+        env:
+          BASELINE: ${{ steps.previous-footprints.outputs.baseline }}
+        run: |
+          set -euo pipefail
+          if [ "$BASELINE" != "true" ]; then
+            echo "No previous footprint artifact; baseline run only."
+            exit 0
+          fi
+          current=$(find test-results -name locale-cache-footprints.json -print -quit)
+          previous=$(find previous-footprints -name locale-cache-footprints.json -print -quit)
+          test -n "$current"
+          test -n "$previous"
+          node scripts/check-cache-footprint-drift.mjs --current "$current" --previous "$previous"
 
   check:
     name: check
