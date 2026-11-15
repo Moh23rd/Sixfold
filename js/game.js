@@ -8,6 +8,10 @@
   const MOVE_MS = 150;
   const STORE_BEST = 'merge2048.best';
 
+  function shareAccent(hex) {
+    return window.MergeTheme && window.MergeTheme.colour ? window.MergeTheme.colour(hex) : hex;
+  }
+
   let size = DEFAULT_SIZE;
   let dailyActive = false;
   let dailyDate = '';
@@ -895,7 +899,7 @@
         data.moves + (data.moves === 1 ? ' move' : ' moves'),
         'Best ' + data.best
       ],
-      accent: '#e85f3b'
+      accent: shareAccent('#e85f3b')
     });
   }
 

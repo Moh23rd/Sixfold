@@ -11,6 +11,10 @@
   if (!root || !englishWords || !englishWords.answers || !englishWords.valid) return;
 
   const $ = function (id) { return document.getElementById(id); };
+
+  function shareAccent(hex) {
+    return window.MergeTheme && window.MergeTheme.colour ? window.MergeTheme.colour(hex) : hex;
+  }
   const boardEl = $('wordle-board');
   const keyboardEl = $('wordle-keyboard');
   const statusEl = $('wordle-status');
@@ -607,7 +611,7 @@
         title: win ? tr('shareSolved') : tr('shareLost'),
         score: score + '/6', label: tr('shareGuesses'),
         meta: [tr('wordWas', { word: displayWord(state.answer) }), streak],
-        accent: '#9a6bb5'
+        accent: shareAccent('#9a6bb5')
       });
     } else if (window.MergeShare && window.MergeShare.share) {
       window.MergeShare.share('Sixfold — Wordle', text);

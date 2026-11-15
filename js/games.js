@@ -9,6 +9,10 @@
 
   const $ = function (id) { return document.getElementById(id); };
   const $$ = function (selector) { return Array.from(document.querySelectorAll(selector)); };
+
+  function shareAccent(hex) {
+    return window.MergeTheme && window.MergeTheme.colour ? window.MergeTheme.colour(hex) : hex;
+  }
   const body = document.body;
   const app = document.querySelector('.app');
   const hub = $('hub');
@@ -1733,7 +1737,7 @@
           score: moves,
           label: 'MOVES',
           meta: ['Level ' + (level + 1) + ' of ' + LEVELS.length, 'Every colour has its own tube.'],
-          accent: '#39a9a1'
+          accent: shareAccent('#39a9a1')
         });
       });
     }
@@ -2266,7 +2270,7 @@
           score: isTwo ? (twoStats.x + '–' + twoStats.o) : (stats.wins + '–' + stats.losses),
           label: isTwo ? 'X – O' : 'WINS – LOSSES',
           meta: [isTwo ? '2 players' : level],
-          accent: '#e3b94a'
+          accent: shareAccent('#e3b94a')
         });
       });
     }
@@ -3383,7 +3387,7 @@
           score: score,
           label: 'POINTS',
           meta: ['Best ' + best],
-          accent: '#5b8fd5'
+          accent: shareAccent('#5b8fd5')
         });
       });
     }
@@ -3995,7 +3999,7 @@
           score: formatTime(elapsedTime()),
           label: won ? 'TIME' : 'LASTED',
           meta: [currentLevel().label, won ? 'Every safe square is open.' : 'Mine hit.'],
-          accent: '#8bbd54'
+          accent: shareAccent('#8bbd54')
         });
       });
     }
