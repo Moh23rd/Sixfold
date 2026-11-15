@@ -81,6 +81,31 @@ const SHELL = [
   './fonts/sixfold-devanagari-digits.woff2?v=' + LOCALE_FONT
 ];
 
+/* A build reuses the cache name so an installed app keeps its offline shell.
+   Versioned URLs from older builds would otherwise stay forever, so drop any
+   entry whose version is not part of this build. Dynamic locale and Wordle
+   packs are kept while they match the current asset versions. */
+async function pruneStaleAssets() {
+  const cache = await caches.open(VERSION);
+  const requests = await cache.keys();
+  const keep = new Set(SHELL.map((entry) => new URL(entry, self.registration.scope).href));
+  const versions = new Set([I18N_CODE, WORDLE_CODE]);
+
+  SHELL.forEach((entry) => {
+    const version = new URL(entry, self.registration.scope).searchParams.get('v');
+    if (version) versions.add(version);
+  });
+
+  await Promise.all(
+    requests.map((request) => {
+      const url = new URL(request.url);
+      const version = url.searchParams.get('v');
+      if (!version || keep.has(url.href) || versions.has(version)) return undefined;
+      return cache.delete(request);
+    })
+  );
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
@@ -110,6 +135,9 @@ self.addEventListener('activate', (event) => {
             .map((key) => caches.delete(key))
         )
       )
+      .then(() => pruneStaleAssets().catch((err) => {
+        console.warn('Sixfold: stale cache prune failed', err);
+      }))
       .then(() => self.clients.claim())
   );
 });
