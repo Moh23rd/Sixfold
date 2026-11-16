@@ -132,6 +132,26 @@ You can also run `npm run native:android`, open the `android/` directory in
 Android Studio, let Gradle sync, and use **Run**. Always run the sync first so
 Android Studio packages the current web assets.
 
+## Smoke-check a downloaded APK
+
+With `adb` on `PATH` and one phone or emulator connected with USB debugging
+approved:
+
+```sh
+./scripts/smoke-apk.sh
+```
+
+The script uses the newest `artifacts/**/app-debug.apk`, installs and launches
+it, checks the installed version and running process, and saves a screenshot in
+`artifacts/smoke/`. Set `APK_PATH=...` to choose a specific APK, or
+`ADB_SERIAL=...` when more than one device is connected. `npm run smoke:apk` is
+an equivalent command when npm is available.
+
+After it passes, check that the home screen is visible, the header clears the
+status bar/cutout, the bottom controls clear the gesture bar, and one game can
+be opened and played. The full API 24/28/35/36 matrix is only needed when
+native layout or system-bar behavior changes.
+
 ## CI verification
 
 The `Test` workflow includes an **Android debug APK** job on `ubuntu-latest`.
