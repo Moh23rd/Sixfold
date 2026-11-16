@@ -11,6 +11,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(GallerySavePlugin.class);
         super.onCreate(savedInstanceState);
 
         // Draw the WebView behind the system bars. The bundled SystemBars

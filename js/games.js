@@ -64,20 +64,11 @@
 
   const FONT = '"Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
 
-  /* ---------- sharing ---------- */
+  /* ---------- saving results ---------- */
 
-  const SHARE_TITLE = 'Sixfold — Six games. No filler.';
-  const SHARE_TEXT = 'Sixfold: six games, no filler — an offline pocket arcade of Merge, Sudoku, Tic Tac Toe, Minesweeper, Water Sort and Fruit Merge. No accounts, no ads.';
+  // Results are saved, never handed to a native share sheet: the Android shell
+  // files the PNG into the photo gallery and a browser downloads it instead.
   let toastTimer = 0;
-  let shareFallbackEl = null;
-  let shareFallbackUrl = '';
-  let shareFallbackOpener = null;
-  let shareFallbackInert = null;
-
-  function shareUrl() {
-    if (location.protocol !== 'http:' && location.protocol !== 'https:') return '';
-    return location.origin + location.pathname;
-  }
 
   function toast(message) {
     const el = $('toast');
@@ -95,175 +86,28 @@
     }, 2300);
   }
 
-  function localizeShare(text) {
-    if (!window.SixfoldI18n) return String(text);
-    const translated = window.SixfoldI18n.t(String(text));
-    return window.SixfoldI18n.number ? window.SixfoldI18n.number(translated) : translated;
-  }
-
-  function copyShare(text) {
-    const url = shareUrl();
-    const localized = localizeShare(text);
-    const full = url ? localized + ' ' + url : localized;
-    if (!navigator.clipboard || !navigator.clipboard.writeText) {
-      toast(localize('Copy is not available in this browser.'));
-      return;
-    }
-    navigator.clipboard.writeText(full).then(function () {
-      toast(localize('Copied — paste it anywhere.'));
-    }).catch(function () {
-      toast(localize('Could not copy the text.'));
-    });
-  }
-
-  function share(title, text) {
-    const url = shareUrl();
-    const localized = localizeShare(text);
-    if (navigator.share) {
-      navigator.share({ title: localize(title || SHARE_TITLE), text: localized, url: url || undefined }).catch(function (err) {
-        // Closing the share sheet is a choice, not a failure.
-        if (err && err.name === 'AbortError') return;
-        copyShare(text);
-      });
-      return;
-    }
-    copyShare(text);
-  }
-
-  function closeShareFallback() {
-    if (!shareFallbackEl || shareFallbackEl.hidden) return;
-    shareFallbackEl.hidden = true;
-    document.documentElement.classList.remove('share-fallback-open');
-    if (shareFallbackInert) {
-      shareFallbackInert.inert = false;
-      shareFallbackInert = null;
-    }
-    if (shareFallbackUrl) {
-      URL.revokeObjectURL(shareFallbackUrl);
-      shareFallbackUrl = '';
-    }
-    const opener = shareFallbackOpener;
-    shareFallbackOpener = null;
-    if (opener && opener.isConnected) {
-      try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }
-    }
-  }
-
-  function buildShareFallback() {
-    if (shareFallbackEl) return shareFallbackEl;
-    const el = document.createElement('div');
-    el.className = 'share-fallback';
-    el.id = 'share-fallback';
-    el.hidden = true;
-    el.innerHTML = [
-      '<div class="share-fallback-card" role="dialog" aria-modal="true" aria-labelledby="share-fallback-title" aria-describedby="share-fallback-note">',
-      '  <div class="share-fallback-head"><h2 id="share-fallback-title">Save your result</h2></div>',
-      '  <img class="share-fallback-image" alt="Your Sixfold result card" decoding="async" />',
-      '  <p class="share-fallback-note" id="share-fallback-note"></p>',
-      '  <div class="share-fallback-actions">',
-      '    <a class="btn share-fallback-save" download>Save image</a>',
-      '    <button class="btn ghost share-fallback-done" type="button" data-close>Done</button>',
-      '  </div>',
-      '</div>'
-    ].join('');
-    document.body.appendChild(el);
-    el.addEventListener('click', function (event) {
-      if (event.target === el || event.target.closest('[data-close]')) closeShareFallback();
-    });
-    document.addEventListener('keydown', function (event) {
-      if (event.key !== 'Escape' || el.hidden) return;
-      event.preventDefault();
-      closeShareFallback();
-    });
-    shareFallbackEl = el;
-    return el;
-  }
-
-  function showShareFallback(file, data) {
-    const el = buildShareFallback();
-    const embedded = window.self !== window.top;
-    shareFallbackOpener = document.activeElement;
-    if (shareFallbackUrl) URL.revokeObjectURL(shareFallbackUrl);
-    shareFallbackUrl = URL.createObjectURL(file);
-
-    const image = el.querySelector('.share-fallback-image');
-    image.src = shareFallbackUrl;
-    image.alt = localize('Your Sixfold result card');
-    el.querySelector('#share-fallback-title').textContent = localize('Save your result');
-    const download = el.querySelector('.share-fallback-save');
-    download.href = shareFallbackUrl;
-    download.download = file.name || 'sixfold-result.png';
-    download.textContent = localize('Save image');
-    el.querySelector('.share-fallback-done').textContent = localize('Done');
-    el.querySelector('#share-fallback-note').textContent = embedded
-      ? localize('Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.')
-      : localize('This browser cannot open the native image share sheet. Save the card instead.');
-
-    const screen = document.body.dataset.screen;
-    const background = screen === 'hub'
-      ? document.getElementById('hub')
-      : screen === 'merge'
-        ? document.querySelector('.app')
-        : document.getElementById(screen);
-    if (background && 'inert' in background && !background.inert) {
-      background.inert = true;
-      shareFallbackInert = background;
-    }
-    el.hidden = false;
-    document.documentElement.classList.add('share-fallback-open');
-    window.setTimeout(function () {
-      if (!el.hidden) download.focus({ preventScroll: true });
-    }, 0);
-  }
-
-  function offerShareFallback(file, data, text) {
+  function saveCard(data) {
+    let file = null;
     try {
-      showShareFallback(file, data);
+      if (window.MergeShareCard && window.MergeShareCard.fileSync && typeof File === 'function') {
+        file = window.MergeShareCard.fileSync(data);
+      }
     } catch (err) {
-      copyShare(text);
+      file = null;
     }
+    if (!file || !window.MergeShareCard || !window.MergeShareCard.save) {
+      toast(localize('Couldn’t save the image.'));
+      return;
+    }
+    window.MergeShareCard.save(file).then(function (saved) {
+      toast(localize(saved ? 'Saved to your gallery.' : 'Couldn’t save the image.'));
+    });
   }
 
-  /* Share the generated Sixfold card when the browser can share files. When
-     the native sheet cannot take an image, show the same card with a save
-     option instead of silently copying text. Keeping this in one helper means
-     all six games use the same card and the same fallback. */
+  // Every game keeps calling MergeShare.result; it now writes the card to the
+  // gallery instead of opening the share sheet.
   function shareResult(title, text, data) {
-    if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
-        typeof File !== 'function') {
-      share(title, text);
-      return;
-    }
-    let file;
-    try {
-      file = window.MergeShareCard.fileSync(data);
-    } catch (err) {
-      share(title, text);
-      return;
-    }
-    let canShare = false;
-    if (navigator.share && navigator.canShare) {
-      try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
-    }
-    if (!canShare) {
-      offerShareFallback(file, data, text);
-      return;
-    }
-    let pending;
-    try {
-      // iOS rejects a file share that also carries title/text. Send only the
-      // file so the native image share sheet is allowed to open.
-      pending = navigator.share({ files: [file] });
-    } catch (err) {
-      offerShareFallback(file, data, text);
-      return;
-    }
-    if (pending && typeof pending.catch === 'function') {
-      pending.catch(function (err) {
-        if (err && err.name === 'AbortError') return;
-        offerShareFallback(file, data, text);
-      });
-    }
+    saveCard(data);
   }
 
   function shareAppData() {
@@ -281,67 +125,20 @@
     return { app: true, file: 'sixfold-collection', title: 'Sixfold', badge: badge };
   }
 
-  function shareAppText() {
-    const data = shareAppData();
-    const badge = data.badge
-      ? ' ' + localize('Your badge') + ': ' +
-        (data.badge.unit
-          ? localize('Perfect six')
-          : localize(data.badge.days + ' day streak')) + '.'
-      : '';
-    return SHARE_TEXT + badge;
-  }
-
   function shareApp() {
-    const data = shareAppData();
-    const text = shareAppText();
-    if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
-        typeof File !== 'function') {
-      share(SHARE_TITLE, text);
-      return;
-    }
-    let file;
-    try {
-      file = window.MergeShareCard.fileSync(data);
-    } catch (err) {
-      share(SHARE_TITLE, text);
-      return;
-    }
-    let canShare = false;
-    if (navigator.share && navigator.canShare) {
-      try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
-    }
-    if (!canShare) {
-      offerShareFallback(file, data, text);
-      return;
-    }
-    let pending;
-    try {
-      pending = navigator.share({ files: [file] });
-    } catch (err) {
-      offerShareFallback(file, data, text);
-      return;
-    }
-    if (pending && typeof pending.catch === 'function') {
-      pending.catch(function (err) {
-        if (err && err.name === 'AbortError') return;
-        offerShareFallback(file, data, text);
-      });
-    }
+    saveCard(shareAppData());
   }
 
   function shareDaily() {
     if (!window.SixfoldDaily || !window.SixfoldDaily.shareData) return;
-    const data = window.SixfoldDaily.shareData();
-    shareResult(data.title, data.game + ' · ' + data.label, data);
+    saveCard(window.SixfoldDaily.shareData());
   }
 
   window.MergeShare = {
-    share: share,
     result: shareResult,
     app: shareApp,
     daily: shareDaily,
-    url: shareUrl,
+    save: saveCard,
     toast: toast
   };
 

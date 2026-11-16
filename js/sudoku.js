@@ -1193,9 +1193,7 @@
         game: 'Sudoku', number: '02', kind: 'LOGIC', title: dailyKey ? 'Daily Sudoku' : 'Sudoku',
         score: formatTime(time), label: 'TIME', meta: dailyKey ? [prettyDaily(dailyKey), label, hintText] : [label, hintText], accent: accent
       });
-      return;
     }
-    if (window.MergeShare && window.MergeShare.share) window.MergeShare.share('Sudoku', message);
   }
 
   /* ---------- setup ---------- */

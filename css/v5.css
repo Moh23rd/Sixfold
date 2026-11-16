@@ -385,12 +385,6 @@ html[data-daily="off"] #daily { display: none; }
   color: var(--ink);
 }
 
-#daily-reminder-status {
-  margin: 6px 2px 10px;
-}
-
-#daily-reminder-status:empty { display: none; }
-
 .daily-play {
   display: flex;
   align-items: center;

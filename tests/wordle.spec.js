@@ -319,21 +319,12 @@ const WORDLE_IME_LOCALES = ['ar', 'hi', 'kn', 'ja', 'ko', 'zh-Hans', 'zh-Hant'];
 async function captureWordleShare(page) {
   await page.evaluate(() => {
     window.__wordleShare = '';
-    // Force the text fallback so the test observes the same localized copy a
-    // browser without file sharing would copy. The stub also keeps the test
-    // independent of clipboard permissions.
-    try { Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }); } catch (err) {}
-    try {
-      Object.defineProperty(navigator, 'clipboard', {
-        configurable: true,
-        value: {
-          writeText: function (text) {
-            window.__wordleShare = text;
-            return Promise.resolve();
-          }
-        }
-      });
-    } catch (err) {}
+    // Observe the card data Wordle hands to the shared save path.
+    const original = window.MergeShare.result;
+    window.MergeShare.result = function (title, text, data) {
+      window.__wordleShare = text;
+      return original.call(window.MergeShare, title, text, data);
+    };
   });
   await page.locator('#wordle-result-share').click();
   await page.waitForFunction(() => Boolean(window.__wordleShare));

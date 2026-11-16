@@ -3081,8 +3081,8 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 }
 
 /* ==========================================================================
-   v1.9 — one universal fullscreen control, a scoped reset per game, and a
-   plain back arrow. Kept together so these shared controls stay in step.
+   v1.9 — a scoped reset per game and a plain back arrow. Kept together so
+   these shared controls stay in step.
    ========================================================================== */
 
 /* The arrow is the whole control: a quiet square that reads instantly and
@@ -3143,50 +3143,6 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   margin-bottom: 0;
 }
 
-/* Fullscreen belongs to the collection, not to any one game. */
-.hub-focus {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--card) 76%, transparent);
-  box-shadow: var(--card-shadow);
-  color: var(--ink);
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
-}
-
-.hub-focus[hidden] { display: none; }
-
-.hub-focus svg {
-  width: 18px;
-  height: 18px;
-  display: block;
-}
-
-.hub-focus .focus-exit { display: none; }
-.hub-focus[aria-pressed="true"] .focus-enter { display: none; }
-.hub-focus[aria-pressed="true"] .focus-exit { display: block; }
-
-.hub-focus:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--ink) 20%, transparent);
-  background: var(--card);
-}
-
-.hub-focus:active { transform: scale(0.96); }
-
-.hub-focus:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 3px;
-}
-
 .hub-actions { gap: 9px; }
 
 /* The reset is deliberately quiet until it is needed. */
@@ -3243,7 +3199,6 @@ html[data-theme="dark"] .reset-confirm:hover {
    current palette, so the universal colour settings are never a guess. */
 @media (max-width: 520px) {
   .hub-actions { gap: 8px; }
-  .hub-focus { width: 40px; height: 40px; }
   .hub-share { width: 40px; height: 40px; }
   .hub-look {
     gap: 6px;
@@ -3263,7 +3218,6 @@ html[data-theme="dark"] .reset-confirm:hover {
 
 @media (max-width: 360px) {
   .games-home { width: 36px; height: 36px; }
-  .hub-focus { width: 38px; height: 38px; }
   .hub-share { width: 38px; height: 38px; }
   .hub-look-copy span { display: block; font-size: 11px; }
   .hub-look-copy strong { display: none; }
@@ -3271,7 +3225,6 @@ html[data-theme="dark"] .reset-confirm:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hub-focus,
   .hub-share,
   .games-home { transition: none; }
 }
@@ -4395,87 +4348,3 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   }
 }
 
-/* Keep a blocked native share useful: show the generated card with a
-   direct download instead of a bare toast. */
-html.share-fallback-open,
-html.share-fallback-open body { overflow: hidden; }
-
-.share-fallback {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
-  background: rgba(18, 16, 13, 0.54);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-}
-
-.share-fallback[hidden] { display: none; }
-
-.share-fallback-card {
-  position: relative;
-  width: min(100%, 420px);
-  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 16px;
-  border-radius: 20px;
-  background: var(--sheet-bg);
-  color: var(--ink);
-  box-shadow: 0 28px 70px -28px rgba(0, 0, 0, 0.8), 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent) inset;
-  animation: shareFallbackIn 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes shareFallbackIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.985); }
-  to { opacity: 1; transform: none; }
-}
-
-.share-fallback-head { margin-bottom: 12px; }
-
-.share-fallback-head h2 {
-  margin: 0;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-}
-
-.share-fallback-image {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 12px;
-  background: var(--page);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent), 0 12px 28px -20px rgba(0, 0, 0, 0.6);
-}
-
-.share-fallback-note {
-  margin: 12px 2px 14px;
-  color: var(--muted-strong);
-  font-size: 12.5px;
-  line-height: 1.45;
-}
-
-.share-fallback-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.share-fallback-actions .btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 14px;
-  font-size: 13px;
-  text-align: center;
-  text-decoration: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .share-fallback-card { animation: none; }
-}

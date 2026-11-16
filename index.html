@@ -301,11 +301,11 @@
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.1" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/styles.css?v=5.2.8" />
-  <link rel="stylesheet" href="css/games.css?v=5.2.9" />
-  <link rel="stylesheet" href="css/home.css?v=4.0.0-w11" />
-  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w16" />
+  <link rel="stylesheet" href="css/games.css?v=5.3.0" />
+  <link rel="stylesheet" href="css/home.css?v=4.0.0-w12" />
+  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w17" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w15" />
-  <link rel="stylesheet" href="css/v5.css?v=5.4.2" />
+  <link rel="stylesheet" href="css/v5.css?v=5.4.3" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -362,10 +362,6 @@
         <div class="hub-actions">
           <button class="hub-share" id="hub-share" type="button" aria-label="Share this game collection" title="Share">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg>
-          </button>
-          <button class="hub-focus" id="home-focus-toggle" type="button" aria-pressed="false" aria-label="Enter fullscreen" title="Enter fullscreen">
-            <svg class="focus-enter" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
-            <svg class="focus-exit" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </button>
           <button class="hub-look" id="appearance" type="button" aria-haspopup="dialog" aria-controls="sheet">
             <span class="hub-look-dots" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -682,7 +678,6 @@
           </div>
           <p id="overlay-text">No moves left.</p>
           <div class="overlay-actions">
-            <button class="btn ghost" id="overlay-share" type="button" hidden>Share</button>
             <button class="btn" id="overlay-btn" type="button">Try again</button>
           </div>
           <button class="overlay-save" id="overlay-save" type="button" hidden>Save image</button>
@@ -1132,8 +1127,6 @@
       <p class="sheet-label">Home</p>
       <div class="settings-list">
         <button class="setting-row" type="button" data-setting="dailyPuzzle" aria-pressed="true"><span class="setting-copy"><strong>Daily Sixfold</strong><small>Show today’s six games on the hub.</small></span><span class="setting-state">On</span></button>
-        <button class="setting-row" type="button" data-setting="dailyReminder" aria-pressed="false"><span class="setting-copy"><strong>Daily reminder</strong><small>One local nudge at 9:00 while Sixfold is open.</small></span><span class="setting-state">Off</span></button>
-        <p class="sheet-note" id="daily-reminder-status" role="status" aria-live="polite"></p>
       </div>
       <p class="sheet-label">Backup</p>
       <p class="sheet-note">Keep a copy of every board, score, streak and setting. A backup is a normal JSON file and stays on this device until you share it. Moving to a new phone? Export here, then restore there.</p>
@@ -1332,20 +1325,20 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="js/settings.js?v=5.2.3"></script>
+  <script src="js/settings.js?v=5.3.0"></script>
   <script src="js/haptics.js?v=4.0.0"></script>
   <script src="js/overscroll.js?v=4.0.0"></script>
   <script src="js/celebrate.js?v=4.0.0"></script>
-  <script src="js/sharecard.js?v=5.2.7"></script>
-  <script src="js/theme.js?v=6.0.0"></script>
-  <script src="js/game.js?v=5.2.5"></script>
+  <script src="js/sharecard.js?v=5.3.0"></script>
+  <script src="js/theme.js?v=6.0.1"></script>
+  <script src="js/game.js?v=5.3.0"></script>
   <script src="js/install.js?v=4.0.0"></script>
-  <script src="js/sudoku.js?v=5.2.6"></script>
-  <script src="js/games.js?v=5.2.8"></script>
-  <script src="js/daily.js?v=5.3.9"></script>
+  <script src="js/sudoku.js?v=5.3.0"></script>
+  <script src="js/games.js?v=5.3.0"></script>
+  <script src="js/daily.js?v=5.4.0"></script>
   <script src="js/badges.js?v=1.0.1"></script>
   <script src="js/update.js?v=5.1.0"></script>
-  <script src="i18n/i18n-locale.js?v=5.4.5"></script>
+  <script src="i18n/i18n-locale.js?v=5.4.6"></script>
   <script>
     // Only the active language pack is on the first-visit critical path. Every
     // other catalog is cached when its language is selected.
@@ -1356,9 +1349,9 @@
       });
     })();
   </script>
-  <script src="i18n/i18n.js?v=5.4.5"></script>
+  <script src="i18n/i18n.js?v=5.4.6"></script>
   <script src="js/native.js?v=5.1.1"></script>
-  <script src="js/wordle-loader.js?v=5.2.5-wordle"></script>
+  <script src="js/wordle-loader.js?v=5.3.0-wordle"></script>
   <script>
     (function () {
       var splash = document.getElementById('boot-splash');

@@ -29,7 +29,6 @@
   const overlayText = document.getElementById('overlay-text');
   const overlayScore = document.getElementById('overlay-score');
   const overlayMeta = document.getElementById('overlay-meta');
-  const overlayShare = document.getElementById('overlay-share');
   const overlaySave = document.getElementById('overlay-save');
   const overlayBtn = document.getElementById('overlay-btn');
   const resultPreview = document.getElementById('result-preview');
@@ -104,7 +103,6 @@
   let resultFilePromise = null;
   let resultImageToken = 0;
   let resultPreviewUrl = '';
-  let shareFlashTimer = 0;
   let saveFlashTimer = 0;
   let busy = false;
   let nextId = 1;
@@ -675,14 +673,10 @@
     overlayWin = !!(result && result.win);
     overlayScore.hidden = !result;
     overlayMeta.hidden = !result;
-    overlayShare.hidden = !result;
     overlaySave.hidden = !result;
     // A new card starts clean; a leftover flash timer must not re-enable or
-    // relabel these buttons while the new share/save is in progress.
-    window.clearTimeout(shareFlashTimer);
+    // relabel the button while the new save is in progress.
     window.clearTimeout(saveFlashTimer);
-    overlayShare.disabled = false;
-    overlayShare.textContent = 'Share';
     overlaySave.disabled = false;
     overlaySave.textContent = 'Save image';
     if (result) {
@@ -959,102 +953,10 @@
     });
   }
 
-  function shareMessage() {
-    const data = resultSnapshot || { win: overlayWin, score: score, moves: moves, size: size };
-    const board = data.size + ' × ' + data.size;
-    const played = data.moves + (data.moves === 1 ? ' move' : ' moves');
-    if (data.win) {
-      return 'I reached 2048 on Merge — ' + board + ' in ' + played + ' with ' + data.score + ' points. Can you?';
-    }
-    return 'I scored ' + data.score + ' on Merge — ' + board + ' in ' + played + '. Can you beat it?';
-  }
-
-  // The address only belongs in a link when the game really lives on one.
-  function shareUrl() {
-    if (location.protocol !== 'http:' && location.protocol !== 'https:') return '';
-    return location.origin + location.pathname;
-  }
-
-  function flashShare(label) {
-    overlayShare.textContent = label;
-    overlayShare.disabled = true;
-    window.clearTimeout(shareFlashTimer);
-    shareFlashTimer = window.setTimeout(function () {
-      overlayShare.textContent = 'Share';
-      overlayShare.disabled = false;
-    }, 1600);
-  }
-
   function localizeShare(value) {
     if (!window.SixfoldI18n) return String(value);
     const translated = window.SixfoldI18n.t(String(value));
     return window.SixfoldI18n.number ? window.SixfoldI18n.number(translated) : translated;
-  }
-
-  // Somewhere without a share sheet (most desktops) copies the same line instead.
-  function copyResult(message) {
-    const url = shareUrl();
-    const localized = localizeShare(message);
-    const text = url ? localized + ' ' + url : localized;
-    if (!navigator.clipboard || !navigator.clipboard.writeText) {
-      flashShare(localizeShare('Couldn’t copy'));
-      return;
-    }
-    navigator.clipboard.writeText(text).then(function () {
-      flashShare(localizeShare('Copied'));
-    }).catch(function () {
-      flashShare(localizeShare('Couldn’t copy'));
-    });
-  }
-
-  function canShareFile(file) {
-    if (!file || !navigator.share || !navigator.canShare) return false;
-    try {
-      return navigator.canShare({ files: [file] });
-    } catch (err) {
-      return false;
-    }
-  }
-
-  function shareText(message, url) {
-    if (navigator.share) {
-      navigator.share({ title: localizeShare('Sixfold — Merge'), text: localizeShare(message), url: url || undefined }).catch(function (err) {
-        // Closing the share sheet is a choice, not a failure.
-        if (err && err.name === 'AbortError') return;
-        copyResult(message);
-      });
-      return;
-    }
-    copyResult(message);
-  }
-
-  function shareFile(file, message, url) {
-    // iOS rejects a file share that also carries title/text. Send only the
-    // file so the native image share sheet is allowed to open.
-    navigator.share({ files: [file] }).catch(function (err) {
-      if (err && err.name === 'AbortError') return;
-      shareText(message, url);
-    });
-  }
-
-  function shareResult() {
-    const message = shareMessage();
-    const url = shareUrl();
-
-    // Most taps happen after the picture is ready, so keep the share call in
-    // the tap itself: some phones insist on it.
-    if (resultFile && canShareFile(resultFile)) {
-      shareFile(resultFile, message, url);
-      return;
-    }
-    if (resultFilePromise && !resultFile) {
-      resultFilePromise.then(function (file) {
-        if (file && canShareFile(file)) shareFile(file, message, url);
-        else shareText(message, url);
-      });
-      return;
-    }
-    shareText(message, url);
   }
 
   function flashSave(label) {
@@ -1067,24 +969,18 @@
     }, 1600);
   }
 
+  // The result is written into the phone's photo gallery. A browser downloads
+  // the same PNG; neither path opens a share sheet.
   async function saveResultImage() {
     const file = resultFile || (resultFilePromise ? await resultFilePromise : null);
-    if (!file) {
-      flashSave('Couldn’t save');
+    if (!file || !window.MergeShareCard || !window.MergeShareCard.save) {
+      flashSave(localizeShare('Couldn’t save'));
       return;
     }
-    const href = URL.createObjectURL(file);
-    const link = document.createElement('a');
-    link.href = href;
-    link.download = 'sixfold-merge-result.png';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
-    flashSave('Saved');
+    const saved = await window.MergeShareCard.save(file);
+    flashSave(saved ? localizeShare('Saved') : localizeShare('Couldn’t save'));
   }
 
-  overlayShare.addEventListener('click', shareResult);
   overlaySave.addEventListener('click', saveResultImage);
 
   // The picture belongs to the card, so redraw it with the new page colours

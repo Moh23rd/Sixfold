@@ -12,8 +12,7 @@
     hideTimer: false,
     checkMistakes: false,
     inputMode: 'cell',
-    dailyPuzzle: true,
-    dailyReminder: false
+    dailyPuzzle: true
   };
   const $ = function (id) { return document.getElementById(id); };
   let values = load();
@@ -93,73 +92,6 @@
   function status(message) {
     const el = $('backup-status');
     if (el) el.textContent = message;
-  }
-
-  function reminderStatus(message) {
-    const el = $('daily-reminder-status');
-    if (!el) return;
-    let copy = message;
-    try {
-      if (copy && window.SixfoldI18n) copy = window.SixfoldI18n.t(copy);
-    } catch (err) {}
-    el.textContent = copy || '';
-  }
-
-  function reminderSupported() {
-    return 'Notification' in window;
-  }
-
-  function setReminder(value, message, skipToday) {
-    values.dailyReminder = Boolean(value);
-    save();
-    apply();
-    reminderStatus(message || (value ? 'Reminder on. One nudge a day at 9:00.' : 'Reminder off.'));
-    if (window.SixfoldDaily && window.SixfoldDaily.refreshReminder) {
-      window.SixfoldDaily.refreshReminder(skipToday);
-    }
-  }
-
-  function toggleReminder() {
-    if (values.dailyReminder) {
-      setReminder(false, 'Reminder off.');
-      return;
-    }
-    if (!reminderSupported()) {
-      setReminder(false, 'Notifications are not available in this browser.');
-      return;
-    }
-    if (Notification.permission === 'denied') {
-      setReminder(false, 'Notifications are blocked in your browser settings.');
-      return;
-    }
-    const granted = function () {
-      setReminder(true, 'Reminder on. One nudge a day at 9:00.', true);
-    };
-    if (Notification.permission === 'granted') {
-      granted();
-      return;
-    }
-    let handled = false;
-    const finish = function (permission) {
-      if (handled) return;
-      handled = true;
-      if (permission === 'granted') granted();
-      else setReminder(false, permission === 'denied'
-        ? 'Notifications are blocked in your browser settings.'
-        : 'Reminder off.');
-    };
-    let pending;
-    try {
-      pending = Notification.requestPermission(finish);
-    } catch (err) {
-      setReminder(false, 'Notifications are not available in this browser.');
-      return;
-    }
-    if (pending && typeof pending.then === 'function') {
-      pending.then(finish).catch(function () {
-        setReminder(false, 'Notifications are not available in this browser.');
-      });
-    }
   }
 
   function exportBackup() {
@@ -247,39 +179,13 @@
   }
 
   function init() {
-    const reminderWasOn = values.dailyReminder;
-    if (reminderWasOn && (!reminderSupported() || Notification.permission !== 'granted')) {
-      values.dailyReminder = false;
-      save();
-    }
     apply();
-    if (reminderWasOn && !values.dailyReminder) {
-      reminderStatus(!reminderSupported()
-        ? 'Notifications are not available in this browser.'
-        : Notification.permission === 'denied'
-          ? 'Notifications are blocked in your browser settings.'
-          : 'Reminder off.');
-    }
     document.querySelectorAll('[data-setting]').forEach(function (button) {
       button.addEventListener('click', function () {
-        if (button.dataset.setting === 'dailyReminder') {
-          toggleReminder();
-          return;
-        }
         toggle(button.dataset.setting);
       });
     });
 
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden || !values.dailyReminder || !reminderSupported()) return;
-      if (Notification.permission === 'granted') return;
-      values.dailyReminder = false;
-      save();
-      apply();
-      reminderStatus(Notification.permission === 'denied'
-        ? 'Notifications are blocked in your browser settings.'
-        : 'Reminder off.');
-    });
     document.querySelectorAll('[data-setting-input]').forEach(function (button) {
       button.addEventListener('click', function () { set('inputMode', button.dataset.settingInput); });
     });

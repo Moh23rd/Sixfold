@@ -12,22 +12,22 @@ const CACHE_PREFIX = 'sixfold-';
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
 const ASSET = '4.0.0';
-const SHARE_CARD = '5.2.7';
+const SHARE_CARD = '5.3.0';
 const STYLE_ASSET = '5.2.8';
 const FONT_ASSET = '4.0.1';
-const THEME_JS = '6.0.0';
-const GAME_CODE = '5.2.5';
-const WORDLE_CODE = '5.2.5-wordle';
-const SUDOKU_GAME_CODE = '5.2.6';
+const THEME_JS = '6.0.1';
+const GAME_CODE = '5.3.0';
+const WORDLE_CODE = '5.3.0-wordle';
+const SUDOKU_GAME_CODE = '5.3.0';
 const LOCALE_FONT = '5.1.4';
-const GAMES_CSS = '5.2.9';
-const POLISH_CSS = '4.0.0-w16';
-const GAMES_JS = '5.2.8';
+const GAMES_CSS = '5.3.0';
+const POLISH_CSS = '4.0.0-w17';
+const GAMES_JS = '5.3.0';
 const SUDOKU_CSS = '4.0.0-w15';
-const V5_CSS = '5.4.2';
-const HOME_CSS = '4.0.0-w11';
-const DAILY_CODE = '5.3.9';
-const I18N_CODE = '5.4.5';
+const V5_CSS = '5.4.3';
+const HOME_CSS = '4.0.0-w12';
+const DAILY_CODE = '5.4.0';
+const I18N_CODE = '5.4.6';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.
@@ -91,7 +91,7 @@ const SHELL = [
   './css/polish.css?v=' + POLISH_CSS,
   './css/sudoku.css?v=' + SUDOKU_CSS,
   './css/v5.css?v=' + V5_CSS,
-  './js/settings.js?v=5.2.3',
+  './js/settings.js?v=5.3.0',
   './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
   './js/daily.js?v=' + DAILY_CODE,
@@ -461,23 +461,5 @@ self.addEventListener('fetch', (event) => {
       }
       return response;
     })()
-  );
-});
-
-// The page shows the local daily nudge through its registration. A tag on the
-// notification replaces an older one instead of stacking reminders.
-self.addEventListener('notificationclick', function (event) {
-  event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || './#daily';
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windows) {
-      for (let i = 0; i < windows.length; i += 1) {
-        if ('focus' in windows[i]) {
-          windows[i].navigate(target).catch(function () {});
-          return windows[i].focus();
-        }
-      }
-      return self.clients.openWindow(target);
-    })
   );
 });

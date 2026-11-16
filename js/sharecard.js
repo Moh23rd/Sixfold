@@ -548,21 +548,58 @@
     return asFile(new Blob([bytes], { type: 'image/png' }), data);
   }
 
-  async function share(data, title, text) {
-    try {
-      if (document.fonts && document.fonts.load) {
-        await document.fonts.load(font(800, 64));
-      }
-      const image = await file(data);
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [image] })) {
-        await navigator.share({ files: [image], title: title, text: text, url: 'https://moh23rd.github.io/Sixfold/' });
-        return true;
-      }
-    } catch (err) {
-      if (err && err.name === 'AbortError') return true;
-    }
-    return false;
+  function base64(blob) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const result = String(reader.result || '');
+        resolve(result.slice(result.indexOf(',') + 1));
+      };
+      reader.onerror = function () { reject(new Error('image unreadable')); };
+      reader.readAsDataURL(blob);
+    });
   }
 
-  window.MergeShareCard = { draw: draw, file: file, fileSync: fileSync, share: share };
+  // Browsers cannot write to the photo gallery, so the same PNG is downloaded.
+  function download(file) {
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name || 'sixfold-result.png';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function galleryPlugin() {
+    const cap = window.Capacitor;
+    if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return null;
+    const plugin = cap.Plugins && cap.Plugins.GallerySave;
+    return plugin && plugin.save ? plugin : null;
+  }
+
+  // Save the card into the phone's photo gallery. Inside the Android shell the
+  // GallerySave plugin writes it through MediaStore; everywhere else the file
+  // is downloaded. Neither path opens a share sheet.
+  async function save(file) {
+    if (!file) return false;
+    const plugin = galleryPlugin();
+    if (plugin) {
+      try {
+        await plugin.save({ data: await base64(file), name: file.name || 'sixfold-result.png' });
+        return true;
+      } catch (err) {
+        /* fall back to the browser download below */
+      }
+    }
+    try {
+      download(file);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  window.MergeShareCard = { draw: draw, file: file, fileSync: fileSync, save: save };
 })();

@@ -290,53 +290,6 @@
     });
   }
 
-  /* ---------- fullscreen ---------- */
-
-  function fullscreenAvailable() {
-    return !!(root.requestFullscreen || root.webkitRequestFullscreen || root.webkitRequestFullScreen);
-  }
-
-  function fullscreenElement() {
-    return document.fullscreenElement || document.webkitFullscreenElement || null;
-  }
-
-  const homeFocusBtn = document.getElementById('home-focus-toggle');
-  if (homeFocusBtn) {
-    if (!fullscreenAvailable()) {
-      homeFocusBtn.hidden = true;
-    } else {
-      const syncHomeFocus = function () {
-        const active = !!fullscreenElement();
-        homeFocusBtn.setAttribute('aria-pressed', String(active));
-        homeFocusBtn.setAttribute('aria-label', active ? 'Exit fullscreen' : 'Enter fullscreen');
-        homeFocusBtn.title = active ? 'Exit fullscreen' : 'Enter fullscreen';
-      };
-
-      const toggleHomeFocus = function () {
-        if (fullscreenElement()) {
-          const exit = document.exitFullscreen || document.webkitExitFullscreen || document.webkitCancelFullScreen;
-          if (!exit) return;
-          try {
-            const pending = exit.call(document);
-            if (pending && typeof pending.catch === 'function') pending.catch(function () {});
-          } catch (err) {}
-          return;
-        }
-        const request = root.requestFullscreen || root.webkitRequestFullscreen || root.webkitRequestFullScreen;
-        if (!request) return;
-        try {
-          const pending = request.call(root);
-          if (pending && typeof pending.catch === 'function') pending.catch(function () {});
-        } catch (err) {}
-      };
-
-      homeFocusBtn.addEventListener('click', toggleHomeFocus);
-      document.addEventListener('fullscreenchange', syncHomeFocus);
-      document.addEventListener('webkitfullscreenchange', syncHomeFocus);
-      syncHomeFocus();
-    }
-  }
-
   /* ---------- sheet ---------- */
 
   const appEl = document.querySelector('.app');

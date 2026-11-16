@@ -28,8 +28,6 @@
     { days: 365, color: '#9a6bb5' }
   ];
   const WEEKLY_BADGE = { days: ORDER.length, color: '#8bbd54' };
-  const REMINDER_KEY = 'sixfold.daily.reminder.v1';
-  const REMINDER_HOUR = 9;
   const $ = function (id) { return document.getElementById(id); };
 
   function pad(value) { return String(value).padStart(2, '0'); }
@@ -341,7 +339,6 @@
     announce(notes.join(' '));
     if (key === todayKey() && game === featuredGame(key)) {
       showFinish(game, earnedBadge > previousBadge ? earnedBadge : 0, weeklyEarned);
-      scheduleReminder();
     }
     const total = countFor(key);
     try {
@@ -590,94 +587,6 @@
     };
   }
 
-  function reminderEnabled() {
-    try {
-      return Boolean(window.SixfoldSettings && window.SixfoldSettings.get('dailyReminder'));
-    } catch (err) {
-      return false;
-    }
-  }
-
-  function reminderStamp() {
-    try {
-      const value = JSON.parse(localStorage.getItem(REMINDER_KEY) || 'null');
-      return value && typeof value === 'object' ? value : {};
-    } catch (err) {
-      return {};
-    }
-  }
-
-  function markReminderShown(key) {
-    try {
-      localStorage.setItem(REMINDER_KEY, JSON.stringify({ lastShown: key }));
-    } catch (err) {}
-  }
-
-  function reminderAllowed() {
-    return 'Notification' in window && Notification.permission === 'granted';
-  }
-
-  let reminderTimer = 0;
-  let reminderInFlight = false;
-
-  function showReminder() {
-    if (reminderInFlight || !reminderEnabled() || !reminderAllowed()) return;
-    const key = todayKey();
-    const game = featuredGame(key);
-    if (isDone(key, game) || reminderStamp().lastShown === key) return;
-
-    const title = tr('Daily Sixfold');
-    const body = tr(GAMES[game].label) + ' · ' + tr(GAMES[game].goal);
-    const done = function () { markReminderShown(key); };
-    const fallback = function () {
-      try {
-        new Notification(title, { body: body, tag: 'sixfold-daily' });
-        done();
-      } catch (err) {}
-    };
-
-    reminderInFlight = true;
-    const finish = function () { reminderInFlight = false; };
-    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
-      navigator.serviceWorker.getRegistration().then(function (registration) {
-        if (!registration) {
-          fallback();
-          finish();
-          return;
-        }
-        return registration.showNotification(title, {
-          body: body,
-          tag: 'sixfold-daily',
-          icon: 'icons/icon-192.png',
-          data: { url: './#daily' }
-        }).then(done).catch(fallback).then(finish);
-      }).catch(function () {
-        fallback();
-        finish();
-      });
-      return;
-    }
-    fallback();
-    finish();
-  }
-
-  function scheduleReminder(skipToday) {
-    window.clearTimeout(reminderTimer);
-    if (!reminderEnabled() || !reminderAllowed()) return;
-    const key = todayKey();
-    if (skipToday) markReminderShown(key);
-    if (isDone(key, featuredGame(key))) return;
-
-    const now = new Date();
-    const at = new Date(now);
-    at.setHours(REMINDER_HOUR, 0, 0, 0);
-    if (now >= at) {
-      if (reminderStamp().lastShown !== key) showReminder();
-      return;
-    }
-    reminderTimer = window.setTimeout(showReminder, at.getTime() - now.getTime());
-  }
-
   function init() {
     render();
     const calendarBtn = $('daily-calendar-open');
@@ -711,12 +620,6 @@
       render();
     });
     try { window.addEventListener('sixfold:daily-change', render); } catch (err) {}
-    try { window.addEventListener('sixfold:settings', scheduleReminder); } catch (err) {}
-    document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) scheduleReminder();
-    });
-    scheduleReminder();
-
     const url = new URL(location.href);
     const shared = url.searchParams.get('daily');
     if (isKey(shared) && shared <= todayKey() && shared >= shiftKey(todayKey(), -(MAX_ARCHIVE - 1))) {
@@ -744,7 +647,6 @@
     weekProgress: weekProgress,
     weekStartKey: weekStartKey,
     shareData: shareData,
-    refreshReminder: scheduleReminder,
     hideFinish: hideFinish,
     isDone: isDone,
     countFor: countFor,
