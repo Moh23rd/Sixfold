@@ -16,8 +16,11 @@
     "native:build": "node scripts/build-native.mjs",
     "native:sync": "npm run native:build && npx cap sync",
     "native:android": "npm run native:build && npx cap sync android",
+    "native:apk:debug": "npm run native:android && cd android && ./gradlew assembleDebug",
     "native:ios": "npm run native:build && npx cap sync ios",
-    "native:assets": "npx capacitor-assets generate --ios && npx capacitor-assets generate --android"
+    "native:assets": "npm run native:assets:android",
+    "native:assets:android": "npx capacitor-assets generate --android --iconBackgroundColor \"#f6f1e8\" --iconBackgroundColorDark \"#1a1918\" --splashBackgroundColor \"#f6f1e8\" --splashBackgroundColorDark \"#1a1918\"",
+    "native:assets:ios": "npx capacitor-assets generate --ios"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

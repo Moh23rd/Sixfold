@@ -38,15 +38,21 @@ device language; the choice is saved on the device, game dates use the selected
 locale, and daily share text follows it too. The catalogs are source-string
 based, so another language can be added without rewriting the markup.
 
-## Native apps
+## Android APK
 
-The same web release can be wrapped with Capacitor 8 for Android and iOS. The
-staging recipe in `scripts/build-native.mjs` assembles the static shell and the
-native-only plugin bundle; the web build itself remains dependency-free.
+The checked-in `android/` project is a Capacitor 8 shell for a direct-install
+APK. `capacitor.config.json` points Capacitor at the generated `native/www`
+bundle. The app launches straight into Sixfold with no browser chrome and works
+offline; Android's WebView renders the bundled interface. It is not a fully
+native Kotlin rewrite.
 
-Generated native projects, signed binaries and store uploads are not checked
-in. Those steps need a local Capacitor install, Android Studio or Xcode, the
-store accounts and a macOS machine for iOS.
+With the toolchain installed, `npm run native:apk:debug` builds
+`android/app/build/outputs/apk/debug/app-debug.apk`. This target is for GitHub
+Releases and sideloading, not the Play Store. See [ANDROID.md](ANDROID.md) for
+the JDK/SDK requirements, signing and distribution details.
+
+Generated web assets, Gradle output and signing keys are not checked in. The iOS
+project, if needed, is generated locally on macOS.
 
 ## A small, considered arcade
 
@@ -56,7 +62,7 @@ store accounts and a macOS machine for iOS.
 - **Play how you like.** Touch, mouse and full keyboard controls, plus screen-reader labels throughout. High contrast and colour-blind cues are in Look & feel. Larger Sudoku digits, left-handed landscape, timer visibility, mistake checking and input order live in **Sudoku settings**, opened from the Sudoku screen.
 - **Installable.** Add Sixfold to a home screen for an app-like window and offline play.
 - **Twelve languages.** English, Spanish, French, German, Simplified and Traditional Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic cover the complete interface, aria labels, game status lines and dates. Bundled script fonts keep Chinese, Japanese, Korean, Devanagari, Kannada and Arabic text consistent offline.
-- **Native shells included.** Capacitor projects for Android and iOS live alongside the web app.
+- **Android APK shell included.** The checked-in Capacitor Android project builds an offline APK; the iOS project is generated locally on macOS.
 - **Updatable without a hard refresh.** A ready service-worker update appears as a small Reload prompt.
 
 ## Tests
@@ -84,6 +90,7 @@ The Playwright suite covers the six game screens, Daily Sixfold, Sudoku Learn hi
 ## Install
 
 - **Android / Chrome:** open **About & privacy** from the hub and tap **Install app** when it appears.
+- **Android APK:** build or download the APK and sideload it; see [ANDROID.md](ANDROID.md). This is a GitHub-only build, not a Play Store release.
 - **iPhone / Safari:** tap **Share**, then **Add to Home Screen**.
 - **Other browsers:** use the browser menu’s **Install** or **Add to Home Screen** option.
 
@@ -111,6 +118,11 @@ Open `http://localhost:8000`. Opening `index.html` directly still plays, but off
 index.html                    hub, game screens, help, install and rules sheets
 licenses.html                 licence, dictionary attribution and App Store notice
 sw.js                         offline shell, active-locale pruning and cache budget
+capacitor.config.json         Capacitor app identity and native asset directory
+ANDROID.md                    APK toolchain, build and GitHub distribution guide
+android/                      checked-in Capacitor Android project and Gradle wrapper
+assets/icon.png               source image for native launcher/splash resources
+native/www/                   generated native web bundle (ignored)
 manifest.webmanifest          install metadata for light chrome
 manifest-dark.webmanifest     install metadata for dark chrome
 og-image.png                  social preview image
