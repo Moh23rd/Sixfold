@@ -164,6 +164,13 @@ required to verify a build.
 The required `check` job waits for both the Playwright matrix and the Android
 APK job, so an APK failure cannot be hidden by a green test shard.
 
+CI debug APKs are signed with a stable test key stored in repository Actions
+secrets (`ANDROID_TEST_KEYSTORE_BASE64`, `ANDROID_TEST_KEYSTORE_PASSWORD`,
+`ANDROID_TEST_KEY_ALIAS`, `ANDROID_TEST_KEY_PASSWORD`). The workflow decodes
+the keystore into `RUNNER_TEMP`; no keystore or password belongs in the
+repository. Local debug builds without those environment variables still use
+the ordinary Android debug key, so they do not upgrade a CI-built APK in place.
+
 ## GitHub-only distribution
 
 A debug APK is debug-signed and suitable for testing or a private GitHub

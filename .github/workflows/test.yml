@@ -180,8 +180,44 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
       - run: npm ci
+      - name: Configure stable test signing
+        env:
+          ANDROID_TEST_KEYSTORE_BASE64: ${{ secrets.ANDROID_TEST_KEYSTORE_BASE64 }}
+          ANDROID_TEST_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_TEST_KEYSTORE_PASSWORD }}
+          ANDROID_TEST_KEY_ALIAS: ${{ secrets.ANDROID_TEST_KEY_ALIAS }}
+          ANDROID_TEST_KEY_PASSWORD: ${{ secrets.ANDROID_TEST_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in ANDROID_TEST_KEYSTORE_BASE64 ANDROID_TEST_KEYSTORE_PASSWORD ANDROID_TEST_KEY_ALIAS ANDROID_TEST_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::$name is not configured in repository secrets"
+              exit 1
+            fi
+          done
+          keystore="$RUNNER_TEMP/sixfold-ci-test.p12"
+          printf '%s' "$ANDROID_TEST_KEYSTORE_BASE64" | base64 -d > "$keystore"
+          test -s "$keystore"
+          chmod 600 "$keystore"
+          {
+            echo "ANDROID_TEST_KEYSTORE_PATH=$keystore"
+            echo "ANDROID_TEST_KEYSTORE_PASSWORD=$ANDROID_TEST_KEYSTORE_PASSWORD"
+            echo "ANDROID_TEST_KEY_ALIAS=$ANDROID_TEST_KEY_ALIAS"
+            echo "ANDROID_TEST_KEY_PASSWORD=$ANDROID_TEST_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
       - name: Build debug APK
         run: npm run native:apk:debug
+      - name: Verify APK signing
+        run: |
+          set -euo pipefail
+          apk=android/app/build/outputs/apk/debug/app-debug.apk
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -n "$sdk"
+          apksigner=$(find "$sdk/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$apksigner"
+          certs=$(mktemp)
+          trap 'rm -f "$certs"' EXIT
+          "$apksigner" verify --print-certs "$apk" | tee "$certs"
+          grep -q 'CN=Sixfold CI Test' "$certs"
       - name: Verify APK contents
         run: |
           set -euo pipefail
