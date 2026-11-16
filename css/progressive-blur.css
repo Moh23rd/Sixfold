@@ -25,14 +25,11 @@
     /* Two channels carry the same measurement: the WebView's own safe-area
        environment (edge-to-edge WebView 140+) and the SystemBars plugin's
        --safe-area-inset-* custom properties. Whichever the shell provides,
-       the band spans the real status bar plus a 20px feather. */
-    /* On a phone the inset is the real status bar (24-40dp), so the band is
-       44-60px: the bar plus a 20px feather. It falls back to 20px only where
-       the shell pads the WebView natively instead of passing the insets
-       through (WebView below 140), and there the app's own gutter is also
-       20px, so the band still covers exactly the loose strip. */
+       the band spans the real status bar plus the feather below, capped so
+       it never swallows the header on a tall tablet. */
+    --pb-feather-top: 16px;
     --pb-inset-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
-    height: min(calc(var(--pb-inset-top) + 20px), 72px);
+    height: min(calc(var(--pb-inset-top) + var(--pb-feather-top)), 72px);
     background: none;
     pointer-events: none;
     -webkit-user-select: none;
@@ -42,6 +39,20 @@
   .progressive-blur--top {
     top: 0;
     --pb-direction: to top;
+  }
+
+  /* The feather never exceeds the tightest resting gutter, so the band's
+     inner edge stays above the header instead of blurring it: 16px against
+     the hub's 18px and the play screens' 20px, 8px on short screens whose
+     gutters drop to 10-12px, and 6px in landscape where they reach 8px. The
+     status-bar inset still dominates the height, so the band stays as tall
+     as the bar itself on any phone (44-60px for a 24-40dp bar). */
+  @media (max-height: 700px) {
+    .progressive-blur { --pb-feather-top: 8px; }
+  }
+
+  @media (orientation: landscape) {
+    .progressive-blur { --pb-feather-top: 6px; }
   }
 
   /* The bottom band follows the larger of the two bottom insets, exactly like
