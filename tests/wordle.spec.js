@@ -318,11 +318,11 @@ const WORDLE_IME_LOCALES = ['ar', 'hi', 'kn', 'ja', 'ko', 'zh-Hans', 'zh-Hant'];
 
 async function captureWordleShare(page) {
   await page.evaluate(() => {
-    window.__wordleShare = '';
-    // Observe the card data Wordle hands to the shared save path.
+    window.__wordleShare = null;
+    // Observe the card Wordle hands to the save path.
     const original = window.MergeShare.result;
     window.MergeShare.result = function (title, text, data) {
-      window.__wordleShare = text;
+      window.__wordleShare = { text: text, data: data };
       return original.call(window.MergeShare, title, text, data);
     };
   });
@@ -405,11 +405,12 @@ for (const locale of LOCALES) {
     }
 
     const share = await captureWordleShare(page);
-    expect(share).toContain('Sixfold — Wordle');
-    expect(share).toContain('🟩🟩🟩🟩🟩');
-    if (locale === 'ar') expect(share).toContain('١/٦');
-    else if (locale === 'hi') expect(share).toContain('१/६');
-    else if (locale === 'kn') expect(share).toContain('೧/೬');
-    else expect(share).toContain('1/6');
+    expect(share.text).toContain('Sixfold — Wordle');
+    expect(share.text).toContain('🟩🟩🟩🟩🟩');
+    const localizedScore = await page.evaluate((score) => window.SixfoldI18n.number(score), share.data.score);
+    if (locale === 'ar') expect(localizedScore).toContain('١/٦');
+    else if (locale === 'hi') expect(localizedScore).toContain('१/६');
+    else if (locale === 'kn') expect(localizedScore).toContain('೧/೬');
+    else expect(localizedScore).toContain('1/6');
   });
 }
