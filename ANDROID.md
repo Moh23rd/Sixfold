@@ -88,13 +88,13 @@ From the repository root:
 
 ```sh
 npm ci
-npm run native:android
 npm run native:apk:debug
 ```
 
-`npm run native:android` stages `native/www`, copies it into the Android project
-and updates the Capacitor plugins. `native:apk:debug` then runs the checked-in
-Gradle wrapper.
+`native:apk:debug` stages `native/www`, copies it into the Android project,
+updates the Capacitor plugins and runs the checked-in Gradle wrapper. Use
+`npm run native:android` when you only want to stage and sync before opening
+Android Studio.
 
 Output:
 
@@ -111,6 +111,18 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 You can also run `npm run native:android`, open the `android/` directory in
 Android Studio, let Gradle sync, and use **Run**. Always run the sync first so
 Android Studio packages the current web assets.
+
+## CI verification
+
+The `Test` workflow includes an **Android debug APK** job on `ubuntu-latest`.
+It sets up Node 22, JDK 21 and Android SDK Platform 36 with Build-Tools 36.0.0,
+runs `npm run native:apk:debug`, checks that the APK contains the bundled web
+entry point and native plugin bundle, and uploads `sixfold-debug-apk` as an
+artifact for 14 days. Download it from the Actions run summary; no local SDK is
+required to verify a build.
+
+The required `check` job waits for both the Playwright matrix and the Android
+APK job, so an APK failure cannot be hidden by a green test shard.
 
 ## GitHub-only distribution
 
@@ -182,4 +194,5 @@ an iOS project is added on macOS.
 
 The Android project was generated and synced with Capacitor 8.6.2, and the
 launcher/splash resources were generated. This machine has no JDK or Android SDK
-on PATH, so the debug APK has **not** been built here yet.
+on PATH, so the debug APK has **not** been built here. The GitHub Actions
+Android job is the verification path until the local toolchain is installed.
