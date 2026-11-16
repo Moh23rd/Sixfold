@@ -20,7 +20,8 @@
     "native:ios": "npm run native:build && npx cap sync ios",
     "native:assets": "npm run native:assets:android",
     "native:assets:android": "npx capacitor-assets generate --android --iconBackgroundColor \"#f6f1e8\" --iconBackgroundColorDark \"#1a1918\" --splashBackgroundColor \"#f6f1e8\" --splashBackgroundColorDark \"#1a1918\"",
-    "native:assets:ios": "npx capacitor-assets generate --ios"
+    "native:assets:ios": "npx capacitor-assets generate --ios",
+    "smoke:apk": "bash scripts/smoke-apk.sh"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
