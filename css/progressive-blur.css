@@ -22,7 +22,17 @@
     left: 0;
     z-index: 40;
     display: block;
-    height: min(calc(env(safe-area-inset-top, 0px) + 20px), 56px);
+    /* Two channels carry the same measurement: the WebView's own safe-area
+       environment (edge-to-edge WebView 140+) and the SystemBars plugin's
+       --safe-area-inset-* custom properties. Whichever the shell provides,
+       the band spans the real status bar plus a 20px feather. */
+    /* On a phone the inset is the real status bar (24-40dp), so the band is
+       44-60px: the bar plus a 20px feather. It falls back to 20px only where
+       the shell pads the WebView natively instead of passing the insets
+       through (WebView below 140), and there the app's own gutter is also
+       20px, so the band still covers exactly the loose strip. */
+    --pb-inset-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+    height: min(calc(var(--pb-inset-top) + 20px), 72px);
     background: none;
     pointer-events: none;
     -webkit-user-select: none;
@@ -39,10 +49,12 @@
   .progressive-blur--bottom {
     bottom: 0;
     --pb-direction: to bottom;
-    height: min(
-      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 20px),
-      56px
+    --pb-inset-bottom: max(
+      env(safe-area-inset-bottom, 0px),
+      env(safe-area-max-inset-bottom, 0px),
+      var(--safe-area-inset-bottom, 0px)
     );
+    height: min(calc(var(--pb-inset-bottom) + 20px), 72px);
   }
 
   .progressive-blur > span {
