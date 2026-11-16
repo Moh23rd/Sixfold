@@ -173,7 +173,7 @@ it from.
 
 ## Versioning and data
 
-- `android/app/build.gradle` contains `versionCode 1` and `versionName "1.0"`.
+- `android/app/build.gradle` contains `versionCode 6` and `versionName "6.0"`.
   Increase `versionCode` for every distributed build and set a user-visible
   `versionName` before release.
 - Updates preserve app data only when the application ID and signing key match.
