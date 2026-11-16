@@ -917,7 +917,7 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
 .update-banner {
   position: fixed;
   left: 50%;
-  bottom: calc(max(env(safe-area-inset-bottom, 0px), 14px) + 8px);
+  bottom: calc(max(var(--sa-bottom), 14px) + 8px);
   z-index: 120;
   display: flex;
   align-items: center;
@@ -982,7 +982,7 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   height: auto;
   min-height: 100%;
   gap: 16px;
-  padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 24px);
+  padding-bottom: calc(var(--sa-bottom) + 24px);
 }
 
 .badges-head {
@@ -1216,7 +1216,7 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   position: fixed;
   z-index: 75;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  bottom: calc(var(--sa-bottom) + 16px);
   display: flex;
   align-items: center;
   gap: 9px;

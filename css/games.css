@@ -30,10 +30,10 @@ body[data-screen="mines"] .app {
   width: min(100%, 960px);
   min-height: 100%;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top, 0px) + clamp(22px, 4vw, 34px))
-    calc(env(safe-area-inset-right, 0px) + clamp(18px, 4.5vw, 40px))
-    calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 22px)
-    calc(env(safe-area-inset-left, 0px) + clamp(18px, 4.5vw, 40px));
+  padding: calc(var(--sa-top) + clamp(22px, 4vw, 34px))
+    calc(var(--sa-right) + clamp(18px, 4.5vw, 40px))
+    calc(var(--sa-bottom) + 22px)
+    calc(var(--sa-left) + clamp(18px, 4.5vw, 40px));
   display: flex;
   flex-direction: column;
 }
@@ -429,10 +429,10 @@ html[data-theme="dark"] .play-screen { background: var(--page); }
   width: min(100%, 720px);
   min-height: 100%;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top, 0px) + 20px)
-    calc(env(safe-area-inset-right, 0px) + 16px)
-    calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 18px)
-    calc(env(safe-area-inset-left, 0px) + 16px);
+  padding: calc(var(--sa-top) + 20px)
+    calc(var(--sa-right) + 16px)
+    calc(var(--sa-bottom) + 18px)
+    calc(var(--sa-left) + 16px);
   display: flex;
   flex-direction: column;
   gap: clamp(14px, 3vh, 24px);
@@ -1478,8 +1478,8 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
       "foot board";
     align-items: center;
     gap: 10px 24px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
-    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 12px);
+    padding-top: calc(var(--sa-top) + 14px);
+    padding-bottom: calc(var(--sa-bottom) + 12px);
   }
 
   .play-head {
@@ -1547,7 +1547,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 }
 
 @media (max-width: 420px) {
-  .play-shell { gap: 10px; padding-top: calc(env(safe-area-inset-top, 0px) + 15px); }
+  .play-shell { gap: 10px; padding-top: calc(var(--sa-top) + 15px); }
   .play-intro h1 { font-size: clamp(24px, 6.8vw, 31px); }
   .play-stats { width: 138px; }
   .play-stat strong { font-size: 18px; }
@@ -1671,7 +1671,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 
 .play-shell {
   gap: clamp(8px, 2dvh, 14px);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-top: calc(var(--sa-top) + 16px);
 }
 
 .play-head { gap: 10px; }
@@ -2019,8 +2019,8 @@ html[data-theme="dark"] .ttt-cell { box-shadow: none; }
   .play-shell {
     grid-template-columns: minmax(0, 1fr) minmax(230px, auto);
     gap: 8px 26px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 10px);
+    padding-top: calc(var(--sa-top) + 12px);
+    padding-bottom: calc(var(--sa-bottom) + 10px);
   }
 
   .play-head { gap: 6px; }
@@ -2102,8 +2102,8 @@ html[data-theme="dark"] .ttt-cell { box-shadow: none; }
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: clamp(6px, 1.6dvh, 12px);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
-  padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 10px);
+  padding-top: calc(var(--sa-top) + 14px);
+  padding-bottom: calc(var(--sa-bottom) + 10px);
 }
 
 .play-head { min-width: 0; }
@@ -2282,8 +2282,8 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 @media (max-height: 700px) {
   .play-shell {
     gap: 6px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
-    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 8px);
+    padding-top: var(--pb-gutter-top);
+    padding-bottom: var(--pb-gutter-bottom);
   }
 
   .play-head { gap: 5px; }
@@ -2319,8 +2319,8 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
       "foot board";
     align-items: center;
     gap: 4px 20px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
-    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 8px);
+    padding-top: var(--pb-gutter-top);
+    padding-bottom: var(--pb-gutter-bottom);
   }
 
   .play-head {
@@ -2387,10 +2387,10 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
     width: min(100%, 1080px);
     height: 100%;
     min-height: 0;
-    padding: calc(env(safe-area-inset-top, 0px) + 66px)
-      calc(env(safe-area-inset-right, 0px) + 28px)
-      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 16px)
-      calc(env(safe-area-inset-left, 0px) + 28px);
+    padding: calc(var(--sa-top) + 66px)
+      calc(var(--sa-right) + 28px)
+      calc(var(--sa-bottom) + 16px)
+      calc(var(--sa-left) + 28px);
     display: grid;
     grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
@@ -2540,10 +2540,10 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: calc(env(safe-area-inset-top, 0px) + 10px)
-      calc(env(safe-area-inset-right, 0px) + 12px)
-      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 8px)
-      calc(env(safe-area-inset-left, 0px) + 12px);
+    padding: var(--pb-gutter-top)
+      calc(var(--sa-right) + 12px)
+      var(--pb-gutter-bottom)
+      calc(var(--sa-left) + 12px);
     display: grid;
     grid-template-columns: minmax(230px, 31vw) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -2757,6 +2757,16 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 }
 
 .hub-share svg { width: 18px; height: 18px; display: block; }
+
+/* The hub save action is the one place the icon animates, and only when the
+   reader has not asked for reduced motion; every other save button keeps the
+   still glyph. */
+.hub-share .share-icon--anim { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .hub-share .share-icon--anim { display: block; }
+  .hub-share .share-icon:not(.share-icon--anim) { display: none; }
+}
 
 .hub-share:hover {
   transform: translateY(-1px);
@@ -2982,7 +2992,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 /* The landscape rail is narrow by design, so the tools and actions become
    two calm rows instead of trying to share a row. */
 @media (orientation: landscape) and (min-height: 500px) {
-  .play-shell { padding-top: calc(env(safe-area-inset-top, 0px) + 22px); }
+  .play-shell { padding-top: calc(var(--sa-top) + 22px); }
 
   .play-stats {
     display: grid;
@@ -3058,7 +3068,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 
 /* Portrait starts at the same quiet top inset as Merge. */
 @media (orientation: portrait) {
-  .play-shell { padding-top: calc(env(safe-area-inset-top, 0px) + 20px); }
+  .play-shell { padding-top: calc(var(--sa-top) + 20px); }
 }
 
 /* Keep the three game actions on one row at normal phone widths; the labels
@@ -3234,7 +3244,7 @@ html[data-theme="dark"] .reset-confirm:hover {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 22px);
+  bottom: calc(var(--sa-bottom) + 22px);
   z-index: 70;
   max-width: min(86vw, 360px);
   padding: 11px 17px;

@@ -4,7 +4,7 @@
   Additional permission under GPLv3 section 7: Apple App Store distribution is
   permitted under the terms in APPSTORE-EXCEPTION.md.
 -->
-<html lang="en">
+<html lang="en" class="is-hub">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -300,13 +300,13 @@
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.1" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=5.2.8" />
-  <link rel="stylesheet" href="css/games.css?v=5.3.0" />
-  <link rel="stylesheet" href="css/home.css?v=4.0.0-w12" />
+  <link rel="stylesheet" href="css/styles.css?v=5.2.9" />
+  <link rel="stylesheet" href="css/games.css?v=5.3.1" />
+  <link rel="stylesheet" href="css/home.css?v=4.1.0" />
   <link rel="stylesheet" href="css/polish.css?v=4.0.0-w17" />
-  <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w15" />
+  <link rel="stylesheet" href="css/sudoku.css?v=4.0.1" />
   <link rel="stylesheet" href="css/v5.css?v=5.4.3" />
-  <link rel="stylesheet" href="css/progressive-blur.css?v=1.0.3" />
+  <link rel="stylesheet" href="css/progressive-blur.css?v=1.1.0" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -361,8 +361,9 @@
           </span>
         </div>
         <div class="hub-actions">
-          <button class="hub-share" id="hub-share" type="button" aria-label="Share this game collection" title="Share">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg>
+          <button class="hub-share" id="hub-share" type="button" aria-label="Save image" title="Save image">
+            <svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
+            <svg class="share-icon share-icon--anim" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><animateTransform attributeName="transform" type="translate" values="0,0;0,0;0,1.4;0,-.3;0,0;0,0" keyTimes="0;.05833;.08333;.11667;.15;1" calcMode="spline" keySplines="0 0 1 1;.3333 1 .6667 1;.3333 0 .6667 1;.3333 0 .6667 1;0 0 1 1" dur="2.4s" begin="0s" repeatCount="indefinite"/><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.062499;.0625;.15;.19167;1" calcMode="spline" keySplines="0 0 1 1;0 0 1 1;0 0 1 1;.3333 0 .6667 0;0 0 1 1" dur="2.4s" begin="0s" repeatCount="indefinite"/><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"><set attributeName="stroke-dasharray" to="1 2" dur="2.4s" begin="0s" repeatCount="indefinite"/><animate attributeName="stroke-dashoffset" values="0;0;1;0;0" keyTimes="0;.0583323;.0583333;.11667;1" calcMode="spline" keySplines="0 0 1 1;0 0 1 1;.3333 1 .6667 1;0 0 1 1" dur="2.4s" begin="0s" repeatCount="indefinite"/><animate attributeName="visibility" calcMode="discrete" values="visible;hidden;visible" keyTimes="0;.0583333;.0583343" dur="2.4s" begin="0s" repeatCount="indefinite"/></path></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.062499;.0625;.15;.19167;1" calcMode="spline" keySplines="0 0 1 1;0 0 1 1;0 0 1 1;.3333 0 .6667 0;0 0 1 1" dur="2.4s" begin="0s" repeatCount="indefinite"/><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"><set attributeName="stroke-dasharray" to="1 2" dur="2.4s" begin="0s" repeatCount="indefinite"/><animate attributeName="stroke-dashoffset" values="0;0;1;0;0" keyTimes="0;.0583323;.0583333;.11667;1" calcMode="spline" keySplines="0 0 1 1;0 0 1 1;.3333 1 .6667 1;0 0 1 1" dur="2.4s" begin="0s" repeatCount="indefinite"/><animate attributeName="visibility" calcMode="discrete" values="visible;hidden;visible" keyTimes="0;.0583333;.0583343" dur="2.4s" begin="0s" repeatCount="indefinite"/></path></g></g><g transform="translate(0 0)"><animateTransform attributeName="transform" type="translate" values="0,0;0,3.5;0,3.5;0,-3;0,0;0,0" keyTimes="0;.05833;.0958323;.0958333;.15833;1" calcMode="spline" keySplines=".3333 0 .6667 .4667;0 0 1 1;0 0 1 1;.3333 1 .6667 1;0 0 1 1" dur="2.4s" begin="0s" repeatCount="indefinite"/><g opacity="1"><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;.0625;.09167;.1;.1375;1" calcMode="spline" keySplines="0 0 1 1;.3333 0 .6667 0;0 0 1 1;.3333 1 .6667 1;0 0 1 1" dur="2.4s" begin="0s" repeatCount="indefinite"/><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;.0625;.09167;.1;.1375;1" calcMode="spline" keySplines="0 0 1 1;.3333 0 .6667 0;0 0 1 1;.3333 1 .6667 1;0 0 1 1" dur="2.4s" begin="0s" repeatCount="indefinite"/><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
           </button>
           <button class="hub-look" id="appearance" type="button" aria-haspopup="dialog" aria-controls="sheet">
             <span class="hub-look-dots" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -470,8 +471,8 @@
               <svg viewBox="0 0 20 20" focusable="false"><path d="M4 10h11M10.5 5.5 15 10l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
             </span>
           </button>
-          <button class="daily-share" id="daily-share" type="button" aria-label="Share today’s challenge" title="Share today’s challenge">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg>
+          <button class="daily-share" id="daily-share" type="button" aria-label="Save image" title="Save image">
+            <svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
           </button>
         </div>
         <div class="daily-week" id="daily-week">
@@ -763,7 +764,7 @@
           <div class="play-win" id="water-win" hidden>
             <p><strong>Level clear.</strong> Every colour has its own tube.</p>
             <button class="play-btn play-btn--solid" id="water-next" type="button">Next level</button>
-            <button class="result-share result-share--labeled" id="water-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
+            <button class="result-share result-share--labeled" id="water-share" type="button" aria-label="Save image" title="Save image"><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
           </div>
         </div>
       </div>
@@ -822,8 +823,8 @@
                 <p class="sudoku-result-stats" id="sudoku-result-stats"></p>
                 <div class="sudoku-result-actions">
                   <button class="play-btn play-btn--solid" id="sudoku-result-new" type="button">New puzzle</button>
-                  <button class="result-share" id="sudoku-result-share" type="button" aria-label="Share result" title="Share result">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 16V3"/><path d="m7 8 5-5 5 5"/></svg>
+                  <button class="result-share" id="sudoku-result-share" type="button" aria-label="Save image" title="Save image">
+                    <svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
                   </button>
                 </div>
               </div>
@@ -898,7 +899,7 @@
               <p><strong id="fruit-final-score">0</strong> points · best <span id="fruit-final-best">0</span></p>
               <div class="fruit-over-actions">
                 <button class="play-btn play-btn--solid" id="fruit-again" type="button">Try again</button>
-                <button class="result-share result-share--labeled" id="fruit-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
+                <button class="result-share result-share--labeled" id="fruit-share" type="button" aria-label="Save image" title="Save image"><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
               </div>
             </div>
           </div>
@@ -956,7 +957,7 @@
           <div class="play-win" id="ttt-result" hidden>
             <p><strong id="ttt-result-title">You win.</strong> <span id="ttt-result-copy">Three in a row.</span></p>
             <button class="play-btn play-btn--solid" id="ttt-again" type="button">New round</button>
-            <button class="result-share result-share--labeled" id="ttt-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
+            <button class="result-share result-share--labeled" id="ttt-share" type="button" aria-label="Save image" title="Save image"><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
           </div>
         </div>
       </div>
@@ -1013,7 +1014,7 @@
           <div class="play-win" id="mines-result" hidden>
             <p><strong id="mines-result-title">Field cleared.</strong> <span id="mines-result-copy">Every safe square is open.</span></p>
             <button class="play-btn play-btn--solid" id="mines-again" type="button">New board</button>
-            <button class="result-share result-share--labeled" id="mines-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
+            <button class="result-share result-share--labeled" id="mines-share" type="button" aria-label="Save image" title="Save image"><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
           </div>
         </div>
       </div>
@@ -1060,7 +1061,7 @@
                 <p class="wordle-result-stats" id="wordle-result-stats"></p>
                 <div class="wordle-result-actions">
                   <button class="play-btn play-btn--solid" id="wordle-result-new" type="button">New game</button>
-                  <button class="result-share" id="wordle-result-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg></button>
+                  <button class="result-share" id="wordle-result-share" type="button" aria-label="Save image" title="Save image"><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg></button>
                 </div>
               </div>
             </div>
@@ -1336,15 +1337,15 @@
   </div>
 
   <script src="js/settings.js?v=5.3.0"></script>
-  <script src="js/haptics.js?v=4.0.0"></script>
-  <script src="js/overscroll.js?v=4.0.0"></script>
-  <script src="js/celebrate.js?v=4.0.0"></script>
+  <script src="js/haptics.js?v=4.1.0"></script>
+  <script src="js/overscroll.js?v=4.1.0"></script>
+  <script src="js/celebrate.js?v=4.1.0"></script>
   <script src="js/sharecard.js?v=5.3.0"></script>
   <script src="js/theme.js?v=6.0.1"></script>
   <script src="js/game.js?v=5.3.0"></script>
-  <script src="js/install.js?v=4.0.0"></script>
+  <script src="js/install.js?v=4.1.0"></script>
   <script src="js/sudoku.js?v=5.3.0"></script>
-  <script src="js/games.js?v=5.3.0"></script>
+  <script src="js/games.js?v=5.3.1"></script>
   <script src="js/daily.js?v=5.4.0"></script>
   <script src="js/badges.js?v=1.0.1"></script>
   <script src="js/update.js?v=5.1.0"></script>

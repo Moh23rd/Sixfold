@@ -13,6 +13,57 @@
    where backdrop-filter is missing or transparency is reduced.
    ========================================================================== */
 
+/* Safe-area tokens. Both channels the shell can use (the WebView's env() and
+   the SystemBars plugin's --safe-area-inset-* properties) resolve once here,
+   so every screen and both blur bands measure the same thing. */
+:root {
+  --sa-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --sa-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  --sa-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    env(safe-area-max-inset-bottom, 0px),
+    var(--safe-area-inset-bottom, 0px)
+  );
+  --sa-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+
+  /* One ladder drives the band height and the tightest resting gutter: the
+     band is the bar plus the feather, and --pb-gutter-* is that plus 2px of
+     clearance for the screen. Screens that need more space add to it; none
+     should ever ask for less. */
+  --pb-feather-top: 16px;
+  --pb-feather-bottom: 8px;
+  --pb-band-top: calc(var(--sa-top) + var(--pb-feather-top));
+  --pb-band-bottom: calc(var(--sa-bottom) + var(--pb-feather-bottom));
+  --pb-gutter-top: calc(var(--pb-band-top) + 2px);
+  --pb-gutter-bottom: calc(var(--pb-band-bottom) + 2px);
+}
+
+/* The feather never exceeds the tightest resting gutter, so both bands end
+   inside the gutter instead of on top of resting content. Measured gutters:
+   top is 20px on play screens, 18px on the hub, 10-12px on short screens and
+   8px in landscape; bottom is 10-16px on tall screens, 8px short and 6px in
+   landscape. The insets dominate the heights, so both bands stay as thick as
+   the system bars themselves on a phone. */
+@media (max-height: 700px) {
+  :root {
+    --pb-feather-top: 8px;
+    --pb-feather-bottom: 6px;
+  }
+}
+
+/* From this width the Merge screen switches to its desktop grid, which drops
+   its outer padding and puts the header 10px from the top. */
+@media (min-width: 900px) {
+  :root { --pb-feather-top: 8px; }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  :root {
+    --pb-feather-top: 6px;
+    --pb-feather-bottom: 4px;
+  }
+}
+
 .progressive-blur { display: none; }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -22,15 +73,7 @@
     left: 0;
     z-index: 40;
     display: block;
-    /* Two channels carry the same measurement: the WebView's own safe-area
-       environment (edge-to-edge WebView 140+) and the SystemBars plugin's
-       --safe-area-inset-* custom properties. Whichever the shell provides,
-       the band spans the real status bar plus the feather below, capped so
-       it never swallows the header on a tall tablet. */
-    --pb-feather-top: 16px;
-    --pb-feather-bottom: 8px;
-    --pb-inset-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
-    height: min(calc(var(--pb-inset-top) + var(--pb-feather-top)), 72px);
+    height: min(var(--pb-band-top), 72px);
     background: none;
     pointer-events: none;
     -webkit-user-select: none;
@@ -42,45 +85,18 @@
     --pb-direction: to top;
   }
 
-  /* Neither feather exceeds the tightest resting gutter on its own edge, so
-     both bands end inside the gutter instead of on top of resting content.
-     Measured gutters: top is 20px on play screens, 18px on the hub, 10-12px
-     on short screens and 8px in landscape; bottom is 10-16px on tall screens,
-     8px short and 6px in landscape, so 8px is the widest feather that still
-     clears a phone's bottom gutter. The insets dominate the heights, so both
-     bands stay as thick as the system bars themselves on a phone. */
-  @media (max-height: 700px) {
-    .progressive-blur {
-      --pb-feather-top: 8px;
-      --pb-feather-bottom: 6px;
-    }
-  }
-
-  /* From this width the Merge screen switches to its desktop grid, which
-     drops its outer padding and puts the header 10px from the top. */
-  @media (min-width: 900px) {
-    .progressive-blur { --pb-feather-top: 8px; }
-  }
-
-  @media (orientation: landscape) and (max-height: 600px) {
-    .progressive-blur {
-      --pb-feather-top: 6px;
-      --pb-feather-bottom: 4px;
-    }
-  }
-
-  /* The bottom band measures the larger of the two bottom insets, exactly
-     like the screens' own padding, plus the feather for its edge. */
+  /* The bottom band measures the same tokens as the screens' own padding.
+     It only runs on the hub: game screens are static and their compact
+     layouts already borrow part of the bottom gutter for the footer, so a
+     band there would sit on resting controls rather than on scrolling
+     content. pages with nothing to dissolve keep only the top band. */
   .progressive-blur--bottom {
     bottom: 0;
     --pb-direction: to bottom;
-    --pb-inset-bottom: max(
-      env(safe-area-inset-bottom, 0px),
-      env(safe-area-max-inset-bottom, 0px),
-      var(--safe-area-inset-bottom, 0px)
-    );
-    height: min(calc(var(--pb-inset-bottom) + var(--pb-feather-bottom)), 72px);
+    height: min(var(--pb-band-bottom), 72px);
   }
+
+  html:not(.is-hub) .progressive-blur--bottom { display: none; }
 
   .progressive-blur > span {
     position: absolute;

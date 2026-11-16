@@ -41,6 +41,7 @@
   let allowed = true;
   let lastTop = null;
   let lastAt = 0;
+  let frame = 0;
 
   function atEdge(direction) {
     if (!hub) return false;
@@ -60,8 +61,50 @@
     transformFor(scale, mode);
   }
 
+  /* Paint at most once a frame: touchmove can fire several times between
+     paints, and writing the transform each time only queues extra work. */
+  function schedulePaint() {
+    if (frame) return;
+    frame = window.requestAnimationFrame(function () {
+      frame = 0;
+      paint();
+    });
+  }
+
+  function liveScale() {
+    if (!surface) return 1;
+    const value = window.getComputedStyle(surface).transform;
+    const match = value && value.match(/^matrix\(([^)]+)\)$/);
+    if (!match) return 1;
+    const parts = match[1].split(',');
+    const scale = parts.length === 6 ? parseFloat(parts[3]) : 1;
+    return isFinite(scale) && scale > 0 ? scale : 1;
+  }
+
+  function pullFromScale(scale) {
+    const value = ((scale - 1) / MAX_STRETCH) * MAX_PULL;
+    return Math.max(0, Math.min(MAX_PULL, value));
+  }
+
+  /* A new pull that begins while the content is still easing back takes over
+     from the frame that is actually on screen. Without this the running
+     transition is cancelled and the content snaps to flat first, which reads
+     as a jump the moment a gesture reverses near an edge. */
+  function takeOverSettle() {
+    if (!surface || !surface.classList.contains('is-stretching')) return;
+    const live = liveScale();
+    surface.classList.remove('is-stretching');
+    surface.style.transform = 'scaleY(' + live.toFixed(4) + ')';
+    void surface.offsetHeight;
+    pull = pullFromScale(live);
+  }
+
   function settle() {
     if (!surface) return;
+    if (frame) {
+      window.cancelAnimationFrame(frame);
+      frame = 0;
+    }
     tracking = false;
     mode = 0;
     pull = 0;
@@ -80,6 +123,10 @@
 
   function drop() {
     if (!surface) return;
+    if (frame) {
+      window.cancelAnimationFrame(frame);
+      frame = 0;
+    }
     tracking = false;
     mode = 0;
     pull = 0;
@@ -94,6 +141,9 @@
      stretch as a short pulse, scaled by how fast the list arrived. */
   function fling(direction, speed) {
     if (!allowed || !surface || (tracking && mode)) return;
+    // One pulse at a time: a second one while the first is still returning
+    // restarts the transform and makes the edge stutter.
+    if (surface.classList.contains('is-stretching') || surface.classList.contains('is-flinging')) return;
     if (!atEdge(direction)) return;
     mode = direction;
     pull = Math.min(MAX_PULL, 26 + speed * 22);
@@ -111,8 +161,6 @@
       if (tracking) settle();
       return;
     }
-    // Catching a spring-back starts from rest, the way the native effect does.
-    if (surface.classList.contains('is-stretching')) drop();
     window.clearTimeout(flingTimer);
     surface.classList.remove('is-flinging');
     const touch = event.touches[0];
@@ -152,14 +200,16 @@
     }
 
     if (!mode) {
+      if (over < 3) return; // a few pixels of slop before the edge reacts
+      takeOverSettle();
       mode = dy > 0 ? 1 : -1;
       surface.classList.add('is-dragging');
-      surface.classList.remove('is-stretching', 'is-flinging');
+      surface.classList.remove('is-flinging');
     }
 
     if (event.cancelable) event.preventDefault();
-    pull = MAX_PULL * (1 - Math.exp(-over / 96));
-    paint();
+    pull = Math.max(pull, MAX_PULL * (1 - Math.exp(-over / 96)));
+    schedulePaint();
   }
 
   function onEnd() {
