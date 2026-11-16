@@ -4,7 +4,7 @@
   'use strict';
 
   var KEY = 'sixfold.locale.v1';
-  var VERSION = '5.4.5';
+  var VERSION = '5.4.6';
   var BASE = 'i18n/';
   var PATTERNS = BASE + 'i18n-patterns.js';
   var CATALOG = {
