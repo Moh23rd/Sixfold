@@ -187,8 +187,11 @@ jobs:
           set -euo pipefail
           apk=android/app/build/outputs/apk/debug/app-debug.apk
           test -s "$apk"
-          unzip -l "$apk" | grep -q 'assets/public/index.html'
-          unzip -l "$apk" | grep -q 'assets/public/native-plugins.js'
+          listing=$(mktemp)
+          trap 'rm -f "$listing"' EXIT
+          unzip -l "$apk" > "$listing"
+          grep -q 'assets/public/index.html' "$listing"
+          grep -q 'assets/public/native-plugins.js' "$listing"
           ls -lh "$apk"
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
