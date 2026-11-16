@@ -101,7 +101,7 @@ const SHELL = [
   // active catalog; i18n.js warms that catalog after the worker controls it.
   './i18n/i18n-locale.js?v=' + I18N_CODE,
   './i18n/i18n.js?v=' + I18N_CODE,
-  './js/native.js?v=5.1.0',
+  './js/native.js?v=5.1.1',
   './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the
   // offline shell so unlocking it works with no connection. The active locale

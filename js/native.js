@@ -22,16 +22,30 @@
     }, 820);
   }
 
-  function syncBars() {
+  function styleStatusBar(dark) {
     var bar = plugins.StatusBar;
-    if (!bar) return;
+    if (!bar || !bar.setStyle) return;
+    try { ignoreRejection(bar.setStyle({ style: dark ? 'DARK' : 'LIGHT' })); } catch (err) {}
+  }
+
+  function syncBars() {
     var dark = window.MergeTheme && window.MergeTheme.isDark
       ? window.MergeTheme.isDark()
       : document.documentElement.dataset.theme === 'dark';
-    try { ignoreRejection(bar.setStyle({ style: dark ? 'DARK' : 'LIGHT' })); } catch (err) {}
-    if (cap.getPlatform && cap.getPlatform() === 'android') {
-      try { ignoreRejection(bar.setBackgroundColor({ color: dark ? '#1a1918' : '#f6f1e8' })); } catch (err) {}
+
+    // SystemBars styles the status and navigation bars together. Fall back to
+    // the legacy StatusBar plugin if an older native shell lacks SystemBars.
+    var systemBars = plugins.SystemBars;
+    if (systemBars && systemBars.setStyle) {
+      try {
+        var result = systemBars.setStyle({ style: dark ? 'DARK' : 'LIGHT' });
+        if (result && typeof result.catch === 'function') {
+          result.catch(function () { styleStatusBar(dark); });
+        }
+        return;
+      } catch (err) {}
     }
+    styleStatusBar(dark);
   }
 
   function back() {

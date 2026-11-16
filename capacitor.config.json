@@ -1,5 +1,11 @@
 {
   "appId": "io.github.moh23rd.sixfold",
   "appName": "Sixfold",
-  "webDir": "native/www"
+  "webDir": "native/www",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
 }

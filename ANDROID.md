@@ -10,13 +10,33 @@ a Play Store release. There is no AAB requirement and no store listing.
   menu or web-server requirement.
 - The HTML, CSS, JavaScript, fonts, icons and game data are bundled inside the
   APK, so the game works offline.
-- Android's native splash screen, status bar and back gesture are wired through
-  Capacitor and `js/native.js`.
+- Android's native splash screen, edge-to-edge system bars and back gesture are
+  wired through Capacitor and `js/native.js`.
 
 Capacitor renders the bundled interface in Android's **WebView**. This is an
 installable app, not a browser shortcut or PWA install, but it is not a
 Kotlin/Java rewrite. If "no web stuff" means no WebView at all, that would be a
 separate fully native port.
+
+## Edge-to-edge and safe areas
+
+`MainActivity` draws the WebView behind transparent status and navigation bars.
+`capacitor.config.json` configures Capacitor's bundled `SystemBars` plugin with
+`insetsHandling: "native"`, Capacitor's recommended mode. On Android WebViews
+older than Chromium 140, Capacitor pads the native WebView and reports zero
+`env(safe-area-inset-*)` values. On newer WebViews the page is edge-to-edge and
+the `env()` values are correct. The stylesheets already use those `env()`
+values, so no CSS-only fallback layer is needed. iOS and normal browsers use
+the same `env()` values.
+
+`js/native.js` uses `SystemBars.setStyle()` for both system bars, so their icons
+follow Sixfold's light/dark setting. `StatusBar.setBackgroundColor()` is
+deliberately not used: Android 15+ ignores it, and on older versions it made the
+bars opaque instead of edge-to-edge.
+
+Edge-to-edge needs a device or emulator check, especially around display
+cutouts and gesture navigation. Verify at least API 24, API 28, API 35 and
+API 36 before releasing an APK.
 
 ## Checked-in Android project
 
