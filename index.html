@@ -306,6 +306,7 @@
   <link rel="stylesheet" href="css/polish.css?v=4.0.0-w17" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w15" />
   <link rel="stylesheet" href="css/v5.css?v=5.4.3" />
+  <link rel="stylesheet" href="css/progressive-blur.css?v=1.0.0" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -1324,6 +1325,15 @@
   </aside>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Decorative edge blur: content dissolves as it scrolls under the phone's
+       transparent system bars. Six layers per edge; see progressive-blur.css. -->
+  <div class="progressive-blur progressive-blur--top" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="progressive-blur progressive-blur--bottom" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
 
   <script src="js/settings.js?v=5.3.0"></script>
   <script src="js/haptics.js?v=4.0.0"></script>

@@ -1,0 +1,111 @@
+/* ==========================================================================
+   Progressive blur
+   --------------------------------------------------------------------------
+   Content dissolves as it scrolls under the phone's transparent status and
+   navigation bars. CSS still has no gradient blur, so the ramp is a stack of
+   six backdrop-filter layers whose masked windows overlap by half a step:
+   each layer hands off exactly where the next has already faded in, which is
+   why the joins stay invisible.
+
+   The band is only as tall as the chrome it protects, so at rest nothing on
+   screen is touched and only six thin strips are composited at a time. The
+   layers are decorative: no motion, no pointer target, and nothing at all
+   where backdrop-filter is missing or transparency is reduced.
+   ========================================================================== */
+
+.progressive-blur { display: none; }
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .progressive-blur {
+    position: fixed;
+    right: 0;
+    left: 0;
+    z-index: 40;
+    display: block;
+    height: min(calc(env(safe-area-inset-top, 0px) + 20px), 56px);
+    background: none;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .progressive-blur--top {
+    top: 0;
+    --pb-direction: to top;
+  }
+
+  /* The bottom band follows the larger of the two bottom insets, exactly like
+     the screens' own padding, so its edge always meets the content gutter. */
+  .progressive-blur--bottom {
+    bottom: 0;
+    --pb-direction: to bottom;
+    height: min(
+      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 20px),
+      56px
+    );
+  }
+
+  .progressive-blur > span {
+    position: absolute;
+    inset: 0;
+    -webkit-backdrop-filter: blur(var(--pb-blur, 1px));
+    backdrop-filter: blur(var(--pb-blur, 1px));
+    -webkit-mask-image: linear-gradient(var(--pb-direction), var(--pb-mask));
+    mask-image: linear-gradient(var(--pb-direction), var(--pb-mask));
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+  }
+
+  /* Six windows across the band. Each is transparent until the previous one
+     is solid, solid for one step, then gone by the time the next has faded
+     in — a cross-fade rather than a stack of visible steps. The blur radii
+     roughly double, so the ramp reads as one continuous gradient. */
+  .progressive-blur > span:nth-child(1) {
+    --pb-blur: 0.3px;
+    --pb-mask: rgba(0, 0, 0, 0) 0%, #000 12.5%, #000 25%, rgba(0, 0, 0, 0) 37.5%;
+  }
+
+  .progressive-blur > span:nth-child(2) {
+    --pb-blur: 0.6px;
+    --pb-mask: rgba(0, 0, 0, 0) 12.5%, #000 25%, #000 37.5%, rgba(0, 0, 0, 0) 50%;
+  }
+
+  .progressive-blur > span:nth-child(3) {
+    --pb-blur: 1.2px;
+    --pb-mask: rgba(0, 0, 0, 0) 25%, #000 37.5%, #000 50%, rgba(0, 0, 0, 0) 62.5%;
+  }
+
+  .progressive-blur > span:nth-child(4) {
+    --pb-blur: 2.4px;
+    --pb-mask: rgba(0, 0, 0, 0) 37.5%, #000 50%, #000 62.5%, rgba(0, 0, 0, 0) 75%;
+  }
+
+  .progressive-blur > span:nth-child(5) {
+    --pb-blur: 4.5px;
+    --pb-mask: rgba(0, 0, 0, 0) 50%, #000 62.5%, #000 75%, rgba(0, 0, 0, 0) 87.5%;
+  }
+
+  .progressive-blur > span:nth-child(6) {
+    --pb-blur: 8px;
+    --pb-mask: rgba(0, 0, 0, 0) 62.5%, #000 75%, #000 100%;
+  }
+
+  /* A sheet already blurs the whole page behind it, so skip the extra passes
+     while one is open. */
+  html.sheet-open .progressive-blur { display: none; }
+
+  /* The result overlay lives inside the play area's own stacking context, so
+     the bands step out of the way there too instead of blurring its card.
+     Kept in its own support check so an engine without :has() still gets the
+     sheet rule above. */
+  @supports selector(:has(*)) {
+    html:has(.overlay:not([hidden])) .progressive-blur { display: none; }
+  }
+}
+
+/* Safari and iOS can ask for less transparency; respect it and show nothing. */
+@media (prefers-reduced-transparency: reduce) {
+  .progressive-blur { display: none !important; }
+}
