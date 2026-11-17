@@ -1,15 +1,21 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.6**.
+> Public release label: **v5.0**. Current development build: **6.0.7**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.6**
+Internal build: **6.0.7**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
 
 ### Edge, gutter and motion
+
+- **The 320px hub**: the three promises hold one line beside the cover instead
+  of wrapping onto a second one with a stranded dot, and the appearance pill
+  keeps its palette name all the way down to 320px. The pill's small-screen
+  rules had spent three breakpoints across two files swapping the name for the
+  "Look" kicker and hiding the label altogether; there is now one ladder.
 
 - **A quiet way out**: the running theme keeps an opaque window surface in the
   page colour and the splash theme is handed off properly, so leaving the app

@@ -12,10 +12,6 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // Leave the launch theme as soon as the activity starts. The splash
-        // theme's drawable is for the splash only; keeping it as the window
-        // background is what made it reappear during the closing animation.
-        setTheme(R.style.AppTheme_NoActionBar);
         registerPlugin(GallerySavePlugin.class);
         registerPlugin(ShellPlugin.class);
         super.onCreate(savedInstanceState);

@@ -2847,11 +2847,6 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   .hub-look { padding-right: 8px; }
 }
 
-@media (max-width: 360px) {
-  .hub-look-copy span { display: none; }
-  .hub-look-copy strong { max-width: 12ch; font-size: 11px; }
-  .hub-look-chevron { display: none; }
-}
 
 /* ---------- shared game header ---------- */
 
@@ -3205,24 +3200,11 @@ html[data-theme="dark"] .reset-confirm:hover {
     gap: 6px;
     padding: 4px 9px 4px 5px;
   }
-  .hub-look-copy span {
-    display: block;
-    color: var(--ink);
-    font-size: 11.5px;
-    font-weight: 800;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-  .hub-look-copy strong { display: none; }
-  .hub-look-chevron { display: block; }
 }
 
 @media (max-width: 360px) {
   .games-home { width: 36px; height: 36px; }
   .hub-share { width: 38px; height: 38px; }
-  .hub-look-copy span { display: block; font-size: 11px; }
-  .hub-look-copy strong { display: none; }
-  .hub-look-chevron { display: block; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3274,8 +3256,9 @@ html[data-theme="dark"] .reset-confirm:hover {
   .hub-brand { gap: 8px; }
   .hub-word { font-size: 10.5px; letter-spacing: 0.13em; }
   .hub-actions { gap: 8px; }
-  .hub-look-copy, .hub-look-chevron { display: none; }
-  .hub-look { padding-inline: 9px; }
+  /* The pill keeps its palette name: two dots on their own say nothing. */
+  .hub-look-chevron { display: none; }
+  .hub-look { gap: 6px; padding-inline: 8px; }
 }
 
 @media (orientation: landscape) and (max-height: 520px) {

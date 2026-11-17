@@ -401,6 +401,10 @@ html[data-theme="dark"] {
   text-transform: uppercase;
 }
 
+.home-promises span {
+  white-space: nowrap;
+}
+
 .home-promises span + span::before {
   content: "·";
   margin-right: 10px;
@@ -1065,8 +1069,8 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-ctas { margin-top: 15px; gap: 7px; }
   .home-cta { gap: 9px; min-height: 43px; padding: 0 11px; font-size: 9px; }
   .home-surprise { width: 43px; min-width: 43px; min-height: 43px; }
-  .home-promises { margin-top: 13px; font-size: 8px; gap: 3px 7px; }
-  .home-promises span + span::before { margin-right: 7px; }
+  .home-promises { margin-top: 13px; font-size: 7.5px; letter-spacing: 0.04em; gap: 2px 6px; }
+  .home-promises span + span::before { margin-right: 5px; }
   .home-six { gap: 4px; }
   .home-six-piece { padding: 0 6px 5px; border-radius: 7px; font-size: 7px; }
   .home-six-caption { margin-top: 8px; font-size: 6px; }
@@ -1099,7 +1103,6 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 
 @media (max-width: 340px) {
   .hub-brand-copy { gap: 2px; }
-  .hub-look-copy { display: none; }
   .hub-look { padding: 0 8px; }
   .home-hero { grid-template-columns: minmax(0, 1fr) 84px; }
   .home-cta { gap: 7px; font-size: 8.5px; padding: 0 9px; }
