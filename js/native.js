@@ -14,12 +14,20 @@
     if (value && typeof value.catch === 'function') value.catch(function () {});
   }
 
+  // Dismiss the launch splash on the first frame the page actually paints. The
+  // launch theme's own auto-hide in capacitor.config.json is the safety net for
+  // a page that never gets here, not the normal path.
   function hideSplash() {
     var splash = plugins.SplashScreen;
     if (!splash || !splash.hide) return;
-    window.setTimeout(function () {
+    function hide() {
       try { ignoreRejection(splash.hide()); } catch (err) {}
-    }, 820);
+    }
+    if (window.requestAnimationFrame) {
+      requestAnimationFrame(function () { requestAnimationFrame(hide); });
+    } else {
+      hide();
+    }
   }
 
   function styleStatusBar(dark) {

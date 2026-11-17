@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.13**.
+> Public release label: **v5.0**. Current development build: **6.0.14**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.13**
+Internal build: **6.0.14**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -21,12 +21,8 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **One splash, then the app**: the WebView painted white until the page had a
   background, which read as a blank second splash, and the launch screen could
   expire before a slow first paint. The WebView now carries the surface colour
-  from its first frame, and the launch splash waits for the page instead of
-  timing out under it.
-- **The system's own transition**: predictive back is on again. Capacitor's
-  back callback already sits on the AndroidX dispatcher, so the gesture keeps
-  reaching the page and the window now uses the current system animation rather
-  than the legacy one.
+  from its first frame, the splash is dismissed on the page's first painted
+  frame, and the 1200 ms auto-hide is only a safety net.
 - **The window frame matches the page**: a dark appearance chosen on a phone in
   light system mode used to flash a cream frame around the app while a window
   animation ran, because the Android window surface only knew the system
