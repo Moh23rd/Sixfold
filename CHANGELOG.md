@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.7**.
+> Public release label: **v5.0**. Current development build: **6.0.8**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.7**
+Internal build: **6.0.8**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -20,8 +20,9 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **A quiet way out**: the running theme keeps an opaque window surface in the
   page colour and the splash theme is handed off properly, so leaving the app
   no longer shows the launcher through a splash-coloured card. Predictive back
-  is off for the WebView, and the page reports its palette colour to the
-  window on every theme change.
+  is off for the WebView. The surface is the neutral day/night page colour and
+  stays that way: it sits behind the WebView, so it does not follow the in-app
+  palette and costs no native calls.
 - **Low-end mode**: a phone reporting 2 GB or fewer, four threads or fewer, or
   a data saver paints the blur band as one solid surface, drops the full-screen
   backdrop blurs and the blurred wordle arrival, and starts the hub's tape
