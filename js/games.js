@@ -672,6 +672,12 @@
     });
   }
 
+  /* The hub's tape is the only thing that animates forever. Pause it when the
+     tab or the app is hidden instead of compositing behind a paused window. */
+  document.addEventListener('visibilitychange', function () {
+    document.documentElement.classList.toggle('is-app-hidden', document.hidden);
+  });
+
   const hubShare = $('hub-share');
   if (hubShare) {
     hubShare.addEventListener('click', shareApp);

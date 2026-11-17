@@ -3,4 +3,7 @@
     <color name="colorPrimary">#f6f1e8</color>
     <color name="colorPrimaryDark">#1a1918</color>
     <color name="colorAccent">#e85f3b</color>
+    <!-- The page colour of the running app. The window keeps this behind the
+         WebView so no system animation ever shows a transparent card. -->
+    <color name="app_surface">#f6f1e8</color>
 </resources>

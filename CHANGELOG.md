@@ -1,15 +1,28 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.5**.
+> Public release label: **v5.0**. Current development build: **6.0.6**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.5**
+Internal build: **6.0.6**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
 
 ### Edge, gutter and motion
+
+- **A quiet way out**: the running theme keeps an opaque window surface in the
+  page colour and the splash theme is handed off properly, so leaving the app
+  no longer shows the launcher through a splash-coloured card. Predictive back
+  is off for the WebView, and the page reports its palette colour to the
+  window on every theme change.
+- **Low-end mode**: a phone reporting 2 GB or fewer, four threads or fewer, or
+  a data saver paints the blur band as one solid surface, drops the full-screen
+  backdrop blurs and the blurred wordle arrival, and starts the hub's tape
+  still. `?perf=lite` / `?perf=full` force either mode.
+- **Calmer motion**: the cover's build finishes a third sooner with no spring
+  overshoot, the hidden reveal opens in 360 ms instead of 620 ms, and the hub's
+  tape stops under reduced motion and pauses with the window.
 
 - **The hub answers back**: "Choose a game" scrolls the hub to the cards
   instead of jumping the hash, the surprise die rolls and lifts the card it

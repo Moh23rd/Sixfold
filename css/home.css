@@ -446,8 +446,8 @@ html[data-theme="dark"] {
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1;
-  animation-duration: 620ms;
-  animation-timing-function: var(--ease-spring);
+  animation-duration: 480ms;
+  animation-timing-function: var(--ease-out);
   /* Backwards fill covers the stagger delay; forwards fill would leave the
      final keyframe overriding the hover and press transforms forever. */
   animation-fill-mode: backwards;
@@ -483,7 +483,7 @@ html.home-ready .home-six-caption {
 
 @keyframes sixBuild {
   0% { opacity: 0; transform: translate(var(--six-x, 0), var(--six-y, 0)) scale(0.84) rotate(var(--six-r, 0deg)); }
-  64% { opacity: 1; transform: translate(0, 0) scale(1.035) rotate(0deg); }
+  64% { opacity: 1; transform: translate(0, 0) scale(1.02) rotate(0deg); }
   82% { transform: translate(0, 0) scale(0.99) rotate(0deg); }
   100% { opacity: 1; transform: none; }
 }
@@ -527,6 +527,12 @@ html.home-ready .home-six-caption {
   height: 100%;
   animation: tickerRun 42s linear infinite;
 }
+
+/* The tape is the one thing on the hub that never stops. Pause it with the
+   window, and start it from the beginning (instead of mid-word) on a phone
+   that asked for less motion or cannot afford the frames. */
+html.is-app-hidden .home-ticker-track { animation-play-state: paused; }
+html.perf-lite .home-ticker-track { animation: none; transform: none; }
 
 .home-ticker-group {
   display: flex;
@@ -1119,6 +1125,7 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-surprise,
   html.home-ready .home-six-piece,
   html.home-ready .home-six-caption,
+  .home-ticker-track,
   .home-game,
   .home-game-arrow,
   .home-game-play::after {

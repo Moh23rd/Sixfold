@@ -132,13 +132,37 @@
     return recolor(root.dataset.theme === 'dark' ? PAGE_BASE.dark : PAGE_BASE.light, activePalette());
   }
 
+  // In the installed app the native window is the surface Android composites
+  // when it animates the app away, so it has to be the page colour too.
+  let surfaceSent = null;
+  let surfaceRetry = 0;
+  function paintNativeSurface(bg) {
+    if (surfaceSent === bg) return;
+    const cap = window.Capacitor;
+    const shell = cap && cap.Plugins && cap.Plugins.Shell;
+    if (!shell || !shell.setSurface) {
+      // The native plugin proxies are registered after this file on a cold
+      // start; try once more rather than leaving the window on the fallback.
+      if (surfaceRetry < 1) {
+        surfaceRetry += 1;
+        window.setTimeout(function () { paintNativeSurface(bg); }, 400);
+      }
+      return;
+    }
+    surfaceSent = bg;
+    try {
+      shell.setSurface({ color: bg }).catch(function () { surfaceSent = null; });
+    } catch (err) {
+      surfaceSent = null;
+    }
+  }
+
   // The phone's status bar / address bar follows the page, palette included.
   function paintBrowserChrome() {
+    const bg = chromeColour();
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      const bg = chromeColour();
-      if (meta.getAttribute('content') !== bg) meta.setAttribute('content', bg);
-    }
+    if (meta && meta.getAttribute('content') !== bg) meta.setAttribute('content', bg);
+    paintNativeSurface(bg);
     // Scrollbars, form controls and the phone's own surfaces follow this too.
     const scheme = document.querySelector('meta[name="color-scheme"]');
     if (scheme) scheme.setAttribute('content', root.dataset.theme === 'dark' ? 'dark' : 'light');

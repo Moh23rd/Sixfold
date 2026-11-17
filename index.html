@@ -299,14 +299,38 @@
   <link rel="apple-touch-startup-image" href="splash/ios-1668x2388-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <script>
+    (function () {
+      // A budget phone should not pay for three masked backdrop filters or a
+      // long hero build. Decide before the stylesheets arrive, so the first
+      // paint is already the version the device will keep using.
+      var root = document.documentElement;
+      var lite = false;
+      try {
+        var mem = navigator.deviceMemory;
+        var cpu = navigator.hardwareConcurrency;
+        var conn = navigator.connection || {};
+        lite = (typeof mem === 'number' && mem > 0 && mem <= 2) ||
+          (typeof cpu === 'number' && cpu > 0 && cpu <= 4) ||
+          conn.saveData === true;
+        var forced = /[?&]perf=(lite|full)/.exec(window.location.search);
+        if (forced) lite = forced[1] === 'lite';
+      } catch (err) {}
+      root.classList.toggle('perf-lite', lite);
+      window.MergePerf = {
+        lite: lite,
+        setLite: function (on) { root.classList.toggle('perf-lite', Boolean(on)); }
+      };
+    })();
+  </script>
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.1" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/styles.css?v=5.2.9" />
   <link rel="stylesheet" href="css/games.css?v=5.3.3" />
-  <link rel="stylesheet" href="css/home.css?v=4.1.2" />
-  <link rel="stylesheet" href="css/polish.css?v=4.0.2-w19" />
+  <link rel="stylesheet" href="css/home.css?v=4.1.3" />
+  <link rel="stylesheet" href="css/polish.css?v=4.0.3-w20" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.2" />
   <link rel="stylesheet" href="css/v5.css?v=5.4.4" />
-  <link rel="stylesheet" href="css/progressive-blur.css?v=1.2.0" />
+  <link rel="stylesheet" href="css/progressive-blur.css?v=1.3.0" />
 </head>
 <body data-screen="hub">
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
@@ -1340,11 +1364,11 @@
   <script src="js/overscroll.js?v=4.1.0"></script>
   <script src="js/celebrate.js?v=4.1.0"></script>
   <script src="js/sharecard.js?v=5.3.2"></script>
-  <script src="js/theme.js?v=6.0.1"></script>
+  <script src="js/theme.js?v=6.0.2"></script>
   <script src="js/game.js?v=5.3.0"></script>
   <script src="js/install.js?v=4.1.0"></script>
   <script src="js/sudoku.js?v=5.3.0"></script>
-  <script src="js/games.js?v=5.3.3"></script>
+  <script src="js/games.js?v=5.3.4"></script>
   <script src="js/daily.js?v=5.4.2"></script>
   <script src="js/badges.js?v=1.0.1"></script>
   <script src="js/update.js?v=5.1.0"></script>

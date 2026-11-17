@@ -156,6 +156,20 @@
   @supports selector(:has(*)) {
     html:has(.overlay:not([hidden])) .progressive-blur { display: none; }
   }
+
+  /* Low-end mode. Three masked backdrop filters are the most expensive thing
+     on the page, so on a phone that reports little memory or few cores the
+     same band is painted as one solid surface that fades toward the content:
+     no blur, no compositing, and the same safe-area geometry. */
+  html.perf-lite .progressive-blur {
+    background: var(--page);
+    -webkit-mask-image: linear-gradient(var(--pb-direction, to top), rgba(0, 0, 0, 0) 0%, #000 45%, #000 100%);
+    mask-image: linear-gradient(var(--pb-direction, to top), rgba(0, 0, 0, 0) 0%, #000 45%, #000 100%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  html.perf-lite .progressive-blur > span { display: none; }
 }
 
 /* Safari and iOS can ask for less transparency; respect it and show nothing. */
