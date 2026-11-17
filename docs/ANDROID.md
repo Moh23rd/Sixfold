@@ -54,6 +54,19 @@ Android 12 and later paint their own starting window from the manifest theme
 before any app code runs, so that first frame keeps the day/night colour. Every
 frame the app draws does not.
 
+Predictive back is enabled. Capacitor's App plugin registers an
+`OnBackPressedCallback` on the AndroidX dispatcher; with
+`android:enableOnBackInvokedCallback="true"` that dispatcher is wired into the
+system's `OnBackInvokedDispatcher`, so the back gesture gets the current system
+transition and still delivers `backButton` to `js/native.js`.
+
+The WebView is given the surface colour as its background in `MainActivity`.
+Without it the WebView paints white until the page has a background, which read
+as a second, blank splash between the launch screen and the hub. The launch
+splash itself is the system one; `launchShowDuration` in `capacitor.config.json`
+is longer than the page's own splash dismissal, so the splash never expires
+before the page is ready.
+
 Edge-to-edge needs a device or emulator check, especially around display
 cutouts and gesture navigation. Verify at least API 24, API 28, API 35 and
 API 36 before releasing an APK.

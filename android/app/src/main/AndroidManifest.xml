@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Predictive back is off: the app navigates in the WebView, so the system
-         preview had nothing to preview and shrank a half-drawn card over the
-         launcher on the way out. The legacy back animation is the calm one. -->
+    <!-- Predictive back is on: Capacitor's App plugin registers a back callback on
+         the AndroidX dispatcher, which the system wires into its own dispatcher
+         when this flag is set, so the gesture keeps reaching the page's back
+         handler and still gets the modern transition. The window is opaque and
+         painted in the page colour, so the preview shows the real screen. -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:enableOnBackInvokedCallback="false"
+        android:enableOnBackInvokedCallback="true"
         android:theme="@style/AppTheme.NoActionBar">
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"

@@ -6,6 +6,10 @@
     "SystemBars": {
       "insetsHandling": "native",
       "initialViewportFitValueHint": "cover"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchFadeOutDuration": 200
     }
   }
 }

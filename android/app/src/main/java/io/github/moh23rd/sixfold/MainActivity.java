@@ -5,6 +5,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 
 import com.getcapacitor.BridgeActivity;
@@ -33,6 +34,12 @@ public class MainActivity extends BridgeActivity {
         if (surface != 0) {
             getWindow().setBackgroundDrawable(new ColorDrawable(surface));
         }
+
+        // The WebView paints white until the page has a background of its own,
+        // which read as a second, blank splash between the launch screen and the
+        // hub. Give it the same surface the window is using.
+        final int webViewSurface = surface != 0 ? surface : ContextCompat.getColor(this, R.color.app_surface);
+        getBridge().getWebView().setBackgroundColor(webViewSurface);
 
         // Draw the WebView behind the system bars. The bundled SystemBars
         // plugin applies the Android insets to the WebView.
