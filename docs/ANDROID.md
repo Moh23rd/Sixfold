@@ -43,11 +43,12 @@ and is never polled.
 
 The same report is remembered on the device. `MainActivity` reads it before
 `super.onCreate` and calls `setTheme` with the matching fixed launch theme
-(`AppTheme.NoActionBarLaunchLight` or `…Dark`), so the splash opens in the
-appearance the app itself is using. Each fixed theme carries the same
-`postSplashScreenTheme` handoff, which is why the earlier bug — replacing the
-splash theme before the splash could read its handoff — does not come back.
-After `super.onCreate` the window is given the exact palette colour.
+(`AppTheme.NoActionBarLaunch.Light` or `…Dark`), so the splash opens in the
+appearance the app itself is using. Those two styles inherit the launch theme
+and change only the surface, so the `postSplashScreenTheme` handoff stays
+intact — the earlier bug, replacing the splash theme before the splash could
+read its handoff, cannot come back. After `super.onCreate` the window is given
+the exact palette colour.
 
 Android 12 and later paint their own starting window from the manifest theme
 before any app code runs, so that first frame keeps the day/night colour. Every

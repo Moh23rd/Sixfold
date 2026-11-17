@@ -22,7 +22,7 @@ public class MainActivity extends BridgeActivity {
         // day/night setting. No stored colour leaves the day/night theme in place.
         final int surface = WindowSurfacePlugin.storedColor(this);
         if (surface != 0) {
-            setTheme(isDark(surface) ? R.style.AppTheme_NoActionBarLaunchDark : R.style.AppTheme_NoActionBarLaunchLight);
+            setTheme(isDark(surface) ? R.style.AppTheme_NoActionBarLaunch_Dark : R.style.AppTheme_NoActionBarLaunch_Light);
         }
 
         super.onCreate(savedInstanceState);

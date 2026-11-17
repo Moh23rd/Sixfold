@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.11**.
+> Public release label: **v5.0**. Current development build: **6.0.12**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.11**
+Internal build: **6.0.12**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -21,13 +21,11 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **The window frame matches the page**: a dark appearance chosen on a phone in
   light system mode used to flash a cream frame around the app while a window
   animation ran, because the Android window surface only knew the system
-  setting. The page now reports its colour once whenever the appearance
-  changes and the window keeps it. The launch theme is still a static day/night
-  colour; nothing is stored, retried or polled.
-- **The splash opens in the app's appearance**: the reported colour is remembered
-  on the device, and the next launch picks a light or dark launch theme from it,
-  so a dark appearance on a light-system phone no longer opens on a cream
-  splash. Android 12+ still paints its starting window from the manifest theme
+  setting. The page now reports each distinct colour once, whenever the
+  appearance changes, and the window keeps it. Nothing is retried or polled.
+- **The splash opens in the app's appearance**: that report is remembered on the
+  device, and the next launch picks a light or dark launch theme from it, so a
+  dark appearance on a light-system phone no longer opens on a cream splash. Android 12+ still paints its starting window from the manifest theme
   before any app code runs; every frame after it matches.
 
 - **The 320px hub**: the three promises hold one line beside the cover instead

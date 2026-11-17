@@ -134,12 +134,17 @@
 
   // The window surface behind the WebView is only seen at the edges while a
   // system animation runs, so it has to follow the page and not the phone's
-  // day/night setting. One report per appearance change; the plugin keeps no
-  // state, and a browser ignores this entirely.
+  // day/night setting. One report per distinct colour: the appearance paths
+  // already repaint through refreshPage, so without this memo the same colour
+  // would cross the bridge twice. A browser ignores this entirely.
+  let reportedSurface = null;
+
   function paintWindowSurface(bg) {
+    if (bg === reportedSurface) return;
     const native = window.Capacitor && window.Capacitor.Plugins;
     const plugin = native && native.WindowSurface;
     if (!plugin || typeof plugin.setColor !== 'function') return;
+    reportedSurface = bg;
     try {
       const pending = plugin.setColor({ color: bg });
       if (pending && pending.catch) pending.catch(function () {});

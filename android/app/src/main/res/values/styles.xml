@@ -39,40 +39,18 @@
         <item name="android:windowBackground">@color/app_surface</item>
     </style>
 
-    <!-- Fixed-appearance variants. The launch theme is chosen in MainActivity from
+    <!-- Fixed-appearance variants: the launch theme is chosen in MainActivity from
          the surface the page last reported, so a dark appearance on a light-system
          phone opens on a dark splash instead of the day/night one. Each variant
-         keeps the same splash attributes and handoff target; only the surface
-         colour differs. -->
-    <style name="AppTheme.NoActionBarLight" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:windowBackground">@color/app_surface_light</item>
-        <item name="android:colorBackground">@color/app_surface_light</item>
-        <item name="android:windowIsTranslucent">false</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
-    </style>
-
-    <style name="AppTheme.NoActionBarDark" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:windowBackground">@color/app_surface_dark</item>
-        <item name="android:colorBackground">@color/app_surface_dark</item>
-        <item name="android:windowIsTranslucent">false</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
-    </style>
-
-    <style name="AppTheme.NoActionBarLaunchLight" parent="Theme.SplashScreen">
+         inherits everything from the theme above and changes only the surface,
+         including the handoff, which stays AppTheme.NoActionBar. -->
+    <style name="AppTheme.NoActionBarLaunch.Light">
         <item name="windowSplashScreenBackground">@color/app_surface_light</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBarLight</item>
         <item name="android:windowBackground">@color/app_surface_light</item>
     </style>
 
-    <style name="AppTheme.NoActionBarLaunchDark" parent="Theme.SplashScreen">
+    <style name="AppTheme.NoActionBarLaunch.Dark">
         <item name="windowSplashScreenBackground">@color/app_surface_dark</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBarDark</item>
         <item name="android:windowBackground">@color/app_surface_dark</item>
     </style>
 </resources>
