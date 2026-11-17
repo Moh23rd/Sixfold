@@ -1,7 +1,6 @@
 # Android APK
 
-Sixfold's Android target is a **direct-install APK for GitHub distribution**, not
-a Play Store release. There is no AAB requirement and no store listing.
+Sixfold's Android target is a **direct-install APK for GitHub distribution**.
 
 ## What the APK is
 
@@ -194,9 +193,8 @@ cd android
 Do not commit the keystore, passwords or `keystore.properties`. Back up the
 keystore: losing it prevents updates to an installed app.
 
-Because this is not a Play Store build, no AAB is required. Users install the
-APK directly and may need to allow installation from the source they downloaded
-it from.
+Users install the APK directly and may need to allow installation from the
+source they downloaded it from.
 
 ## Versioning and data
 

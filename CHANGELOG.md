@@ -1,13 +1,20 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.8**.
+> Public release label: **v5.0**. Current development build: **6.0.9**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.8**
+Internal build: **6.0.9**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
+
+### Licence
+
+- **GPL-3.0-only, nothing else**: the Apple App Store additional permission and
+  its section in the in-app licences view are gone. Sixfold ships from GitHub as
+  source and a direct-install APK, so the section 7 carve-out covered no
+  distribution and only added a second document to keep in step.
 
 ### Edge, gutter and motion
 
@@ -115,8 +122,7 @@ across the hub, games and generated share cards.
   and resume, plus high-contrast, colour-blind, left-handed and larger-digit
   controls. Backup/restore, persistent storage and the update prompt complete
   the collection shell.
-- **GPL-3.0-only licensing**, the App Store additional permission, the in-app
-  licences view and the localized store and privacy material.
+- **GPL-3.0-only licensing**, the in-app licences view and the privacy notes.
 - **Share and settings polish**: image sharing falls back to a save-card flow
   when the platform blocks it; share text and cards follow the selected
   language; accessibility options collapse into one row and interface sounds

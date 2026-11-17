@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.8';
+const VERSION = 'sixfold-6.0.9';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -78,7 +78,6 @@ const SHELL = [
   './index.html',
   './licenses.html',
   './LICENSE',
-  './APPSTORE-EXCEPTION.md',
   './css/styles.css?v=' + STYLE_ASSET,
   './js/theme.js?v=' + THEME_JS,
   './js/game.js?v=' + GAME_CODE,

@@ -58,10 +58,8 @@ Published with GitHub Pages from the `main` branch root. No build step.
 
 ## Licence and credits
 
-Game code is [GNU GPL v3.0](LICENSE) (`GPL-3.0-only`); a separate
-[Apple App Store additional permission](APPSTORE-EXCEPTION.md) covers App Store
-distribution. Google Sans Flex ships under the
-[SIL Open Font License 1.1](fonts/OFL.txt). Full attributions are on
+Game code is [GNU GPL v3.0](LICENSE) (`GPL-3.0-only`). Google Sans Flex ships
+under the [SIL Open Font License 1.1](fonts/OFL.txt). Full attributions are on
 [licenses.html](licenses.html).
 
 Wordle dictionaries are adapted from **Wordle Global**, **wordfreq**, **Wordle JP**
