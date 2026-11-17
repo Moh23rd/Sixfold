@@ -14,10 +14,11 @@
          never composite a transparent card over the launcher, and a splash
          drawable never leaks into a later transition.
 
-         It deliberately does not follow the in-app palette: this surface sits
-         behind the WebView and is seen only at the edges while a window
-         animates, so a static day/night colour is enough and costs no native
-         round trip. -->
+         This is the day/night fallback: before the page has ever reported an
+         appearance there is nothing else to go on. Afterwards MainActivity picks
+         the fixed light or dark variant from that report, and the page keeps the
+         surface in step through WindowSurfacePlugin, so the colour follows the
+         in-app appearance rather than the phone's setting. -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
@@ -36,5 +37,42 @@
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
         <item name="android:windowBackground">@color/app_surface</item>
+    </style>
+
+    <!-- Fixed-appearance variants. The launch theme is chosen in MainActivity from
+         the surface the page last reported, so a dark appearance on a light-system
+         phone opens on a dark splash instead of the day/night one. Each variant
+         keeps the same splash attributes and handoff target; only the surface
+         colour differs. -->
+    <style name="AppTheme.NoActionBarLight" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowBackground">@color/app_surface_light</item>
+        <item name="android:colorBackground">@color/app_surface_light</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarDark" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowBackground">@color/app_surface_dark</item>
+        <item name="android:colorBackground">@color/app_surface_dark</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunchLight" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/app_surface_light</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBarLight</item>
+        <item name="android:windowBackground">@color/app_surface_light</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunchDark" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/app_surface_dark</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBarDark</item>
+        <item name="android:windowBackground">@color/app_surface_dark</item>
     </style>
 </resources>

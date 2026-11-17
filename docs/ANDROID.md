@@ -39,7 +39,19 @@ system, but not for a dark appearance chosen on a light-system phone: the window
 edges would flash cream during a scale or fade. `WindowSurfacePlugin` therefore
 repaints that one drawable whenever the page reports its colour
 (`paintWindowSurface` in `js/theme.js`). It holds no preference, retries nothing
-and is never polled, so the launch theme remains the only fallback.
+and is never polled.
+
+The same report is remembered on the device. `MainActivity` reads it before
+`super.onCreate` and calls `setTheme` with the matching fixed launch theme
+(`AppTheme.NoActionBarLaunchLight` or `…Dark`), so the splash opens in the
+appearance the app itself is using. Each fixed theme carries the same
+`postSplashScreenTheme` handoff, which is why the earlier bug — replacing the
+splash theme before the splash could read its handoff — does not come back.
+After `super.onCreate` the window is given the exact palette colour.
+
+Android 12 and later paint their own starting window from the manifest theme
+before any app code runs, so that first frame keeps the day/night colour. Every
+frame the app draws does not.
 
 Edge-to-edge needs a device or emulator check, especially around display
 cutouts and gesture navigation. Verify at least API 24, API 28, API 35 and

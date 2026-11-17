@@ -1,5 +1,7 @@
 package io.github.moh23rd.sixfold;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 
@@ -18,12 +20,22 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * than with the phone's day/night setting: a dark appearance chosen on a
  * light-system phone would otherwise flash a cream frame around a dark app.
  *
- * The page reports its colour whenever the theme or palette changes. Nothing is
- * stored, retried or polled, and the launch theme's static {@code app_surface}
- * covers the window until the first report.
+ * The page reports its colour whenever the theme or palette changes, and the
+ * last report is remembered so the next launch can pick the matching launch
+ * theme: that is what keeps the splash out of the phone's day/night colour.
+ * Nothing is retried or polled, and the theme's day/night {@code app_surface}
+ * covers the very first launch, before any colour has been reported.
  */
 @CapacitorPlugin(name = "WindowSurface")
 public class WindowSurfacePlugin extends Plugin {
+
+    private static final String PREFS = "sixfold.appearance";
+    private static final String KEY_SURFACE = "surface";
+
+    /** The surface colour the page last reported, or 0 before the first report. */
+    static int storedColor(Context context) {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_SURFACE, 0);
+    }
 
     @PluginMethod
     public void setColor(final PluginCall call) {
@@ -39,6 +51,11 @@ public class WindowSurfacePlugin extends Plugin {
         } catch (IllegalArgumentException err) {
             call.reject("color is not a hex colour");
             return;
+        }
+
+        final SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (prefs.getInt(KEY_SURFACE, 0) != color) {
+            prefs.edit().putInt(KEY_SURFACE, color).apply();
         }
 
         final FragmentActivity activity = getBridge().getActivity();

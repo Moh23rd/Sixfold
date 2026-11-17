@@ -6,4 +6,8 @@
     <!-- The page colour of the running app. The window keeps this behind the
          WebView so no system animation ever shows a transparent card. -->
     <color name="app_surface">#f6f1e8</color>
+    <!-- The two flat page colours, free of the day/night switch: the launch
+         theme is picked from the appearance the app itself was last using. -->
+    <color name="app_surface_light">#f6f1e8</color>
+    <color name="app_surface_dark">#1a1918</color>
 </resources>
