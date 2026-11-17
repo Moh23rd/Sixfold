@@ -582,19 +582,24 @@
   // Save the card into the phone's photo gallery. Inside the Android shell the
   // GallerySave plugin writes it through MediaStore; everywhere else the file
   // is downloaded. Neither path opens a share sheet.
+  //
+  // The two paths are exclusive. Inside the shell a failed plugin call cannot be
+  // rescued by an <a download>, which the WebView ignores, so falling back used
+  // to report success for a picture that was never written.
   async function save(file) {
     if (!file) return false;
-    const plugin = galleryPlugin();
-    if (plugin) {
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) {
       try {
-        await plugin.save({ data: await base64(file), name: file.name || 'sixfold-result.png' });
+        download(file);
         return true;
       } catch (err) {
-        /* fall back to the browser download below */
+        return false;
       }
     }
+    const plugin = galleryPlugin();
+    if (!plugin) return false;
     try {
-      download(file);
+      await plugin.save({ data: await base64(file), name: file.name || 'sixfold-result.png' });
       return true;
     } catch (err) {
       return false;

@@ -2306,16 +2306,6 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   .play-btn { min-height: 38px; }
 }
 
-/* A 320x568 phone with a 44/34 inset has 78px less wall for the same column.
-   Instead of letting the footer slide into the bottom gutter (and under the
-   blur band), the two boards that can give up size without losing input
-   accuracy shrink, and the water glasses lose their decorative padding. */
-@media (orientation: portrait) and (max-width: 720px) and (max-height: 700px) {
-  #ttt-board { width: min(100%, 360px, calc(100dvh - 392px)); }
-  .fruit-stage { width: min(100%, 390px, max(140px, calc(100dvh - 415px))); }
-  .water-glass { height: clamp(92px, 24vw, 148px); }
-  .water-board { padding: 10px 10px 8px; }
-}
 
 /* Side-by-side landscape, including desktop windows that are wider than they
    are tall. The board column owns the full height; the left column keeps the
@@ -2768,16 +2758,6 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 }
 
 .hub-share svg { width: 18px; height: 18px; display: block; }
-
-/* The hub save action is the one place the icon animates, and only when the
-   reader has not asked for reduced motion; every other save button keeps the
-   still glyph. */
-.hub-share .share-icon--anim { display: none; }
-
-@media (prefers-reduced-motion: no-preference) {
-  .hub-share .share-icon--anim { display: block; }
-  .hub-share .share-icon:not(.share-icon--anim) { display: none; }
-}
 
 .hub-share:hover {
   transform: translateY(-1px);
@@ -3464,6 +3444,9 @@ html[data-theme="dark"] .reset-confirm:hover {
   .play-body { gap: 8px; }
 
 
+  /* Portrait measures against the page rather than the stage: the column has
+     to be able to grow past its padding, and size containment would hide that
+     overflow from the scroller. cqh therefore resolves to the viewport here. */
   .board-stage {
     flex: 0 0 auto;
     container-type: normal;
@@ -4383,11 +4366,23 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
 }
 
 
-/* Short portrait phones: the water board is the one board whose height comes
-   from its glasses, so trimming the glass and the board's decorative padding
-   is what keeps the footer inside the bottom gutter. These sit last on
-   purpose; they deliberately win over the generic compact rules above. */
+/* ---------- short portrait phones ----------
+   A 320x568 screen with a 44/34 inset leaves the game column 78px less wall
+   than a bare phone of the same size. Rather than let the footer slide under
+   the bottom band, the two boards that can shrink without losing tap accuracy
+   give up height, and the water glasses drop their decorative padding. The
+   caps are measured from the usable height (viewport minus both insets), not
+   from a fixed pixel offset, so a phone with smaller insets simply gets a
+   bigger board. The constants are the rest of the column: the head, the
+   feedback line, the footer and the four gaps (314px), plus the taller fruit
+   queue (337px). */
 @media (orientation: portrait) and (max-width: 720px) and (max-height: 700px) {
+  #ttt-board {
+    width: min(100%, 360px, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 314px));
+  }
+  .fruit-stage {
+    width: min(100%, 390px, max(140px, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 337px)));
+  }
   .play-screen .water-glass { height: clamp(92px, 24vw, 148px); }
   .play-screen .water-board { padding: 10px 10px 8px; }
 }
