@@ -85,18 +85,14 @@
     --pb-direction: to top;
   }
 
-  /* The bottom band measures the same tokens as the screens' own padding.
-     It only runs on the hub: game screens are static and their compact
-     layouts already borrow part of the bottom gutter for the footer, so a
-     band there would sit on resting controls rather than on scrolling
-     content. pages with nothing to dissolve keep only the top band. */
+  /* The bottom band measures the same tokens as the screens' own padding, so
+     a screen that keeps its footer above --pb-gutter-bottom always keeps it
+     clear of the band. */
   .progressive-blur--bottom {
     bottom: 0;
     --pb-direction: to bottom;
     height: min(var(--pb-band-bottom), 72px);
   }
-
-  html:not(.is-hub) .progressive-blur--bottom { display: none; }
 
   .progressive-blur > span {
     position: absolute;

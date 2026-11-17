@@ -72,23 +72,17 @@ for (const testCase of CASES) {
       // The top band is at least as thick as the system bar it sits under.
       expect(layout.topBandHeight).toBeGreaterThanOrEqual(testCase.insets.top);
 
+      expect(layout.bottomBandHeight).toBeGreaterThanOrEqual(testCase.insets.bottom);
+
       // Nothing resting is blurred: the first resting row starts below the band.
       expect(layout.firstContentTop - layout.topBandBottom).toBeGreaterThanOrEqual(2);
 
-      // The hub is the one screen with a bottom band, because it is the one
-      // screen whose content scrolls under it.
-      if (screen.name === 'hub') expect(layout.bottomBandHeight).toBeGreaterThan(0);
-
       expect(layout.firstContentTop).not.toBeNull();
-      if (layout.bottomBandHeight > 0) {
-        // The band is at least as thick as the bar it sits under and ends at
-        // the viewport edge. A screen that scrolls puts content under it by
-        // design; one that fits must clear it.
-        expect(layout.bottomBandHeight).toBeGreaterThanOrEqual(testCase.insets.bottom);
-        expect(layout.bottomBandTop + layout.bottomBandHeight).toBeCloseTo(layout.viewportBottom, 0);
-        if (!layout.scrolls && layout.lastContentBottom !== null) {
-          expect(layout.bottomBandTop - layout.lastContentBottom).toBeGreaterThanOrEqual(2);
-        }
+      // A screen that scrolls puts content under the band by design; one that
+      // fits must keep its last row (the footer) inside the gutter.
+      expect(layout.bottomBandTop + layout.bottomBandHeight).toBeCloseTo(layout.viewportBottom, 0);
+      if (!layout.scrolls && layout.lastContentBottom !== null) {
+        expect(layout.bottomBandTop - layout.lastContentBottom).toBeGreaterThanOrEqual(2);
       }
     });
   }

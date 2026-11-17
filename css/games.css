@@ -2306,6 +2306,17 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   .play-btn { min-height: 38px; }
 }
 
+/* A 320x568 phone with a 44/34 inset has 78px less wall for the same column.
+   Instead of letting the footer slide into the bottom gutter (and under the
+   blur band), the two boards that can give up size without losing input
+   accuracy shrink, and the water glasses lose their decorative padding. */
+@media (orientation: portrait) and (max-width: 720px) and (max-height: 700px) {
+  #ttt-board { width: min(100%, 360px, calc(100dvh - 392px)); }
+  .fruit-stage { width: min(100%, 390px, max(140px, calc(100dvh - 415px))); }
+  .water-glass { height: clamp(92px, 24vw, 148px); }
+  .water-board { padding: 10px 10px 8px; }
+}
+
 /* Side-by-side landscape, including desktop windows that are wider than they
    are tall. The board column owns the full height; the left column keeps the
    title, stats, controls and hint visible. */
@@ -3424,16 +3435,21 @@ html[data-theme="dark"] .reset-confirm:hover {
 .play-body { display: contents; }
 
 @media (orientation: portrait) and (max-width: 720px) {
-  .play-shell { grid-template-rows: auto minmax(0, 1fr); }
+  /* min-content keeps the body row from clamping: a column that genuinely
+     needs more height grows the shell and scrolls instead of spilling its
+     footer into the bottom gutter. */
+  .play-shell { grid-template-rows: auto minmax(min-content, 1fr); }
 
+  /* auto + min-height keeps the centred layout on screens that fit, and lets
+     a tall column grow the shell (so the screen scrolls) instead of pushing
+     the footer past the bottom gutter, where the blur band would sit on it. */
   .play-body {
     display: flex;
     flex-direction: column;
     justify-content: safe center;
-    height: 100%;
-    min-height: 0;
+    height: auto;
+    min-height: 100%;
     gap: 10px;
-    container-type: size;
   }
 
   .play-main {
@@ -3442,10 +3458,17 @@ html[data-theme="dark"] .reset-confirm:hover {
     overflow: visible;
   }
 
+  /* On the shortest phones the centred column can still be taller than the
+     viewport, so the shell keeps the footer inside the bottom gutter by
+     trimming the two rows that are pure breathing room. */
+  .play-body { gap: 8px; }
+
+
   .board-stage {
     flex: 0 0 auto;
     container-type: normal;
   }
+
 
   .play-body > .play-foot {
     width: 100%;
@@ -3456,11 +3479,7 @@ html[data-theme="dark"] .reset-confirm:hover {
 /* Keep tall boards from outgrowing the centred group on short phones. These
    caps only bind when the phone is shorter than a typical modern handset. */
 @media (orientation: portrait) and (max-width: 720px) {
-  .fruit-stage { width: min(100%, 390px, 55cqh); }
-  #ttt-board,
-  #mines:not([data-difficulty="hard"]) .mines-board-wrap {
-    width: min(100%, 360px, 64cqh);
-  }
+  .fruit-stage { width: min(100%, 390px); }
 }
 
 /* At 380px and below the footer and tools share one compact row. This keeps
@@ -3894,12 +3913,17 @@ html[data-theme="dark"] .reset-confirm:hover {
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: rotate(45deg);
-  transition: transform 150ms ease, margin-top 150ms ease;
+  /* Only transform animates: easing margin-top moved the caret by layout and
+     let it drift out of step with the rotation. */
+  transition: transform 150ms ease;
 }
 
 .whats-new-details[open] .whats-new-label::after {
-  margin-top: 2px;
-  transform: rotate(-135deg);
+  transform: translateY(4px) rotate(-135deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whats-new-label::after { transition: none; }
 }
 
 .whats-new-label:focus-visible {
@@ -4358,3 +4382,12 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   }
 }
 
+
+/* Short portrait phones: the water board is the one board whose height comes
+   from its glasses, so trimming the glass and the board's decorative padding
+   is what keeps the footer inside the bottom gutter. These sit last on
+   purpose; they deliberately win over the generic compact rules above. */
+@media (orientation: portrait) and (max-width: 720px) and (max-height: 700px) {
+  .play-screen .water-glass { height: clamp(92px, 24vw, 148px); }
+  .play-screen .water-board { padding: 10px 10px 8px; }
+}

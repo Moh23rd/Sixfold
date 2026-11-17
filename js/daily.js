@@ -470,7 +470,7 @@
       const to = next || 0;
       const ratio = to > from ? Math.max(0, Math.min(1, (best - from) / (to - from))) : 0;
       badgeProgress.hidden = !next;
-      badgeFill.style.width = Math.round(ratio * 100) + '%';
+      badgeFill.style.transform = 'scaleX(' + Math.round(ratio * 1000) / 1000 + ')';
     }
 
     const weekEl = $('daily-week');

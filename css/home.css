@@ -1106,6 +1106,9 @@ html.has-stretch .hub {
 }
 
 html.has-stretch .hub-shell.is-dragging {
+  /* A finger takes over from the spring-back instantly: keeping the settle
+     transition here made the first frames of every new pull lag. */
+  transition: none;
   will-change: transform;
 }
 

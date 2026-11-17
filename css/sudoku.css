@@ -722,3 +722,25 @@
   .sudoku-shell .play-foot { min-height: 32px; }
   .sudoku-shell .play-foot .play-btn { min-height: 32px; }
 }
+
+/* The grid, the pad and the tools together are a few pixels taller than a
+   390-wide phone with a real status bar and home indicator. Shave the pad
+   rows and the two gaps rather than letting the tools sit under the bottom
+   band. */
+@media (max-height: 900px) {
+  .sudoku-main { gap: clamp(3px, 0.9dvh, 8px); }
+  .sudoku-pad-key { min-height: 30px; }
+  .sudoku-tool { min-height: 29px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .sudoku-shell { padding-top: calc(var(--sa-top) + 12px); }
+  .sudoku-shell .play-main { gap: 6px 10px; }
+  /* The board is square, so its width is what decides whether the bottom of
+     the grid lands under the bottom band on a 390-tall landscape phone. */
+  .sudoku-shell .sudoku-wrap { width: min(100%, 430px, calc(100dvh - 50px)); }
+  /* On a 390-tall landscape phone the head and the foot together are taller
+     than the left column; let the row grow so the screen scrolls instead of
+     tucking the footer under the bottom band. */
+  .sudoku-shell { grid-template-rows: auto minmax(min-content, 1fr); }
+}

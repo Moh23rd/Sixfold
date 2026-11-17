@@ -403,8 +403,6 @@
     current = screen;
 
     hub.hidden = screen !== 'hub';
-    // The bottom blur only belongs where a long list scrolls under it.
-    document.documentElement.classList.toggle('is-hub', screen === 'hub');
     Object.keys(screens).forEach(function (key) {
       screens[key].hidden = key !== screen;
     });

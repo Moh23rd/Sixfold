@@ -1,13 +1,32 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.1**.
+> Public release label: **v5.0**. Current development build: **6.0.2**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.1**
+Internal build: **6.0.2**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
+
+### Edge, gutter and motion
+
+- **One source for the safe area**: the screens and the blur band read the
+  same `--sa-*`, `--pb-feather-*` and `--pb-gutter-*` tokens, so a band edge and
+  the content gutter can no longer drift apart.
+- **Bottom band on every screen**: it is trimmed with those tokens and the
+  compact columns now keep their footer inside the gutter instead of letting it
+  slide under the band.
+- **Compact 320px columns**: the body grows the shell (so the screen scrolls)
+  instead of spilling past its padding; the tic-tac-toe board, the fruit stage
+  and the water glasses shrink on short screens, where a 44/34 inset costs 78px
+  of height.
+- **Download glyph**: all save controls use the download icon and say "Save
+  image"; the hub one animates only when motion is welcome.
+- **Motion**: the progress sweep and the how-to caret animate `transform`
+  instead of `width`/`margin`, the hub cards and returns finish sooner, the
+  wordle arrival blurs less and for less time, and a new pull during the
+  Android spring-back no longer lags behind the finger.
 
 ### Release engineering
 
