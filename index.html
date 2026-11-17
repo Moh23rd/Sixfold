@@ -310,9 +310,10 @@
         var mem = navigator.deviceMemory;
         var cpu = navigator.hardwareConcurrency;
         var conn = navigator.connection || {};
-        lite = (typeof mem === 'number' && mem > 0 && mem <= 2) ||
-          (typeof cpu === 'number' && cpu > 0 && cpu <= 4) ||
-          conn.saveData === true;
+        var fewCores = typeof cpu === 'number' && cpu > 0 && cpu <= 4;
+        var tinyRam = typeof mem === 'number' && mem > 0 && mem <= 2;
+        var smallPhone = typeof mem === 'number' && mem > 0 && mem <= 4 && fewCores;
+        lite = tinyRam || smallPhone || conn.saveData === true;
         var forced = /[?&]perf=(lite|full)/.exec(window.location.search);
         if (forced) lite = forced[1] === 'lite';
       } catch (err) {}
