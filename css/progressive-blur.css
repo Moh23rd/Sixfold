@@ -94,52 +94,56 @@
     height: min(var(--pb-band-bottom), 72px);
   }
 
+  /* Three passes, each painting only the slice it fades across. The previous
+     six full-height layers each re-read the whole band, so the two deepest
+     radii covered six times the area they needed; that is what made scrolling
+     and screen changes stutter. Slicing keeps the ramp, at roughly a third of
+     the blur work. */
   .progressive-blur > span {
     position: absolute;
-    inset: 0;
+    right: 0;
+    left: 0;
     -webkit-backdrop-filter: blur(var(--pb-blur, 1px));
     backdrop-filter: blur(var(--pb-blur, 1px));
-    -webkit-mask-image: linear-gradient(var(--pb-direction), var(--pb-mask));
-    mask-image: linear-gradient(var(--pb-direction), var(--pb-mask));
+    -webkit-mask-image: linear-gradient(var(--pb-direction), rgba(0, 0, 0, 0) 0%, #000 var(--pb-fade, 50%), #000 100%);
+    mask-image: linear-gradient(var(--pb-direction), rgba(0, 0, 0, 0) 0%, #000 var(--pb-fade, 50%), #000 100%);
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
     -webkit-mask-size: 100% 100%;
     mask-size: 100% 100%;
   }
 
-  /* Six windows across the band. Each is transparent until the previous one
-     is solid, solid for one step, then gone by the time the next has faded
-     in — a cross-fade rather than a stack of visible steps. The blur radii
-     roughly double, so the ramp reads as one continuous gradient. */
+  /* Inner edge: a whisper of blur, fading in from the content side. */
   .progressive-blur > span:nth-child(1) {
-    --pb-blur: 0.3px;
-    --pb-mask: rgba(0, 0, 0, 0) 0%, #000 12.5%, #000 25%, rgba(0, 0, 0, 0) 37.5%;
-  }
-
-  .progressive-blur > span:nth-child(2) {
     --pb-blur: 0.6px;
-    --pb-mask: rgba(0, 0, 0, 0) 12.5%, #000 25%, #000 37.5%, rgba(0, 0, 0, 0) 50%;
+    --pb-fade: 65%;
+    height: 40%;
   }
 
+  /* Middle: the band's body, still much lighter than the edge. */
+  .progressive-blur > span:nth-child(2) {
+    --pb-blur: 2.2px;
+    --pb-fade: 60%;
+    height: 50%;
+  }
+
+  /* Outer edge, under the system bar: the deepest blur, on half the band. */
   .progressive-blur > span:nth-child(3) {
-    --pb-blur: 1.2px;
-    --pb-mask: rgba(0, 0, 0, 0) 25%, #000 37.5%, #000 50%, rgba(0, 0, 0, 0) 62.5%;
-  }
-
-  .progressive-blur > span:nth-child(4) {
-    --pb-blur: 2.4px;
-    --pb-mask: rgba(0, 0, 0, 0) 37.5%, #000 50%, #000 62.5%, rgba(0, 0, 0, 0) 75%;
-  }
-
-  .progressive-blur > span:nth-child(5) {
-    --pb-blur: 4.5px;
-    --pb-mask: rgba(0, 0, 0, 0) 50%, #000 62.5%, #000 75%, rgba(0, 0, 0, 0) 87.5%;
-  }
-
-  .progressive-blur > span:nth-child(6) {
     --pb-blur: 8px;
-    --pb-mask: rgba(0, 0, 0, 0) 62.5%, #000 75%, #000 100%;
+    --pb-fade: 55%;
+    height: 45%;
   }
+
+  /* The two bands are different heights (the top carries the feather), so
+     their slices are tuned separately. Both ramps were matched against the
+     six-layer render before the switch. */
+  .progressive-blur--top > span:nth-child(1) { bottom: 0; }
+  .progressive-blur--top > span:nth-child(2) { bottom: 28%; }
+  .progressive-blur--top > span:nth-child(3) { bottom: 55%; }
+
+  .progressive-blur--bottom > span:nth-child(1) { top: 0; height: 45%; --pb-fade: 60%; }
+  .progressive-blur--bottom > span:nth-child(2) { top: 25%; height: 55%; --pb-fade: 50%; }
+  .progressive-blur--bottom > span:nth-child(3) { top: 50%; height: 50%; --pb-fade: 45%; }
 
   /* A sheet already blurs the whole page behind it, so skip the extra passes
      while one is open. */

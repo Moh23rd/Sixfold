@@ -26,7 +26,7 @@ jobs:
           - group: core
             files: tests/smoke.spec.js tests/cache-footprint.spec.js tests/cache-footprint-drift.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/release-labels.spec.js
           - group: games
-            files: tests/layout.spec.js tests/progressive-blur.spec.js tests/wordle.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js
+            files: tests/layout.spec.js tests/progressive-blur.spec.js tests/wordle.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js tests/save.spec.js
     name: Playwright ${{ matrix.group }}
     steps:
       - uses: actions/checkout@v7

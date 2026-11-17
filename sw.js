@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.3';
+const VERSION = 'sixfold-6.0.4';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -25,9 +25,9 @@ const POLISH_CSS = '4.0.1-w18';
 const GAMES_JS = '5.3.2';
 const SUDOKU_CSS = '4.0.2';
 const V5_CSS = '5.4.4';
-const BLUR_CSS = '1.1.0';
+const BLUR_CSS = '1.2.0';
 const HOME_CSS = '4.1.1';
-const DAILY_CODE = '5.4.1';
+const DAILY_CODE = '5.4.2';
 const I18N_CODE = '5.4.6';
 
 // Runtime assets are deliberately small. The shell is protected separately,

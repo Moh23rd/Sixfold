@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.3**.
+> Public release label: **v5.0**. Current development build: **6.0.4**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.3**
+Internal build: **6.0.4**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -37,6 +37,19 @@ release stays at 5.0 until the 6.0 feature set lands.
   instead of `width`/`margin`, the hub cards and returns finish sooner, the
   wordle arrival blurs less and for less time, and a new pull during the
   Android spring-back no longer lags behind the finger.
+
+### Scrolling and saving
+
+- **The blur band no longer costs frames**: three slice-sized passes replace
+  six full-height ones. Scroll frame times now match the app with the band
+  switched off (p95 16.9ms, no frame over 25ms), and the ramp still matches the
+  old render within ~1/255 mean channel difference.
+- **Saved cards keep their own day**: the daily card is drawn from the day the
+  hub is showing, and the hub returns to today when the app regains focus, so a
+  phone left open overnight cannot save the wrong date.
+- **Save path covered by tests**: a rejecting GallerySave plugin must report
+  failure without attempting a download, and the browser path must still
+  download the PNG.
 
 ### Release engineering
 

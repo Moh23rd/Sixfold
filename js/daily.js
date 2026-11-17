@@ -410,6 +410,7 @@
 
   function render() {
     const key = todayKey();
+    shownKey = key;
     const dateEl = $('daily-date');
     const streakEl = $('daily-streak');
     const bestEl = $('daily-best');
@@ -570,7 +571,7 @@
   }
 
   function shareData(dateKey) {
-    const key = isKey(dateKey) ? dateKey : todayKey();
+    const key = isKey(dateKey) ? dateKey : (shownKey || todayKey());
     const game = featuredGame(key);
     return {
       daily: true,
@@ -587,8 +588,21 @@
     };
   }
 
+  // A phone is usually left asleep on the hub overnight. Coming back to a
+  // stale card is what makes a saved card look like the wrong day.
+  function refreshIfStale() {
+    const key = todayKey();
+    if (shownKey === key) return;
+    selectedDay = key;
+    render();
+  }
+
   function init() {
     render();
+    window.addEventListener('focus', refreshIfStale);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refreshIfStale();
+    });
     const calendarBtn = $('daily-calendar-open');
     if (calendarBtn) calendarBtn.addEventListener('click', function () { openCalendar(calendarBtn); });
     const featuredBtn = $('daily-featured');
@@ -631,6 +645,9 @@
 
   let data = load();
   let selectedDay = todayKey();
+  // The day the hub is currently showing. A saved card uses this, not a fresh
+  // clock read, so an app left open across midnight cannot save the wrong day.
+  let shownKey = '';
 
   window.SixfoldDaily = {
     todayKey: todayKey,
