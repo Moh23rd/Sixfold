@@ -38,7 +38,9 @@ public class ShellPlugin extends Plugin {
             call.reject("bad colour");
             return;
         }
-        apply(getActivity(), color);
+        // Plugin calls arrive off the UI thread; the window belongs to it.
+        final Activity activity = getActivity();
+        if (activity != null) activity.runOnUiThread(() -> apply(activity, color));
         getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .putInt(SURFACE, color)
