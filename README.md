@@ -1,183 +1,72 @@
 # Sixfold
 
-![Sixfold — six games. no filler.](og-image.png)
+![Sixfold — six games. No filler.](og-image.png)
 
-Sixfold is a small, installable pocket arcade: six satisfying puzzle games in one offline web app. No accounts, no ads, no tracking — and it keeps working without a connection. The interface is available in twelve languages: English, Spanish, French, German, Simplified and Traditional Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic.
+Six calm puzzle games in one installable, offline web app. No accounts, no ads,
+no tracking — and the interface runs in twelve languages.
 
 **[Play Sixfold →](https://moh23rd.github.io/Sixfold/)**
 
-**Merge** · **Sudoku** · **Tic Tac Toe** · **Minesweeper** · **Water Sort** · **Fruit Merge**
+## Games
 
-## The games
+- **Merge** — 2048 on a 4 × 4 board, with 3 × 3 and 5 × 5 variants.
+- **Sudoku** — 9 × 9 in four difficulties, with notes, hints, undo and saved times.
+- **Tic Tac Toe** — two players or three computer levels, up to an unbeatable one.
+- **Minesweeper** — beginner, intermediate and expert fields with flags and chording.
+- **Water Sort** — eight fixed levels, pour one colour at a time.
+- **Fruit Merge** — a Suika-style drop-and-merge board with eleven fruits.
 
-- **Merge** — classic 2048. Slide the tiles, match equal numbers, reach 2048 and keep going. Also plays on a 3 × 3 or 5 × 5 board.
-- **Sudoku** — a standard 9 × 9 grid in Easy, Medium, Hard and Expert. Every puzzle has exactly one solution, with notes, undo, erase, hints, a timer and best times saved on the device.
-- **Tic Tac Toe** — X goes first. Play another person or take on one of three computer levels, including a Perfect opponent that cannot be beaten, only drawn.
-- **Minesweeper** — Beginner 9 × 9, Intermediate 16 × 16 and Expert 30 × 16, with a safe first tap, flags and chording.
-- **Water Sort** — pour colour until every tube holds one colour. Eight fixed levels, easy to hard.
-- **Fruit Merge** — a Suika-style drop-and-merge board with the canonical eleven-fruit chain and triangular pair scoring.
+Every game saves its board, score and progress on the device. The daily challenge,
+streaks, badges and Wordle (the hidden seventh game) all work offline too.
 
-Every game saves its own board, best score and progress on the device, so closing the tab never loses a round.
-
-## Daily Sixfold and Learn mode
-
-- **Daily Sixfold** gives every game a date-seeded challenge: a seeded Merge board, Sudoku grid, Tic Tac Toe computer, Minesweeper field, Water Sort level and Fruit Merge run, plus a local streak and a 30-day calendar. It works offline and never needs an account or a server, and the hub section can be hidden from **Look & feel**.
-- **Daily boards are separate from normal saves.** A daily run never replaces the board or level you were already playing.
-- **Daily Sudoku** is the same grid for everyone on that local date. Past days can be replayed from the calendar.
-- **Sudoku Learn mode** explains naked and hidden singles, fills auto-notes, can mark mistakes, and includes a short guide to pairs, pointing pairs and box-line reduction.
-- **Daily share** produces a spoiler-free link, so a friend can open the same daily puzzle without seeing the answer.
-- **Backup and restore** exports every board, score, streak and setting as a JSON file. `navigator.storage.persist()` asks the browser to keep the data.
-
-## Languages
-
-The interface can switch between **English**, **Español**, **Français**,
-**Deutsch**, **简体中文**, **繁體中文**, **日本語**, **한국어**, **Português
-(Brasil)**, **हिन्दी**, **ಕನ್ನಡ** and **العربية** in **Look & feel → Language**. Arabic
-switches the whole interface to right-to-left. The first visit follows the
-device language; the choice is saved on the device, game dates use the selected
-locale, and daily share text follows it too. The catalogs are source-string
-based, so another language can be added without rewriting the markup.
-
-## Android APK
-
-The checked-in `android/` project is a Capacitor 8 shell for a direct-install
-APK. `capacitor.config.json` points Capacitor at the generated `native/www`
-bundle. The app launches straight into Sixfold with no browser chrome and works
-offline; Android's WebView renders the bundled interface. It is not a fully
-native Kotlin rewrite.
-
-With the toolchain installed, `npm run native:apk:debug` builds
-`android/app/build/outputs/apk/debug/app-debug.apk`. This target is for GitHub
-Releases and sideloading, not the Play Store. See [ANDROID.md](ANDROID.md) for
-the JDK/SDK requirements, signing and distribution details.
-
-Generated web assets, Gradle output and signing keys are not checked in. The iOS
-project, if needed, is generated locally on macOS.
-
-## A small, considered arcade
-
-- **Made for a phone, comfortable on a desk.** The hub and every game layout adapt from a 320px screen up to a wide desktop.
-- **One look for the collection.** Light, dark or auto, with six colour palettes. The page and the browser chrome always match.
-- **Quiet motion.** Springy entrances, tactile result cards and a stamped seal when a round is cleared, with a still fallback for reduced motion.
-- **Play how you like.** Touch, mouse and full keyboard controls, plus screen-reader labels throughout. High contrast and colour-blind cues are in Look & feel. Larger Sudoku digits, left-handed landscape, timer visibility, mistake checking and input order live in **Sudoku settings**, opened from the Sudoku screen.
-- **Installable.** Add Sixfold to a home screen for an app-like window and offline play.
-- **Twelve languages.** English, Spanish, French, German, Simplified and Traditional Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic cover the complete interface, aria labels, game status lines and dates. Bundled script fonts keep Chinese, Japanese, Korean, Devanagari, Kannada and Arabic text consistent offline.
-- **Android APK shell included.** The checked-in Capacitor Android project builds an offline APK; the iOS project is generated locally on macOS.
-- **Updatable without a hard refresh.** A ready service-worker update appears as a small Reload prompt.
-
-## Tests
+## Run it locally
 
 ```sh
-npm install
-npx playwright install chromium
-npm run test:i18n
-npm run audit:wordle:strict
-npm test
+npm ci
+python3 -m http.server 8000     # then open http://localhost:8000
 ```
 
-`npm run test:i18n` checks every translated catalog against the English source: no missing or unknown keys, no empty copy, and matching numbered placeholders. It also verifies the shared dynamic-copy templates.
+Serve over localhost: the service worker, offline cache and install prompt need a
+real origin.
 
-`npm run audit:wordle` enforces the Wordle data invariants: five-grapheme entries, duplicate-free arrays, answers present in the valid-guess list, IME packs with no keyboard rows, and non-IME keyboard rows that cover every grapheme used by answers and valid guesses. Structural or invariant failures exit non-zero; provenance and answer-pool policy findings are reported separately. `npm run audit:wordle:strict` is the release gate. See [WORDLE-AUDIT.md](WORDLE-AUDIT.md) for the source and licensing record.
-
-## Wordle dictionary sources
-
-The non-English dictionaries record their Wordle Global, wordfreq and Wordle JP lineage in each file header. Kannada records its actual source, [Wordle Kannada](https://github.com/Omkar-Shetkar/wordle-kannada) (MIT, Copyright (c) 2022 Hannah Park). The relevant upstream projects are [Wordle Global](https://github.com/Hugo0/wordle) (MIT code), [wordfreq](https://github.com/rspeer/wordfreq) (Apache-2.0 code and CC BY-SA 4.0 data) and [Wordle JP](https://github.com/sen-ltd/wordle-jp) (MIT). Reference revisions and pack hashes are recorded in [WORDLE-SOURCES.json](WORDLE-SOURCES.json); the strict audit verifies the hashes. The original extraction revision is not recoverable from this tree.
-
-The answer and valid-guess pools are filtered against `scripts/wordle-audit-policy.json` to remove profanity, proper names, brands, political and religious terms, loanwords, technical entries and named-entity patterns. The valid-guess lists remain larger than the answer pools, but use the same policy. Repository modifications are GPL-3.0-only; the source data remains under the licenses above.
-
-The Playwright suite covers the six game screens, Daily Sixfold, Sudoku Learn hints, settings and backup download. The Wordle end-to-end matrix wins a round in each of the twelve locales, checking native IME input, RTL Arabic, localized Arabic/Hindi/Kannada numerals and the copied share text. Axe scans the hub, all six games and settings in both light and dark themes in all twelve languages, with no rule exceptions. A 320px layout pass checks each locale for clipped or overflowing text. CI runs the catalog audit, the Wordle dictionary invariants and the same Playwright suite on every push and pull request, and can be run manually from the Actions tab. A separate Android job builds the debug APK with JDK 21 and Android SDK 36 and uploads it as the `sixfold-debug-apk` artifact; see [ANDROID.md](ANDROID.md).
-
-## Install
-
-- **Android / Chrome:** open **About & privacy** from the hub and tap **Install app** when it appears.
-- **Android APK:** build or download the APK and sideload it; see [ANDROID.md](ANDROID.md). This is a GitHub-only build, not a Play Store release.
-- **iPhone / Safari:** tap **Share**, then **Add to Home Screen**.
-- **Other browsers:** use the browser menu’s **Install** or **Add to Home Screen** option.
-
-The app works offline after the first visit. If Chrome says it is installed but will not open, remove any old copy from the Home Screen or browser app settings and try again. On Chrome for Android 154–156, Chrome’s own install menu can confuse two apps on the same `github.io` origin; update Chrome to **157.0.8103.15** or newer. The hub shows this recovery note automatically on older builds and offers the page’s install prompt as a workaround.
-
-## Privacy
-
-No accounts, ads, analytics or third-party scripts. Boards, scores and appearance choices stay in local storage on the device. The light/dark choice is also kept in a first-party cookie so an installed app can pick matching launch chrome. The phone controls the bottom system bar, so that bar keeps the colour it was given at install time.
-
-**Erase all data** in Look & feel removes every board, score, streak, saved puzzle and appearance choice. Each game also has its own reset in its bottom tool row.
-
-## Running locally
-
-Serve the repository root over localhost, because the service worker and install prompt need a real origin:
+## Checks
 
 ```sh
-python3 -m http.server 8000
+npm test              # Playwright: layout, games, accessibility, offline cache
+npm run test:i18n     # catalogs and locale coverage
+npm run audit:wordle  # dictionary provenance and policy
 ```
 
-Open `http://localhost:8000`. Opening `index.html` directly still plays, but offline caching and installation stay off.
+The Android shell lives in `android/`; build and distribution notes are in
+[docs/ANDROID.md](docs/ANDROID.md). [docs/](docs/) also holds the 6.0 roadmap and
+the Wordle audit and source manifest.
 
-## Project structure
+## Layout
 
 ```text
-index.html                    hub, game screens, help, install and rules sheets
-licenses.html                 licence, dictionary attribution and App Store notice
-sw.js                         offline shell, active-locale pruning and cache budget
-capacitor.config.json         Capacitor app identity and native asset directory
-ANDROID.md                    APK toolchain, build and GitHub distribution guide
-android/                      checked-in Capacitor Android project and Gradle wrapper
-assets/icon.png               source image for native launcher/splash resources
-native/www/                   generated native web bundle (ignored)
-manifest.webmanifest          install metadata for light chrome
-manifest-dark.webmanifest     install metadata for dark chrome
-og-image.png                  social preview image
-WORDLE-SOURCES.json           pinned dictionary provenance and hashes
-
-css/styles.css                shared shell, theme tokens and the 2048 board
-css/home.css                  hub layout, six-piece intro and cartridge cards
-css/games.css                 in-game screens and controls
-css/polish.css                motion, result cards and Wordle styles
-css/sudoku.css                Sudoku board, pad, result and difficulty styles
-css/v5.css                    Daily Sixfold, settings, learning and update surfaces
-
-js/daily.js                   daily set, streak, calendar and share link
-js/settings.js                accessibility, input order, persistence and backup
-js/update.js                  service-worker update prompt
-js/native.js                  native splash, system bars and Android back navigation
-js/game.js                    Merge (2048)
-js/games.js                   Water Sort, Sudoku adapter, Fruit Merge, Tic Tac Toe and Minesweeper
-js/sudoku.js                  Sudoku generator, solver, controls and saved progress
-js/theme.js                   palettes, light/dark, focus and appearance controls
-js/overscroll.js              Android stretch overscroll on the hub
-js/celebrate.js               result flourish and stamped seals
-js/sharecard.js               share-card drawing for every game
-js/badges.js                  daily badge collection
-js/haptics.js                 vibration controls
-js/install.js                 install prompt and Chrome install recovery
-js/wordle.js                  the hidden five-letter game and its saved stats
-js/wordle-words.js            offline English answer and accepted-guess lists
-js/wordle-loader.js           lazy hidden-game and active-dictionary loader
-
-i18n/i18n-locale.js           locale detection shared by the loader and interface
-i18n/i18n.js                  locale registry, English catalog and locale-aware rendering
-i18n/i18n-fr.js, i18n-de.js   Complete French and German message and game-status catalogs
-i18n/i18n-zh-hans.js … i18n-ar.js  Chinese, Japanese, Korean, Portuguese, Hindi, Kannada and Arabic catalogs
-i18n/i18n-patterns.js         shared templates for game-status and dynamic copy
-i18n/wordle-i18n.js           localized Wordle copy
-
-wordle-locales/               lazy per-locale Wordle dictionaries
-scripts/                      i18n and dictionary audits, native staging and beta preview
-tests/                        Playwright end-to-end, layout and accessibility coverage
-icons/, splash/, fonts/       app icons, iOS launch images and bundled typefaces
+index.html, licenses.html   hub, game screens and the licence page
+css/                        one stylesheet per surface: shell, hub, games, polish
+js/                         one script per game plus theme, sharing, daily, i18n glue
+i18n/, fonts/, icons/, splash/, wordle-locales/   locale catalogs and bundled assets
+sw.js                       offline shell and cache
+docs/                       platform notes, roadmap, audit material
+scripts/, tests/            audits and Playwright coverage
+android/                    Capacitor Android project
 ```
 
-The site is published with GitHub Pages from the `main` branch root. No build step is required, and the service worker caches only the active language's catalogs, dictionary and script face.
+Published with GitHub Pages from the `main` branch root. No build step.
 
-## Release notes
+## Licence and credits
 
-Version history lives in [CHANGELOG.md](CHANGELOG.md); tagged builds are on [GitHub Releases](https://github.com/Moh23rd/Sixfold/releases).
+Game code is [GNU GPL v3.0](LICENSE) (`GPL-3.0-only`); a separate
+[Apple App Store additional permission](APPSTORE-EXCEPTION.md) covers App Store
+distribution. Google Sans Flex ships under the
+[SIL Open Font License 1.1](fonts/OFL.txt). Full attributions are on
+[licenses.html](licenses.html).
 
-## Rules references
-
-The games were checked against their original rules: Gabriele Cirulli’s 2048, Nintendo’s Suika Game (fruit chain and pair scoring), the standard Minesweeper field sizes and first-click convention, classic water-sort rules, standard Sudoku with unique solutions, and standard tic-tac-toe with a minimax opponent.
-
-## Credits and licence
-
-Game code is released under the [GNU General Public License v3.0](LICENSE) (`GPL-3.0-only`). A separate [Apple App Store additional permission](APPSTORE-EXCEPTION.md) applies to App Store distribution. Google Sans Flex is included under the [SIL Open Font License 1.1](fonts/OFL.txt).
+Wordle dictionaries are adapted from **Wordle Global**, **wordfreq**, **Wordle JP**
+and **Wordle Kannada**; revisions and hashes are pinned in
+[docs/WORDLE-SOURCES.json](docs/WORDLE-SOURCES.json). Release history is in
+[CHANGELOG.md](CHANGELOG.md).
 
 Questions or bug reports: [mohrd9685@gmail.com](mailto:mohrd9685@gmail.com).

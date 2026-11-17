@@ -22,7 +22,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const strict = process.argv.includes('--strict');
 const json = process.argv.includes('--json');
 const policy = JSON.parse(readFileSync(join(root, 'scripts/wordle-audit-policy.json'), 'utf8'));
-const sourceManifest = JSON.parse(readFileSync(join(root, 'WORDLE-SOURCES.json'), 'utf8'));
+const sourceManifest = JSON.parse(readFileSync(join(root, 'docs', 'WORDLE-SOURCES.json'), 'utf8'));
 const findings = { structural: [], invariants: [], provenance: [], policy: [] };
 const report = { generatedAt: new Date().toISOString(), packs: [], findings };
 
