@@ -14,14 +14,26 @@
     if (value && typeof value.catch === 'function') value.catch(function () {});
   }
 
+  // The page's own launch layer waits for this before it fades into the hub,
+  // so nothing of the hub builds while a splash still covers it.
+  var splashGone = false;
+  function splashHandoff() {
+    if (splashGone) return;
+    splashGone = true;
+    try { window.dispatchEvent(new Event('merge:splash-hidden')); } catch (err) {}
+  }
+
   // Dismiss the launch splash on the first frame the page actually paints. The
   // launch theme's own auto-hide in capacitor.config.json is the safety net for
   // a page that never gets here, not the normal path.
   function hideSplash() {
     var splash = plugins.SplashScreen;
-    if (!splash || !splash.hide) return;
+    if (!splash || !splash.hide) { splashHandoff(); return; }
     function hide() {
       try { ignoreRejection(splash.hide()); } catch (err) {}
+      // The plugin resolves the moment it starts the platform's exit, and there
+      // is no callback for the exit finishing, so the hand-off starts here.
+      splashHandoff();
     }
     if (window.requestAnimationFrame) {
       requestAnimationFrame(function () { requestAnimationFrame(hide); });

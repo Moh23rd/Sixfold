@@ -67,6 +67,16 @@ splash itself is the system one, dismissed on the page's first painted frame;
 `launchShowDuration` in `capacitor.config.json` is only a safety net for a page
 that never paints, not a delay before the app appears.
 
+The page's own launch layer is a hand-off there, not a second splash. The OS
+splash already shows the mark, wordmark and rail, so `js/native.js` signals
+`merge:splash-hidden` when it starts the platform's exit, and the layer drops
+its composition and keeps only its surface: the colour the window and the
+WebView already carry. It fades for 280 ms, about the length of that exit, and
+the hub's six-piece cascade starts when the layer is removed, so none of the
+build plays behind a splash. The browser and installed-PWA timings are
+unchanged: there the layer is the only launch screen, and it keeps its hold so
+the progress rail finishes before the lift.
+
 Edge-to-edge needs a device or emulator check, especially around display
 cutouts and gesture navigation. Verify at least API 24, API 28, API 35 and
 API 36 before releasing an APK.

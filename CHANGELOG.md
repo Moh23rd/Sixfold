@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.14**.
+> Public release label: **v5.0**. Current development build: **6.0.15**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.14**
+Internal build: **6.0.15**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -22,7 +22,12 @@ release stays at 5.0 until the 6.0 feature set lands.
   background, which read as a blank second splash, and the launch screen could
   expire before a slow first paint. The WebView now carries the surface colour
   from its first frame, the splash is dismissed on the page's first painted
-  frame, and the 1200 ms auto-hide is only a safety net.
+  frame, and the 1200 ms auto-hide is only a safety net. Dismissing it that
+  early then exposed the page's own launch layer, which held the same
+  composition for another second and replayed the launch screen. Inside the
+  native shell that layer now keeps only its surface, fades over 280 ms and
+  hands the hub to its cascade once it is gone; the browser and installed-PWA
+  timings are unchanged, because there the layer is the only launch screen.
 - **The window frame matches the page**: a dark appearance chosen on a phone in
   light system mode used to flash a cream frame around the app while a window
   animation ran, because the Android window surface only knew the system
