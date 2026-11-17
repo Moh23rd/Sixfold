@@ -353,6 +353,39 @@ html[data-theme="dark"] {
   outline-offset: 3px;
 }
 
+/* Surprise me: the die rolls, then the card it landed on lifts before the game
+   opens, so the pick is something the reader sees rather than a jump. */
+.home-game.is-picked {
+  border-color: var(--game-accent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--game-accent) 34%, transparent),
+    0 3px 0 var(--home-hard);
+}
+
+.home-game:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--home-hard);
+}
+
+@keyframes diceRoll {
+  0% { transform: rotate(0) scale(1); }
+  30% { transform: rotate(-20deg) scale(1.12); }
+  55% { transform: rotate(16deg) scale(1.08); }
+  78% { transform: rotate(-7deg) scale(1.03); }
+  100% { transform: rotate(0) scale(1); }
+}
+
+@keyframes cardPicked {
+  0% { transform: none; }
+  45% { transform: translateY(-3px) scale(1.012); }
+  100% { transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-surprise.is-rolling svg { animation: diceRoll 430ms cubic-bezier(0.3, 0.9, 0.3, 1); }
+  .home-game.is-picked { animation: cardPicked 430ms cubic-bezier(0.22, 1, 0.36, 1); }
+}
+
 .home-promises {
   display: flex;
   align-items: center;

@@ -68,6 +68,84 @@ test.describe('failed native save', () => {
   });
 });
 
+// The plugin the shell actually talks to: a chunked session whose publish step
+// can fail. `write` collects the base64 so the test can prove the pieces add up
+// to a whole PNG.
+const CHUNKED_SHELL = (failOnEnd) => {
+  window.__chunks = [];
+  window.__aborted = 0;
+  window.__downloads = [];
+  window.Capacitor = {
+    isNativePlatform: function () { return true; },
+    Plugins: {
+      GallerySave: {
+        begin: function () { return Promise.resolve({ id: 'session' }); },
+        write: function (payload) { window.__chunks.push(payload.data); return Promise.resolve({ received: 1 }); },
+        end: function () {
+          return failOnEnd ? Promise.reject(new Error('publish failed')) : Promise.resolve({ uri: 'content://x' });
+        },
+        abort: function () { window.__aborted += 1; return Promise.resolve(); }
+      }
+    }
+  };
+  HTMLAnchorElement.prototype.click = function () {
+    if (this.download) window.__downloads.push(this.download);
+  };
+};
+
+test.describe('chunked gallery session', () => {
+  test('a failed publish aborts the session and reports failure', async ({ page }) => {
+    await page.addInitScript(CHUNKED_SHELL, true);
+    await page.goto('/');
+    await page.waitForFunction(() => window.MergeShareCard && window.MergeShareCard.save);
+
+    const result = await page.evaluate(async (card) => {
+      const file = window.MergeShareCard.fileSync(card);
+      return {
+        saved: await window.MergeShareCard.save(file),
+        chunks: window.__chunks.length,
+        aborted: window.__aborted,
+        downloads: window.__downloads.slice()
+      };
+    }, CARD);
+
+    expect(result.saved).toBe(false);
+    expect(result.chunks).toBeGreaterThan(1);
+    expect(result.aborted, 'a half-written session is thrown away').toBe(1);
+    expect(result.downloads).toEqual([]);
+  });
+
+  test('the chunks add up to one whole 1080px PNG', async ({ page }) => {
+    await page.addInitScript(CHUNKED_SHELL, false);
+    await page.goto('/');
+    await page.waitForFunction(() => window.MergeShareCard && window.MergeShareCard.save);
+
+    const result = await page.evaluate(async (card) => {
+      const file = window.MergeShareCard.fileSync(card);
+      const saved = await window.MergeShareCard.save(file);
+      const joined = window.__chunks.join('');
+      const binary = atob(joined);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      const view = new DataView(bytes.buffer);
+      return {
+        saved,
+        chunks: window.__chunks.length,
+        signature: Array.from(bytes.slice(0, 4)).join(','),
+        width: view.getUint32(16),
+        height: view.getUint32(20),
+        bytes: bytes.length
+      };
+    }, CARD);
+
+    expect(result.saved).toBe(true);
+    expect(result.chunks).toBeGreaterThan(1);
+    expect(result.signature, 'PNG magic').toBe('137,80,78,71');
+    expect([result.width, result.height]).toEqual([1080, 1080]);
+    expect(result.bytes).toBeGreaterThan(1000);
+  });
+});
+
 test('without a native shell the card is downloaded', async ({ page }) => {
   await page.goto('/');
   await page.waitForFunction(() => window.MergeShareCard && window.MergeShareCard.save);

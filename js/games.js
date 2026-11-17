@@ -394,6 +394,29 @@
     cancel: cancelAutoNext
   };
 
+  const enterTimers = Object.create(null);
+
+  function reducedMotion() {
+    return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  /* A card tap is a change of place, not a cut: the destination fades in and
+     its shell rises a few pixels. The class is removed when the animation
+     ends so no transform is left behind for fixed descendants such as the
+     win card. */
+  function enterScreen(screen) {
+    if (screen === 'hub' || reducedMotion()) return;
+    const el = screen === 'merge' ? app : screens[screen];
+    if (!el) return;
+    el.classList.remove('screen-entering');
+    void el.offsetWidth;
+    el.classList.add('screen-entering');
+    window.clearTimeout(enterTimers[screen]);
+    enterTimers[screen] = window.setTimeout(function () {
+      el.classList.remove('screen-entering');
+    }, 360);
+  }
+
   function setScreen(screen) {
     const previous = current;
     if (current !== screen) cancelAutoNext();
@@ -440,6 +463,7 @@
       if (title) title.focus({ preventScroll: true });
     }
     enterCoach(screen);
+    enterScreen(screen);
   }
 
   const GAME_NAMES = {
@@ -633,6 +657,21 @@
     card.addEventListener('click', function () { openGame(card.dataset.game); });
   });
 
+  /* "Choose a game" used to jump the hash and snap the list. Scroll the hub
+     instead and keep the URL on the hub route. */
+  const chooseCta = document.querySelector('.home-cta');
+  const collection = $('collection');
+  if (chooseCta && collection) {
+    chooseCta.addEventListener('click', function (event) {
+      event.preventDefault();
+      collection.scrollIntoView({
+        behavior: reducedMotion() ? 'auto' : 'smooth',
+        block: 'start'
+      });
+      if (cards[0]) cards[0].focus({ preventScroll: true });
+    });
+  }
+
   const hubShare = $('hub-share');
   if (hubShare) {
     hubShare.addEventListener('click', shareApp);
@@ -640,10 +679,31 @@
 
   const surpriseBtn = $('home-surprise');
   if (surpriseBtn) {
+    let rolling = false;
     surpriseBtn.addEventListener('click', function () {
-      if (!cards.length) return;
+      if (!cards.length || rolling) return;
       const pick = cards[Math.floor(Math.random() * cards.length)];
-      if (pick && pick.dataset.game) openGame(pick.dataset.game);
+      if (!pick || !pick.dataset.game) return;
+      if (reducedMotion()) {
+        openGame(pick.dataset.game);
+        return;
+      }
+      // Show the pick before opening it: the die rolls, the card it landed on
+      // lifts, and only then does the game take over.
+      rolling = true;
+      surpriseBtn.classList.remove('is-rolling');
+      void surpriseBtn.offsetWidth;
+      surpriseBtn.classList.add('is-rolling');
+      pick.classList.remove('is-picked');
+      void pick.offsetWidth;
+      pick.classList.add('is-picked');
+      if (pick.scrollIntoView) pick.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      window.setTimeout(function () {
+        surpriseBtn.classList.remove('is-rolling');
+        pick.classList.remove('is-picked');
+        rolling = false;
+        openGame(pick.dataset.game);
+      }, 430);
     });
   }
 

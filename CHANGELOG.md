@@ -1,15 +1,21 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.4**.
+> Public release label: **v5.0**. Current development build: **6.0.5**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.4**
+Internal build: **6.0.5**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
 
 ### Edge, gutter and motion
+
+- **The hub answers back**: "Choose a game" scrolls the hub to the cards
+  instead of jumping the hash, the surprise die rolls and lifts the card it
+  landed on before the game opens, and tapping a card fades the destination in
+  while its shell rises. All three fall back to an instant change under
+  reduced motion.
 
 - **One source for the safe area**: the screens and the blur band read the
   same `--sa-*`, `--pb-feather-*` and `--pb-gutter-*` tokens, so a band edge and
@@ -24,12 +30,13 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **Download glyph**: all save controls use the download icon and say "Save
   image". The icon is still everywhere; the hub no longer plays an animated
   variant.
-- **Saving actually works**: Android 9 and older now get a real file path
-  before the row is indexed (MediaStore rejected the previous insert), repeated
-  saves no longer overwrite each other, and a failed native save reports
-  failure instead of claiming the picture was saved. Saved cards carry
-  `DATE_TAKEN`/`DATE_ADDED`, so the gallery files them under the time they were
-  saved instead of an unknown date.
+- **Saved cards stay in the gallery**: a save goes through a chunked write
+  session that is only published once the last piece has landed and the stored
+  byte count matches, a second tap cannot start a competing write, and every
+  save gets its own file name so a fresh pending row can never replace the one
+  the gallery just showed. Saved cards still carry `DATE_TAKEN`/`DATE_ADDED`,
+  so the gallery files them under the time they were saved rather than an
+  unknown date.
 - **One compact block**: the short-phone overrides live in a single rule, and
   the board caps measure the usable height as `100dvh - --sa-top - --sa-bottom`
   rather than a fixed pixel offset.

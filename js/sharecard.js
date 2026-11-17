@@ -576,7 +576,9 @@
     const cap = window.Capacitor;
     if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return null;
     const plugin = cap.Plugins && cap.Plugins.GallerySave;
-    return plugin && plugin.save ? plugin : null;
+    // The chunked trio is the preferred path; a shell that only has the single
+    // call still counts as a gallery plugin.
+    return plugin && (plugin.begin || plugin.save) ? plugin : null;
   }
 
   // Save the card into the phone's photo gallery. Inside the Android shell the
@@ -586,7 +588,29 @@
   // The two paths are exclusive. Inside the shell a failed plugin call cannot be
   // rescued by an <a download>, which the WebView ignores, so falling back used
   // to report success for a picture that was never written.
-  async function save(file) {
+  // 48 KiB of base64 per message: a card is split into a few pieces, no single
+  // bridge message is large, and 48 KiB is a multiple of 4 so every piece
+  // decodes on its own boundary.
+  const CHUNK = 48 * 1024;
+
+  // One save at a time. Two overlapping writes of the same card used to be
+  // possible from a double tap, which is exactly the kind of duplicate the
+  // gallery then collapses.
+  let saving = null;
+
+  function save(file) {
+    if (saving) return saving;
+    saving = saveOnce(file).then(function (value) {
+      saving = null;
+      return value;
+    }, function () {
+      saving = null;
+      return false;
+    });
+    return saving;
+  }
+
+  async function saveOnce(file) {
     if (!file) return false;
     if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) {
       try {
@@ -598,8 +622,25 @@
     }
     const plugin = galleryPlugin();
     if (!plugin) return false;
+    const name = file.name || 'sixfold-result.png';
     try {
-      await plugin.save({ data: await base64(file), name: file.name || 'sixfold-result.png' });
+      const data = await base64(file);
+      if (plugin.begin && plugin.write && plugin.end) {
+        const started = await plugin.begin({ name: name });
+        const id = started && started.id;
+        if (!id) throw new Error('no image session');
+        try {
+          for (let at = 0; at < data.length; at += CHUNK) {
+            await plugin.write({ id: id, data: data.slice(at, at + CHUNK) });
+          }
+          await plugin.end({ id: id });
+        } catch (err) {
+          if (plugin.abort) { try { await plugin.abort({ id: id }); } catch (ignored) {} }
+          throw err;
+        }
+        return true;
+      }
+      await plugin.save({ data: data, name: name });
       return true;
     } catch (err) {
       return false;
