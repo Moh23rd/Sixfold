@@ -33,6 +33,14 @@ follow Sixfold's light/dark setting. `StatusBar.setBackgroundColor()` is
 deliberately not used: Android 15+ ignores it, and on older versions it made the
 bars opaque instead of edge-to-edge.
 
+The window surface behind the WebView is the static day/night `@color/app_surface`
+from the theme. That is enough for a phone whose app appearance follows the
+system, but not for a dark appearance chosen on a light-system phone: the window
+edges would flash cream during a scale or fade. `WindowSurfacePlugin` therefore
+repaints that one drawable whenever the page reports its colour
+(`paintWindowSurface` in `js/theme.js`). It holds no preference, retries nothing
+and is never polled, so the launch theme remains the only fallback.
+
 Edge-to-edge needs a device or emulator check, especially around display
 cutouts and gesture navigation. Verify at least API 24, API 28, API 35 and
 API 36 before releasing an APK.

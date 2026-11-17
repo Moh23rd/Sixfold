@@ -132,16 +132,31 @@
     return recolor(root.dataset.theme === 'dark' ? PAGE_BASE.dark : PAGE_BASE.light, activePalette());
   }
 
+  // The window surface behind the WebView is only seen at the edges while a
+  // system animation runs, so it has to follow the page and not the phone's
+  // day/night setting. One report per appearance change; the plugin keeps no
+  // state, and a browser ignores this entirely.
+  function paintWindowSurface(bg) {
+    const native = window.Capacitor && window.Capacitor.Plugins;
+    const plugin = native && native.WindowSurface;
+    if (!plugin || typeof plugin.setColor !== 'function') return;
+    try {
+      const pending = plugin.setColor({ color: bg });
+      if (pending && pending.catch) pending.catch(function () {});
+    } catch (err) {
+      /* an older APK without the plugin keeps the static launch colour */
+    }
+  }
+
   // The phone's status bar / address bar follows the page, palette included.
   function paintBrowserChrome() {
+    const bg = chromeColour();
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      const bg = chromeColour();
-      if (meta.getAttribute('content') !== bg) meta.setAttribute('content', bg);
-    }
+    if (meta && meta.getAttribute('content') !== bg) meta.setAttribute('content', bg);
     // Scrollbars, form controls and the phone's own surfaces follow this too.
     const scheme = document.querySelector('meta[name="color-scheme"]');
     if (scheme) scheme.setAttribute('content', root.dataset.theme === 'dark' ? 'dark' : 'light');
+    paintWindowSurface(bg);
   }
 
   // The installed app's bottom strip comes from the manifest, not theme-color.

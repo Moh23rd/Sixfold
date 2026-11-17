@@ -3256,8 +3256,8 @@ html[data-theme="dark"] .reset-confirm:hover {
   .hub-brand { gap: 8px; }
   .hub-word { font-size: 10.5px; letter-spacing: 0.13em; }
   .hub-actions { gap: 8px; }
-  /* The pill keeps its palette name: two dots on their own say nothing. */
-  .hub-look-chevron { display: none; }
+  /* The pill keeps its palette name: two dots on their own say nothing. The
+     chevron is hidden by the pill's own ladder in home.css. */
   .hub-look { gap: 6px; padding-inline: 8px; }
 }
 

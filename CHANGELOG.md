@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.9**.
+> Public release label: **v5.0**. Current development build: **6.0.10**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.9**
+Internal build: **6.0.10**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -17,6 +17,13 @@ release stays at 5.0 until the 6.0 feature set lands.
   distribution and only added a second document to keep in step.
 
 ### Edge, gutter and motion
+
+- **The window frame matches the page**: a dark appearance chosen on a phone in
+  light system mode used to flash a cream frame around the app while a window
+  animation ran, because the Android window surface only knew the system
+  setting. The page now reports its colour once whenever the appearance
+  changes and the window keeps it. The launch theme is still a static day/night
+  colour; nothing is stored, retried or polled.
 
 - **The 320px hub**: the three promises hold one line beside the cover instead
   of wrapping onto a second one with a stranded dot, and the appearance pill
