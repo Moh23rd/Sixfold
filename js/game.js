@@ -1393,5 +1393,21 @@
 
   // The launch screen and the board's entrance both finish after the first
   // measurement. One quiet pass at the end pins the tiles to the settled grid.
-  window.setTimeout(measure, 700);
+  // It waits for the entrance to actually end: in the native shell the hub's
+  // cascade starts only once the launch layer is gone, so a fixed delay could
+  // land in the middle of the build.
+  let settled = false;
+  function settleTiles() {
+    if (settled) return;
+    settled = true;
+    measure();
+  }
+  boardEl.addEventListener('animationend', function (event) {
+    if (event.animationName !== 'boardReveal' || event.target !== boardEl) return;
+    settleTiles();
+  });
+  // Backstop for a launch with no entrance at all (a hub re-entry, reduced
+  // motion, or a hidden tab that never delivers the event): the 2800 ms lift
+  // guard, the 80 ms delay and the 560 ms reveal.
+  window.setTimeout(settleTiles, 3600);
 })();

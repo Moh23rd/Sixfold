@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.15**.
+> Public release label: **v5.0**. Current development build: **6.0.16**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.15**
+Internal build: **6.0.16**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -28,6 +28,12 @@ release stays at 5.0 until the 6.0 feature set lands.
   native shell that layer now keeps only its surface, fades over 280 ms and
   hands the hub to its cascade once it is gone; the browser and installed-PWA
   timings are unchanged, because there the layer is the only launch screen.
+- **The settled board waits for its entrance**: the quiet pass that pins the
+  merge tiles to the settled grid ran a flat 700 ms after parse, which inside
+  the native shell landed in the middle of the hub's build rather than at the
+  end of the board's reveal. It now runs when that reveal animation ends, with
+  a 3600 ms backstop for a launch that has no entrance at all: a hub
+  re-entry, reduced motion, or a hidden tab.
 - **The window frame matches the page**: a dark appearance chosen on a phone in
   light system mode used to flash a cream frame around the app while a window
   animation ran, because the Android window surface only knew the system
