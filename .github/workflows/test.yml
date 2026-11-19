@@ -237,9 +237,28 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  native:
+    name: native pins
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The shells are generated, so this job builds them first and then proves
+      # every pin and every precached byte against the source tree. It fails in
+      # about a minute, instead of at the end of an APK build.
+      - name: Build the shell and verify every pin and asset
+        run: |
+          npm run native:build
+          npm run native:check
+
   check:
     name: check
-    needs: [test, android]
+    needs: [test, android, native]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -247,8 +266,11 @@ jobs:
         env:
           TEST_RESULT: ${{ needs.test.result }}
           ANDROID_RESULT: ${{ needs.android.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
         run: |
           echo "Playwright matrix: $TEST_RESULT"
           echo "Android APK: $ANDROID_RESULT"
+          echo "Native pins: $NATIVE_RESULT"
           test "$TEST_RESULT" = "success"
           test "$ANDROID_RESULT" = "success"
+          test "$NATIVE_RESULT" = "success"
