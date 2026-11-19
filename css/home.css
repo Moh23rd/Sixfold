@@ -1148,9 +1148,9 @@ html.has-stretch .hub {
   overscroll-behavior-y: none;
 }
 
-/* The stretch is written frame by frame by overscroll.js — a transition here
-   would fight the spring and make a caught animation snap back to flat. */
-html.has-stretch .hub-shell {
+/* The stretch is written frame by frame by overscroll.js on the hub itself —
+   a transition there would fight the spring and snap a caught animation flat. */
+html.has-stretch .hub {
   transition: none;
 }
 

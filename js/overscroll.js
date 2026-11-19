@@ -1,20 +1,35 @@
-/* Android 12 replaced the old overscroll glow with a stretch: the content is
-   pulled past the edge, stretches a little, and springs back. A fixed app
-   shell with its own scroller never reaches that effect, so the hub rebuilds
-   it — this time the way the platform actually moves.
+/* The Android 12 stretch, rebuilt for a page that scrolls inside a WebView.
 
-   The old version scaled the shell from the pulled edge and stopped there. That
-   leaves the edge under the finger standing still while the far end of the page
-   grows: the content slides *away* from the gesture instead of following it,
-   which is what read as unnatural. Here the near edge travels exactly with the
-   finger, the content behind it stretches by at most 4.5%, and the far end
-   moves out of the window, which is what the platform's stretch does. The
-   return is a damped spring rather than a CSS transition, so a new touch can
-   take over the frame that is on screen without a snap, and a fling that
-   arrives at an edge throws one short pulse of the same stretch.
+   The platform's own guide (developer.android.com, "Animate a scroll gesture",
+   "Implement the stretch overscroll effect") and the class it points at,
+   android.widget.EdgeEffect, define the effect as four rules:
 
-   iOS keeps its native rubber band: this file does nothing there, and the CSS
-   that turns off the native edge effect is scoped to the class added below. */
+   1. The pull is measured in fractions of the viewport, not pixels, and it is
+      clamped at 1 — "Don't allow stretch beyond 1" in EdgeEffect.onPull.
+   2. A touch that lands while the effect is animating *catches* it: the
+      animation stops on the frame that is on screen and the finger takes over
+      from there, so nothing ever snaps back under the finger.
+   3. Dragging back towards the edge releases the stretch first — the pull is
+      consumed before the list is allowed to scroll — and only then does the
+      content move.
+   4. The recovery is a spring, not a transition: AOSP uses a natural frequency
+      of 24.657 rad/s with a damping ratio of 0.98 (an almost critically damped
+      settle, roughly a quarter of a second, no visible bounce). A fling that
+      arrives at the edge is absorbed into that spring with the platform's
+      ON_ABSORB_VELOCITY_ADJUSTMENT of 13.
+
+   The shape is the other half of it, and it is where the previous version went
+   wrong. HWUI warps the layer so the pulled edge travels with the finger, the
+   far edge stays where it is, and everything between them compresses, with the
+   displacement falling off towards the pinned edge. CSS transforms are affine,
+   so a cubic falloff is not expressible, but the net geometry is: the pulled
+   edge moves by p, the opposite edge is pinned, and the content is squeezed by
+   (height - p) / height around the pinned edge. That is the transform written
+   here. A uniform scale around the middle, or a scale that grows the content,
+   both read as the page being dragged or zoomed instead of stretched.
+
+   iOS keeps its native rubber band: this file does nothing there. */
+
 (function () {
   'use strict';
 
@@ -27,27 +42,43 @@
   if (motion && motion.matches) return;
 
   const root = document.documentElement;
-  const MAX_PULL = 96;       // finger travel, in px, that fills the stretch
-  const MAX_STRETCH = 0.045; // never more than 4.5% — a cue, not a distortion
-  const FLING_MIN = 0.4;     // px/ms — below this a scroll just stops at the edge
-  const STIFFNESS = 260;
-  const DAMPING = 26;
+
+  // EdgeEffect's stretch spring.
+  const OMEGA = 24.657;      // NATURAL_FREQUENCY, rad/s
+  const ZETA = 0.98;         // DAMPING_RATIO
+  const ABSORB = 13;         // ON_ABSORB_VELOCITY_ADJUSTMENT
+  const STIFFNESS = OMEGA * OMEGA;
+  const DAMPING = 2 * ZETA * OMEGA;
+  const SETTLE_PULL = 0.0004;  // fraction of the viewport
+  const SETTLE_SPEED = 0.02;   // fractions per second
+  const MAX_FRACTION = 1;      // EdgeEffect clamps the pull here
+
+  // How much of the viewport the pulled edge can travel at a saturated pull,
+  // and how quickly the pull fills that up. The edge lags the finger — that
+  // lag is the effect — and saturates instead of tracking it to the boundary.
+  const MAX_TRAVEL = 0.18;
+  const PULL_SCALE = 0.5;
+  const SLOP = 6;            // px of travel before a drag is claimed
+  const FLING_MIN = 0.35;    // px/ms
 
   let hub = null;
-  let surface = null;
   let height = 1;
+  let dir = 0;               // 1 = pulled at the top, -1 = pulled at the bottom
+  let pull = 0;              // EdgeEffect's mPullDistance: viewport fractions
+  let frame = 0;
   let tracking = false;
-  let dir = 0; // 1 = pulled at the top, -1 = pulled at the bottom
-  let pull = 0;
   let startY = 0;
   let startTop = 0;
-  let lastPull = 0;
-  let lastMoveAt = 0;
-  let releaseSpeed = 0;
-  let spring = 0;
+  let lastY = 0;
+  let lastAt = 0;
+  let speed = 0;             // px/ms, finger or momentum
   let allowed = true;
   let lastTop = null;
-  let lastAt = 0;
+  let lastScrollAt = 0;
+
+  const now = function () {
+    return window.performance && performance.now ? performance.now() : Date.now();
+  };
 
   function atTop() {
     return hub.scrollTop <= 0;
@@ -57,63 +88,86 @@
     return hub.scrollTop + hub.clientHeight >= hub.scrollHeight - 1;
   }
 
-  function paint() {
-    if (!surface) return;
-    if (pull < 0.05) {
-      surface.style.transform = '';
-      surface.style.transformOrigin = '';
-      surface.style.willChange = '';
-      return;
-    }
-    // The stretch grows with the pull but never past the cap, so a hard drag
-    // cannot turn the page into a smear.
-    const stretch = Math.min(MAX_STRETCH, (pull / height) * 0.5);
-    surface.style.transformOrigin = dir > 0 ? '50% 0%' : '50% 100%';
-    surface.style.willChange = 'transform';
-    surface.style.transform =
-      'translate3d(0,' + (dir > 0 ? pull : -pull).toFixed(2) + 'px,0)' +
-      ' scale(1,' + (1 + stretch).toFixed(4) + ')';
+  function measure() {
+    height = Math.max(1, hub.clientHeight || window.innerHeight);
   }
 
-  function cancelSpring() {
-    if (!spring) return;
-    window.cancelAnimationFrame(spring);
-    spring = 0;
+  /* The pull is saturating, like EdgeEffect.dampStretchVector: a hard drag
+     keeps adding travel, but each extra pixel buys less than the last, so the
+     page can never be pulled off the screen. tanh keeps the first few
+     millimetres responsive and then flattens out quietly. */
+  function travelOf(distance) {
+    const d = Math.max(0, Math.min(MAX_FRACTION, distance));
+    return height * MAX_TRAVEL * Math.tanh(d / PULL_SCALE);
+  }
+
+  function paint() {
+    if (!hub) return;
+    const travel = travelOf(pull);
+    if (travel < 0.05 || !dir) {
+      hub.style.transform = '';
+      hub.style.transformOrigin = '';
+      hub.style.willChange = '';
+      return;
+    }
+    // Origin on the pulled edge, translate by the travel, then squeeze by
+    // (height - travel) / height: the pulled edge lands on `travel`, the
+    // opposite edge stays exactly on the viewport boundary.
+    const scale = (height - travel) / height;
+    hub.style.transformOrigin = dir > 0 ? '50% 0%' : '50% 100%';
+    hub.style.willChange = 'transform';
+    hub.style.transform =
+      'translate3d(0,' + (dir > 0 ? travel : -travel).toFixed(2) + 'px,0)' +
+      ' scale3d(1,' + scale.toFixed(5) + ',1)';
+  }
+
+  function cancel() {
+    if (!frame) return;
+    window.cancelAnimationFrame(frame);
+    frame = 0;
   }
 
   function rest() {
-    cancelSpring();
+    cancel();
     pull = 0;
     dir = 0;
     paint();
   }
 
-  /* A damped spring, integrated on the frame clock. Stopping it is just a
-     cancelled frame: the live pull stays where the fingers last saw it, which
-     is what lets a new touch catch the animation mid-flight. */
-  function springToRest(from, velocity) {
-    cancelSpring();
-    let x = from;
+  /* The settle. Integrated on the frame clock with fixed sub-steps so a long
+     frame cannot make the spring explode; stopping it is just a cancelled
+     frame, and the pull stays where the last painted frame left it, which is
+     what lets a touch catch the animation mid-flight. */
+  function settle(from, velocity) {
+    cancel();
+    let x = Math.max(0, from);
     let v = velocity || 0;
-    let last = window.performance && performance.now ? performance.now() : Date.now();
+    let last = now();
 
-    function step(now) {
-      const dt = Math.min(64, now - last) / 1000;
-      last = now;
-      const accel = -STIFFNESS * x - DAMPING * v;
-      v += accel * dt;
-      x += v * dt;
+    function step(at) {
+      let dt = Math.min(64, at - last) / 1000;
+      last = at;
+      while (dt > 0) {
+        const slice = Math.min(dt, 1 / 240);
+        const accel = -STIFFNESS * x - DAMPING * v;
+        v += accel * slice;
+        x += v * slice;
+        dt -= slice;
+      }
       if (x <= 0 && v <= 0) {
-        spring = 0;
         rest();
         return;
       }
-      pull = Math.max(0, x);
+      if (Math.abs(x) <= SETTLE_PULL && Math.abs(v) <= SETTLE_SPEED) {
+        rest();
+        return;
+      }
+      pull = Math.max(0, Math.min(MAX_FRACTION, x));
       paint();
-      spring = window.requestAnimationFrame(step);
+      frame = window.requestAnimationFrame(step);
     }
 
-    spring = window.requestAnimationFrame(step);
+    frame = window.requestAnimationFrame(step);
   }
 
   function onStart(event) {
@@ -121,17 +175,23 @@
       if (tracking) rest();
       return;
     }
-    // Catching an animation is what Android calls the touch that stops a
-    // stretch: the content stays exactly where the frame put it.
-    cancelSpring();
     const touch = event.touches[0];
-    startY = touch.clientY;
+    // Rule 2: a touch during the settle catches it. The pull is left exactly
+    // where the frame on screen put it and the gesture continues from there.
+    cancel();
+    if (pull > 0) {
+      // Offset the origin of the gesture so the finger resumes the stretch at
+      // the pull it was already showing instead of jumping back to flat.
+      startY = touch.clientY - dir * pull * height;
+    } else {
+      startY = touch.clientY;
+      dir = 0;
+    }
     startTop = hub.scrollTop;
+    lastY = touch.clientY;
+    lastAt = event.timeStamp || 0;
+    speed = 0;
     tracking = true;
-    lastPull = pull;
-    lastMoveAt = event.timeStamp || 0;
-    releaseSpeed = 0;
-    if (!pull) dir = 0;
   }
 
   function onMove(event) {
@@ -140,51 +200,41 @@
     const dy = touch.clientY - startY;
 
     if (!dir) {
-      // Horizontal gestures belong to whatever is under the finger, and a
-      // vertical one needs a few pixels of slop before the edge reacts.
-      if (Math.abs(dy) < 5) return;
+      if (Math.abs(dy) < SLOP) return;
+      if (dy > 0 && atTop()) dir = 1;
+      else if (dy < 0 && atBottom()) dir = -1;
+      else return; // the list can still move: this is a scroll, not a stretch
     }
 
-    // How far the finger has travelled past what the scroller could use. The
-    // scrollTop term means a swipe that starts halfway down only begins
-    // pulling once the list has actually reached the top (or bottom).
-    let over = 0;
-    if (dir > 0) {
-      over = dy - startTop + hub.scrollTop;
-    } else if (dir < 0) {
-      over = -dy + startTop - hub.scrollTop;
-    } else if (dy > 0 && atTop()) {
-      over = dy - startTop + hub.scrollTop;
-    } else if (dy < 0 && atBottom()) {
-      over = -dy + startTop - hub.scrollTop;
-    } else {
-      return;
-    }
+    // Travel past what the scroller could use. The scrollTop term means a
+    // swipe that starts halfway down only starts pulling once the list has
+    // actually reached the edge.
+    const over = dir > 0 ? dy - startTop + hub.scrollTop : -dy + startTop - hub.scrollTop;
 
     if (over <= 0) {
-      // The finger turned back past the edge: hand the gesture back to the
-      // scroller instead of holding the content hostage.
-      if (dir) rest();
+      if (pull > 0) {
+        // Rule 3: the finger came back past the edge, so the stretch is spent.
+        // Hand the rest of the gesture to the browser and let the list scroll.
+        rest();
+        tracking = false;
+      } else {
+        // Still inside the scrollable range: keep watching for the edge.
+        dir = 0;
+      }
       return;
-    }
-
-    if (!dir) {
-      if (over < 3) return;
-      dir = dy > 0 ? 1 : -1;
-      height = surface.offsetHeight || height;
     }
 
     if (event.cancelable) event.preventDefault();
 
-    // Damped: (1 - e^-x) saturates the pull instead of tracking the finger 1:1,
-    // so it never feels like the page is being dragged off the screen.
-    pull = MAX_PULL * (1 - Math.exp(-over / 72));
-    const now = event.timeStamp || 0;
-    if (now > lastMoveAt) {
-      releaseSpeed = (pull - lastPull) / (now - lastMoveAt);
-      lastMoveAt = now;
+    const stamp = event.timeStamp || 0;
+    if (stamp > lastAt) {
+      speed = (touch.clientY - lastY) / (stamp - lastAt);
+      lastAt = stamp;
+      lastY = touch.clientY;
     }
-    lastPull = pull;
+
+    // Rule 1: the pull is a fraction of the viewport and it is clamped.
+    pull = Math.min(MAX_FRACTION, over / height);
     paint();
   }
 
@@ -192,51 +242,55 @@
     if (!tracking) return;
     tracking = false;
     if (!dir) return;
-    // Released mid-stretch: hand the finger's own speed to the spring, which
-    // is what makes a flick back feel like it was thrown rather than dropped.
-    if (pull > 0) springToRest(pull, releaseSpeed * 12);
-    else rest();
+    if (pull > 0) {
+      // A released drag hands the speed it was still carrying *into* the
+      // stretch to the spring, in EdgeEffect's units (viewport fractions per
+      // second). It is capped: a hard flick would otherwise throw the pull far
+      // past what the finger ever showed. Dragging back towards the edge hands
+      // nothing over — the spring takes it from where the finger left it.
+      const into = Math.max(0, Math.min(1.2, (speed * 1000) / height));
+      settle(pull, into);
+    } else {
+      rest();
+    }
   }
 
-  /* A fling arrives at an edge with the finger already gone. Play the stretch
-     it was heading for as one short pulse and let the spring take it back. */
-  function pulse(direction, speed) {
-    if (!allowed || !surface || tracking || spring) return;
+  /* A fling that reaches the edge with momentum still in it is absorbed: the
+     platform feeds the velocity into the spring scaled by 13, which shows a
+     short stretch that decays instead of stopping dead on the boundary. */
+  function absorb(direction, momentum) {
+    if (!allowed || !hub || tracking || frame) return;
     if (direction > 0 ? !atTop() : !atBottom()) return;
-    height = surface.offsetHeight || height;
+    measure();
     dir = direction;
-    pull = Math.min(MAX_PULL * 0.7, 12 + speed * 26);
-    paint();
-    springToRest(pull, 0);
+    pull = Math.min(MAX_FRACTION, Math.min(0.35, momentum * 0.18));
+    settle(pull, Math.min(1.5, (momentum * 1000 * ABSORB) / height));
   }
 
   function onScroll() {
-    if (!allowed || !hub || !surface) return;
-    const now = window.performance && performance.now ? performance.now() : Date.now();
+    if (!allowed || !hub) return;
+    const at = now();
     const top = hub.scrollTop;
     if (lastTop === null) {
       lastTop = top;
-      lastAt = now;
+      lastScrollAt = at;
       return;
     }
-    const dt = Math.max(1, now - lastAt);
-    const speed = (top - lastTop) / dt;
+    const dt = Math.max(1, at - lastScrollAt);
+    const momentum = (top - lastTop) / dt; // px/ms
     const max = hub.scrollHeight - hub.clientHeight;
 
-    // Momentum is still moving towards the edge when the scroller reaches it.
-    if (top <= 0 && lastTop > 0 && speed < -FLING_MIN) pulse(1, -speed);
-    else if (max > 0 && top >= max && lastTop < max && speed > FLING_MIN) pulse(-1, speed);
+    if (top <= 0 && lastTop > 0 && momentum < -FLING_MIN) absorb(1, -momentum);
+    else if (max > 0 && top >= max && lastTop < max && momentum > FLING_MIN) absorb(-1, momentum);
 
     lastTop = top;
-    lastAt = now;
+    lastScrollAt = at;
   }
 
   function attach() {
     hub = document.getElementById('hub');
     if (!hub) return;
-    surface = hub.querySelector('.hub-shell');
-    if (!surface) return;
-    height = surface.offsetHeight || window.innerHeight;
+    measure();
     root.classList.add('has-stretch');
     hub.addEventListener('touchstart', onStart, { passive: true });
     hub.addEventListener('touchmove', onMove, { passive: false });
@@ -244,8 +298,8 @@
     hub.addEventListener('touchcancel', onEnd, { passive: true });
     hub.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', function () {
-      height = surface.offsetHeight || height;
-      if (tracking || spring) return;
+      measure();
+      if (tracking || frame) return;
       rest();
     });
   }

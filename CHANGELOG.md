@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.24**.
+> Public release label: **v5.0**. Current development build: **6.0.25**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.24**
+Internal build: **6.0.25**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -45,14 +45,18 @@ release stays at 5.0 until the 6.0 feature set lands.
   changed state and the phone stayed still. A small `Haptics` plugin now plays
   the same waveforms through the platform vibrator and the manifest asks for the
   permission it needs; a browser keeps the web call.
-- **The overscroll stretch moves with the finger**: the old effect scaled the hub
-  from the pulled edge, so the edge under the thumb never moved and the far end
-  of the page grew instead — the content slid away from the gesture. The near
-  edge now travels with the finger, the content behind it stretches by at most
-  4.5%, and the far end leaves the window the way the platform's stretch does.
-  The return is a damped spring integrated on the frame clock, so a new touch
-  catches the animation where it is, a flick back is thrown rather than dropped,
-  and a fling still gets its short pulse at the edge.
+- **The overscroll stretch is the platform's, not an impression of it**: the
+  previous rebuild followed the finger but scaled the hub *up* from the pulled
+  edge, so the far end ran out of the window and the page read as dragged or
+  zoomed rather than stretched. The effect now follows Android's own documented
+  contract — the pull is a fraction of the viewport clamped at 1, the pulled
+  edge travels with the finger, the opposite edge stays pinned on the boundary
+  and the content between them is squeezed, a touch during the settle catches
+  it, dragging back releases the stretch before the list scrolls, and a fling
+  into the edge is absorbed. Recovery uses AOSP `EdgeEffect`'s spring (24.657
+  rad/s, damping ratio 0.98, absorb adjustment 13) instead of hand-tuned
+  constants, which is what makes the settle land in about a quarter second
+  without a bounce.
 
 ### Landscape controls
 

@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.24';
+const VERSION = 'sixfold-6.0.25';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -11,7 +11,7 @@ const CACHE_PREFIX = 'sixfold-';
 // when the asset URLs themselves do not change. The game code has its own
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
-const ASSET = '4.2.0';
+const ASSET = '5.0.0';
 const SHARE_CARD = '5.3.2';
 const STYLE_ASSET = '5.2.9';
 const FONT_ASSET = '4.0.1';
@@ -26,7 +26,7 @@ const GAMES_JS = '5.4.1';
 const SUDOKU_CSS = '4.0.4';
 const V5_CSS = '5.5.5';
 const BLUR_CSS = '1.3.1';
-const HOME_CSS = '4.1.5';
+const HOME_CSS = '4.1.6';
 const DAILY_CODE = '5.4.3';
 const I18N_CODE = '5.4.6';
 
