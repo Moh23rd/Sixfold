@@ -672,11 +672,60 @@
     });
   }
 
-  /* The hub's tape is the only thing that animates forever. Pause it when the
-     tab or the app is hidden instead of compositing behind a paused window. */
+  /* The hub's tape is the only thing that animates forever. Stop it as soon as
+     the app stops being the window in front — blur, pagehide, or the native
+     shell's own pause — instead of waiting for the WebView to call the page
+     hidden, which arrives after the recents gesture has already started
+     compositing the hub. Each signal clears only its own flag, so a late
+     visibilitychange cannot restart the tape behind a paused window. */
+  const away = { hidden: document.hidden, blurred: false, native: false };
+  let awayPaused = false;
+
+  function syncAway() {
+    const paused = away.hidden || away.blurred || away.native;
+    if (paused === awayPaused) return;
+    awayPaused = paused;
+    document.documentElement.classList.toggle('is-app-hidden', paused);
+  }
+
+  function markAway(source, value) {
+    if (away[source] === value) return;
+    away[source] = value;
+    syncAway();
+  }
+
   document.addEventListener('visibilitychange', function () {
-    document.documentElement.classList.toggle('is-app-hidden', document.hidden);
+    markAway('hidden', document.hidden);
   });
+  window.addEventListener('blur', function () { markAway('blurred', true); });
+  window.addEventListener('focus', function () { markAway('blurred', false); });
+  window.addEventListener('pagehide', function () { markAway('blurred', true); });
+  window.addEventListener('pageshow', function () { markAway('blurred', false); });
+  // A tap proves the window is in front even if the shell skipped its focus or
+  // its resume, so it clears both the window flag and the native one.
+  // Otherwise a dropped resume would freeze the tape until the next reload.
+  document.addEventListener('pointerdown', function () {
+    markAway('blurred', false);
+    markAway('native', false);
+  }, { capture: true, passive: true });
+
+  const nativeApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (nativeApp && nativeApp.addListener) {
+    function listenNative(event, handler) {
+      try {
+        const pending = nativeApp.addListener(event, handler);
+        if (pending && typeof pending.catch === 'function') pending.catch(function () {});
+      } catch (err) {
+        /* a shell without the App plugin still gets the DOM signals */
+      }
+    }
+    listenNative('appStateChange', function (state) {
+      markAway('native', !(state && state.isActive));
+    });
+    listenNative('pause', function () { markAway('native', true); });
+    listenNative('resume', function () { markAway('native', false); });
+  }
+  syncAway();
 
   const hubShare = $('hub-share');
   if (hubShare) {

@@ -11,6 +11,17 @@ async function withDevice(page, { memory, cores }) {
   }, { memory, cores });
 }
 
+// The tape is the one thing on the hub that animates forever, so it has to stop
+// on the first signal that the app is leaving, not on visibilitychange, which
+// the Android shell only delivers once the window is already gone.
+async function tape(page) {
+  return page.evaluate(() => ({
+    away: document.documentElement.classList.contains('is-app-hidden'),
+    play: getComputedStyle(document.querySelector('.home-ticker-track')).animationPlayState,
+    visibility: document.visibilityState
+  }));
+}
+
 test('a phone with little memory gets the light paint path', async ({ page }) => {
   await withDevice(page, { memory: 2, cores: 8 });
   await page.goto('/');
@@ -70,4 +81,72 @@ test('reduced motion stops the tape', async ({ page }) => {
 
   expect(state.lite).toBe(false);
   expect(state.ticker).toBe('none');
+});
+
+test('blur stops the tape while the page is still visible', async ({ page }) => {
+  await withDevice(page, { memory: 8, cores: 8 });
+  await page.goto('/');
+  expect((await tape(page)).play).toBe('running');
+
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  const leaving = await tape(page);
+  // The recents gesture starts compositing the hub before the WebView admits
+  // the page is hidden, so blur on its own has to be enough.
+  expect(leaving.visibility).toBe('visible');
+  expect(leaving.away).toBe(true);
+  expect(leaving.play).toBe('paused');
+
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  expect((await tape(page)).play).toBe('running');
+});
+
+test("the shell's appStateChange stops the tape with no DOM signal", async ({ page }) => {
+  await withDevice(page, { memory: 8, cores: 8 });
+  await page.addInitScript(() => {
+    const handlers = {};
+    window.__appState = (isActive) => {
+      if (handlers.appStateChange) handlers.appStateChange({ isActive });
+    };
+    // Only the App plugin's event contract is stood up here; the web build of
+    // the shell glue stays out of the way so nothing else is stubbed.
+    window.Capacitor = {
+      isNativePlatform: () => false,
+      Plugins: {
+        App: {
+          addListener(event, handler) {
+            handlers[event] = handler;
+            return Promise.resolve({ remove() {} });
+          }
+        }
+      }
+    };
+  });
+  await page.goto('/');
+  expect((await tape(page)).play).toBe('running');
+
+  await page.evaluate(() => window.__appState(false));
+  const paused = await tape(page);
+  expect(paused.visibility).toBe('visible');
+  expect(paused.play).toBe('paused');
+
+  // A stray focus or pageshow cannot restart the tape while the shell still
+  // says it is in the background.
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('focus'));
+    window.dispatchEvent(new Event('pageshow'));
+  });
+  expect((await tape(page)).play).toBe('paused');
+
+  // A tap means the shell is in front again, so a resume the bridge dropped
+  // cannot leave the tape frozen for the rest of the session.
+  await page.evaluate(() => {
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  });
+  expect((await tape(page)).play).toBe('running');
+
+  await page.evaluate(() => window.__appState(false));
+  expect((await tape(page)).play).toBe('paused');
+
+  await page.evaluate(() => window.__appState(true));
+  expect((await tape(page)).play).toBe('running');
 });
