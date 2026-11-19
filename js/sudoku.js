@@ -511,6 +511,7 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'sudoku-pad-key';
+      button.dataset.fade = '';
       button.dataset.digit = String(digit);
       button.innerHTML = '<span>' + digit + '</span>';
       button.addEventListener('click', function () {
@@ -539,6 +540,7 @@
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.className = 'sudoku-cell';
+        cell.dataset.fade = '';
         cell.dataset.index = String(index);
         cell.setAttribute('role', 'gridcell');
         cell.tabIndex = -1;

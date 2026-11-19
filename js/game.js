@@ -140,6 +140,7 @@
     for (let i = 0; i < size * size; i++) {
       const d = document.createElement('div');
       d.className = 'cell';
+      d.dataset.fade = '';
       gridEl.appendChild(d);
     }
   }
@@ -253,6 +254,7 @@
 
     const face = document.createElement('div');
     face.className = 'face' + (isNew ? ' appear' : '');
+    face.dataset.fade = '';
     face.textContent = String(value);
 
     el.appendChild(face);

@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.22**.
+> Public release label: **v5.0**. Current development build: **6.0.24**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.22**
+Internal build: **6.0.24**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -28,6 +28,48 @@ release stays at 5.0 until the 6.0 feature set lands.
   its board and Fruit Merge re-read its palette and redrew whenever the theme
   changed, even while the hub was on screen. Both now take their colours when
   they are opened.
+- **A surface opts into the fade instead of being listed**: the cross-fade was a
+  long selector list in the stylesheet, and anything added later silently cut
+  while the rest of the app faded. A surface now carries `data-fade` — in the
+  markup, or at the point the script builds it — and a test loads every screen
+  in both appearances and fails on any element whose painted background changes
+  without the marker. Writing that test found forty surfaces the list had
+  missed: the hub's six mini previews, the tutorial strips, the per-game tool
+  cluster, the Water Sort glasses, the Fruit Merge next-fruit dot, the Sudoku
+  settings button and the board frames of three games.
+
+### Android shell
+
+- **Vibration reaches the motor again**: Android's WebView does not implement the
+  Vibration API, so every haptic pattern in the app was a no-op — the toggle
+  changed state and the phone stayed still. A small `Haptics` plugin now plays
+  the same waveforms through the platform vibrator and the manifest asks for the
+  permission it needs; a browser keeps the web call.
+- **The overscroll stretch moves with the finger**: the old effect scaled the hub
+  from the pulled edge, so the edge under the thumb never moved and the far end
+  of the page grew instead — the content slid away from the gesture. The near
+  edge now travels with the finger, the content behind it stretches by at most
+  4.5%, and the far end leaves the window the way the platform's stretch does.
+  The return is a damped spring integrated on the frame clock, so a new touch
+  catches the animation where it is, a flick back is thrown rather than dropped,
+  and a fling still gets its short pulse at the edge.
+
+### Landscape controls
+
+- **Sudoku's pad takes the rail's spare height**: the keys were pinned to 24px
+  rows while ~100px of the control column sat empty below them. The pad now owns
+  the slack — 38px keys with 17px digits at 844 × 390 — and the six tools keep a
+  28px row.
+- **Minesweeper's controls are thumb-sized**: the difficulty tabs and Flag mode
+  were 9px labels in a 223px strip, the coach card was cramped and New board was
+  squeezed to 65px and wrapped onto two lines by the footer note. The tabs and
+  Flag mode share the rail's full width at 32px, the coach is legible, the note
+  steps out of the rail, and New board is a full-width 34px button.
+- **Fruit Merge's glass fills its column**: the status line sat in the board
+  column and took 44px of it, and the canvas ran 9px past the panel's bottom
+  edge. The status moves into the rail as a single line under the header, so the
+  stage is 227 × 317 where it was 207 × 282, keeps its status, and nothing is
+  clipped.
 
 ### Sizing, landscape and backups
 

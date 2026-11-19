@@ -1595,15 +1595,12 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
    Appearance cross-fade
    --------------------------------------------------------------------------
    A theme or palette switch used to repaint every surface in one frame, which
-   reads as a cut. The list below names the surfaces that actually paint a
-   theme colour — panels, cards, tiles, cells, labels, buttons — instead of
-   reaching every element in the document. The document head, hidden screens,
-   the tile layer and the sheet's own root are never touched, so their motion
-   and their opacity/visibility transitions are untouched with them.
-
-   The properties are colour plus transform and opacity: the components in this
-   list that own a press or hover motion keep it during the switch rather than
-   losing it for a fifth of a second.
+   reads as a cut. A surface opts in by carrying [data-fade] — in the markup, or
+   when the script that builds it creates it — so the fade is declared where the
+   surface lives rather than inferred from a selector list a new component can
+   silently miss. Surfaces that own a press, hover or leave motion stay out; the
+   list of properties includes transform and opacity so the ones that are in
+   keep their motion through the switch as well.
 
    theme.js raises the flag for the length of one switch and drops it again, so
    the app pays nothing for these transitions while it is being played, and a
@@ -1611,90 +1608,7 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
    ========================================================================== */
 
 @media (prefers-reduced-motion: no-preference) {
-  html.is-theme-fading body,
-  html.is-theme-fading .hub,
-  html.is-theme-fading .hub-shell,
-  html.is-theme-fading .hub-top,
-  html.is-theme-fading .hub-brand,
-  html.is-theme-fading .hub-mark,
-  html.is-theme-fading .hub-look,
-  html.is-theme-fading .hub-share,
-  html.is-theme-fading .hub-foot,
-  html.is-theme-fading .hub-link,
-  html.is-theme-fading .whats-new,
-  html.is-theme-fading .install-fix,
-  html.is-theme-fading .home-hero,
-  html.is-theme-fading .home-sub,
-  html.is-theme-fading .home-cta,
-  html.is-theme-fading .home-surprise,
-  html.is-theme-fading .home-promises,
-  html.is-theme-fading .home-six-piece,
-  html.is-theme-fading .home-six-caption,
-  html.is-theme-fading .home-collection,
-  html.is-theme-fading .home-label,
-  html.is-theme-fading .home-grid,
-  html.is-theme-fading .home-game,
-  html.is-theme-fading .home-game-stage,
-  html.is-theme-fading .home-game-art,
-  html.is-theme-fading .home-game-title,
-  html.is-theme-fading .home-game-desc,
-  html.is-theme-fading .home-game-meta,
-  html.is-theme-fading .home-game-play,
-  html.is-theme-fading .home-ticker,
-  html.is-theme-fading .daily,
-  html.is-theme-fading .daily-day,
-  html.is-theme-fading .daily-streak,
-  html.is-theme-fading .daily-badge,
-  html.is-theme-fading .daily-calendar-btn,
-  html.is-theme-fading .daily-play,
-  html.is-theme-fading .daily-share,
-  html.is-theme-fading .daily-week-dot,
-  html.is-theme-fading .play-screen,
-  html.is-theme-fading .play-shell,
-  html.is-theme-fading .play-head,
-  html.is-theme-fading .play-body,
-  html.is-theme-fading .play-main,
-  html.is-theme-fading .play-foot,
-  html.is-theme-fading .play-stat,
-  html.is-theme-fading .play-tool,
-  html.is-theme-fading .play-btn,
-  html.is-theme-fading .play-chip,
-  html.is-theme-fading .play-note,
-  html.is-theme-fading .game-tag,
-  html.is-theme-fading .games-home,
-  html.is-theme-fading .board,
-  html.is-theme-fading .cell,
-  html.is-theme-fading .face,
-  html.is-theme-fading .score,
-  html.is-theme-fading .sudoku-cell,
-  html.is-theme-fading .sudoku-pad-key,
-  html.is-theme-fading .sudoku-tool,
-  html.is-theme-fading .mines-cell,
-  html.is-theme-fading .mines-toolbar,
-  html.is-theme-fading .ttt-cell,
-  html.is-theme-fading .water-board,
-  html.is-theme-fading .water-glass,
-  html.is-theme-fading .fruit-stage,
-  html.is-theme-fading .fruit-hud,
-  html.is-theme-fading .sheet-card,
-  html.is-theme-fading .sheet-sub,
-  html.is-theme-fading .sheet-note,
-  html.is-theme-fading .sheet-label,
-  html.is-theme-fading .sheet-done,
-  html.is-theme-fading .setting-row,
-  html.is-theme-fading .setting-state,
-  html.is-theme-fading .seg,
-  html.is-theme-fading .seg button,
-  html.is-theme-fading .palette,
-  html.is-theme-fading .btn,
-  html.is-theme-fading .contact-link,
-  html.is-theme-fading .overlay-card,
-  html.is-theme-fading .result-share,
-  html.is-theme-fading .hidden-reveal-card,
-  html.is-theme-fading .toast,
-  html.is-theme-fading .update-banner,
-  html.is-theme-fading .daily-finish,
-  html.is-theme-fading .progressive-blur span {
+  html.is-theme-fading [data-fade] {
     transition-property: color, background-color, border-color, outline-color, fill, stroke, box-shadow, text-decoration-color, transform, opacity;
     transition-duration: 220ms;
     transition-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
@@ -1708,4 +1622,103 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
 html.is-theme-fading .sheet-backdrop {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+/* ==========================================================================
+   Landscape phones: the controls, not only the boards
+   --------------------------------------------------------------------------
+   The <=560px block above sized the fields and moved a board's tabs into the
+   rail. A phone on its side still had controls too small to use: Sudoku's pad
+   was pinned to 24px rows while the rail under it sat empty, Minesweeper's
+   tabs and Flag mode were 9px labels, its New board button was squeezed into
+   two lines by the footer note, and Fruit Merge spent 44px of its column on a
+   status line that repeats the footer, which shrank the glass and pushed its
+   bottom edge out of the panel.
+   ========================================================================== */
+
+@media (orientation: landscape) and (max-height: 560px) {
+  /* ---------- sudoku: the pad takes the rail's spare height -------------- */
+
+  .sudoku-shell { grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
+
+  #sudoku .sudoku-pad {
+    align-self: stretch;
+    grid-auto-rows: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  #sudoku .sudoku-pad-key {
+    min-height: 0;
+    height: 100%;
+    font-size: clamp(15px, 4.4dvh, 20px);
+  }
+
+  #sudoku .sudoku-tool { min-height: 28px; font-size: 9.5px; }
+
+  /* ---------- minesweeper: controls a thumb can hit ---------------------- */
+
+  /* The tabs were an inline row 223px wide inside a 300px rail; they share the
+     width now, so each one is a real target rather than a 58px sliver. */
+  #mines .mines-difficulty { display: flex; width: 100%; gap: 4px; }
+  #mines .mines-difficulty button { flex: 1 1 0; min-width: 0; min-height: 32px; padding-inline: 6px; font-size: 10.5px; }
+  #mines .mines-flag-toggle { width: 100%; min-height: 32px; font-size: 10.5px; }
+
+  #mines .play-feedback.has-coach { min-height: 34px; }
+  #mines .play-feedback .coach { min-height: 34px; padding: 3px 6px 3px 8px; }
+  #mines .play-feedback .coach-text { font-size: 11px; line-height: 1.25; }
+  #mines .play-feedback .coach-step { height: 22px; font-size: 9px; }
+  #mines .play-feedback .coach-skip { min-width: 38px; height: 28px; font-size: 10px; }
+
+  /* The footer note sat beside New board and squeezed it into two lines. The
+     rail has room for one control, and the button is the one. */
+  #mines .play-note { display: none; }
+  #mines .play-actions { flex: 1; }
+  #mines .play-foot .play-btn { width: 100%; min-height: 34px; white-space: nowrap; }
+
+  /* ---------- fruit merge: the glass owns the column --------------------- */
+
+  /* The status line sat in the board column and its 44px came straight out of
+     the glass. It moves into the rail, one line under the header, so the board
+     column keeps its full height and the sentence still shows. */
+  #fruit .play-shell {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "head board"
+      "status board"
+      "foot board";
+  }
+
+  #fruit .play-main { display: contents; }
+  #fruit .board-stage { grid-area: board; height: 100%; align-self: stretch; }
+
+  #fruit .play-feedback {
+    grid-area: status;
+    /* Grid, so the tutorial card and the status share one cell the way they do
+       in every other game: the coach covers the line instead of stacking on it. */
+    display: grid;
+    place-items: start;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin-top: 2px;
+  }
+
+  #fruit .play-feedback .play-status {
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    font-size: 10.5px;
+    line-height: 1.3;
+    /* One line, always: a long message ellipsises instead of pushing the
+       footer or wrapping under the tools. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Height-driven width, so the panel and the glass inside it both end inside
+     the column instead of the canvas running past the panel's bottom edge. */
+  #fruit .fruit-stage { width: min(100%, calc((100cqh - 44px) * 0.8)); }
+  #fruit .fruit-hud { padding-top: 6px; }
 }

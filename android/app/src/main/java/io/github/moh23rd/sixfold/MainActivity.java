@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(GallerySavePlugin.class);
         registerPlugin(WindowSurfacePlugin.class);
+        registerPlugin(HapticsPlugin.class);
 
         // The page reports its surface colour whenever the appearance changes, so
         // the last reported colour is the appearance this launch should open in.

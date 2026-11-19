@@ -228,9 +228,11 @@
   function buildCoach() {
     const el = document.createElement('div');
     el.className = 'coach';
+    // Built at runtime, so it opts into the appearance cross-fade here.
+    el.dataset.fade = '';
     el.setAttribute('role', 'group');
     el.setAttribute('aria-label', localize('Quick tutorial'));
-    el.innerHTML = '<span class="coach-step" aria-hidden="true"></span>' +
+    el.innerHTML = '<span class="coach-step" aria-hidden="true" data-fade></span>' +
       '<p class="coach-text" aria-live="polite"></p>' +
       '<button class="coach-skip" type="button" aria-label="' + localize('Skip tutorial') + '" title="' + localize('Skip tutorial') + '">' + localize('Skip') + '</button>';
     el.querySelector('.coach-skip').addEventListener('click', function () {
@@ -1050,6 +1052,7 @@
       const hapticBtn = document.createElement('button');
       hapticBtn.type = 'button';
       hapticBtn.className = 'play-tool';
+      hapticBtn.dataset.fade = '';
       hapticBtn.dataset.playTool = 'haptics';
       hapticBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8.5" y="3" width="7" height="18" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8" /><g class="waves" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 9.4a4.6 4.6 0 0 0 0 5.2" /><path d="M19 9.4a4.6 4.6 0 0 1 0 5.2" /></g><path class="slash" d="M4.5 19.5l15-15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>';
       hapticBtn.addEventListener('click', function () {
@@ -1063,6 +1066,7 @@
       const helpBtn = document.createElement('button');
       helpBtn.type = 'button';
       helpBtn.className = 'play-tool';
+      helpBtn.dataset.fade = '';
       helpBtn.dataset.playTool = 'help';
       helpBtn.setAttribute('aria-label', localize('How to play ' + name));
       helpBtn.title = localize('How to play ' + name);
@@ -1077,6 +1081,7 @@
       const resetBtn = document.createElement('button');
       resetBtn.type = 'button';
       resetBtn.className = 'play-tool play-reset';
+      resetBtn.dataset.fade = '';
       resetBtn.dataset.playTool = 'reset';
       resetBtn.setAttribute('aria-label', localize('Reset ' + name + ' data'));
       resetBtn.title = localize('Reset ' + name + ' data');
@@ -1253,6 +1258,7 @@
         button.dataset.index = String(tubeViews.length);
         const glass = document.createElement('span');
         glass.className = 'water-glass';
+        glass.dataset.fade = '';
         const shine = document.createElement('span');
         shine.className = 'water-shine';
         shine.setAttribute('aria-hidden', 'true');
@@ -3551,6 +3557,7 @@
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'mines-cell';
+        button.dataset.fade = '';
         button.dataset.index = String(i);
         button.setAttribute('role', 'gridcell');
         button.setAttribute('tabindex', i === 0 ? '0' : '-1');

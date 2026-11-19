@@ -483,6 +483,7 @@
       ORDER.forEach(function (game) {
         const dot = document.createElement('i');
         dot.className = 'daily-week-dot' + (week.games.indexOf(game) !== -1 ? ' is-done' : '');
+        dot.dataset.fade = '';
         dot.dataset.game = game;
         weekTrack.appendChild(dot);
       });

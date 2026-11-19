@@ -334,6 +334,9 @@
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'palette';
+      // Opted in where it is built, so a palette swatch added later has to say
+      // whether it takes part in the appearance cross-fade.
+      btn.dataset.fade = '';
       btn.dataset.paletteOpt = p.id;
       btn.setAttribute('aria-pressed', 'false');
       // Use the visible palette name. A composed "Warm colours" label stops

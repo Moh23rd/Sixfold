@@ -16,7 +16,12 @@
     /* storage blocked — vibration stays on */
   }
 
-  const api = typeof navigator.vibrate === 'function';
+  // Android's WebView has no Vibration API, so the APK rides on a small native
+  // plugin; a browser keeps the web call. Either way the patterns below are the
+  // ones that reach the motor.
+  const bridge = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
+  const native = Boolean(bridge && typeof bridge.vibrate === 'function');
+  const api = native || typeof navigator.vibrate === 'function';
   // Two pulses closer than this blur into one muddy buzz. Coalescing them also
   // stops a rapid Fruit Merge chain from machine-gunning the motor.
   const MIN_GAP = 32;
@@ -38,7 +43,8 @@
   function cancel() {
     if (!api) return;
     try {
-      navigator.vibrate(0);
+      if (native) bridge.cancel();
+      else navigator.vibrate(0);
     } catch (err) {
       /* ignore */
     }
@@ -50,7 +56,11 @@
     if (!force && now - lastPulse < MIN_GAP) return false;
     lastPulse = now;
     try {
-      return navigator.vibrate(pattern);
+      const result = native ? bridge.vibrate({ pattern: pattern }) : navigator.vibrate(pattern);
+      // The bridge answers with a promise; a phone with no motor rejects it,
+      // and a rejection here is not worth telling the game about.
+      if (result && typeof result.catch === 'function') result.catch(function () {});
+      return true;
     } catch (err) {
       /* some browsers only allow this during a gesture */
       return false;

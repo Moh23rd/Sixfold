@@ -1,9 +1,11 @@
 const { test, expect } = require('@playwright/test');
 
 // A theme or palette switch cross-fades the surfaces that paint a theme colour.
-// The scope matters as much as the fade: the document head, the hidden screens
-// and the components that own their own motion must be left exactly as they
-// were, and the fade must end when the switch does.
+// A surface joins the fade by carrying [data-fade]; the scope matters as much
+// as the fade: the document head, the hidden screens and the components that
+// own their own motion must be left exactly as they were, and the fade must end
+// when the switch does. The last test is the guard for that contract: any
+// surface that repaints between appearances without opting in fails it.
 
 async function openLook(page) {
   // `perf=full` keeps a low-memory CI runner on the same paint path a phone
@@ -142,6 +144,70 @@ test('a second switch inside the fade re-arms one flag and clears it', async ({ 
   const rest = await appearance(page);
   expect(rest.theme).toBe('light');
   expect(rest.cardProperties).toBe(before.cardProperties);
+});
+
+/* The opt-in list is only worth having if something notices when a surface
+   forgets it. Load each screen in both appearances and compare what every
+   element actually paints: an element whose background changes between them
+   and has no [data-fade] on it (or above it) is a surface that would cut
+   instead of fades. */
+test('every surface that repaints between appearances opts into the fade', async ({ browser }) => {
+  const screens = [
+    { name: 'hub', hash: '', ready: '#daily' },
+    { name: 'merge', hash: '#merge', ready: '#grid .cell' },
+    { name: 'sudoku', hash: '#sudoku', ready: '#sudoku-board .sudoku-cell' },
+    { name: 'ttt', hash: '#ttt', ready: '#ttt-board .ttt-cell' },
+    { name: 'mines', hash: '#mines', ready: '#mines-board .mines-cell' },
+    { name: 'water', hash: '#water', ready: '#water-tubes .water-tube' },
+    { name: 'fruit', hash: '#fruit', ready: '#fruit-canvas' }
+  ];
+
+  async function painted(theme, screen) {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: 'reduce'
+    });
+    await context.addInitScript((value) => {
+      try { localStorage.setItem('merge2048.theme', value); } catch (err) { /* ignore */ }
+    }, theme);
+    const page = await context.newPage();
+    await page.goto('/?perf=full' + screen.hash);
+    await page.waitForSelector(screen.ready);
+    await page.waitForTimeout(250);
+    const rows = await page.evaluate(() => {
+      const visible = Array.from(document.querySelectorAll('body *')).filter((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && !el.closest('[hidden]');
+      });
+      return visible.map((el) => {
+        const style = getComputedStyle(el);
+        const cls = String(el.getAttribute('class') || '');
+        return {
+          cls: el.tagName.toLowerCase() + (cls ? '.' + cls.trim().split(/\s+/).join('.') : ''),
+          paint: style.backgroundColor + '|' + style.backgroundImage,
+          // The marker has to be on the surface itself: an ancestor's opt-in
+          // would quietly cover every element added inside it.
+          opted: el.hasAttribute('data-fade')
+        };
+      });
+    });
+    await context.close();
+    return rows;
+  }
+
+  const misses = [];
+  for (const screen of screens) {
+    const light = await painted('light', screen);
+    const dark = await painted('dark', screen);
+    const count = Math.min(light.length, dark.length);
+    for (let i = 0; i < count; i += 1) {
+      if (light[i].paint === dark[i].paint) continue;
+      if (light[i].opted || dark[i].opted) continue;
+      misses.push(screen.name + ': ' + light[i].cls);
+    }
+  }
+
+  expect(misses, 'these surfaces repaint between appearances without opting into the fade').toEqual([]);
 });
 
 test('closing the sheet hands the motion back to the sheet', async ({ page }) => {
