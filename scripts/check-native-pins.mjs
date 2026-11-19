@@ -109,7 +109,12 @@ function requirePaths(found, name) {
 // The worker caches files index.html never pins, so the SHELL list is the
 // contract for what the copies must contain.
 function precachedPaths(source) {
-  return [...block(source, 'SHELL').matchAll(/['"]\.\/([^'"?]+)/g)].map((match) => match[1]);
+  // Every quoted literal here is a cached path: './' is convention and ?v= is
+  // stripped, so an entry written either way is still covered. The scope root
+  // ('./') is a directory, not a file.
+  return [...block(source, 'SHELL').matchAll(/['"]([^'"]+)['"]/g)]
+    .map((match) => match[1].split('?')[0].replace(/^\.\//, ''))
+    .filter((file) => file !== '');
 }
 
 // Catalogs and word packs are built from objects, so their URLs never appear
