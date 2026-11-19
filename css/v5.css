@@ -1318,3 +1318,227 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
 @media (prefers-reduced-motion: reduce) {
   .daily-finish { transition: none; }
 }
+
+/* ==========================================================================
+   Collection v6 — landscape on phones, and the smallest portrait screens
+   --------------------------------------------------------------------------
+   Every play shell is a two-column grid in landscape. Three things were wrong
+   with how it measured: a board took its size from the raw viewport, so a
+   phone's status and navigation bars sat on top of it; the rail's rows were
+   allowed to overflow, so its last row landed on the pad, the tool cluster or
+   the footer; and the difficulty tabs above a board ate the height the board
+   needed. The blocks below size a board from the space between the bars, keep
+   every rail row inside the shell, and move a board's tabs into the rail so
+   the board can use the whole column.
+   ========================================================================== */
+
+@media (orientation: landscape) and (max-height: 560px) {
+  /* ---------- sudoku: board between the bars, rail in five tidy rows ------- */
+
+  .sudoku-shell {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    row-gap: 5px;
+  }
+
+  .sudoku-shell .board-stage {
+    width: min(calc(100dvh - var(--sa-top) - var(--sa-bottom) - 16px), 55vw);
+  }
+
+  .sudoku-shell .play-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 0;
+  }
+
+  .sudoku-shell .play-stats {
+    width: auto;
+    flex: none;
+    margin-top: 0;
+    padding-top: 0;
+    gap: 5px;
+  }
+
+  .sudoku-shell .sudoku-pad-key { min-height: 24px; }
+
+  /* The learning layout gives the tools three columns; in landscape the rail
+     is wide enough for all six in one row, which is the height the footer
+     needs. */
+  #sudoku .sudoku-tools {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  #sudoku .sudoku-tool { min-height: 24px; padding: 0 2px; font-size: 8px; }
+  .sudoku-shell .play-foot { min-height: 28px; }
+  .sudoku-shell .play-foot .play-btn { min-height: 28px; }
+
+  /* ---------- minesweeper and tic tac toe: tabs into the rail -------------- */
+
+  #mines .play-shell,
+  #ttt .play-shell {
+    grid-template-columns: minmax(168px, 300px) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "head board"
+      "toolbar board"
+      "status board"
+      "foot board";
+    align-content: stretch;
+    gap: 4px clamp(14px, 2.4vw, 26px);
+    padding-top: calc(var(--sa-top) + 12px);
+  }
+
+  #mines .play-main,
+  #ttt .play-main { display: contents; }
+
+  #mines .play-head,
+  #ttt .play-head { gap: 4px; }
+
+  #mines .play-title-row,
+  #ttt .play-title-row { display: block; margin-top: 2px; }
+
+  #mines .play-intro h1,
+  #ttt .play-intro h1 { font-size: clamp(21px, 2.6vw, 26px); }
+
+  #mines .play-intro .sub,
+  #ttt .play-intro .sub { display: none; }
+
+  #mines .play-stats,
+  #ttt .play-stats { width: 100%; margin-top: 6px; gap: 5px; }
+
+  #mines .play-stat,
+  #ttt .play-stat { padding: 4px 6px; }
+  #mines .play-stat strong,
+  #ttt .play-stat strong { font-size: 16px; }
+
+  #mines .mines-toolbar,
+  #ttt .ttt-difficulty {
+    grid-area: toolbar;
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    align-self: start;
+    margin-top: 2px;
+  }
+
+  #mines .mines-difficulty { width: 100%; justify-content: space-between; }
+  #mines .mines-difficulty button { min-height: 28px; padding-inline: 6px; font-size: 9px; }
+  #mines .mines-flag-toggle {
+    min-height: 28px;
+    width: 100%;
+    justify-content: center;
+    font-size: 9px;
+  }
+
+  #ttt .ttt-difficulty { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #ttt .ttt-difficulty button { min-height: 28px; padding-inline: 6px; font-size: 9px; }
+
+  #mines .board-stage,
+  #ttt .board-stage {
+    grid-area: board;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  #mines .mines-board-wrap { width: min(100%, calc(100cqh - 4px)); }
+  #ttt .ttt-board { width: min(100%, calc(100cqh - 4px)); }
+
+  #mines .play-feedback,
+  #ttt .play-feedback { grid-area: status; width: 100%; min-height: 0; }
+
+  #mines .play-feedback .play-status,
+  #ttt .play-feedback .play-status { font-size: 10px; }
+
+  #mines .play-foot,
+  #ttt .play-foot {
+    display: flex;
+    align-self: end;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  /* ---------- water sort: one rack, tall glasses --------------------------- */
+
+  #water .water-tubes { flex-wrap: nowrap; }
+  #water .water-tube { flex: 1 1 0; min-width: 0; }
+  #water .water-glass { width: min(100%, 72px); height: auto; aspect-ratio: 62 / 148; }
+}
+
+/* Small portrait phones (320 x 568 and friends) could not hold a game's header,
+   its controls and its footer on the same screen: the footer slipped under the
+   home indicator and the board had to be scrolled to. The title and its stats
+   share one line and the boards give up a little size, which is what these
+   screens have to spend. */
+@media (orientation: portrait) and (max-height: 700px) {
+  #sudoku .play-title-row,
+  #mines .play-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  #sudoku .play-stats,
+  #mines .play-stats {
+    width: auto;
+    flex: none;
+    margin-top: 0;
+    padding-top: 0;
+    gap: 5px;
+  }
+
+  #sudoku .play-intro h1,
+  #mines .play-intro h1 { font-size: 23px; }
+
+  #sudoku .play-feedback,
+  #mines .play-feedback { min-height: 32px; }
+
+  #sudoku .sudoku-pad-key { min-height: 26px; }
+  #sudoku .sudoku-tools { gap: 4px; }
+  #sudoku .sudoku-tool { min-height: 24px; font-size: 9px; }
+  #sudoku .play-foot { min-height: 34px; }
+  #sudoku .play-foot .play-btn { min-height: 34px; }
+
+  #mines .mines-toolbar { gap: 4px; }
+  #mines .mines-difficulty button { min-height: 26px; padding-inline: 6px; font-size: 9px; }
+  #mines .mines-flag-toggle { min-height: 26px; font-size: 9px; }
+  #mines .mines-board-wrap { width: min(100%, 380px, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 290px)); }
+}
+
+/* A 520 x 320 landscape window is the shortest play field the shell supports:
+   the left rail has six pixels less than its rows need, so the header gives
+   them back rather than letting the status line touch the footer. */
+@media (orientation: landscape) and (max-height: 360px) {
+  #mines .play-intro h1,
+  #ttt .play-intro h1 { font-size: 19px; }
+  #mines .play-stats,
+  #ttt .play-stats { margin-top: 4px; }
+  #mines .play-stat,
+  #ttt .play-stat { padding: 2px 5px; }
+  #mines .mines-difficulty button,
+  #ttt .ttt-difficulty button { min-height: 26px; }
+}
+
+/* Merge on the same short portrait phones: its footer carries the tool cluster
+   and the two-line hint, which together ran 62px past the home indicator. The
+   board gives up the difference and the keyboard hint, which no phone needs,
+   steps out of the flow. */
+@media (orientation: portrait) and (max-height: 700px) {
+  main.app { gap: 8px; }
+  main.app .board { width: min(100%, 70dvh, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 296px)); }
+  main.app .footer .key-hint { display: none; }
+}
+
+/* Tablets in portrait have room the phone-sized caps were not using: the
+   square fields grow instead of sitting at 360px in a 1024px-tall screen. */
+@media (orientation: portrait) and (min-width: 721px) {
+  #mines .mines-board-wrap,
+  #mines .mines-toolbar,
+  #ttt .ttt-board,
+  #ttt .ttt-difficulty { width: min(100%, 520px); }
+}

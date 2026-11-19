@@ -1,13 +1,36 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.18**.
+> Public release label: **v5.0**. Current development build: **6.0.19**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.18**
+Internal build: **6.0.19**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
+
+### Sizing, landscape and backups
+
+- **Landscape measures the bars**: Sudoku's grid was sized from the raw viewport,
+  so on a phone it began under the status bar and ended under the navigation
+  bar, and the rail's last rows were pushed onto the number pad. The board now
+  takes the space between the bars, the title and its two stats share a line,
+  and the six tools sit in one row so the footer keeps a row of its own.
+- **Minesweeper and Tic Tac Toe fill their column**: the difficulty tabs sat
+  above each board inside the same column, so a landscape phone showed a small
+  square in a wide empty screen. The tabs and the status line now live in the
+  left rail and the board uses the whole column.
+- **Water Sort keeps one rack**: in landscape its tubes wrapped three-and-two,
+  which flattened every glass into a squat cup. Every tube now shares one row,
+  so the glasses keep their tall proportions at any level.
+- **Export works in the installed app**: the backup button used an
+  `<a download>` link, which an Android WebView silently drops, so nothing was
+  ever written. Inside the native shell the app now writes a real JSON file and
+  hands it to the system share sheet; the browser still downloads it. Restore
+  accepts the file types Android hands back from Files and chat apps.
+- **Small portrait phones fit**: on a 320 × 568 screen the Sudoku footer and the
+  Minesweeper footer ran under the home indicator. The header shares one line
+  and the boards give up a little size instead.
 
 ### Licence
 

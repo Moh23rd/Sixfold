@@ -307,6 +307,34 @@
   <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
   <script>
     (function () {
+      // A restored backup is applied here, before any game reads storage. The
+      // page that asked for the reload still has its boards in memory and saves
+      // them on pagehide, so a restore written from that page lost to its own
+      // last save. Settings park the payload in the session and land it here.
+      var pending = null;
+      try { pending = sessionStorage.getItem('sixfold.restore.pending'); } catch (err) { return; }
+      if (!pending) return;
+      try {
+        sessionStorage.removeItem('sixfold.restore.pending');
+        var entries = JSON.parse(pending);
+        if (!entries || typeof entries.length !== 'number') return;
+        var stale = [];
+        for (var i = 0; i < localStorage.length; i += 1) {
+          var key = localStorage.key(i);
+          if (key && /^(merge2048|merge-games|sixfold)/.test(key)) stale.push(key);
+        }
+        stale.forEach(function (key) { localStorage.removeItem(key); });
+        for (var j = 0; j < entries.length; j += 1) {
+          var pair = entries[j];
+          if (pair && typeof pair[0] === 'string' && typeof pair[1] === 'string') {
+            localStorage.setItem(pair[0], pair[1]);
+          }
+        }
+      } catch (err) {}
+    })();
+  </script>
+  <script>
+    (function () {
       // A budget phone should not pay for three masked backdrop filters or a
       // long hero build. Decide before the stylesheets arrive, so the first
       // paint is already the version the device will keep using.
@@ -336,7 +364,7 @@
   <link rel="stylesheet" href="css/home.css?v=4.1.4" />
   <link rel="stylesheet" href="css/polish.css?v=4.0.4-w21" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.4" />
-  <link rel="stylesheet" href="css/v5.css?v=5.4.4" />
+  <link rel="stylesheet" href="css/v5.css?v=5.5.0" />
   <link rel="stylesheet" href="css/progressive-blur.css?v=1.3.1" />
 </head>
 <body data-screen="hub">
@@ -1165,7 +1193,7 @@
       <div class="backup-actions">
         <button class="btn" id="backup-export" type="button">Export backup</button>
         <button class="btn ghost" id="backup-import-open" type="button">Restore backup</button>
-        <input id="backup-import" type="file" accept="application/json,.json" hidden />
+        <input id="backup-import" type="file" accept=".json,application/json,text/plain,application/octet-stream" hidden />
       </div>
       <p class="sheet-note" id="backup-status" role="status" aria-live="polite"></p>
       <p class="sheet-label">This device</p>
@@ -1366,7 +1394,7 @@
     <span></span><span></span><span></span>
   </div>
 
-  <script src="js/settings.js?v=5.3.0"></script>
+  <script src="js/settings.js?v=5.4.0"></script>
   <script src="js/haptics.js?v=4.1.0"></script>
   <script src="js/overscroll.js?v=4.1.0"></script>
   <script src="js/celebrate.js?v=4.1.0"></script>

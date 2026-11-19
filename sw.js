@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.18';
+const VERSION = 'sixfold-6.0.19';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -24,7 +24,7 @@ const GAMES_CSS = '5.3.5';
 const POLISH_CSS = '4.0.4-w21';
 const GAMES_JS = '5.3.9';
 const SUDOKU_CSS = '4.0.4';
-const V5_CSS = '5.4.4';
+const V5_CSS = '5.5.0';
 const BLUR_CSS = '1.3.1';
 const HOME_CSS = '4.1.4';
 const DAILY_CODE = '5.4.2';
@@ -92,7 +92,7 @@ const SHELL = [
   './css/sudoku.css?v=' + SUDOKU_CSS,
   './css/v5.css?v=' + V5_CSS,
   './css/progressive-blur.css?v=' + BLUR_CSS,
-  './js/settings.js?v=5.3.0',
+  './js/settings.js?v=5.4.0',
   './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
   './js/daily.js?v=' + DAILY_CODE,

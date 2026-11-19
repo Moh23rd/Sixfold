@@ -94,7 +94,58 @@
     if (el) el.textContent = message;
   }
 
-  function exportBackup() {
+  function isNative() {
+    return Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+
+  // The WebView that runs the installed app has no download manager, so an
+  // <a download> writes nothing at all. The app writes a real file into its
+  // cache and hands it to the system share sheet instead, so a backup can go
+  // to Files, Drive or a chat.
+  function textToBase64(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary);
+  }
+
+  async function saveBackupNatively(text, name) {
+    const plugins = (window.Capacitor && window.Capacitor.Plugins) || {};
+    const filesystem = plugins.Filesystem;
+    if (!filesystem || !filesystem.writeFile) return false;
+    let written = null;
+    try {
+      written = await filesystem.writeFile({
+        path: name,
+        data: textToBase64(text),
+        directory: 'CACHE',
+        encoding: 'base64'
+      });
+    } catch (err) {
+      status('The app could not write the backup file.');
+      return true;
+    }
+    const share = plugins.Share;
+    if (!share || !share.share || !written || !written.uri) {
+      status('Backup saved. Nothing on this device can open the share sheet.');
+      return true;
+    }
+    try {
+      await share.share({
+        title: 'Sixfold backup',
+        dialogTitle: 'Save your Sixfold backup',
+        url: written.uri
+      });
+      status('Backup ready. Keep the file somewhere safe.');
+    } catch (err) {
+      status('Backup written, but the share sheet did not open.');
+    }
+    return true;
+  }
+
+  async function exportBackup() {
     const data = {};
     try {
       for (let i = 0; i < localStorage.length; i += 1) {
@@ -112,27 +163,20 @@
       exportedAt: new Date().toISOString(),
       data: data
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const text = JSON.stringify(payload, null, 2);
+    const name = 'sixfold-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    status('Preparing your backup…');
+    if (isNative() && (await saveBackupNatively(text, name))) return;
+    const blob = new Blob([text], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'sixfold-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    link.download = name;
     document.body.appendChild(link);
     link.click();
     link.remove();
     window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     status('Backup downloaded. Keep it somewhere safe.');
-  }
-
-  function clearLocal() {
-    const keys = [];
-    try {
-      for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i);
-        if (key && /^(merge2048|merge-games|sixfold)/.test(key)) keys.push(key);
-      }
-      keys.forEach(function (key) { localStorage.removeItem(key); });
-    } catch (err) {}
   }
 
   function importBackup(file) {
@@ -167,12 +211,21 @@
       }
       const ok = window.confirm('Restore this Sixfold backup? It will replace every board, score and setting on this device.');
       if (!ok) return;
-      clearLocal();
-      entries.forEach(function (key) {
-        try { localStorage.setItem(key, payload.data[key]); } catch (err) {}
-      });
+      // The page that is about to reload still holds a Merge board and a Sudoku
+      // grid in memory, and both rewrite their storage on pagehide. Writing the
+      // restored keys here let that save win, so the payload waits in the
+      // session and the page's first inline script applies it after the reload,
+      // before any game has read storage.
+      const pairs = entries.map(function (key) { return [key, payload.data[key]]; });
       status('Backup restored. Reloading…');
-      window.setTimeout(function () { location.reload(); }, 350);
+      try {
+        sessionStorage.setItem('sixfold.restore.pending', JSON.stringify(pairs));
+      } catch (err) {
+        entries.forEach(function (key) {
+          try { localStorage.setItem(key, payload.data[key]); } catch (err2) {}
+        });
+      }
+      window.setTimeout(function () { location.reload(); }, 150);
     };
     reader.onerror = function () { status('Could not read that file.'); };
     reader.readAsText(file);
