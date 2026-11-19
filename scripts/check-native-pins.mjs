@@ -65,6 +65,19 @@ function shellPins(source) {
   return pins;
 }
 
+// Every ?v= URL in index.html, whatever directory it lives in, so a newly
+// pinned asset in a directory the pin pattern has never heard of cannot be
+// skipped without a word.
+const ANY_PIN = /["'](?:\.\/)?([^"'?\s]+)\?v=([^"']*)["']/g;
+
+// Images and the manifest are not worker cache keys, and absolute URLs are not
+// files in this tree; the pin set and the content set cover everything else.
+const UNPINNED = /^(?:splash\/|og-image\.png$|https?:\/\/)/;
+
+function pinnedUrls(source) {
+  return new Map([...source.matchAll(ANY_PIN)].map((match) => [match[1], match[2]]));
+}
+
 // sw.js keeps the versions in constants (sometimes a literal) and appends them
 // to the cached URL. An entry whose constant is missing is reported once, by
 // path, rather than also as a pin that is absent.
@@ -161,7 +174,8 @@ function compare(label, expected, actual, unresolved = new Map()) {
 }
 
 function main() {
-  const source = shellPins(read('index.html'));
+  const indexSource = read('index.html');
+  const source = shellPins(indexSource);
   if (source.size === 0) throw new Error('no versioned assets found in index.html');
 
   const workerSource = read('sw.js');
@@ -177,6 +191,13 @@ function main() {
   }
 
   const contents = new Set([...source.keys(), ...shell.files]);
+
+  for (const [file, version] of pinnedUrls(indexSource)) {
+    if (source.has(file) || contents.has(file) || UNPINNED.test(file)) continue;
+    problems.push(
+      'index.html pins ' + file + ' at ' + version + ', which the guard neither reads as a pin nor compares as content'
+    );
+  }
 
   const copied = [];
   for (const copy of COPIES) {
