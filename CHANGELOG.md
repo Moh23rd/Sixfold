@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.19**.
+> Public release label: **v5.0**. Current development build: **6.0.20**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.19**
+Internal build: **6.0.20**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -31,6 +31,12 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **Small portrait phones fit**: on a 320 × 568 screen the Sudoku footer and the
   Minesweeper footer ran under the home indicator. The header shares one line
   and the boards give up a little size instead.
+- **Short landscape fields hold together**: a 320-tall landscape window reports
+  24px bars on both edges, which leaves the rail 48px less height than it
+  needs, and under 620px wide the Minesweeper rail took the board's column.
+  The title now shares a line with its stats, the rail keeps a narrower column
+  and the Sudoku pad gives up three pixels a row, so no row lands on the footer
+  and the board fills the screen.
 
 ### Licence
 

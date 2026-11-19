@@ -1542,3 +1542,40 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   #ttt .ttt-board,
   #ttt .ttt-difficulty { width: min(100%, 520px); }
 }
+
+/* The shortest landscape field, measured with the bars a phone actually
+   reports: a 320px-tall window gives the rail 48px less height than the block
+   above assumes, and a window under 620px wide was also handing Minesweeper's
+   rail the whole 300px, which left its board in a 182px column. On these
+   screens the title and its stats share one line, the rail keeps a narrower
+   column and the Sudoku pad gives up three pixels a row, so neither the tools
+   nor the status line lands on the footer. */
+@media (orientation: landscape) and (max-height: 360px) and (max-width: 620px) {
+  #sudoku .sudoku-shell { row-gap: 3px; }
+  #sudoku .sudoku-pad-key { min-height: 21px; }
+  #sudoku .sudoku-tool { min-height: 21px; }
+  #sudoku .play-foot { min-height: 26px; }
+  #sudoku .play-foot .play-btn { min-height: 26px; }
+
+  #mines .play-shell,
+  #ttt .play-shell { grid-template-columns: minmax(150px, 42vw) minmax(0, 1fr); }
+
+  #mines .play-title-row,
+  #ttt .play-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  #mines .play-intro h1,
+  #ttt .play-intro h1 { font-size: 17px; }
+
+  #mines .play-stats,
+  #ttt .play-stats { width: auto; flex: none; margin-top: 0; }
+
+  #mines .play-foot,
+  #ttt .play-foot { min-height: 26px; }
+  #mines .play-foot .play-btn,
+  #ttt .play-foot .play-btn { min-height: 26px; }
+}
