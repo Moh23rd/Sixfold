@@ -747,8 +747,19 @@
   .sudoku-shell .games-home,
   .sudoku-shell .sudoku-settings-open { width: 30px; height: 30px; }
   .sudoku-shell .play-title-row { margin-top: 0; }
-  .sudoku-shell .play-intro h1 { font-size: 22px; }
   .sudoku-shell .play-stats { margin-top: 3px; padding-top: 3px; }
   .sudoku-shell .sudoku-pad-key { min-height: 27px; }
   .sudoku-shell .sudoku-tool { min-height: 27px; }
+}
+
+/* The smaller title is for phones that need every pixel. A wide landscape
+   window keeps the rail's own type and buys the same height from the pad keys
+   and the stats gaps instead. */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 900px) {
+  .sudoku-shell .play-intro h1 { font-size: 22px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 901px) {
+  .sudoku-shell .play-stats { margin-top: 0; padding-top: 0; }
+  .sudoku-shell .sudoku-pad-key { min-height: 25px; }
 }
