@@ -89,46 +89,44 @@ function serviceWorkerPins(source) {
 
 // A list this guard cannot read is an error, never an empty result: falling
 // back to '' used to turn a rename or a reformat into a green run over fewer
-// files than the shell serves.
-function block(source, name) {
+// files than the shell serves. The bracket is passed in, so a stray one in a
+// comment cannot pick the wrong literal.
+function block(source, name, bracket) {
   const start = source.indexOf('const ' + name + ' =');
-  if (start === -1) throw new Error('sw.js has no ' + name + ' list to check');
-  const open = source.slice(start).match(/[[{]/);
-  if (!open) throw new Error('could not parse the ' + name + ' list in sw.js');
-  const from = start + open.index;
-  const close = source.indexOf(source[from] === '[' ? '];' : '};', from);
+  const found = start === -1 ? -1 : source.slice(start).indexOf(bracket);
+  if (found === -1) throw new Error('could not find the ' + name + ' list in sw.js');
+  const from = start + found;
+  const close = source.indexOf(bracket === '[' ? '];' : '};', from);
   if (close === -1) throw new Error('the ' + name + ' list in sw.js is not closed');
   return source.slice(from, close);
 }
 
-function requirePaths(found, name) {
-  if (found.length === 0) throw new Error('the ' + name + ' list in sw.js parsed to no paths');
-  return found;
+// One list, read as paths; a parse to nothing is the silent-coverage bug this
+// guard exists to prevent.
+function list(source, name, bracket, read) {
+  const paths = read(block(source, name, bracket));
+  if (paths.length === 0) throw new Error('the ' + name + ' list in sw.js parsed to no paths');
+  return paths;
 }
 
 // The worker caches files index.html never pins, so the SHELL list is the
-// contract for what the copies must contain.
-function precachedPaths(source) {
-  // Every quoted literal here is a cached path: './' is convention and ?v= is
-  // stripped, so an entry written either way is still covered. The scope root
-  // ('./') is a directory, not a file.
-  return [...block(source, 'SHELL').matchAll(/['"]([^'"]+)['"]/g)]
+// contract for what the copies must contain. Every quoted literal there is a
+// cached path: './' is convention and ?v= is stripped, so an entry written
+// either way is still covered. The scope root ('./') is a directory, not a file.
+function precachedPaths(body) {
+  return [...body.matchAll(/['"]([^'"]+)['"]/g)]
     .map((match) => match[1].split('?')[0].replace(/^\.\//, ''))
-    .filter((file) => file !== '');
+    .filter(Boolean);
 }
 
 // Catalogs and word packs are built from objects, so their URLs never appear
-// as literals.
-function objectPaths(source, name, dir) {
-  return [...block(source, name).matchAll(/:\s*'([^']+)'/g)].map((match) => dir + match[1]);
+// as literals; script faces are listed as arrays of file names, one per locale.
+function objectPaths(body, dir) {
+  return [...body.matchAll(/:\s*'([^']+)'/g)].map((match) => dir + match[1]);
 }
 
-// Script faces are listed as arrays of file names, one array per locale, so
-// they never appear as a pinned URL either.
-function fontPaths(source) {
-  return [...block(source, 'SCRIPT_FONTS').matchAll(/'([^']+\.woff2)'/g)].map(
-    (match) => 'fonts/' + match[1]
-  );
+function fontPaths(body) {
+  return [...body.matchAll(/'([^']+\.woff2)'/g)].map((match) => 'fonts/' + match[1]);
 }
 
 // Every file the shell must serve identically to the source tree. index.html is
@@ -136,18 +134,17 @@ function fontPaths(source) {
 // file behind it is reported, not skipped: it means the reader missed a rename
 // and the copies would go unchecked.
 function shellFiles(source) {
-  const files = [];
-  const missing = [];
+  const files = new Set();
+  const missing = new Set();
   const add = (file) => {
-    if (file === 'index.html' || files.indexOf(file) !== -1 || missing.indexOf(file) !== -1) return;
-    if (existsSync(join(root, file))) files.push(file);
-    else missing.push(file);
+    if (file === 'index.html') return;
+    (existsSync(join(root, file)) ? files : missing).add(file);
   };
-  for (const file of requirePaths(precachedPaths(source), 'SHELL')) add(file);
-  for (const file of requirePaths(objectPaths(source, 'LOCALE_CATALOG', 'i18n/'), 'LOCALE_CATALOG')) add(file);
-  for (const file of requirePaths(objectPaths(source, 'WORDLE_PACK', 'wordle-locales/'), 'WORDLE_PACK')) add(file);
-  for (const file of requirePaths(fontPaths(source), 'SCRIPT_FONTS')) add(file);
-  return { files, missing };
+  for (const file of list(source, 'SHELL', '[', precachedPaths)) add(file);
+  for (const file of list(source, 'LOCALE_CATALOG', '{', (body) => objectPaths(body, 'i18n/'))) add(file);
+  for (const file of list(source, 'WORDLE_PACK', '{', (body) => objectPaths(body, 'wordle-locales/'))) add(file);
+  for (const file of list(source, 'SCRIPT_FONTS', '{', fontPaths)) add(file);
+  return { files: [...files], missing: [...missing] };
 }
 
 function compare(label, expected, actual, unresolved = new Map()) {
@@ -179,10 +176,7 @@ function main() {
     problems.push('sw.js lists ' + file + ', which the source tree does not have');
   }
 
-  const contents = [...source.keys()];
-  for (const file of shell.files) {
-    if (contents.indexOf(file) === -1) contents.push(file);
-  }
+  const contents = new Set([...source.keys(), ...shell.files]);
 
   const copied = [];
   for (const copy of COPIES) {
@@ -197,15 +191,15 @@ function main() {
   }
 
   if (problems.length > 0) {
-    for (const problem of problems) console.log('::error title=Stale native pin::' + problem);
-    console.log('[native pins] ' + problems.length + ' stale pin(s). Rebuild the shell before packaging it.');
+    for (const problem of problems) console.log('::error title=Native shell out of date::' + problem);
+    console.log('[native pins] ' + problems.length + ' problem(s). Rebuild the shell before packaging it.');
     process.exitCode = 1;
     return;
   }
 
   console.log(
     '[native pins] ' + source.size + ' pins agree across index.html, sw.js, ' +
-    (copied.length > 0 ? copied.join(' and ') : 'no copies') + '; ' + contents.length +
+    (copied.length > 0 ? copied.join(' and ') : 'no copies') + '; ' + contents.size +
     ' shell files match byte for byte.'
   );
 }
