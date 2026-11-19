@@ -34,6 +34,31 @@ test('all six hub cards open their game screen', async ({ page }) => {
   }
 });
 
+test('the surprise die opens one game, not a card tapped mid-swing', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.home-game[data-game="merge"]');
+  await page.evaluate(() => {
+    window.__screens = [];
+    new MutationObserver(() => {
+      window.__screens.push(document.body.dataset.screen);
+    }).observe(document.body, { attributes: true, attributeFilter: ['data-screen'] });
+  });
+
+  // Tap the die, then a different card before the 430 ms swing lands. The tap
+  // used to open its own game and be replaced by the pick a moment later.
+  const picked = await page.evaluate(() => {
+    document.getElementById('home-surprise').click();
+    const lifted = document.querySelector('.home-game.is-picked');
+    const other = document.querySelector('.home-game[data-game="' + (lifted.dataset.game === 'ttt' ? 'sudoku' : 'ttt') + '"]');
+    other.click();
+    return { game: lifted.dataset.game, other: other.dataset.game };
+  });
+  expect(picked.game).not.toBe(picked.other);
+
+  await expect(page.locator('body')).toHaveAttribute('data-screen', picked.game);
+  expect(await page.evaluate(() => window.__screens)).toEqual([picked.game]);
+});
+
 test('Daily Sixfold picks a date-seeded featured game', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#daily')).toBeVisible();

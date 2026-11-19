@@ -326,6 +326,10 @@
 
   let current = 'hub';
   let lastGame = 'merge';
+  // The die's swing owns navigation for its 430 ms. Without this a card tapped
+  // mid-swing opens its game, and the pick then replaces it, so the hub
+  // visibly changes screen twice.
+  let surpriseRolling = false;
   const games = {};
 
   /* Every finished round offers the same short pause before the next one
@@ -501,6 +505,7 @@
   }
 
   function openGame(game) {
+    if (surpriseRolling) return;
     if (VALID_GAMES.indexOf(game) === -1 || game === 'wordle') return;
     lastGame = game;
     setScreen(game);
@@ -734,9 +739,8 @@
 
   const surpriseBtn = $('home-surprise');
   if (surpriseBtn) {
-    let rolling = false;
     surpriseBtn.addEventListener('click', function () {
-      if (!cards.length || rolling) return;
+      if (!cards.length || surpriseRolling) return;
       const pick = cards[Math.floor(Math.random() * cards.length)];
       if (!pick || !pick.dataset.game) return;
       if (reducedMotion()) {
@@ -745,7 +749,7 @@
       }
       // Show the pick before opening it: the die rolls, the card it landed on
       // lifts, and only then does the game take over.
-      rolling = true;
+      surpriseRolling = true;
       surpriseBtn.classList.remove('is-rolling');
       void surpriseBtn.offsetWidth;
       surpriseBtn.classList.add('is-rolling');
@@ -756,7 +760,9 @@
       window.setTimeout(function () {
         surpriseBtn.classList.remove('is-rolling');
         pick.classList.remove('is-picked');
-        rolling = false;
+        // Released in the same task as the open, so nothing can slip between
+        // the swing ending and the pick taking the screen.
+        surpriseRolling = false;
         openGame(pick.dataset.game);
       }, 430);
     });
