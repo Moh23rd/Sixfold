@@ -120,9 +120,14 @@ try {
   log(`installing ${APK}`);
   adb(['install', '-r', '-t', APK]);
 
+  // Not `am start -W`: the hub animates from the first frame, so the activity
+  // never goes idle and the wait reports a timeout even though it launched.
+  // The process and the WebView target below are the real evidence.
   adb(['shell', 'am', 'force-stop', PACKAGE]);
-  const started = adb(['shell', 'am', 'start', '-W', '-n', ACTIVITY]);
-  if (!/Status: ok/.test(started)) fail(`the activity did not start: ${started}`);
+  const started = adb(['shell', 'am', 'start', '-n', ACTIVITY]);
+  if (/^Error/im.test(started) || /does not exist/i.test(started)) {
+    fail(`the activity did not start: ${started}`);
+  }
 
   const pid = await until('the app process', () => adb(['shell', 'pidof', PACKAGE]));
   log(`running as pid ${pid}`);
