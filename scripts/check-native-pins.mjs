@@ -4,21 +4,29 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// The native shells are copies of the web build, so their script and stylesheet
-// pins can drift from index.html and sw.js without any visible symptom: the
-// APK keeps running the bundle it was built with. Compare the pins instead of
-// trusting the copy. Run after `cap sync`, which is what writes the android
-// asset copy.
+// The native shells are copies of the web build, so they can drift from
+// index.html and sw.js without any visible symptom: the APK keeps running the
+// bundle it was built with. Compare the pins, then the bytes of every file the
+// shell serves. Run after `cap sync`, which is what writes the android copy.
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const ASSET = /["'](?:\.\/)?((?:css|js|i18n|fonts)\/[^"'?]+)\?v=([^"']+)["']/g;
-const SHELL_LINE = /['"]\.\/((?:css|js|i18n|fonts)\/[^'?]+)\?v=([^'"]*)['"]\s*(?:\+\s*([A-Z0-9_]+))?/;
+// One path pattern for both pin readers, so a new pinned directory only has to
+// be named here. Icons and word packs carry no ?v= pin: they are checked for
+// content instead.
+const ASSET_PATH = '((?:css|js|i18n|fonts)/[^"\'?]+)';
+const INDEX_PIN = new RegExp('["\'](?:\\./)?' + ASSET_PATH + '\\?v=([^"\']+)["\']', 'g');
+const SHELL_PIN = new RegExp(
+  '["\']\\./' + ASSET_PATH + '\\?v=([^"\']*)["\'](?:\\s*\\+\\s*([A-Z0-9_]+))?'
+);
 const CONSTANT = /(?:^|\n)const ([A-Z0-9_]+) = '([^']*)';/g;
 
 const COPIES = [
-  'native/www/index.html',
-  'android/app/src/main/assets/public/index.html'
+  { file: 'native/www/index.html', dir: 'native/www/' },
+  {
+    file: 'android/app/src/main/assets/public/index.html',
+    dir: 'android/app/src/main/assets/public/'
+  }
 ];
 
 function read(file) {
@@ -35,10 +43,10 @@ function digest(file) {
   return createHash('sha256').update(readFileSync(join(root, file))).digest('hex').slice(0, 16);
 }
 
-function compareContent(label, copyRoot, files) {
+function compareContent(label, copyDir, files) {
   const problems = [];
   for (const file of files) {
-    const copy = copyRoot + '/' + file;
+    const copy = copyDir + file;
     if (!existsSync(join(root, copy))) {
       problems.push(label + ' is missing ' + file);
       continue;
@@ -50,51 +58,76 @@ function compareContent(label, copyRoot, files) {
   return problems;
 }
 
-// The worker caches files index.html never pins (the wordle bundle, the icons),
-// and the shell has to serve those from the same tree. Read the SHELL list out
-// of sw.js as the contract for what the two copies must contain.
-function precachedPaths(source) {
-  const start = source.indexOf('const SHELL = [');
-  const end = source.indexOf('];', start);
-  if (start === -1 || end === -1) return [];
-  const paths = [];
-  for (const match of source.slice(start, end).matchAll(/['"]\.\/([^'"?]+)/g)) {
-    if (paths.indexOf(match[1]) === -1) paths.push(match[1]);
-  }
-  return paths;
-}
-
 // index.html carries the version on the URL itself.
 function shellPins(source) {
   const pins = new Map();
-  for (const match of source.matchAll(ASSET)) pins.set(match[1], match[2]);
+  for (const match of source.matchAll(INDEX_PIN)) pins.set(match[1], match[2]);
   return pins;
 }
 
-// sw.js keeps the versions in constants (sometimes literal) and appends them to
-// the cached URL, so resolve each precached path back to its version.
+// sw.js keeps the versions in constants (sometimes a literal) and appends them
+// to the cached URL. An entry whose constant is missing is reported once, by
+// path, rather than also as a pin that is absent.
 function serviceWorkerPins(source) {
   const constants = new Map();
   for (const match of source.matchAll(CONSTANT)) constants.set(match[1], match[2]);
 
   const pins = new Map();
-  const unknown = [];
+  const unresolved = new Map();
   for (const line of source.split('\n')) {
-    const match = line.match(SHELL_LINE);
+    const match = line.match(SHELL_PIN);
     if (!match) continue;
-    if (match[3]) {
-      if (!constants.has(match[3])) unknown.push(match[3]);
-      else pins.set(match[1], constants.get(match[3]));
+    if (!match[3]) {
+      pins.set(match[1], match[2]);
       continue;
     }
-    pins.set(match[1], match[2]);
+    if (constants.has(match[3])) pins.set(match[1], constants.get(match[3]));
+    else unresolved.set(match[1], match[3]);
   }
-  return { pins, unknown };
+  return { pins, unresolved };
 }
 
-function compare(label, expected, actual) {
+function block(source, name) {
+  const start = source.indexOf('const ' + name + ' =');
+  if (start === -1) return '';
+  const open = source.slice(start).match(/[[{]/);
+  if (!open) return '';
+  const from = start + open.index;
+  const close = source.indexOf(source[from] === '[' ? '];' : '};', from);
+  return close === -1 ? '' : source.slice(from, close);
+}
+
+// The worker caches files index.html never pins, so the SHELL list is the
+// contract for what the copies must contain.
+function precachedPaths(source) {
+  return [...block(source, 'SHELL').matchAll(/['"]\.\/([^'"?]+)/g)].map((match) => match[1]);
+}
+
+// Catalogs and word packs are built from objects, so their URLs never appear
+// as literals.
+function objectPaths(source, name, dir) {
+  return [...block(source, name).matchAll(/:\s*'([^']+)'/g)].map((match) => dir + match[1]);
+}
+
+// Every file the shell must serve identically to the source tree. index.html is
+// excluded: the native shell injects its plugins into it.
+function shellFiles(source) {
+  const files = [];
+  const add = (file) => {
+    if (file === 'index.html') return;
+    if (files.indexOf(file) !== -1 || !existsSync(join(root, file))) return;
+    files.push(file);
+  };
+  for (const file of precachedPaths(source)) add(file);
+  for (const file of objectPaths(source, 'LOCALE_CATALOG', 'i18n/')) add(file);
+  for (const file of objectPaths(source, 'WORDLE_PACK', 'wordle-locales/')) add(file);
+  return files;
+}
+
+function compare(label, expected, actual, unresolved = new Map()) {
   const problems = [];
   for (const [file, version] of expected) {
+    if (unresolved.has(file)) continue;
     const pinned = actual.get(file);
     if (pinned === undefined) problems.push(label + ' does not pin ' + file);
     else if (pinned !== version) {
@@ -110,30 +143,26 @@ function main() {
 
   const workerSource = read('sw.js');
   const worker = serviceWorkerPins(workerSource);
-  const problems = compare('sw.js', source, worker.pins);
-  for (const name of new Set(worker.unknown)) {
-    problems.push('sw.js precaches with an undefined constant ' + name);
+  const problems = compare('sw.js', source, worker.pins, worker.unresolved);
+  for (const [file, name] of worker.unresolved) {
+    problems.push('sw.js precaches ' + file + ' with an undefined constant ' + name);
   }
 
-  // index.html's shell, plus everything else the worker caches. index.html
-  // itself is excluded: the native shell injects its plugins into it.
   const contents = [...source.keys()];
-  for (const file of precachedPaths(workerSource)) {
-    if (file === 'index.html' || contents.indexOf(file) !== -1) continue;
-    if (!existsSync(join(root, file))) continue;
-    contents.push(file);
+  for (const file of shellFiles(workerSource)) {
+    if (contents.indexOf(file) === -1) contents.push(file);
   }
 
   const copied = [];
-  for (const file of COPIES) {
-    if (!existsSync(join(root, file))) {
-      if (file === 'native/www/index.html') throw new Error(file + ' is missing; run npm run native:build');
-      console.log('[native pins] ' + file + ' is not built yet; skipped');
+  for (const copy of COPIES) {
+    if (!existsSync(join(root, copy.file))) {
+      if (copy === COPIES[0]) throw new Error(copy.file + ' is missing; run npm run native:build');
+      console.log('[native pins] ' + copy.file + ' is not built yet; skipped');
       continue;
     }
-    problems.push(...compare(file, source, shellPins(read(file))));
-    problems.push(...compareContent(file, file.replace(/index\.html$/, ''), contents));
-    copied.push(file);
+    problems.push(...compare(copy.file, source, shellPins(read(copy.file))));
+    problems.push(...compareContent(copy.file, copy.dir, contents));
+    copied.push(copy.file);
   }
 
   if (problems.length > 0) {
@@ -146,7 +175,7 @@ function main() {
   console.log(
     '[native pins] ' + source.size + ' pins agree across index.html, sw.js, ' +
     (copied.length > 0 ? copied.join(' and ') : 'no copies') + '; ' + contents.length +
-    ' precached files match byte for byte.'
+    ' shell files match byte for byte.'
   );
 }
 
