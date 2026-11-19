@@ -11,7 +11,7 @@ const CASES = [
 // Every screen the app can show: the element that scrolls, the first resting
 // row (the header a reader sees at scroll position zero) and the last one.
 const SCREENS = [
-  { name: 'hub', path: '/', container: '#hub', first: '.hub-top', last: '.home-ticker' },
+  { name: 'hub', path: '/', container: '#hub', first: '.hub-top', last: '.home-ticker', blur: true },
   { name: 'merge', path: '/#merge', container: 'main.app', first: 'main.app .header', last: 'main.app footer' },
   { name: 'sudoku', path: '/#sudoku', container: '#sudoku', first: '#sudoku .play-head', last: '#sudoku .play-foot' },
   { name: 'tic tac toe', path: '/#ttt', container: '#ttt', first: '#ttt .play-head', last: '#ttt .play-foot' },
@@ -48,15 +48,26 @@ async function measure(page, screen) {
 
 for (const testCase of CASES) {
   for (const screen of SCREENS) {
-    test('progressive blur stays off resting content: ' + screen.name + ' at ' + testCase.name, async ({ page }) => {
+    const title = screen.blur
+      ? 'progressive blur stays off resting content: '
+      : 'play screens carry no blur band: ';
+    test(title + screen.name + ' at ' + testCase.name, async ({ page }) => {
       await page.setViewportSize(testCase.viewport);
       const session = await page.context().newCDPSession(page);
       await session.send('Emulation.setSafeAreaInsetsOverride', { insets: testCase.insets });
 
       await page.goto(screen.path);
       await expect(page.locator(screen.container)).toBeVisible();
-      await expect(page.locator('.progressive-blur--top')).toBeVisible();
       await expect(page.locator('#boot-splash')).toBeHidden();
+
+      // The bands belong to the hub, the one screen that scrolls under the
+      // bars. A play screen owns its frame, so nothing sits over a board.
+      if (!screen.blur) {
+        await expect(page.locator('.progressive-blur--top')).toBeHidden();
+        await expect(page.locator('.progressive-blur--bottom')).toBeHidden();
+        return;
+      }
+      await expect(page.locator('.progressive-blur--top')).toBeVisible();
 
       // Let the screen's entrance animation finish before measuring resting
       // positions: a sliding screen reports its content away from the band
@@ -88,25 +99,12 @@ for (const testCase of CASES) {
   }
 }
 
-// The Merge screen uses its own full-bleed grid on desktop, where the header
-// sits 10px from the top.
-test('progressive blur stays off the desktop Merge header', async ({ page }) => {
+// Merge is a play screen too, including its full-bleed desktop grid.
+test('the Merge board carries no blur band', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
 
   await page.goto('/#merge');
   await expect(page.locator('main.app')).toBeVisible();
-  await expect(page.locator('.progressive-blur--top')).toBeVisible();
-  await page.waitForTimeout(700);
-
-  const layout = await page.evaluate(() => {
-    const header = document.querySelector('main.app .header');
-    const band = document.querySelector('.progressive-blur--top');
-    if (!header || !band) return null;
-    return {
-      headerTop: header.getBoundingClientRect().top,
-      bandBottom: band.getBoundingClientRect().bottom
-    };
-  });
-  expect(layout).not.toBeNull();
-  expect(layout.headerTop - layout.bandBottom).toBeGreaterThanOrEqual(1);
+  await expect(page.locator('.progressive-blur--top')).toBeHidden();
+  await expect(page.locator('.progressive-blur--bottom')).toBeHidden();
 });

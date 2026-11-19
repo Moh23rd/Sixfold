@@ -738,9 +738,17 @@
   .sudoku-shell .play-main { gap: 6px 10px; }
   /* The board is square, so its width is what decides whether the bottom of
      the grid lands under the bottom band on a 390-tall landscape phone. */
-  .sudoku-shell .sudoku-wrap { width: min(100%, 430px, calc(100dvh - 50px)); }
-  /* On a 390-tall landscape phone the head and the foot together are taller
-     than the left column; let the row grow so the screen scrolls instead of
-     tucking the footer under the bottom band. */
-  .sudoku-shell { grid-template-rows: auto minmax(min-content, 1fr); }
+  .sudoku-shell .sudoku-wrap { width: min(100%, 430px, calc(100dvh - 20px)); }
+  /* The rail used to hand its title row 155px and push the footer 23px past a
+     390-tall screen, where the fixed play frame clipped it. The cart row keeps
+     its back and settings buttons; the size of those controls, the title, the
+     stats gaps and the pad keys give the height back. */
+  .sudoku-shell .play-cart-row { gap: 6px; }
+  .sudoku-shell .games-home,
+  .sudoku-shell .sudoku-settings-open { width: 30px; height: 30px; }
+  .sudoku-shell .play-title-row { margin-top: 0; }
+  .sudoku-shell .play-intro h1 { font-size: 22px; }
+  .sudoku-shell .play-stats { margin-top: 3px; padding-top: 3px; }
+  .sudoku-shell .sudoku-pad-key { min-height: 27px; }
+  .sudoku-shell .sudoku-tool { min-height: 27px; }
 }

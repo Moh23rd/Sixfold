@@ -398,27 +398,8 @@
     cancel: cancelAutoNext
   };
 
-  const enterTimers = Object.create(null);
-
   function reducedMotion() {
     return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  }
-
-  /* A card tap is a change of place, not a cut: the destination fades in and
-     its shell rises a few pixels. The class is removed when the animation
-     ends so no transform is left behind for fixed descendants such as the
-     win card. */
-  function enterScreen(screen) {
-    if (screen === 'hub' || reducedMotion()) return;
-    const el = screen === 'merge' ? app : screens[screen];
-    if (!el) return;
-    el.classList.remove('screen-entering');
-    void el.offsetWidth;
-    el.classList.add('screen-entering');
-    window.clearTimeout(enterTimers[screen]);
-    enterTimers[screen] = window.setTimeout(function () {
-      el.classList.remove('screen-entering');
-    }, 360);
   }
 
   function setScreen(screen) {
@@ -467,7 +448,6 @@
       if (title) title.focus({ preventScroll: true });
     }
     enterCoach(screen);
-    enterScreen(screen);
   }
 
   const GAME_NAMES = {

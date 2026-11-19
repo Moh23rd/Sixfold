@@ -172,6 +172,10 @@
   html.perf-lite .progressive-blur > span { display: none; }
 }
 
+/* The bands exist for the hub, the only screen that scrolls under the system
+   bars. A play screen owns its own frame, so no glass sits over a board. */
+body:not([data-screen="hub"]) .progressive-blur { display: none; }
+
 /* Safari and iOS can ask for less transparency; respect it and show nothing. */
 @media (prefers-reduced-transparency: reduce) {
   .progressive-blur { display: none !important; }
