@@ -748,23 +748,37 @@
         return;
       }
       // Show the pick before opening it: the die rolls, the card it landed on
-      // lifts, and only then does the game take over.
+      // lifts if it is already on screen, and only then does the game take
+      // over. The hub never scrolls to the pick, so the page does not move
+      // under the finger that just tapped. The roll's own end is the cue, so
+      // the CSS duration stays the only place the timing lives; the timeout
+      // only covers a roll that never animates.
       surpriseRolling = true;
-      surpriseBtn.classList.remove('is-rolling');
-      void surpriseBtn.offsetWidth;
-      surpriseBtn.classList.add('is-rolling');
-      pick.classList.remove('is-picked');
-      void pick.offsetWidth;
-      pick.classList.add('is-picked');
-      if (pick.scrollIntoView) pick.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      window.setTimeout(function () {
+      let opened = false;
+      let fallback = 0;
+      const resolved = function () {
+        if (opened) return;
+        opened = true;
+        window.clearTimeout(fallback);
+        surpriseBtn.removeEventListener('animationend', onRollEnd);
         surpriseBtn.classList.remove('is-rolling');
         pick.classList.remove('is-picked');
         // Released in the same task as the open, so nothing can slip between
         // the swing ending and the pick taking the screen.
         surpriseRolling = false;
         openGame(pick.dataset.game);
-      }, 430);
+      };
+      const onRollEnd = function (event) {
+        if (event.animationName === 'diceRoll') resolved();
+      };
+      surpriseBtn.classList.remove('is-rolling');
+      void surpriseBtn.offsetWidth;
+      surpriseBtn.classList.add('is-rolling');
+      surpriseBtn.addEventListener('animationend', onRollEnd);
+      pick.classList.remove('is-picked');
+      void pick.offsetWidth;
+      pick.classList.add('is-picked');
+      fallback = window.setTimeout(resolved, 900);
     });
   }
 
