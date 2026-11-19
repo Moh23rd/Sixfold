@@ -1,9 +1,10 @@
 /* The Android stretch is a touch-only effect: it runs only under an Android
    user agent, it is driven by real touch sequences, and nothing else in the
-   suite can reach it. These tests pin the four rules the effect claims to
-   follow — the pulled edge travels while the opposite edge stays pinned, the
-   pull saturates instead of tracking the finger, a touch during the settle
-   catches the frame on screen, and the settle returns to flat. */
+   suite can reach it. These tests pin the rules the effect claims to follow —
+   the pulled edge travels while the opposite edge stays pinned, the pull
+   saturates instead of tracking the finger, a touch during the settle catches
+   the frame on screen, the settle returns to flat, and momentum that reaches
+   the edge is absorbed into a pulse instead of stopping dead on the boundary. */
 const { test, expect } = require('@playwright/test');
 
 const ANDROID_UA =
@@ -152,6 +153,80 @@ test('a touch during the settle catches the frame that is on screen', async ({
 
   await touch(cdp, 'touchEnd');
   await page.waitForTimeout(700);
+});
+
+test('momentum that reaches the edge is absorbed and decays back to flat', async ({ page }) => {
+  await open(page);
+  const idle = await read(page);
+  expect(idle.transform).toBe('none');
+
+  // The pulse is short — it peaks in a couple of frames — so it is sampled
+  // every frame rather than probed from the test thread.
+  await page.evaluate(() => {
+    window.__pulse = [];
+    const hub = document.getElementById('hub');
+    const started = performance.now();
+    const tick = () => {
+      const computed = getComputedStyle(hub).transform;
+      const matrix = computed === 'none' ? null : new DOMMatrix(computed);
+      window.__pulse.push({
+        t: Math.round(performance.now() - started),
+        travel: matrix ? Math.abs(matrix.m42) : 0,
+        origin: hub.style.transformOrigin || 'none',
+      });
+      if (performance.now() - started < 1000) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
+  // Park the hub away from the edge and cross back on the very next frame.
+  // Both moves have to be delivered as separate scroll events (otherwise they
+  // coalesce and there is no crossing) and close enough together that the
+  // momentum stays above the effect's fling threshold no matter how busy the
+  // test runner is — that is what a finger fling looks like to the handler.
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const hub = document.getElementById('hub');
+        hub.addEventListener(
+          'scroll',
+          () => {
+            if (hub.scrollTop === 0) return;
+            requestAnimationFrame(() => {
+              hub.scrollTop = 0;
+              resolve();
+            });
+          },
+          { passive: true }
+        );
+        hub.scrollTop = 160;
+      })
+  );
+  await page.waitForTimeout(1100);
+
+  const samples = await page.evaluate(() => window.__pulse);
+  expect(samples.length).toBeGreaterThan(20);
+  const peak = samples.reduce((best, sample) =>
+    sample.travel > best.travel ? sample : best
+  );
+  // A pulse with no finger anywhere near the screen.
+  expect(peak.travel).toBeGreaterThan(20);
+  expect(peak.origin).toBe('50% 0%');
+  // It decays to nothing and stays there: the tail is flat.
+  const tail = samples.slice(-6);
+  expect(tail.every((sample) => sample.travel === 0)).toBe(true);
+  expect(peak.travel).toBeGreaterThan(tail[0].travel);
+
+  await expect
+    .poll(async () => (await read(page)).transform, { timeout: 2500 })
+    .toBe('none');
+
+  const flat = await read(page);
+  expect(flat.travel).toBe(0);
+  expect(flat.scaleY).toBe(1);
+  expect(flat.top).toBeCloseTo(0, 0);
+  expect(flat.bottom).toBeCloseTo(idle.height, 0);
+  expect(flat.scrollTop).toBe(0);
 });
 
 test('the settle returns the page to flat', async ({ page, context }) => {
