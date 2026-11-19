@@ -109,6 +109,14 @@ function objectPaths(source, name, dir) {
   return [...block(source, name).matchAll(/:\s*'([^']+)'/g)].map((match) => dir + match[1]);
 }
 
+// Script faces are listed as arrays of file names, one array per locale, so
+// they never appear as a pinned URL either.
+function fontPaths(source) {
+  return [...block(source, 'SCRIPT_FONTS').matchAll(/'([^']+\.woff2)'/g)].map(
+    (match) => 'fonts/' + match[1]
+  );
+}
+
 // Every file the shell must serve identically to the source tree. index.html is
 // excluded: the native shell injects its plugins into it.
 function shellFiles(source) {
@@ -121,6 +129,7 @@ function shellFiles(source) {
   for (const file of precachedPaths(source)) add(file);
   for (const file of objectPaths(source, 'LOCALE_CATALOG', 'i18n/')) add(file);
   for (const file of objectPaths(source, 'WORDLE_PACK', 'wordle-locales/')) add(file);
+  for (const file of fontPaths(source)) add(file);
   return files;
 }
 
