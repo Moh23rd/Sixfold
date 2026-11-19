@@ -78,6 +78,42 @@ function pinnedUrls(source) {
   return new Map([...source.matchAll(ANY_PIN)].map((match) => [match[1], match[2]]));
 }
 
+// An attribute value is the only place a build pin can live, so every ?v= one
+// carries has to be one the reader above saw. A pin written unquoted, or with
+// an empty path, would otherwise pass without being compared.
+const ATTR_VALUE = /(?:href|src|content)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
+
+function attrPins(source) {
+  const urls = [];
+  for (const match of source.matchAll(ATTR_VALUE)) {
+    const value = match[1] || match[2] || match[3] || '';
+    if (value.indexOf('?v=') !== -1) urls.push(value);
+  }
+  return urls;
+}
+
+// Files the worker pins but index.html never names (the hidden word game) carry
+// their version in the script that inserts them. Read those pairs too, so a
+// bump on one side cannot leave the worker caching what the page never asks
+// for.
+function runtimePins(files) {
+  const pins = new Map();
+  const loaded = /([\w./-]+\.(?:js|css|woff2))\?v='\s*\+\s*([A-Z0-9_]+)/g;
+  // These constants sit inside an IIFE, so they are indented; sw.js keeps its
+  // own at column zero and keeps using CONSTANT.
+  const local = /(?:^|\n)[ \t]*const ([A-Z0-9_]+) = '([^']*)';/g;
+  for (const file of files) {
+    if (!file.endsWith('.js')) continue;
+    const source = readFileSync(join(root, file), 'utf8');
+    const constants = new Map();
+    for (const match of source.matchAll(local)) constants.set(match[1], match[2]);
+    for (const match of source.matchAll(loaded)) {
+      if (constants.has(match[2])) pins.set(match[1], constants.get(match[2]));
+    }
+  }
+  return pins;
+}
+
 // sw.js keeps the versions in constants (sometimes a literal) and appends them
 // to the cached URL. An entry whose constant is missing is reported once, by
 // path, rather than also as a pin that is absent.
@@ -197,6 +233,29 @@ function main() {
     problems.push(
       'index.html pins ' + file + ' at ' + version + ', which the guard neither reads as a pin nor compares as content'
     );
+  }
+
+  // Only the markup carries build pins; the inline script versions the locale
+  // catalogues at runtime, which no copy has to match.
+  const markup = indexSource.replace(/(<script\b[^>]*>)[\s\S]*?(<\/script>)/g, '$1$2');
+  const carried = attrPins(markup).length;
+  const seen = [...indexSource.matchAll(ANY_PIN)].length;
+  if (carried !== seen) {
+    problems.push('index.html markup carries ' + carried + ' ?v= URLs but the guard read ' + seen + ' of them');
+  }
+
+  const runtime = runtimePins(shell.files);
+  for (const [file, version] of worker.pins) {
+    if (source.has(file)) continue;
+    if (!runtime.has(file)) {
+      problems.push('sw.js pins ' + file + ' at ' + version + ', which nothing else in the shell loads');
+      continue;
+    }
+    if (runtime.get(file) !== version) {
+      problems.push(
+        'sw.js pins ' + file + ' at ' + version + ' but the shell loads it at ' + runtime.get(file)
+      );
+    }
   }
 
   const copied = [];
