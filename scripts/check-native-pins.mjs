@@ -87,14 +87,23 @@ function serviceWorkerPins(source) {
   return { pins, unresolved };
 }
 
+// A list this guard cannot read is an error, never an empty result: falling
+// back to '' used to turn a rename or a reformat into a green run over fewer
+// files than the shell serves.
 function block(source, name) {
   const start = source.indexOf('const ' + name + ' =');
-  if (start === -1) return '';
+  if (start === -1) throw new Error('sw.js has no ' + name + ' list to check');
   const open = source.slice(start).match(/[[{]/);
-  if (!open) return '';
+  if (!open) throw new Error('could not parse the ' + name + ' list in sw.js');
   const from = start + open.index;
   const close = source.indexOf(source[from] === '[' ? '];' : '};', from);
-  return close === -1 ? '' : source.slice(from, close);
+  if (close === -1) throw new Error('the ' + name + ' list in sw.js is not closed');
+  return source.slice(from, close);
+}
+
+function requirePaths(found, name) {
+  if (found.length === 0) throw new Error('the ' + name + ' list in sw.js parsed to no paths');
+  return found;
 }
 
 // The worker caches files index.html never pins, so the SHELL list is the
@@ -118,19 +127,22 @@ function fontPaths(source) {
 }
 
 // Every file the shell must serve identically to the source tree. index.html is
-// excluded: the native shell injects its plugins into it.
+// excluded: the native shell injects its plugins into it. A listed path with no
+// file behind it is reported, not skipped: it means the reader missed a rename
+// and the copies would go unchecked.
 function shellFiles(source) {
   const files = [];
+  const missing = [];
   const add = (file) => {
-    if (file === 'index.html') return;
-    if (files.indexOf(file) !== -1 || !existsSync(join(root, file))) return;
-    files.push(file);
+    if (file === 'index.html' || files.indexOf(file) !== -1 || missing.indexOf(file) !== -1) return;
+    if (existsSync(join(root, file))) files.push(file);
+    else missing.push(file);
   };
-  for (const file of precachedPaths(source)) add(file);
-  for (const file of objectPaths(source, 'LOCALE_CATALOG', 'i18n/')) add(file);
-  for (const file of objectPaths(source, 'WORDLE_PACK', 'wordle-locales/')) add(file);
-  for (const file of fontPaths(source)) add(file);
-  return files;
+  for (const file of requirePaths(precachedPaths(source), 'SHELL')) add(file);
+  for (const file of requirePaths(objectPaths(source, 'LOCALE_CATALOG', 'i18n/'), 'LOCALE_CATALOG')) add(file);
+  for (const file of requirePaths(objectPaths(source, 'WORDLE_PACK', 'wordle-locales/'), 'WORDLE_PACK')) add(file);
+  for (const file of requirePaths(fontPaths(source), 'SCRIPT_FONTS')) add(file);
+  return { files, missing };
 }
 
 function compare(label, expected, actual, unresolved = new Map()) {
@@ -157,8 +169,13 @@ function main() {
     problems.push('sw.js precaches ' + file + ' with an undefined constant ' + name);
   }
 
+  const shell = shellFiles(workerSource);
+  for (const file of shell.missing) {
+    problems.push('sw.js lists ' + file + ', which the source tree does not have');
+  }
+
   const contents = [...source.keys()];
-  for (const file of shellFiles(workerSource)) {
+  for (const file of shell.files) {
     if (contents.indexOf(file) === -1) contents.push(file);
   }
 
