@@ -1,13 +1,33 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.20**.
+> Public release label: **v5.0**. Current development build: **6.0.22**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.20**
+Internal build: **6.0.22**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
+
+### Appearance and fluidity
+
+- **Light and dark cross-fade**: switching the theme or a colour palette used to
+  repaint the page, the cards, the labels and every tile in one frame, which
+  read as a cut. The surfaces that paint a theme colour — panels, cards, tiles,
+  cells, labels, buttons — now cross-fade over 220ms, driven by a flag that
+  exists only for the length of the switch, so nothing pays for the transitions
+  while a game is being played. Elements that own a press or hover motion keep
+  it during the switch, the sheet keeps its own leave animation, and reduced
+  motion still switches in one frame.
+- **The switch stays off the compositor's critical path**: the appearance sheet
+  used to re-blur the page behind itself on every frame of the fade. The blur
+  is suspended for those 220ms, which took the number of dropped frames in a
+  switch from six to four in a controlled A/B on the same page, and the worst
+  frame from 50–66ms to 33ms.
+- **Hidden games stop re-rendering on an appearance change**: Water Sort rebuilt
+  its board and Fruit Merge re-read its palette and redrew whenever the theme
+  changed, even while the hub was on screen. Both now take their colours when
+  they are opened.
 
 ### Sizing, landscape and backups
 
@@ -31,6 +51,11 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **Small portrait phones fit**: on a 320 × 568 screen the Sudoku footer and the
   Minesweeper footer ran under the home indicator. The header shares one line
   and the boards give up a little size instead.
+- **Fruit Merge's footer comes back on screen**: its 4:5 field was capped by a
+  flat pixel offset, so the run button sat 9px below a 320 × 568 screen, 28px
+  below a 360 × 640 one and 38px below a 375 × 667 one. The field now takes its
+  width from the height its column can spare, which keeps the footer and the
+  whole HUD on screen at every portrait size.
 - **Short landscape fields hold together**: a 320-tall landscape window reports
   24px bars on both edges, which leaves the rail 48px less height than it
   needs, and under 620px wide the Minesweeper rail took the board's column.

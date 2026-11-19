@@ -44,6 +44,39 @@
     /* storage blocked — defaults are fine */
   }
 
+  /* ---------- appearance cross-fade ---------- */
+
+  // A theme or palette switch repaints every surface at once. The class below
+  // is what turns on the colour transitions at the end of v5.css: they are
+  // raised for the length of one switch and taken away again, so the app pays
+  // nothing for them while it is being played.
+  const calmMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  const FADE_MS = 220;
+  let fadeTimer = 0;
+
+  function endCrossFade() {
+    window.clearTimeout(fadeTimer);
+    fadeTimer = 0;
+    root.classList.remove('is-theme-fading');
+  }
+
+  function crossFade() {
+    // A phone that asked for calm motion, or one the launch script already put
+    // on the light paint path, keeps the instant switch it had.
+    if (calmMotion && calmMotion.matches) return;
+    if (window.MergePerf && window.MergePerf.lite) return;
+    root.classList.add('is-theme-fading');
+    window.clearTimeout(fadeTimer);
+    fadeTimer = window.setTimeout(endCrossFade, FADE_MS + 60);
+  }
+
+  // The launch call lands under the splash, where a fade would only add work
+  // to the first paint. Every later switch — a swatch, a theme button or the
+  // phone turning to dark at sunset — is a real change and gets the fade.
+  function switchIsVisible(persist) {
+    return Boolean(persist) || root.classList.contains('home-ready');
+  }
+
   /* ---------- colour helpers ---------- */
 
   function rgbToHsl(r, g, b) {
@@ -187,10 +220,25 @@
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
   }
 
+  // Pointing the manifest at the light or dark file makes the browser fetch and
+  // parse it again. That is worth doing — a fresh install should capture the
+  // bottom chrome this page is using — but it is not worth doing inside the
+  // frame the appearance switch is animating in, so it waits for idle.
+  let manifestTimer = 0;
+  function syncManifestLater() {
+    window.clearTimeout(manifestTimer);
+    const run = function () {
+      manifestTimer = 0;
+      syncManifest();
+    };
+    if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 1200 });
+    else manifestTimer = window.setTimeout(run, 120);
+  }
+
   function refreshPage() {
     tintPage();
     paintBrowserChrome();
-    syncManifest();
+    syncManifestLater();
   }
 
   // The result image is drawn from the page colours, so tell the game when they
@@ -226,6 +274,7 @@
 
   function applyTheme(pref, persist) {
     state.theme = pref;
+    if (switchIsVisible(persist)) crossFade();
     root.dataset.theme = resolvedTheme();
     // Bar first, then the rest of the page: they change together instead of the
     // status bar trailing the new colours.
@@ -254,6 +303,7 @@
   function applyPalette(id, persist) {
     const palette = PALETTES.filter(function (p) { return p.id === id; })[0] || PALETTES[0];
     state.palette = palette.id;
+    if (switchIsVisible(persist)) crossFade();
     paintBrowserChrome();
 
     for (let i = 0; i < WARM.length; i++) {
@@ -355,6 +405,9 @@
 
   function closeSheet(sheet) {
     if (!sheet || sheet.hidden || sheet.classList.contains('is-closing')) return;
+    // The sheet's own leave animation owns the next 320ms. A colour fade
+    // raised by a theme tap a moment ago would replace it, so end it here.
+    endCrossFade();
     // Let the scrim and card leave before removing the dialog from the page.
     sheet.classList.remove('is-open');
     sheet.classList.add('is-closing');

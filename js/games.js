@@ -1688,7 +1688,13 @@
       }
     });
 
-    window.addEventListener('merge:appearance', function () { render(); });
+    // The board is rebuilt from the new palette when it is opened (activate),
+    // so rebuilding it here painted a screen nobody was looking at — in the
+    // middle of the appearance fade that triggered it.
+    window.addEventListener('merge:appearance', function () {
+      if (current !== 'water') return;
+      render();
+    });
     window.addEventListener('resize', function () {
       render();
       window.requestAnimationFrame(measureTubeGeometry);
@@ -3304,11 +3310,14 @@
       });
     }
 
+    // Same rule as Water Sort: a run that is not on screen takes its new
+    // colours from activate(), which reads them again before drawing.
     window.addEventListener('merge:appearance', function () {
+      if (current !== 'fruit') return;
       syncPalette();
       readUi();
       updateHud();
-      if (current === 'fruit') render();
+      render();
     });
     window.addEventListener('resize', function () {
       setupCanvas();

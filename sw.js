@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.20';
+const VERSION = 'sixfold-6.0.22';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -15,16 +15,16 @@ const ASSET = '4.1.0';
 const SHARE_CARD = '5.3.2';
 const STYLE_ASSET = '5.2.9';
 const FONT_ASSET = '4.0.1';
-const THEME_JS = '6.0.5';
+const THEME_JS = '6.0.7';
 const GAME_CODE = '5.3.1';
 const WORDLE_CODE = '5.3.0-wordle';
 const SUDOKU_GAME_CODE = '5.3.0';
 const LOCALE_FONT = '5.1.4';
-const GAMES_CSS = '5.3.5';
+const GAMES_CSS = '5.3.6';
 const POLISH_CSS = '4.0.4-w21';
-const GAMES_JS = '5.3.9';
+const GAMES_JS = '5.4.0';
 const SUDOKU_CSS = '4.0.4';
-const V5_CSS = '5.5.1';
+const V5_CSS = '5.5.3';
 const BLUR_CSS = '1.3.1';
 const HOME_CSS = '4.1.4';
 const DAILY_CODE = '5.4.2';

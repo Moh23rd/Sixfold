@@ -1534,6 +1534,17 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   main.app .footer .key-hint { display: none; }
 }
 
+/* Below 380px the Merge footer stacks: the tool cluster wraps to a second row
+   and the hint keeps a row of its own, which is 50px more column than the
+   short-screen formula above budgeted for. A 320 x 568 phone therefore put the
+   hint and the bottom of the tool row 18px under the screen. The board gives up
+   the difference; on taller phones the cap is inert and the width still wins. */
+@media (orientation: portrait) and (max-width: 380px) {
+  main.app .board {
+    width: min(100%, 70dvh, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 318px));
+  }
+}
+
 /* Tablets in portrait have room the phone-sized caps were not using: the
    square fields grow instead of sitting at 360px in a 1024px-tall screen. */
 @media (orientation: portrait) and (min-width: 721px) {
@@ -1578,4 +1589,123 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   #ttt .play-foot { min-height: 26px; }
   #mines .play-foot .play-btn,
   #ttt .play-foot .play-btn { min-height: 26px; }
+}
+
+/* ==========================================================================
+   Appearance cross-fade
+   --------------------------------------------------------------------------
+   A theme or palette switch used to repaint every surface in one frame, which
+   reads as a cut. The list below names the surfaces that actually paint a
+   theme colour — panels, cards, tiles, cells, labels, buttons — instead of
+   reaching every element in the document. The document head, hidden screens,
+   the tile layer and the sheet's own root are never touched, so their motion
+   and their opacity/visibility transitions are untouched with them.
+
+   The properties are colour plus transform and opacity: the components in this
+   list that own a press or hover motion keep it during the switch rather than
+   losing it for a fifth of a second.
+
+   theme.js raises the flag for the length of one switch and drops it again, so
+   the app pays nothing for these transitions while it is being played, and a
+   phone on the light paint path or with reduced motion never raises it at all.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  html.is-theme-fading body,
+  html.is-theme-fading .hub,
+  html.is-theme-fading .hub-shell,
+  html.is-theme-fading .hub-top,
+  html.is-theme-fading .hub-brand,
+  html.is-theme-fading .hub-mark,
+  html.is-theme-fading .hub-look,
+  html.is-theme-fading .hub-share,
+  html.is-theme-fading .hub-foot,
+  html.is-theme-fading .hub-link,
+  html.is-theme-fading .whats-new,
+  html.is-theme-fading .install-fix,
+  html.is-theme-fading .home-hero,
+  html.is-theme-fading .home-sub,
+  html.is-theme-fading .home-cta,
+  html.is-theme-fading .home-surprise,
+  html.is-theme-fading .home-promises,
+  html.is-theme-fading .home-six-piece,
+  html.is-theme-fading .home-six-caption,
+  html.is-theme-fading .home-collection,
+  html.is-theme-fading .home-label,
+  html.is-theme-fading .home-grid,
+  html.is-theme-fading .home-game,
+  html.is-theme-fading .home-game-stage,
+  html.is-theme-fading .home-game-art,
+  html.is-theme-fading .home-game-title,
+  html.is-theme-fading .home-game-desc,
+  html.is-theme-fading .home-game-meta,
+  html.is-theme-fading .home-game-play,
+  html.is-theme-fading .home-ticker,
+  html.is-theme-fading .daily,
+  html.is-theme-fading .daily-day,
+  html.is-theme-fading .daily-streak,
+  html.is-theme-fading .daily-badge,
+  html.is-theme-fading .daily-calendar-btn,
+  html.is-theme-fading .daily-play,
+  html.is-theme-fading .daily-share,
+  html.is-theme-fading .daily-week-dot,
+  html.is-theme-fading .play-screen,
+  html.is-theme-fading .play-shell,
+  html.is-theme-fading .play-head,
+  html.is-theme-fading .play-body,
+  html.is-theme-fading .play-main,
+  html.is-theme-fading .play-foot,
+  html.is-theme-fading .play-stat,
+  html.is-theme-fading .play-tool,
+  html.is-theme-fading .play-btn,
+  html.is-theme-fading .play-chip,
+  html.is-theme-fading .play-note,
+  html.is-theme-fading .game-tag,
+  html.is-theme-fading .games-home,
+  html.is-theme-fading .board,
+  html.is-theme-fading .cell,
+  html.is-theme-fading .face,
+  html.is-theme-fading .score,
+  html.is-theme-fading .sudoku-cell,
+  html.is-theme-fading .sudoku-pad-key,
+  html.is-theme-fading .sudoku-tool,
+  html.is-theme-fading .mines-cell,
+  html.is-theme-fading .mines-toolbar,
+  html.is-theme-fading .ttt-cell,
+  html.is-theme-fading .water-board,
+  html.is-theme-fading .water-glass,
+  html.is-theme-fading .fruit-stage,
+  html.is-theme-fading .fruit-hud,
+  html.is-theme-fading .sheet-card,
+  html.is-theme-fading .sheet-sub,
+  html.is-theme-fading .sheet-note,
+  html.is-theme-fading .sheet-label,
+  html.is-theme-fading .sheet-done,
+  html.is-theme-fading .setting-row,
+  html.is-theme-fading .setting-state,
+  html.is-theme-fading .seg,
+  html.is-theme-fading .seg button,
+  html.is-theme-fading .palette,
+  html.is-theme-fading .btn,
+  html.is-theme-fading .contact-link,
+  html.is-theme-fading .overlay-card,
+  html.is-theme-fading .result-share,
+  html.is-theme-fading .hidden-reveal-card,
+  html.is-theme-fading .toast,
+  html.is-theme-fading .update-banner,
+  html.is-theme-fading .daily-finish,
+  html.is-theme-fading .progressive-blur span {
+    transition-property: color, background-color, border-color, outline-color, fill, stroke, box-shadow, text-decoration-color, transform, opacity;
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
+  }
+}
+
+/* The sheet dims the page behind it with a backdrop blur, and that filter is
+   recomputed for every frame of a colour fade — the most expensive thing on
+   screen and the least visible while the colours move. It keeps its dim for
+   the switch and takes the blur back when the fade ends. */
+html.is-theme-fading .sheet-backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
