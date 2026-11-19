@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +27,41 @@ function read(file) {
     throw new Error('could not read ' + file + '; run npm run native:build first');
   }
   return readFileSync(path, 'utf8');
+}
+
+// A pin only proves the URL matches; it cannot see content built from a
+// different tree at the same version. Hash the files the shell will serve.
+function digest(file) {
+  return createHash('sha256').update(readFileSync(join(root, file))).digest('hex').slice(0, 16);
+}
+
+function compareContent(label, copyRoot, files) {
+  const problems = [];
+  for (const file of files) {
+    const copy = copyRoot + '/' + file;
+    if (!existsSync(join(root, copy))) {
+      problems.push(label + ' is missing ' + file);
+      continue;
+    }
+    if (digest(copy) !== digest(file)) {
+      problems.push(label + ' serves different ' + file + ' content at the same pin');
+    }
+  }
+  return problems;
+}
+
+// The worker caches files index.html never pins (the wordle bundle, the icons),
+// and the shell has to serve those from the same tree. Read the SHELL list out
+// of sw.js as the contract for what the two copies must contain.
+function precachedPaths(source) {
+  const start = source.indexOf('const SHELL = [');
+  const end = source.indexOf('];', start);
+  if (start === -1 || end === -1) return [];
+  const paths = [];
+  for (const match of source.slice(start, end).matchAll(/['"]\.\/([^'"?]+)/g)) {
+    if (paths.indexOf(match[1]) === -1) paths.push(match[1]);
+  }
+  return paths;
 }
 
 // index.html carries the version on the URL itself.
@@ -72,10 +108,20 @@ function main() {
   const source = shellPins(read('index.html'));
   if (source.size === 0) throw new Error('no versioned assets found in index.html');
 
-  const worker = serviceWorkerPins(read('sw.js'));
+  const workerSource = read('sw.js');
+  const worker = serviceWorkerPins(workerSource);
   const problems = compare('sw.js', source, worker.pins);
   for (const name of new Set(worker.unknown)) {
     problems.push('sw.js precaches with an undefined constant ' + name);
+  }
+
+  // index.html's shell, plus everything else the worker caches. index.html
+  // itself is excluded: the native shell injects its plugins into it.
+  const contents = [...source.keys()];
+  for (const file of precachedPaths(workerSource)) {
+    if (file === 'index.html' || contents.indexOf(file) !== -1) continue;
+    if (!existsSync(join(root, file))) continue;
+    contents.push(file);
   }
 
   const copied = [];
@@ -86,6 +132,7 @@ function main() {
       continue;
     }
     problems.push(...compare(file, source, shellPins(read(file))));
+    problems.push(...compareContent(file, file.replace(/index\.html$/, ''), contents));
     copied.push(file);
   }
 
@@ -97,8 +144,9 @@ function main() {
   }
 
   console.log(
-    '[native pins] ' + source.size + ' assets agree across index.html, sw.js, ' +
-    (copied.length > 0 ? copied.join(' and ') : 'no copies') + '.'
+    '[native pins] ' + source.size + ' pins agree across index.html, sw.js, ' +
+    (copied.length > 0 ? copied.join(' and ') : 'no copies') + '; ' + contents.length +
+    ' precached files match byte for byte.'
   );
 }
 
