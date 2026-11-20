@@ -153,6 +153,31 @@ try {
   const hub = await evaluate("Boolean(document.getElementById('hub'))");
   if (!hub) fail('the hub did not render after home-ready');
 
+  // The hub only proves the cover built. Opening a card is what proves the
+  // game screens mount and lay out, so tap Merge and wait for its view.
+  const tapped = await evaluate(
+    "(() => { const card = document.querySelector('.home-game[data-game=\"merge\"]');" +
+      " if (!card) return 'the hub has no merge card'; card.click(); return ''; })()"
+  );
+  if (tapped) fail(tapped);
+
+  const game = await until(
+    'the merge screen to render',
+    () =>
+      evaluate(
+        "(() => { if (document.body.dataset.screen !== 'merge') return null;" +
+          " const view = document.querySelector('main.app'); if (!view) return null;" +
+          " const box = view.getBoundingClientRect();" +
+          " const heading = view.querySelector('h1');" +
+          " const title = heading ? heading.textContent.trim() : '';" +
+          " return box.height > 100 && /Merge/.test(title)" +
+          " ? { title, height: Math.round(box.height) } : null; })()"
+      ),
+    30000,
+    250
+  );
+  log(`opened Merge from the hub: \"${game.title}\" rendered at ${game.height}px`);
+
   const haptics = await evaluate(
     "(() => { const plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;" +
       ' return { present: Boolean(plugin), vibrate: Boolean(plugin && typeof plugin.vibrate === "function") }; })()'
