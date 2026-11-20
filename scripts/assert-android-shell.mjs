@@ -15,7 +15,9 @@
      4. the Haptics plugin is present in the bridge's plugin map;
      5. calling it settles instead of failing as unimplemented;
      6. a palette tap repaints the window strip behind the system bars — the
-        surface SystemBars rewrote when the strip went stale.
+        surface SystemBars rewrote when the strip went stale;
+     7. the page surface itself repaints on that tap — the composited scroller
+        used to keep the previous appearance's raster.
 
    Run it with an emulator attached and the debug APK already built. */
 
@@ -154,6 +156,36 @@ function stripColour(png, edge) {
 async function readStrip() {
   const png = decodePng(adbBuffer(['exec-out', 'screencap', '-p']));
   return { top: stripColour(png, 'top'), bottom: stripColour(png, 'bottom') };
+}
+
+/* The page surface the WebView actually paints, read from the device. The
+   hub's left margin is page background only — no card, tile or scrim reaches
+   it — so the dominant colour down that column is what the compositor has on
+   screen for `--page`. A stale layer keeps this on the previous appearance's
+   colour while every control already shows the new one. */
+async function readPageSurface() {
+  const png = decodePng(adbBuffer(['exec-out', 'screencap', '-p']));
+  const from = Math.round(png.width * 0.004);
+  const to = Math.round(png.width * 0.018);
+  const top = Math.round(png.height * 0.2);
+  const bottom = Math.round(png.height * 0.95);
+  const counts = new Map();
+  for (let y = top; y < bottom; y++) {
+    for (let x = from; x < to; x++) {
+      const at = y * png.width * png.bpp + x * png.bpp;
+      const key = (png.pixels[at] << 16) | (png.pixels[at + 1] << 8) | png.pixels[at + 2];
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  let best = null;
+  let seen = 0;
+  for (const [key, count] of counts) {
+    if (count > seen) {
+      best = key;
+      seen = count;
+    }
+  }
+  return best === null ? null : `#${best.toString(16).padStart(6, '0')}`;
 }
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -342,6 +374,20 @@ try {
       " if (!done) return 'the appearance sheet has no done button'; done.click(); return ''; })()"
   );
   if (closed) fail(closed);
+
+  // The page surface itself, not only the strip: the WebView's composited
+  // scrollers used to keep the previous appearance's raster, so the hub stayed
+  // on the old page colour while every control took the new one. Wait out the
+  // sheet's 320ms leave and the fade, then read the device's own pixels.
+  await wait(900);
+  const paletteSurface = await readPageSurface();
+  if (paletteSurface !== after) {
+    fail(
+      `the page surface did not repaint on the ${targetPalette} palette:` +
+        ` expected ${after}, got ${paletteSurface}`
+    );
+  }
+  log(`the page surface is on the ${targetPalette} palette: ${paletteSurface}`);
 
   // The hub only proves the cover built. Opening a card is what proves the
   // game screens mount and lay out, so tap Merge and wait for its view: the

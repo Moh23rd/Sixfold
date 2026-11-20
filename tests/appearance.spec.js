@@ -26,6 +26,8 @@ function appearance(page) {
     const tab = getComputedStyle(document.querySelector('#theme-seg button'));
     return {
       fading: document.documentElement.classList.contains('is-theme-fading'),
+      hubPromotion: getComputedStyle(document.getElementById('hub')).willChange,
+      sheetPromotion: getComputedStyle(document.querySelector('.sheet-card')).willChange,
       theme: document.documentElement.dataset.theme,
       page: html.getPropertyValue('--page').trim(),
       tile: html.getPropertyValue('--t8').trim(),
@@ -111,6 +113,38 @@ test('a palette switch fades the tiles with the page', async ({ page }) => {
   expect(ocean.page).not.toBe(warm.page);
   expect(ocean.tile).not.toBe(warm.tile);
   expect(ocean.cardProperties).toBe(warm.cardProperties);
+});
+
+test('the native shell fades with its page surfaces promoted', async ({ page }) => {
+  await openLook(page);
+  // The Android WebView composites the faded surfaces separately, and a stale
+  // layer leaves the page background at the previous appearance's colour. The
+  // shell keeps the fade, and pairs it with a temporary opacity promotion on
+  // the surfaces that own a full-page colour, so the compositor has to carry
+  // the new raster. If the promotion ever stops covering a surface the shell
+  // paints, this fails before the fade can leave it behind.
+  await page.evaluate(() => {
+    window.Capacitor = { isNativePlatform: () => true };
+    document.documentElement.classList.add('is-native');
+  });
+
+  const before = await appearance(page);
+  expect(before.hubPromotion, 'no promotion is held before the switch').not.toBe('opacity');
+  await page.locator('[data-theme-opt="dark"]').click();
+  const during = await appearance(page);
+  expect(during.theme).toBe('dark');
+  expect(during.fading, 'the native shell keeps the cross-fade').toBe(true);
+  expect(during.hubPromotion, 'the hub is promoted for the switch').toBe('opacity');
+  expect(during.sheetPromotion, 'the sheet card is promoted for the switch').toBe('opacity');
+
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-theme-fading'));
+  await page.waitForFunction(() =>
+    getComputedStyle(document.getElementById('hub')).willChange !== 'opacity'
+  );
+  const after = await appearance(page);
+  expect(after.page).not.toBe(before.page);
+  expect(after.theme).toBe('dark');
+  expect(after.hubPromotion, 'the promotion is dropped once the switch settles').not.toBe('opacity');
 });
 
 test('reduced motion switches in one frame', async ({ page }) => {

@@ -60,11 +60,19 @@
     root.classList.remove('is-theme-fading');
   }
 
+  function isNativeShell() {
+    return Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+
   function crossFade() {
     // A phone that asked for calm motion, or one the launch script already put
     // on the light paint path, keeps the instant switch it had.
     if (calmMotion && calmMotion.matches) return;
     if (window.MergePerf && window.MergePerf.lite) return;
+    // The shell fades too: its WebView composites each faded surface
+    // separately, which used to leave a page on an in-between colour until
+    // something forced a repaint. repaintNativePage() promotes those surfaces
+    // for the length of the switch, so the layer carries the new colours.
     root.classList.add('is-theme-fading');
     window.clearTimeout(fadeTimer);
     fadeTimer = window.setTimeout(endCrossFade, FADE_MS + 60);
@@ -243,10 +251,40 @@
     else manifestTimer = window.setTimeout(run, 120);
   }
 
+  // Android's WebView presents an appearance switch one frame behind on its
+  // composited scrollers (the hub, a game screen, the sheet card): the controls
+  // take the new colours, but the large page surface keeps the colours of the
+  // previous switch until some later frame forces it out. Promoting the page
+  // briefly creates the layer that carries the new colours, and dropping the
+  // promotion puts it back on the normal path. It only runs in the shell; a
+  // browser commits the switch on its own. will-change: opacity is the
+  // promotion that does not turn the page into a containing block, so a fixed
+  // banner or dialog keeps its place while it is held.
+  let repaintToken = 0;
+
+  function repaintNativePage() {
+    if (!isNativeShell()) return;
+    // The surfaces that own a full-page colour, not <html>: the fixed hub and
+    // play screens and the sheet card are their own composited layers, so
+    // promoting the root leaves their stale raster in place.
+    const surfaces = document.querySelectorAll('.hub, .play-screen, .sheet-card, .app');
+    if (!surfaces.length) return;
+    const token = ++repaintToken;
+    surfaces.forEach(function (el) { el.style.willChange = 'opacity'; });
+    // Hold the layer long enough to cover a sheet that starts leaving in the
+    // same task (its 320ms exit owns that window). Dropping the promotion in
+    // the middle of that transition can leave the card on screen.
+    window.setTimeout(function () {
+      if (token !== repaintToken) return;
+      surfaces.forEach(function (el) { el.style.willChange = ''; });
+    }, 420);
+  }
+
   function refreshPage() {
     tintPage();
     paintBrowserChrome();
     syncManifestLater();
+    repaintNativePage();
   }
 
   // The result image is drawn from the page colours, so tell the game when they
