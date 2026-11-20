@@ -180,9 +180,17 @@
     reportedSurface = bg;
     try {
       const pending = plugin.setColor({ color: bg });
-      if (pending && pending.catch) pending.catch(function () {});
+      // A report that never landed left the surface on the old colour. Forget
+      // it, so the next appearance change tries again instead of treating the
+      // colour as already painted for the rest of the session.
+      if (pending && pending.catch) {
+        pending.catch(function () {
+          if (reportedSurface === bg) reportedSurface = null;
+        });
+      }
     } catch (err) {
       /* an older APK without the plugin keeps the static launch colour */
+      reportedSurface = null;
     }
   }
 

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.view.Window;
+import android.webkit.WebView;
 
 import androidx.fragment.app.FragmentActivity;
 
@@ -23,6 +25,13 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * The page reports its colour whenever the theme or palette changes, and the
  * last report is remembered so the next launch can pick the matching launch
  * theme: that is what keeps the splash out of the phone's day/night colour.
+ *
+ * A report has to repaint two surfaces and then ask for a frame. The window
+ * drawable is the strip around the page, the WebView's own background is what
+ * shows wherever the page is transparent (MainActivity seeds it once at
+ * launch), and a background set while a touch is still being handled is not
+ * drawn until something requests a frame — without that the strip keeps the
+ * colour the app opened with until an unrelated redraw or a restart.
  * Nothing is retried or polled, and the theme's day/night {@code app_surface}
  * covers the very first launch, before any colour has been reported.
  */
@@ -67,7 +76,11 @@ public class WindowSurfacePlugin extends Plugin {
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                activity.getWindow().setBackgroundDrawable(new ColorDrawable(color));
+                final Window window = activity.getWindow();
+                window.setBackgroundDrawable(new ColorDrawable(color));
+                final WebView webView = getBridge().getWebView();
+                if (webView != null) webView.setBackgroundColor(color);
+                window.getDecorView().postInvalidateOnAnimation();
                 call.resolve();
             }
         });
