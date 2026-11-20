@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.25**.
+> Public release label: **v5.0**. Current development build: **6.0.26**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.25**
+Internal build: **6.0.26**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -45,16 +45,18 @@ release stays at 5.0 until the 6.0 feature set lands.
   changed state and the phone stayed still. A small `Haptics` plugin now plays
   the same waveforms through the platform vibrator and the manifest asks for the
   permission it needs; a browser keeps the web call.
-- **The overscroll stretch is the platform's, not an impression of it**: the
-  previous rebuild followed the finger but scaled the hub *up* from the pulled
-  edge, so the far end ran out of the window and the page read as dragged or
-  zoomed rather than stretched. The effect now follows Android's own documented
-  contract — the pull is a fraction of the viewport clamped at 1, the pulled
-  edge travels with the finger, the opposite edge stays pinned on the boundary
-  and the content between them is squeezed, a touch during the settle catches
-  it, dragging back releases the stretch before the list scrolls, and a fling
-  into the edge is absorbed. Recovery uses AOSP `EdgeEffect`'s spring (24.657
-  rad/s, damping ratio 0.98, absorb adjustment 13) instead of hand-tuned
+- **The overscroll stretch magnifies, it does not drag the page**: the previous
+  rebuild translated the hub down and squeezed it so the opposite edge stayed
+  pinned, which opened a band of empty background above the page and read as a
+  drag with a squashed list — nothing like the stretch every other Android app
+  shows. HWUI's own effect does the opposite: `StretchEffect::makeLinearStretch`
+  scales by `1 + pull` about the edge being pulled, so that edge stays on the
+  viewport boundary, no gap can open, and the content grows away from it with
+  the far edge pushed out of view. The effect now does exactly that, and the
+  pull is still a fraction of the viewport clamped at 1, a touch during the
+  settle catches it, dragging back releases the stretch before the list scrolls,
+  and a fling into the edge is absorbed. Recovery uses AOSP `EdgeEffect`'s spring
+  (24.657 rad/s, damping ratio 0.98, absorb adjustment 13) instead of hand-tuned
   constants, which is what makes the settle land in about a quarter second
   without a bounce.
 

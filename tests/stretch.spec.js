@@ -1,10 +1,12 @@
 /* The Android stretch is a touch-only effect: it runs only under an Android
    user agent, it is driven by real touch sequences, and nothing else in the
    suite can reach it. These tests pin the rules the effect claims to follow —
-   the pulled edge travels while the opposite edge stays pinned, the pull
-   saturates instead of tracking the finger, a touch during the settle catches
-   the frame on screen, the settle returns to flat, and momentum that reaches
-   the edge is absorbed into a pulse instead of stopping dead on the boundary. */
+   the pulled edge stays on the viewport boundary while the content grows away
+   from it (the platform magnifies, it never translates the page and leaves a
+   gap), the stretch saturates instead of tracking the finger, a touch during
+   the settle catches the frame on screen, the settle returns to flat, and
+   momentum that reaches the edge is absorbed into a pulse instead of stopping
+   dead on the boundary. */
 const { test, expect } = require('@playwright/test');
 
 const ANDROID_UA =
@@ -45,11 +47,15 @@ function read(page) {
     const box = hub.getBoundingClientRect();
     const computed = getComputedStyle(hub).transform;
     const matrix = computed === 'none' ? null : new DOMMatrix(computed);
+    const scaleY = matrix ? matrix.m22 : 1;
     return {
       transform: hub.style.transform || 'none',
       origin: hub.style.transformOrigin || 'none',
-      travel: matrix ? Math.abs(matrix.m42) : 0,
-      scaleY: matrix ? matrix.m22 : 1,
+      // The platform stretch is pure magnification about the pulled edge, so a
+      // translation here would be the bug this suite exists to catch.
+      offset: matrix ? matrix.m42 : 0,
+      scaleY,
+      growth: (scaleY - 1) * hub.clientHeight,
       top: box.top,
       bottom: box.bottom,
       height: hub.clientHeight,
@@ -58,7 +64,7 @@ function read(page) {
   });
 }
 
-test('the pulled edge leaves the boundary and the opposite edge stays pinned', async ({
+test('the pulled edge stays on the boundary and the content stretches away from it', async ({
   page,
   context,
 }) => {
@@ -74,14 +80,15 @@ test('the pulled edge leaves the boundary and the opposite edge stays pinned', a
   await page.waitForTimeout(40);
   const pulled = await read(page);
 
-  expect(pulled.travel).toBeGreaterThan(20);
+  expect(pulled.growth).toBeGreaterThan(20);
   expect(pulled.origin).toBe('50% 0%');
-  // The pulled edge travels exactly as far as the transform says …
-  expect(pulled.top).toBeCloseTo(pulled.travel, 0);
-  // … while the opposite edge never leaves the viewport boundary.
-  expect(pulled.bottom).toBeCloseTo(idle.height, 0);
-  expect(pulled.scaleY).toBeLessThan(0.99);
-  expect(pulled.scaleY).toBeGreaterThan(0.9);
+  // StretchEffect magnifies about the pulled edge: no translation, so the page
+  // never slides down and no gap can open above it…
+  expect(pulled.offset).toBe(0);
+  expect(pulled.top).toBeCloseTo(0, 0);
+  expect(pulled.scaleY).toBeGreaterThan(1.01);
+  // …and the far edge is pushed past the viewport, which is the stretch.
+  expect(pulled.bottom).toBeGreaterThan(idle.height + 20);
   expect(pulled.scrollTop).toBe(0);
 
   await touch(cdp, 'touchEnd');
@@ -97,27 +104,27 @@ test('the pull saturates instead of tracking the finger', async ({ page, context
   for (const distance of [40, 120, 240, 700]) {
     await touch(cdp, 'touchMove', 120 + distance);
     await page.waitForTimeout(40);
-    samples.push({ distance, travel: (await read(page)).travel });
+    samples.push({ distance, growth: (await read(page)).growth });
   }
 
   const [a, b, c, d] = samples;
   // Monotonic: a longer drag never goes backwards.
-  expect(b.travel).toBeGreaterThan(a.travel);
-  expect(c.travel).toBeGreaterThan(b.travel);
-  expect(d.travel).toBeGreaterThanOrEqual(c.travel);
+  expect(b.growth).toBeGreaterThan(a.growth);
+  expect(c.growth).toBeGreaterThan(b.growth);
+  expect(d.growth).toBeGreaterThanOrEqual(c.growth);
 
-  // Diminishing returns: every extra pixel of finger travel moves the edge
+  // Diminishing returns: every extra pixel of finger travel grows the content
   // less than the stretch already did.
-  const firstRate = a.travel / a.distance;
-  const secondRate = (b.travel - a.travel) / (b.distance - a.distance);
-  const thirdRate = (c.travel - b.travel) / (c.distance - b.distance);
+  const firstRate = a.growth / a.distance;
+  const secondRate = (b.growth - a.growth) / (b.distance - a.distance);
+  const thirdRate = (c.growth - b.growth) / (c.distance - b.distance);
   expect(secondRate).toBeLessThan(firstRate);
   expect(thirdRate).toBeLessThan(secondRate);
 
-  // And it is bounded: the edge lags the finger and never reaches the cap.
+  // And it is bounded: the stretch lags the finger and never reaches the cap.
   const cap = 0.18 * (await read(page)).height;
-  expect(c.travel).toBeLessThan(c.distance * 0.6);
-  expect(d.travel).toBeLessThan(cap * 0.95);
+  expect(c.growth).toBeLessThan(c.distance * 0.6);
+  expect(d.growth).toBeLessThan(cap * 0.95);
 
   await touch(cdp, 'touchEnd');
   await page.waitForTimeout(600);
@@ -134,7 +141,7 @@ test('a touch during the settle catches the frame that is on screen', async ({
   await touch(cdp, 'touchMove', 440);
   await page.waitForTimeout(40);
   const held = await read(page);
-  expect(held.travel).toBeGreaterThan(20);
+  expect(held.growth).toBeGreaterThan(20);
 
   await touch(cdp, 'touchEnd');
   await page.waitForTimeout(80);
@@ -147,8 +154,8 @@ test('a touch during the settle catches the frame that is on screen', async ({
   const later = await read(page);
 
   expect(caught.transform).not.toBe('none');
-  expect(caught.travel).toBeGreaterThan(0);
-  expect(caught.travel).toBeLessThan(held.travel);
+  expect(caught.growth).toBeGreaterThan(0);
+  expect(caught.growth).toBeLessThan(held.growth);
   expect(later.transform).toBe(caught.transform);
 
   await touch(cdp, 'touchEnd');
@@ -169,9 +176,10 @@ test('momentum that reaches the edge is absorbed and decays back to flat', async
     const tick = () => {
       const computed = getComputedStyle(hub).transform;
       const matrix = computed === 'none' ? null : new DOMMatrix(computed);
+      const scaleY = matrix ? matrix.m22 : 1;
       window.__pulse.push({
         t: Math.round(performance.now() - started),
-        travel: matrix ? Math.abs(matrix.m42) : 0,
+        growth: (scaleY - 1) * hub.clientHeight,
         origin: hub.style.transformOrigin || 'none',
       });
       if (performance.now() - started < 1000) requestAnimationFrame(tick);
@@ -207,22 +215,22 @@ test('momentum that reaches the edge is absorbed and decays back to flat', async
   const samples = await page.evaluate(() => window.__pulse);
   expect(samples.length).toBeGreaterThan(20);
   const peak = samples.reduce((best, sample) =>
-    sample.travel > best.travel ? sample : best
+    sample.growth > best.growth ? sample : best
   );
   // A pulse with no finger anywhere near the screen.
-  expect(peak.travel).toBeGreaterThan(20);
+  expect(peak.growth).toBeGreaterThan(20);
   expect(peak.origin).toBe('50% 0%');
   // It decays to nothing and stays there: the tail is flat.
   const tail = samples.slice(-6);
-  expect(tail.every((sample) => sample.travel === 0)).toBe(true);
-  expect(peak.travel).toBeGreaterThan(tail[0].travel);
+  expect(tail.every((sample) => sample.growth === 0)).toBe(true);
+  expect(peak.growth).toBeGreaterThan(tail[0].growth);
 
   await expect
     .poll(async () => (await read(page)).transform, { timeout: 2500 })
     .toBe('none');
 
   const flat = await read(page);
-  expect(flat.travel).toBe(0);
+  expect(flat.growth).toBe(0);
   expect(flat.scaleY).toBe(1);
   expect(flat.top).toBeCloseTo(0, 0);
   expect(flat.bottom).toBeCloseTo(idle.height, 0);
@@ -238,19 +246,19 @@ test('the settle returns the page to flat', async ({ page, context }) => {
   await touch(cdp, 'touchMove', 440);
   await page.waitForTimeout(40);
   const held = await read(page);
-  expect(held.travel).toBeGreaterThan(20);
+  expect(held.growth).toBeGreaterThan(20);
 
   await touch(cdp, 'touchEnd');
   await page.waitForTimeout(100);
   const early = await read(page);
-  expect(early.travel).toBeLessThan(held.travel);
+  expect(early.growth).toBeLessThan(held.growth);
 
   await expect
     .poll(async () => (await read(page)).transform, { timeout: 2000 })
     .toBe('none');
 
   const flat = await read(page);
-  expect(flat.travel).toBe(0);
+  expect(flat.growth).toBe(0);
   expect(flat.scaleY).toBe(1);
   expect(flat.top).toBeCloseTo(0, 0);
   expect(flat.bottom).toBeCloseTo(idle.height, 0);

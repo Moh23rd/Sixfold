@@ -18,15 +18,15 @@
       arrives at the edge is absorbed into that spring with the platform's
       ON_ABSORB_VELOCITY_ADJUSTMENT of 13.
 
-   The shape is the other half of it, and it is where the previous version went
-   wrong. HWUI warps the layer so the pulled edge travels with the finger, the
-   far edge stays where it is, and everything between them compresses, with the
-   displacement falling off towards the pinned edge. CSS transforms are affine,
-   so a cubic falloff is not expressible, but the net geometry is: the pulled
-   edge moves by p, the opposite edge is pinned, and the content is squeezed by
-   (height - p) / height around the pinned edge. That is the transform written
-   here. A uniform scale around the middle, or a scale that grows the content,
-   both read as the page being dragged or zoomed instead of stretched.
+   The shape is the other half of it, and it is what went wrong before. HWUI
+   draws the stretch as a *magnification* anchored on the edge being pulled:
+   StretchEffect::makeLinearStretch does `setScale(1 + |stretch|, ...,
+   stretch > 0 ? 0 : height)`, i.e. the pulled edge stays on the viewport
+   boundary and the content grows away from it, with the falloff near the edge
+   supplied by the shader. CSS cannot express the cubic falloff, but the affine
+   part is exactly that scale about the pulled edge. Translating the layer down
+   and squeezing it — which is what this file used to do — opens a gap above the
+   page and reads as a drag with a squashed page, nothing like the platform.
 
    iOS keeps its native rubber band: this file does nothing there. */
 
@@ -53,9 +53,10 @@
   const SETTLE_SPEED = 0.02;   // fractions per second
   const MAX_FRACTION = 1;      // EdgeEffect clamps the pull here
 
-  // How much of the viewport the pulled edge can travel at a saturated pull,
-  // and how quickly the pull fills that up. The edge lags the finger — that
-  // lag is the effect — and saturates instead of tracking it to the boundary.
+  // How much the content can grow (as a fraction of the viewport) at a
+  // saturated pull, and how quickly the pull fills that up. The stretch lags
+  // the finger — that lag is the effect — and saturates instead of following it
+  // all the way to the boundary.
   const MAX_TRAVEL = 0.18;
   const PULL_SCALE = 0.5;
   const SLOP = 6;            // px of travel before a drag is claimed
@@ -103,22 +104,20 @@
 
   function paint() {
     if (!hub) return;
-    const travel = travelOf(pull);
-    if (travel < 0.05 || !dir) {
+    const growth = travelOf(pull);
+    if (growth < 0.05 || !dir) {
       hub.style.transform = '';
       hub.style.transformOrigin = '';
       hub.style.willChange = '';
       return;
     }
-    // Origin on the pulled edge, translate by the travel, then squeeze by
-    // (height - travel) / height: the pulled edge lands on `travel`, the
-    // opposite edge stays exactly on the viewport boundary.
-    const scale = (height - travel) / height;
+    // Magnify about the pulled edge — no translation, so the edge never leaves
+    // the viewport and no gap can open above the page. The content between the
+    // edges is stretched and the far edge is pushed out of view.
+    const scale = (height + growth) / height;
     hub.style.transformOrigin = dir > 0 ? '50% 0%' : '50% 100%';
     hub.style.willChange = 'transform';
-    hub.style.transform =
-      'translate3d(0,' + (dir > 0 ? travel : -travel).toFixed(2) + 'px,0)' +
-      ' scale3d(1,' + scale.toFixed(5) + ',1)';
+    hub.style.transform = 'scale3d(1,' + scale.toFixed(5) + ',1)';
   }
 
   function cancel() {
