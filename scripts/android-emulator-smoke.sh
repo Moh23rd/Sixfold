@@ -59,12 +59,20 @@ if [ ! -d "$SDK/system-images/android-$API/google_apis/x86_64" ]; then
   "$SDKMANAGER" "$IMAGE" >/dev/null || die "could not install $IMAGE"
 fi
 
-AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+# avdmanager (cmdline-tools) writes to ANDROID_USER_HOME/avd, but the emulator
+# only searches ANDROID_AVD_HOME, ANDROID_SDK_HOME/avd and $HOME/.android/avd.
+# When the host sets only the former, the emulator starts and immediately
+# reports "Unknown AVD name". Pin both sides to the same directory.
+export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+mkdir -p "$ANDROID_AVD_HOME"
+AVD_HOME="$ANDROID_AVD_HOME"
 if [ ! -d "$AVD_HOME/$AVD.avd" ]; then
   note "creating the $AVD virtual device"
   echo no | "$AVDMANAGER" create avd -n "$AVD" -k "$IMAGE" --force >/dev/null \
     || die "could not create the $AVD virtual device"
 fi
+[ -f "$AVD_HOME/$AVD.ini" ] \
+  || die "the $AVD virtual device is not in $AVD_HOME, where the emulator looks"
 
 EMULATOR_PID=""
 cleanup() {
