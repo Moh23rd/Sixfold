@@ -32,9 +32,10 @@ function fail(message) {
   process.exit(1);
 }
 
-function adb(args) {
+function adb(args, timeout = 120000) {
   try {
-    return execFileSync('adb', args, { encoding: 'utf8', stdio: 'pipe' }).trim();
+    // Bounded: a wedged adb server otherwise hangs the job with no output.
+    return execFileSync('adb', args, { encoding: 'utf8', stdio: 'pipe', timeout }).trim();
   } catch (error) {
     const detail = (error.stderr || error.message || '').toString().trim();
     throw new Error(`adb ${args.join(' ')} failed: ${detail}`);

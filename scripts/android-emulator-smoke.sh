@@ -38,6 +38,11 @@ mkdir -p "$OUT"
 
 note() { echo "[emulator] $*"; }
 die() { echo "::error::$*"; exit 1; }
+# Every adb call is bounded. `adb shell` against a device that is up but not
+# answering blocks forever, which turns a slow boot into a job that says
+# nothing for twenty minutes.
+adb_run() { timeout "${ADB_TIMEOUT:-20}" "$ADB" "$@" || true; }
+adb_do() { timeout "${ADB_TIMEOUT:-120}" "$ADB" "$@"; }
 
 [ -x "$ADB" ] || die "platform-tools are missing from $SDK"
 [ -n "$SDKMANAGER" ] && [ -x "$SDKMANAGER" ] || die "sdkmanager is missing (install cmdline-tools)"
@@ -66,8 +71,8 @@ cleanup() {
   local status=$?
   if [ "$status" -ne 0 ] && [ -n "$EMULATOR_PID" ]; then
     note "capturing the emulator's logcat and a screenshot"
-    "$ADB" logcat -d -t 400 > "$OUT/logcat.txt" 2>&1 || true
-    "$ADB" exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
+    adb_do logcat -d -t 400 > "$OUT/logcat.txt" 2>&1 || true
+    adb_do exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
   fi
   if [ -n "$EMULATOR_PID" ]; then
     kill "$EMULATOR_PID" 2>/dev/null || true
@@ -88,36 +93,41 @@ EMULATOR_PID=$!
 # `adb wait-for-device` has no timeout: if the emulator dies on the way up the
 # wait never returns and the job burns its whole timeout saying nothing.
 appeared=""
-for _ in $(seq 1 90); do
+for i in $(seq 1 90); do
   if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
     tail -n 40 "$LOG" || true
     die "the emulator exited before it reached adb"
   fi
-  if "$ADB" devices | grep -qE "^emulator-[0-9]+[[:space:]]+device$"; then
+  if adb_run devices | grep -qE "^emulator-[0-9]+[[:space:]]+device$"; then
     appeared=1
     break
   fi
+  [ $((i % 15)) -eq 0 ] && note "waiting for the emulator to appear in adb ($((i * 2))s)"
   sleep 2
 done
 [ -n "$appeared" ] || die "the emulator never appeared in adb"
 
 booted=""
-for _ in $(seq 1 180); do
-  booted=$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+for i in $(seq 1 150); do
+  booted=$(adb_run shell getprop sys.boot_completed | tr -d '\r')
   [ "$booted" = "1" ] && break
   if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
     tail -n 40 "$LOG" || true
     die "the emulator exited before it booted"
   fi
+  [ $((i % 15)) -eq 0 ] && note "waiting for the boot to finish ($((i * 2))s)"
   sleep 2
 done
-[ "$booted" = "1" ] || die "the emulator did not finish booting in six minutes"
+if [ "$booted" != "1" ]; then
+  tail -n 40 "$LOG" || true
+  die "the emulator did not finish booting"
+fi
 note "the emulator is booted"
 
 # Animations change frame timing; the assertion polls the page, not the clock,
 # but a still screen also keeps the logcat readable on failure.
 for setting in window_animation_scale transition_animation_scale animator_duration_scale; do
-  "$ADB" shell settings put global "$setting" 0 >/dev/null 2>&1 || true
+  adb_run shell settings put global "$setting" 0 >/dev/null 2>&1
 done
 
 export PATH="$SDK/platform-tools:$PATH"
