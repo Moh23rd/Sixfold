@@ -11,8 +11,9 @@
      1. the WebView reached `home-ready`, i.e. the launch layer finished and the
         hub built;
      2. the hub rendered;
-     3. the Haptics plugin is present in the bridge's plugin map;
-     4. calling it settles instead of failing as unimplemented.
+     3. a card opens its game, which proves the game screens mount and lay out;
+     4. the Haptics plugin is present in the bridge's plugin map;
+     5. calling it settles instead of failing as unimplemented.
 
    Run it with an emulator attached and the debug APK already built. */
 
@@ -154,28 +155,24 @@ try {
   if (!hub) fail('the hub did not render after home-ready');
 
   // The hub only proves the cover built. Opening a card is what proves the
-  // game screens mount and lay out, so tap Merge and wait for its view.
+  // game screens mount and lay out, so tap Merge and wait for its view: the
+  // screen's own marker, a laid-out container, and its title.
   const tapped = await evaluate(
     "(() => { const card = document.querySelector('.home-game[data-game=\"merge\"]');" +
       " if (!card) return 'the hub has no merge card'; card.click(); return ''; })()"
   );
   if (tapped) fail(tapped);
 
-  const game = await until(
-    'the merge screen to render',
-    () =>
-      evaluate(
-        "(() => { if (document.body.dataset.screen !== 'merge') return null;" +
-          " const view = document.querySelector('main.app'); if (!view) return null;" +
-          " const box = view.getBoundingClientRect();" +
-          " const heading = view.querySelector('h1');" +
-          " const title = heading ? heading.textContent.trim() : '';" +
-          " return box.height > 100 && /Merge/.test(title)" +
-          " ? { title, height: Math.round(box.height) } : null; })()"
-      ),
-    30000,
-    250
-  );
+  const mergeScreen =
+    "(() => { if (document.body.dataset.screen !== 'merge') return null;" +
+    " const view = document.querySelector('main.app'); if (!view) return null;" +
+    " const heading = view.querySelector('h1');" +
+    " const title = heading ? heading.textContent.trim() : '';" +
+    " const height = view.getBoundingClientRect().height;" +
+    " return height > 100 && /Merge/.test(title)" +
+    " ? { title, height: Math.round(height) } : null; })()";
+
+  const game = await until('the merge screen to render', () => evaluate(mergeScreen), 30000, 250);
   log(`opened Merge from the hub: \"${game.title}\" rendered at ${game.height}px`);
 
   const haptics = await evaluate(

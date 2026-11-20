@@ -40,13 +40,13 @@ note() { echo "[emulator] $*"; }
 die() { echo "::error::$*"; exit 1; }
 # Every adb call is bounded. `adb shell` against a device that is up but not
 # answering blocks forever, which turns a slow boot into a job that says
-# nothing for twenty minutes.
-adb_run() { timeout "${ADB_TIMEOUT:-20}" "$ADB" "$@" || true; }
-adb_do() { timeout "${ADB_TIMEOUT:-120}" "$ADB" "$@"; }
+# nothing for twenty minutes. Polls ignore failures: an unready device is the
+# expected answer while it boots.
+adb_run() { timeout 20 "$ADB" "$@" || true; }
 
 [ -x "$ADB" ] || die "platform-tools are missing from $SDK"
-[ -n "$SDKMANAGER" ] && [ -x "$SDKMANAGER" ] || die "sdkmanager is missing (install cmdline-tools)"
-[ -n "$AVDMANAGER" ] && [ -x "$AVDMANAGER" ] || die "avdmanager is missing (install cmdline-tools)"
+[ -x "$SDKMANAGER" ] || die "sdkmanager is missing (install cmdline-tools)"
+[ -x "$AVDMANAGER" ] || die "avdmanager is missing (install cmdline-tools)"
 [ -f "$APK" ] || die "$APK has not been built (run npm run native:apk:debug)"
 
 if [ ! -x "$EMULATOR" ]; then
@@ -65,22 +65,21 @@ fi
 # reports "Unknown AVD name". Pin both sides to the same directory.
 export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
 mkdir -p "$ANDROID_AVD_HOME"
-AVD_HOME="$ANDROID_AVD_HOME"
-if [ ! -d "$AVD_HOME/$AVD.avd" ]; then
+if [ ! -d "$ANDROID_AVD_HOME/$AVD.avd" ]; then
   note "creating the $AVD virtual device"
   echo no | "$AVDMANAGER" create avd -n "$AVD" -k "$IMAGE" --force >/dev/null \
     || die "could not create the $AVD virtual device"
 fi
-[ -f "$AVD_HOME/$AVD.ini" ] \
-  || die "the $AVD virtual device is not in $AVD_HOME, where the emulator looks"
+[ -f "$ANDROID_AVD_HOME/$AVD.ini" ] \
+  || die "the $AVD virtual device is not in $ANDROID_AVD_HOME, where the emulator looks"
 
 EMULATOR_PID=""
 cleanup() {
   local status=$?
   if [ "$status" -ne 0 ] && [ -n "$EMULATOR_PID" ]; then
     note "capturing the emulator's logcat and a screenshot"
-    adb_do logcat -d -t 400 > "$OUT/logcat.txt" 2>&1 || true
-    adb_do exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
+    timeout 120 "$ADB" logcat -d -t 400 > "$OUT/logcat.txt" 2>&1 || true
+    timeout 120 "$ADB" exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
   fi
   if [ -n "$EMULATOR_PID" ]; then
     kill "$EMULATOR_PID" 2>/dev/null || true
