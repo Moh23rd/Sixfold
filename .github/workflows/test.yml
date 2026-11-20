@@ -242,7 +242,9 @@ jobs:
   emulator:
     name: Android emulator smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # A cold run downloads the emulator and its system image before it boots
+    # anything; the cache makes later runs short, but the first one needs room.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - name: Set up Node
