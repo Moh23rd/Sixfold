@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.26**.
+> Public release label: **v5.0**. Current development build: **6.0.27**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.26**
+Internal build: **6.0.27**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -52,8 +52,13 @@ release stays at 5.0 until the 6.0 feature set lands.
   shows. HWUI's own effect does the opposite: `StretchEffect::makeLinearStretch`
   scales by `1 + pull` about the edge being pulled, so that edge stays on the
   viewport boundary, no gap can open, and the content grows away from it with
-  the far edge pushed out of view. The effect now does exactly that, and the
-  pull is still a fraction of the viewport clamped at 1, a touch during the
+  the far edge pushed out of view. The effect now does exactly that, so the
+  pulled edge stays on the boundary and no gap opens above the page. How far the
+  content grows is `EdgeEffect.dampStretchVector`'s own curve,
+  `0.016 × (u + 1 − e^(−u·e/0.33))`, which stops at 3.2% of the viewport however
+  hard the page is dragged; the first version of this fix let it grow by 18%,
+  which read as the whole screen zooming instead of as a rubber band. The pull
+  is still a fraction of the viewport clamped at 1, a touch during the
   settle catches it, dragging back releases the stretch before the list scrolls,
   and a fling into the edge is absorbed. Recovery uses AOSP `EdgeEffect`'s spring
   (24.657 rad/s, damping ratio 0.98, absorb adjustment 13) instead of hand-tuned

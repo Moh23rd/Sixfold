@@ -3,15 +3,25 @@
    suite can reach it. These tests pin the rules the effect claims to follow —
    the pulled edge stays on the viewport boundary while the content grows away
    from it (the platform magnifies, it never translates the page and leaves a
-   gap), the stretch saturates instead of tracking the finger, a touch during
-   the settle catches the frame on screen, the settle returns to flat, and
-   momentum that reaches the edge is absorbed into a pulse instead of stopping
-   dead on the boundary. */
+   gap), the growth follows EdgeEffect's own damping and stops at its 3.2%
+   ceiling instead of tracking the finger, a touch during the settle catches the
+   frame on screen, the settle returns to flat, and momentum that reaches the
+   edge is absorbed into a pulse instead of stopping dead on the boundary. */
 const { test, expect } = require('@playwright/test');
 
 const ANDROID_UA =
   'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) ' +
   'Chrome/131.0.0.0 Mobile Safari/537.36';
+
+/* EdgeEffect.dampStretchVector, as a fraction of the viewport: what the
+   platform draws for a pull of `u` viewports. The tests compare against it so a
+   change in how hard the page stretches fails here rather than on a phone. */
+function platformStretch(pull) {
+  const u = Math.max(0, Math.min(1, pull));
+  return 0.016 * (u + 1 - Math.exp((-u * Math.E) / 0.33));
+}
+
+const STRETCH_MAX = 0.016 * 2;
 
 test.use({ userAgent: ANDROID_UA, hasTouch: true, isMobile: true });
 
@@ -80,22 +90,30 @@ test('the pulled edge stays on the boundary and the content stretches away from 
   await page.waitForTimeout(40);
   const pulled = await read(page);
 
-  expect(pulled.growth).toBeGreaterThan(20);
+  expect(pulled.growth).toBeGreaterThan(4);
   expect(pulled.origin).toBe('50% 0%');
   // StretchEffect magnifies about the pulled edge: no translation, so the page
   // never slides down and no gap can open above it…
   expect(pulled.offset).toBe(0);
   expect(pulled.top).toBeCloseTo(0, 0);
-  expect(pulled.scaleY).toBeGreaterThan(1.01);
+  expect(pulled.scaleY).toBeGreaterThan(1.005);
+  // …by exactly as much as the platform's damping allows for that pull…
+  expect(pulled.growth).toBeCloseTo(
+    platformStretch(120 / pulled.height) * pulled.height,
+    0
+  );
   // …and the far edge is pushed past the viewport, which is the stretch.
-  expect(pulled.bottom).toBeGreaterThan(idle.height + 20);
+  expect(pulled.bottom).toBeGreaterThan(idle.height + 4);
   expect(pulled.scrollTop).toBe(0);
 
   await touch(cdp, 'touchEnd');
   await page.waitForTimeout(600);
 });
 
-test('the pull saturates instead of tracking the finger', async ({ page, context }) => {
+test('the pull saturates at the platform ceiling instead of tracking the finger', async ({
+  page,
+  context,
+}) => {
   await open(page);
   const cdp = await context.newCDPSession(page);
 
@@ -104,7 +122,15 @@ test('the pull saturates instead of tracking the finger', async ({ page, context
   for (const distance of [40, 120, 240, 700]) {
     await touch(cdp, 'touchMove', 120 + distance);
     await page.waitForTimeout(40);
-    samples.push({ distance, growth: (await read(page)).growth });
+    const seen = await read(page);
+    samples.push({ distance, height: seen.height, growth: seen.growth });
+  }
+
+  // Every sample is the platform's own curve for that pull. Dragging twice as
+  // far is not twice the stretch, and the growth never reaches the ceiling.
+  for (const sample of samples) {
+    const expected = platformStretch(sample.distance / sample.height) * sample.height;
+    expect(sample.growth).toBeCloseTo(expected, 0);
   }
 
   const [a, b, c, d] = samples;
@@ -121,10 +147,12 @@ test('the pull saturates instead of tracking the finger', async ({ page, context
   expect(secondRate).toBeLessThan(firstRate);
   expect(thirdRate).toBeLessThan(secondRate);
 
-  // And it is bounded: the stretch lags the finger and never reaches the cap.
-  const cap = 0.18 * (await read(page)).height;
-  expect(c.growth).toBeLessThan(c.distance * 0.6);
-  expect(d.growth).toBeLessThan(cap * 0.95);
+  // A drag of most of the screen is still under 3.2% of the viewport, which is
+  // what keeps the effect a rubber band rather than a zoom of the whole page.
+  const cap = STRETCH_MAX * d.height;
+  expect(d.growth).toBeLessThan(cap);
+  expect(d.growth).toBeGreaterThan(cap * 0.85);
+  expect(c.growth).toBeLessThan(c.distance * 0.3);
 
   await touch(cdp, 'touchEnd');
   await page.waitForTimeout(600);
@@ -141,7 +169,7 @@ test('a touch during the settle catches the frame that is on screen', async ({
   await touch(cdp, 'touchMove', 440);
   await page.waitForTimeout(40);
   const held = await read(page);
-  expect(held.growth).toBeGreaterThan(20);
+  expect(held.growth).toBeGreaterThan(4);
 
   await touch(cdp, 'touchEnd');
   await page.waitForTimeout(80);
@@ -218,8 +246,9 @@ test('momentum that reaches the edge is absorbed and decays back to flat', async
     sample.growth > best.growth ? sample : best
   );
   // A pulse with no finger anywhere near the screen.
-  expect(peak.growth).toBeGreaterThan(20);
+  expect(peak.growth).toBeGreaterThan(5);
   expect(peak.origin).toBe('50% 0%');
+  expect(peak.growth).toBeLessThan(STRETCH_MAX * (await read(page)).height);
   // It decays to nothing and stays there: the tail is flat.
   const tail = samples.slice(-6);
   expect(tail.every((sample) => sample.growth === 0)).toBe(true);
@@ -246,7 +275,7 @@ test('the settle returns the page to flat', async ({ page, context }) => {
   await touch(cdp, 'touchMove', 440);
   await page.waitForTimeout(40);
   const held = await read(page);
-  expect(held.growth).toBeGreaterThan(20);
+  expect(held.growth).toBeGreaterThan(4);
 
   await touch(cdp, 'touchEnd');
   await page.waitForTimeout(100);

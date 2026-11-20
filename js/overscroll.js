@@ -28,6 +28,12 @@
    and squeezing it — which is what this file used to do — opens a gap above the
    page and reads as a drag with a squashed page, nothing like the platform.
 
+   How much it magnifies comes from EdgeEffect.dampStretchVector, and it is
+   small: 0.016 × (u + 1 − e^(−u·e/0.33)) for a pull u, which tops out at 3.2%
+   of the viewport however hard the page is dragged. That ceiling is what makes
+   the platform read as a rubber band; growing the page by anything close to the
+   finger's travel turns it into a zoom of the whole screen.
+
    iOS keeps its native rubber band: this file does nothing there. */
 
 (function () {
@@ -53,12 +59,14 @@
   const SETTLE_SPEED = 0.02;   // fractions per second
   const MAX_FRACTION = 1;      // EdgeEffect clamps the pull here
 
-  // How much the content can grow (as a fraction of the viewport) at a
-  // saturated pull, and how quickly the pull fills that up. The stretch lags
-  // the finger — that lag is the effect — and saturates instead of following it
-  // all the way to the boundary.
-  const MAX_TRAVEL = 0.18;
-  const PULL_SCALE = 0.5;
+  // EdgeEffect.dampStretchVector: the scale the platform shows for a pull of u.
+  // A linear term plus an exponential one that is spent by u = 1, so the whole
+  // effect is capped at 0.032 — 3.2% of the viewport — and a drag of half the
+  // screen already shows most of what a drag of the whole screen shows.
+  const STRETCH_INTENSITY = 0.016;   // LINEAR_/EXP_STRETCH_INTENSITY
+  const STRETCH_EXP_DISTANCE = 0.33; // SCROLL_DIST_AFFECTED_BY_EXP_STRETCH
+  const STRETCH_EXP_RATE = Math.E / STRETCH_EXP_DISTANCE;
+  const STRETCH_MAX = STRETCH_INTENSITY * 2; // the ceiling at u = 1
   const SLOP = 6;            // px of travel before a drag is claimed
   const FLING_MIN = 0.35;    // px/ms
 
@@ -93,19 +101,16 @@
     height = Math.max(1, hub.clientHeight || window.innerHeight);
   }
 
-  /* The pull is saturating, like EdgeEffect.dampStretchVector: a hard drag
-     keeps adding travel, but each extra pixel buys less than the last, so the
-     page can never be pulled off the screen. tanh keeps the first few
-     millimetres responsive and then flattens out quietly. */
-  function travelOf(distance) {
-    const d = Math.max(0, Math.min(MAX_FRACTION, distance));
-    return height * MAX_TRAVEL * Math.tanh(d / PULL_SCALE);
+  /* The pull saturates the way the platform's does: every extra pixel of drag
+     buys less stretch than the last, and the total never leaves STRETCH_MAX. */
+  function stretchOf(distance) {
+    const u = Math.max(0, Math.min(MAX_FRACTION, distance));
+    return Math.min(STRETCH_MAX, STRETCH_INTENSITY * (u + 1 - Math.exp(-u * STRETCH_EXP_RATE)));
   }
 
   function paint() {
     if (!hub) return;
-    const growth = travelOf(pull);
-    if (growth < 0.05 || !dir) {
+    if (!dir || pull <= 0) {
       hub.style.transform = '';
       hub.style.transformOrigin = '';
       hub.style.willChange = '';
@@ -114,7 +119,7 @@
     // Magnify about the pulled edge — no translation, so the edge never leaves
     // the viewport and no gap can open above the page. The content between the
     // edges is stretched and the far edge is pushed out of view.
-    const scale = (height + growth) / height;
+    const scale = 1 + stretchOf(pull);
     hub.style.transformOrigin = dir > 0 ? '50% 0%' : '50% 100%';
     hub.style.willChange = 'transform';
     hub.style.transform = 'scale3d(1,' + scale.toFixed(5) + ',1)';
