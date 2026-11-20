@@ -6,7 +6,9 @@
    gap), the growth follows EdgeEffect's own damping and stops at its 3.2%
    ceiling instead of tracking the finger, a touch during the settle catches the
    frame on screen, the settle returns to flat, and momentum that reaches the
-   edge is absorbed into a pulse instead of stopping dead on the boundary. */
+   edge is absorbed into a pulse instead of stopping dead on the boundary. Both
+   edges are covered: the bottom pull flips the direction and has to move the
+   transform origin with it, so the top's assertions do not stand in for it. */
 const { test, expect } = require('@playwright/test');
 
 const ANDROID_UA =
@@ -292,4 +294,93 @@ test('the settle returns the page to flat', async ({ page, context }) => {
   expect(flat.top).toBeCloseTo(0, 0);
   expect(flat.bottom).toBeCloseTo(idle.height, 0);
   expect(flat.scrollTop).toBe(0);
+});
+
+/* The bottom is the mirror of the top and not a repeat of it: the pull comes
+   from the other direction, the origin has to move to the bottom edge, and the
+   content has to grow upwards out of the viewport instead of downwards. */
+
+async function parkAtBottom(page) {
+  const parked = await page.evaluate(() => {
+    const hub = document.getElementById('hub');
+    hub.scrollTop = hub.scrollHeight;
+    return { scrollTop: hub.scrollTop, max: hub.scrollHeight - hub.clientHeight };
+  });
+  // The scroll has to be committed before a touch reads atBottom().
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  );
+  return parked;
+}
+
+test('pulling past the bottom grows the page about the bottom edge', async ({
+  page,
+  context,
+}) => {
+  await open(page);
+  const cdp = await context.newCDPSession(page);
+
+  const parked = await parkAtBottom(page);
+  expect(parked.max).toBeGreaterThan(100);
+  expect(parked.scrollTop).toBe(parked.max);
+
+  const idle = await read(page);
+  expect(idle.transform).toBe('none');
+  expect(idle.scrollTop).toBe(parked.max);
+
+  // 150px up from the bottom edge.
+  await touch(cdp, 'touchStart', 520);
+  await touch(cdp, 'touchMove', 445);
+  await page.waitForTimeout(40);
+  await touch(cdp, 'touchMove', 370);
+  await page.waitForTimeout(40);
+  const pulled = await read(page);
+
+  // The origin follows the edge being pulled.
+  expect(pulled.origin).toBe('50% 100%');
+  // Still pure magnification: no translation, so the pulled edge stays on the
+  // viewport boundary and no gap opens below the page…
+  expect(pulled.offset).toBe(0);
+  expect(pulled.bottom).toBeCloseTo(idle.height, 0);
+  // …while the far edge is pushed out of view above the top of the screen.
+  expect(pulled.top).toBeLessThan(-4);
+  expect(pulled.growth).toBeGreaterThan(4);
+  // The same platform curve, measured from the bottom.
+  expect(pulled.growth).toBeCloseTo(
+    platformStretch(150 / pulled.height) * pulled.height,
+    0
+  );
+  // A stretch never scrolls the content: the hub is still at its end.
+  expect(pulled.scrollTop).toBe(parked.max);
+
+  await touch(cdp, 'touchEnd');
+  await expect
+    .poll(async () => (await read(page)).transform, { timeout: 2000 })
+    .toBe('none');
+
+  const flat = await read(page);
+  expect(flat.top).toBeCloseTo(0, 0);
+  expect(flat.bottom).toBeCloseTo(idle.height, 0);
+  expect(flat.scrollTop).toBe(parked.max);
+});
+
+test('a drag down at the bottom scrolls instead of stretching', async ({ page, context }) => {
+  await open(page);
+  const cdp = await context.newCDPSession(page);
+  const parked = await parkAtBottom(page);
+
+  await touch(cdp, 'touchStart', 300);
+  await touch(cdp, 'touchMove', 360);
+  await touch(cdp, 'touchMove', 430);
+  await page.waitForTimeout(80);
+  const seen = await read(page);
+
+  // Away from the bottom edge the list owns the gesture: no transform, no
+  // origin, and the content moves.
+  expect(seen.transform).toBe('none');
+  expect(seen.origin).toBe('none');
+  expect(seen.scrollTop).toBeLessThan(parked.max);
+
+  await touch(cdp, 'touchEnd');
+  await page.waitForTimeout(300);
 });
