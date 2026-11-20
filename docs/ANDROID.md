@@ -17,6 +17,17 @@ installable app, not a browser shortcut or PWA install, but it is not a
 Kotlin/Java rewrite. If "no web stuff" means no WebView at all, that would be a
 separate fully native port.
 
+## Web parity
+
+The browser build is a first-class target, not a leftover: the same files serve
+the website and the APK bundle, and only the APK carries the extra native glue.
+Every feature therefore needs a working browser path, and native calls stay
+behind `Capacitor.isNativePlatform()` or a missing-plugin guard, as haptics
+(`navigator.vibrate`), card saving (`<a download>`) and backup export (a normal
+download) already do. An APK-only change must not be the only way to reach a
+feature the web build already has, and a new native feature needs a browser
+fallback before it ships.
+
 ## Edge-to-edge and safe areas
 
 `MainActivity` draws the WebView behind transparent status and navigation bars.
@@ -38,8 +49,17 @@ from the theme. That is enough for a phone whose app appearance follows the
 system, but not for a dark appearance chosen on a light-system phone: the window
 edges would flash cream during a scale or fade. `WindowSurfacePlugin` therefore
 repaints that one drawable whenever the page reports its colour
-(`paintWindowSurface` in `js/theme.js`). It holds no preference, retries nothing
-and is never polled.
+(`paintWindowSurface` in `js/theme.js`), and remembers the last report so the
+next launch can pick the matching launch theme. Nothing is retried or polled.
+
+Styling the bars has a side effect that the surface has to work around:
+`SystemBars.setStyle()` sets the decor background to the theme's `windowBackground`
+while it changes the status and navigation bar icons, and that is the same
+drawable the page's colour is painted on. `js/native.js` therefore reports the
+page colour again once that call resolves (`MergeTheme.repaintSurface`), and it
+does not restyle the bars at all when only the palette changed, because the bar
+icons depend on light/dark alone. Without both parts the strip keeps the launch
+colour after a swatch tap until the next appearance change or a restart.
 
 The same report is remembered on the device. `MainActivity` reads it before
 `super.onCreate` and calls `setTheme` with the matching fixed launch theme

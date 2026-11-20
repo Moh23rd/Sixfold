@@ -662,6 +662,13 @@
     colour: function (hex) {
       return recolor(hex, activePalette());
     },
+    // Android's SystemBars restyles the window background while it changes the
+    // bar icons, which undoes the report made just before it. Send the page
+    // colour again, past the memo, so that write is the one that stays.
+    repaintSurface: function () {
+      reportedSurface = null;
+      paintWindowSurface(chromeColour());
+    },
     confirmReset: openGameReset,
     closeSheet: closeSheet,
     openSheet: openSheet

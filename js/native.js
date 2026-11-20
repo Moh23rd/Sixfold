@@ -48,19 +48,48 @@
     try { ignoreRejection(bar.setStyle({ style: dark ? 'DARK' : 'LIGHT' })); } catch (err) {}
   }
 
+  // Styling the bars has a side effect on Android: SystemBars sets the window
+  // (decor) background to the theme's windowBackground while it changes the bar
+  // icons. That is the same surface the page's colour is painted on, so the
+  // colour reported a moment earlier is replaced by the launch colour and the
+  // strip around the page stays stale until the next report or a restart. Ask
+  // for the page's colour again once the bar call has landed — native reports
+  // run in order, so this one is the last write.
+  function resurface() {
+    var theme = window.MergeTheme;
+    if (theme && theme.repaintSurface) theme.repaintSurface();
+  }
+
+  // The bar icons only care about light and dark, so a palette change has
+  // nothing to restyle. Skipping the call also skips its window-background
+  // side effect, which would otherwise flash the launch colour over the new
+  // palette on every swatch tap while the report was re-sent.
+  var appliedBarStyle = null;
+
   function syncBars() {
     var dark = window.MergeTheme && window.MergeTheme.isDark
       ? window.MergeTheme.isDark()
       : document.documentElement.dataset.theme === 'dark';
+    var style = dark ? 'DARK' : 'LIGHT';
+    if (appliedBarStyle === style) return;
 
     // SystemBars styles the status and navigation bars together. Fall back to
     // the legacy StatusBar plugin if an older native shell lacks SystemBars.
     var systemBars = plugins.SystemBars;
     if (systemBars && systemBars.setStyle) {
       try {
-        var result = systemBars.setStyle({ style: dark ? 'DARK' : 'LIGHT' });
-        if (result && typeof result.catch === 'function') {
-          result.catch(function () { styleStatusBar(dark); });
+        var result = systemBars.setStyle({ style: style });
+        if (result && typeof result.then === 'function') {
+          result.then(function () {
+            appliedBarStyle = style;
+            resurface();
+          }, function () {
+            styleStatusBar(dark);
+            resurface();
+          });
+        } else {
+          appliedBarStyle = style;
+          resurface();
         }
         return;
       } catch (err) {}

@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.29';
+const VERSION = 'sixfold-6.0.30';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -18,7 +18,7 @@ const HAPTICS_JS = '5.0.1';
 const SHARE_CARD = '5.3.2';
 const STYLE_ASSET = '5.2.9';
 const FONT_ASSET = '4.0.1';
-const THEME_JS = '6.0.9';
+const THEME_JS = '6.0.10';
 const OVERSCROLL_JS = '6.0.2';
 const GAME_CODE = '5.3.2';
 const WORDLE_CODE = '5.3.1-wordle';
@@ -106,7 +106,7 @@ const SHELL = [
   // active catalog; i18n.js warms that catalog after the worker controls it.
   './i18n/i18n-locale.js?v=' + I18N_CODE,
   './i18n/i18n.js?v=' + I18N_CODE,
-  './js/native.js?v=5.1.3',
+  './js/native.js?v=5.1.5',
   './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the
   // offline shell so unlocking it works with no connection. The active locale

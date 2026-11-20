@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.27**.
+> Public release label: **v5.0**. Current development build: **6.0.30**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.27**
+Internal build: **6.0.30**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
