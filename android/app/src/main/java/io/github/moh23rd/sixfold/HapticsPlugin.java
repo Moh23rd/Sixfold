@@ -24,8 +24,9 @@ import org.json.JSONException;
  *
  * The page sends a waveform in navigator.vibrate's own shape — alternating
  * on/off milliseconds — and it is played once. Amplitudes stay at the motor's
- * default: the patterns are already 8–24ms pulses, and asking for a lower
- * amplitude on a phone whose motor cannot do it would only make them vanish.
+ * default: the set runs from 9ms merge ticks to 30ms pulses, with an 18ms tap
+ * carrying a keypress, and asking for a lower amplitude on a phone whose motor
+ * cannot do it would only make them vanish.
  */
 @CapacitorPlugin(name = "Haptics")
 public class HapticsPlugin extends Plugin {

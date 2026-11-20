@@ -1978,8 +1978,10 @@
             stamp: mode === 'two' ? mark + ' WINS' : 'THREE IN A ROW'
           });
         }
-      } else if (window.MergeCelebrate) {
-        window.MergeCelebrate.clear(winCard);
+      } else {
+        // A draw or a loss ends the round too, and used to end it silently.
+        if (window.MergeHaptics) window.MergeHaptics.over();
+        if (window.MergeCelebrate) window.MergeCelebrate.clear(winCard);
       }
       if (againBtn) againBtn.focus({ preventScroll: true });
       scheduleAutoNext(againBtn, newRound);
@@ -1992,6 +1994,12 @@
     function applyMove(index, mark) {
       if (board[index] || over) return;
       board[index] = mark;
+      // Each square that lands gets the same short tick as a keypress in the
+      // other games. The computer's reply stays silent: it is not a move the
+      // player made.
+      if ((mark === 'X' || mode === 'two') && window.MergeHaptics && window.MergeHaptics.tap) {
+        window.MergeHaptics.tap();
+      }
       if (mark === 'X') coachEvent('ttt', 'xmove', { index: index, moves: board.filter(Boolean).length });
       else coachEvent('ttt', 'reply', { index: index });
       const result = findWinner(board);

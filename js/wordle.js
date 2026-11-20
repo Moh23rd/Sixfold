@@ -460,6 +460,7 @@
     input = pieces(input + next).join('');
     setStatus('');
     render();
+    if (window.MergeHaptics && window.MergeHaptics.tap) window.MergeHaptics.tap();
   }
 
   function removeLetter() {
@@ -468,6 +469,7 @@
     syncImeValue();
     setStatus('');
     render();
+    if (window.MergeHaptics && window.MergeHaptics.tap) window.MergeHaptics.tap();
   }
 
   function submitGuess() {
@@ -526,6 +528,9 @@
           window.MergeCelebrate.win(resultEl.querySelector('.wordle-result-card'));
         }, 120);
       }
+    } else if (window.MergeHaptics && window.MergeHaptics.over) {
+      // Running out of rows used to end the round in silence.
+      window.MergeHaptics.over();
     }
   }
 

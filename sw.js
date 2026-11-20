@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.27';
+const VERSION = 'sixfold-6.0.28';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -12,18 +12,21 @@ const CACHE_PREFIX = 'sixfold-';
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
 const ASSET = '5.0.0';
+// Haptics has its own suffix: its patterns change without touching the other
+// shared-baseline scripts, and an installed app must pick the new pulse up.
+const HAPTICS_JS = '5.0.1';
 const SHARE_CARD = '5.3.2';
 const STYLE_ASSET = '5.2.9';
 const FONT_ASSET = '4.0.1';
 const THEME_JS = '6.0.8';
 const OVERSCROLL_JS = '6.0.2';
 const GAME_CODE = '5.3.2';
-const WORDLE_CODE = '5.3.0-wordle';
+const WORDLE_CODE = '5.3.1-wordle';
 const SUDOKU_GAME_CODE = '5.3.1';
 const LOCALE_FONT = '5.1.4';
 const GAMES_CSS = '5.3.6';
 const POLISH_CSS = '4.0.4-w21';
-const GAMES_JS = '5.4.1';
+const GAMES_JS = '5.4.2';
 const SUDOKU_CSS = '4.0.4';
 const V5_CSS = '5.5.5';
 const BLUR_CSS = '1.3.1';
@@ -82,7 +85,7 @@ const SHELL = [
   './css/styles.css?v=' + STYLE_ASSET,
   './js/theme.js?v=' + THEME_JS,
   './js/game.js?v=' + GAME_CODE,
-  './js/haptics.js?v=' + ASSET,
+  './js/haptics.js?v=' + HAPTICS_JS,
   './js/overscroll.js?v=' + OVERSCROLL_JS,
   './js/celebrate.js?v=' + ASSET,
   './js/sharecard.js?v=' + SHARE_CARD,

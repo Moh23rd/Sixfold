@@ -28,8 +28,11 @@
   let lastPulse = 0;
 
   const PATTERN = {
-    tap: [8],
-    mergeLow: [10],
+    // 8ms sat under the spin-up time of most phone motors: the call reached the
+    // plugin and the phone stayed still. 18ms is the shortest tap that reads as
+    // a deliberate tick, so a move actually says something.
+    tap: [18],
+    mergeLow: [20],
     mergeMid: [11, 16, 9],
     mergeHigh: [12, 18, 10, 18, 12],
     win: [11, 30, 12, 30, 14, 30, 22],
@@ -91,12 +94,14 @@
       else buzz(PATTERN.mergeLow);
     },
 
+    // An ending lands in the same task as the move that caused it, so it is
+    // forced past the coalescing window: the tap must not swallow the win.
     win: function () {
-      buzz(PATTERN.win);
+      buzz(PATTERN.win, true);
     },
 
     over: function () {
-      buzz(PATTERN.over);
+      buzz(PATTERN.over, true);
     },
 
     isEnabled: function () {
