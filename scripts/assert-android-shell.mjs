@@ -38,6 +38,32 @@ function fail(message) {
   process.exit(1);
 }
 
+/* A pixel sample is only evidence when the guest itself answers. A wedged
+   emulator keeps its adb transport and answers `get-state` with "device", and
+   `screencap` keeps returning the last frame the compositor produced. That
+   frame can predate the app's repair after a rotation, so a dead emulator looks
+   exactly like a stale strip. The shell script restarts the emulator on this
+   exit code; nothing here should report an app defect for it. */
+const EMULATOR_GONE = 3;
+class EmulatorLost extends Error {}
+
+function answerShell(timeout = 8000) {
+  try {
+    execFileSync('adb', ['shell', 'echo', 'ok'], { encoding: 'utf8', stdio: 'pipe', timeout });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+async function deviceLive(attempts = 3) {
+  for (let i = 0; i < attempts; i += 1) {
+    if (adbState() === 'device' && answerShell()) return true;
+    await wait(700);
+  }
+  return false;
+}
+
 function adb(args, timeout = 120000) {
   try {
     // Bounded: a wedged adb server otherwise hangs the job with no output.
@@ -85,7 +111,7 @@ async function settleDevice(what, timeoutMs = 45000) {
   return false;
 }
 
-async function adbRetry(args, what, attempts = 6) {
+async function adbRetry(args, what, attempts = 6, fatal = true) {
   let lastError = null;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -97,6 +123,7 @@ async function adbRetry(args, what, attempts = 6) {
       await settleDevice(what);
     }
   }
+  if (fatal && !(await deviceLive())) throw new EmulatorLost(`${what}: the emulator stopped answering`);
   throw lastError;
 }
 
@@ -196,7 +223,14 @@ function stripColour(png, edge) {
 }
 
 async function readStrip() {
+  if (!(await deviceLive())) throw new EmulatorLost('reading the window strip: the emulator stopped answering');
+  const started = Date.now();
   const png = decodePng(adbBuffer(['exec-out', 'screencap', '-p']));
+  const took = Date.now() - started;
+  if (!(await deviceLive())) throw new EmulatorLost('reading the window strip: the emulator stopped answering');
+  // A screencap that takes tens of seconds is the compositor stalling; the
+  // frame it returned is not a fresh paint, so it must not count as evidence.
+  if (took > 12000) throw new Error(`the screenshot took ${Math.round(took / 1000)}s, so it is stale`);
   return { top: stripColour(png, 'top'), bottom: stripColour(png, 'bottom') };
 }
 
@@ -206,7 +240,12 @@ async function readStrip() {
    screen for `--page`. A stale layer keeps this on the previous appearance's
    colour while every control already shows the new one. */
 async function readPageSurface() {
+  if (!(await deviceLive())) throw new EmulatorLost('reading the page surface: the emulator stopped answering');
+  const started = Date.now();
   const png = decodePng(adbBuffer(['exec-out', 'screencap', '-p']));
+  const took = Date.now() - started;
+  if (!(await deviceLive())) throw new EmulatorLost('reading the page surface: the emulator stopped answering');
+  if (took > 12000) throw new Error(`the screenshot took ${Math.round(took / 1000)}s, so it is stale`);
   const from = Math.round(png.width * 0.004);
   const to = Math.round(png.width * 0.018);
   const top = Math.round(png.height * 0.2);
@@ -245,15 +284,35 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
       seen = await readStrip();
       lastError = null;
     } catch (error) {
+      lastError = error;
+      if (error instanceof EmulatorLost) {
+        // Give a genuine adb reconnect a chance, then stop: without a guest
+        // there is no paint to sample, and the last frame it produced is not
+        // the app's fault.
+        if (!(await settleDevice(what, 15000)) || !(await deviceLive())) throw error;
+        continue;
+      }
       // A screencap can land in the gap while adb reconnects after a rotation
       // or a UI-mode switch. Wait for the device and sample again; the strip
       // deadline still bounds the whole check.
-      lastError = error;
       await settleDevice(what, 15000);
       continue;
     }
     if (seen.top === expected) return seen;
     await wait(600);
+  }
+  // Before calling a mismatch an app defect, take one more sample: the frame
+  // the loop kept seeing may be the last one a dying emulator composed. This
+  // read either shows the repair, or raises EmulatorLost, or confirms a live
+  // device still painting the wrong colour.
+  try {
+    const final = await readStrip();
+    if (final.top === expected) return final;
+    seen = final;
+    lastError = null;
+  } catch (error) {
+    lastError = error;
+    if (error instanceof EmulatorLost) throw error;
   }
   fail(
     `${what}: expected the strip on ${expected},` +
@@ -270,6 +329,14 @@ async function until(what, probe, timeoutMs = 60000, everyMs = 400) {
       const value = await probe();
       if (value) return value;
     } catch (error) {
+      // A dead emulator is not a slow page: report it as such instead of
+      // timing out as if the WebView never came up. A lost transport or a
+      // refused devtools socket only counts as loss if the guest itself has
+      // stopped answering, so a slow WebView still fails as a timeout.
+      if (error instanceof EmulatorLost) throw error;
+      if (/device offline|no devices\/emulators found|device not found|connection reset|protocol fault|closed|fetch failed|ECONNREFUSED|ETIMEDOUT/i.test(error.message)) {
+        if (!(await deviceLive())) throw new EmulatorLost(`${what}: the emulator stopped answering`);
+      }
       last = error;
     }
     await wait(everyMs);
@@ -508,6 +575,7 @@ try {
     await wait(600);
   }
   if (paletteSurface !== after) {
+    if (!(await deviceLive())) throw new EmulatorLost('reading the page surface: the emulator stopped answering');
     fail(
       `the page surface did not repaint on the ${targetPalette} palette:` +
         ` expected ${after}, got ${paletteSurface}`
@@ -544,20 +612,20 @@ try {
   const lightPage = (
     await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--page').trim()")
   ).toLowerCase();
-  awaitStrip(lightPage, 'the strip before the configuration changes');
+  await awaitStrip(lightPage, 'the strip before the configuration changes');
 
   log('rotating the device');
   adb(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
   await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '1'], 'rotating to landscape');
   await settleDevice('rotating to landscape');
   await until('the WebView to turn landscape', () => evaluate('innerWidth > innerHeight'), 30000, 250);
-  awaitStrip(lightPage, 'the strip after rotating to landscape');
+  await awaitStrip(lightPage, 'the strip after rotating to landscape');
   log('the strip stayed on the page colour through the rotation');
 
   await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'rotating back to portrait');
   await settleDevice('rotating back to portrait');
   await until('the WebView to turn portrait', () => evaluate('innerWidth < innerHeight'), 30000, 250);
-  awaitStrip(lightPage, 'the strip after rotating back to portrait');
+  await awaitStrip(lightPage, 'the strip after rotating back to portrait');
 
   log('switching the system to dark while the app stays light');
   await settleDevice('switching the system to dark');
@@ -569,7 +637,7 @@ try {
     30000,
     250
   );
-  awaitStrip(lightPage, 'the strip after the system turned dark');
+  await awaitStrip(lightPage, 'the strip after the system turned dark');
   log('the strip stayed on the page colour through the system theme change');
 
   // The hub only proves the cover built. Opening a card is what proves the
@@ -619,6 +687,11 @@ try {
   if (currentSession) currentSession.socket.close();
   log('the Android shell starts, renders and exposes its native plugins');
 } catch (error) {
+  if (error instanceof EmulatorLost) {
+    console.error(`::error::${error.message}`);
+    console.error('::error::the emulator went away before the app could repaint; the smoke will restart it');
+    process.exit(EMULATOR_GONE);
+  }
   fail(error.message);
 } finally {
   // The smoke may have turned the emulator to landscape and to night mode. Put
@@ -626,11 +699,11 @@ try {
   try {
     await settleDevice('restoring the device settings', 15000);
     if (rotationSetting !== null) {
-      await adbRetry(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', rotationSetting], 'restoring the rotation setting', 3);
+      await adbRetry(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', rotationSetting], 'restoring the rotation setting', 3, false);
     }
-    await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'restoring the portrait rotation', 3);
+    await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'restoring the portrait rotation', 3, false);
     if (nightSetting !== null) {
-      await adbRetry(['shell', 'cmd', 'uimode', 'night', nightSetting], 'restoring the system night mode', 3);
+      await adbRetry(['shell', 'cmd', 'uimode', 'night', nightSetting], 'restoring the system night mode', 3, false);
     }
   } catch (error) {
     // Best effort: the job's exit status is what matters.
