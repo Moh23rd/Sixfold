@@ -1608,7 +1608,10 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
    ========================================================================== */
 
 @media (prefers-reduced-motion: no-preference) {
-  html.is-theme-fading [data-fade] {
+  /* Full-page surfaces are left out: their colour has to land in the frame the
+     system bar does. A faded page layer is what could keep the previous
+     appearance's raster in the WebView. */
+  html.is-theme-fading [data-fade]:not(body):not(.hub):not(.play-screen):not(.app) {
     transition-property: color, background-color, border-color, outline-color, fill, stroke, box-shadow, text-decoration-color, transform, opacity;
     transition-duration: 220ms;
     transition-timing-function: cubic-bezier(0.33, 0, 0.2, 1);

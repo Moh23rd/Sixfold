@@ -1252,12 +1252,12 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
   --motion-slow: 380ms;
 }
 
-html {
-  transition: background-color var(--motion-slow) var(--ease-out);
-}
-
+/* The page colour is not faded: it lands in the same frame as the system bar,
+   which has no transition of its own. A running background transition on these
+   full-page layers is what could leave the WebView on the previous — or an
+   in-between — colour after a switch. The content on top still cross-fades. */
 body {
-  transition: background-color var(--motion-slow) var(--ease-out), color 180ms ease;
+  transition: color 180ms ease;
 }
 
 .board {

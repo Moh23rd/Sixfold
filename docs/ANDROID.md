@@ -64,6 +64,17 @@ restyle the bars at all when only the palette changed, because the bar icons
 depend on light/dark alone. Without both parts the strip keeps the launch
 colour after a swatch tap until the next appearance change or a restart.
 
+The same drawable is rewritten on every configuration change: the bundled
+plugin re-applies its stored bar style on a rotation, a window resize or a
+system day/night switch, and that call takes the current configuration's
+`app_surface`. No appearance event fires with it, so `js/native.js` reports the
+page colour again after a resize, an orientation change, a return from the
+background and a system scheme change — twice, once after the configuration
+pass and once after it settles, because a slow device can land the plugin's
+write after the first report. The report is the page's resolved `--page`, not a
+copy of the light/dark base, so high contrast (pure white or black) and a tinted
+palette both stay in step with the bar.
+
 The same report is remembered on the device. `MainActivity` reads it before
 `super.onCreate` and calls `setTheme` with the matching fixed launch theme
 (`AppTheme.NoActionBarLaunch.Light` or `…Dark`), so the splash opens in the

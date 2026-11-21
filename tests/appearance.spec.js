@@ -358,3 +358,97 @@ test('closing the sheet hands the motion back to the sheet', async ({ page }) =>
   expect(closing.fading, 'the leave animation is not left behind a fade').toBe(false);
   expect(closing.closing).toBe(true);
 });
+
+test('the surface report is the page colour under high contrast', async ({ page }) => {
+  await page.addInitScript(() => {
+    const reported = [];
+    window.__surfaces = reported;
+    window.Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: {
+        SystemBars: { setStyle: () => Promise.resolve() },
+        WindowSurface: {
+          setColor: ({ color }) => {
+            reported.push(color);
+            return Promise.resolve();
+          }
+        }
+      }
+    };
+  });
+  await openLook(page);
+
+  // High contrast replaces --page with pure white or black, and #000 has to be
+  // expanded before it crosses the bridge. The report is read back from the
+  // cascade, so the strip follows the page instead of the tinted base colour.
+  const state = await page.evaluate(() => {
+    window.SixfoldSettings.set('highContrast', true);
+    document.querySelector('[data-theme-opt="dark"]').click();
+    return {
+      page: getComputedStyle(document.documentElement).getPropertyValue('--page').trim(),
+      last: window.__surfaces[window.__surfaces.length - 1]
+    };
+  });
+
+  expect(state.page).toBe('#000');
+  expect(state.last, 'the last report is the high-contrast page itself').toBe('#000000');
+});
+
+test('a configuration change asks native for the page colour again', async ({ page }) => {
+  await page.addInitScript(() => {
+    const reported = [];
+    window.__surfaces = reported;
+    window.Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: {
+        SystemBars: { setStyle: () => Promise.resolve() },
+        WindowSurface: {
+          setColor: ({ color }) => {
+            reported.push(color);
+            return Promise.resolve();
+          }
+        }
+      }
+    };
+  });
+  await openLook(page);
+  await page.locator('[data-theme-opt="dark"]').click();
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-theme-fading'));
+  const pageColour = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--page').trim()
+  );
+  const before = await page.evaluate(() => window.__surfaces.length);
+
+  // Android's SystemBars re-applies its style on every configuration change,
+  // and that writes the theme's day/night window background over the page
+  // colour. No appearance event fires with it, so the shell reports the page
+  // colour again — a rotation must not leave the strip on the launch colour.
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+  await page.waitForFunction((count) => window.__surfaces.length > count, before, { timeout: 3000 });
+  const calls = await page.evaluate(() => window.__surfaces.slice());
+
+  expect(calls[calls.length - 1]).toBe(pageColour);
+});
+
+test('the page colour lands while the content is still fading', async ({ page }) => {
+  await openLook(page);
+  const state = await page.evaluate(async () => {
+    document.querySelector('[data-theme-opt="dark"]').click();
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    const html = getComputedStyle(document.documentElement);
+    return {
+      fading: document.documentElement.classList.contains('is-theme-fading'),
+      page: html.backgroundColor,
+      body: getComputedStyle(document.body).backgroundColor,
+      hub: getComputedStyle(document.getElementById('hub')).backgroundColor
+    };
+  });
+
+  // The system bar has no transition, so the page has to be on the new colour
+  // in the same frame; only the content on top is allowed to be in flight. A
+  // background transition on the full-page layers is what could leave the
+  // WebView on the previous appearance's colour after a switch.
+  expect(state.fading, 'the content is still cross-fading').toBe(true);
+  expect(state.body, 'the body is already on the new page colour').toBe(state.page);
+  expect(state.hub, 'the hub is already on the new page colour').toBe(state.page);
+});

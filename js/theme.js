@@ -164,13 +164,28 @@
 
   /* ---------- browser chrome ---------- */
 
-  // The two flat page colours before any palette is applied.
+  // The two flat page colours, used only if --page has not resolved yet.
   const PAGE_BASE = { light: '#f6f1e8', dark: '#1a1918' };
 
-  // The page colour for the theme and palette in use, worked out arithmetically
-  // (no layout reads), so the bar can be repainted the instant a swatch is tapped.
+  // The window surface takes a six- or eight-digit hex; a custom property is
+  // kept exactly as written, so a #fff in the cascade has to be expanded first.
+  function pageHex(value) {
+    const match = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(String(value || '').trim());
+    if (!match) return null;
+    const raw = match[1].toLowerCase();
+    if (raw.length === 3) return '#' + raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2];
+    return '#' + raw;
+  }
+
+  // The page colour for the theme, palette and contrast in use. Reading --page
+  // back from the cascade, rather than recolouring a second copy of the bases,
+  // keeps the bar, the manifest and the window surface on the colour the page
+  // actually paints: high contrast replaces --page with pure white or black, and
+  // a palette tints whatever value resolved. It is a style read, not a layout
+  // read, so a swatch still repaints the bar in the same task.
   function chromeColour() {
-    return recolor(root.dataset.theme === 'dark' ? PAGE_BASE.dark : PAGE_BASE.light, activePalette());
+    return pageHex(getComputedStyle(root).getPropertyValue('--page'))
+      || recolor(root.dataset.theme === 'dark' ? PAGE_BASE.dark : PAGE_BASE.light, activePalette());
   }
 
   // The window surface behind the WebView is only seen at the edges while a
@@ -287,6 +302,12 @@
     repaintNativePage();
   }
 
+  // High contrast replaces --page with pure white or black, and it can be
+  // switched while a palette has already tinted the page inline. The settings
+  // module only writes the attribute, so this is the pass that resolves the new
+  // page colour and takes the bar and the window surface with it.
+  window.addEventListener('sixfold:settings', refreshPage);
+
   // The result image is drawn from the page colours, so tell the game when they
   // change and an open result card can redraw it with the new appearance.
   function announceAppearance() {
@@ -322,9 +343,6 @@
     state.theme = pref;
     if (switchIsVisible(persist)) crossFade();
     root.dataset.theme = resolvedTheme();
-    // Bar first, then the rest of the page: they change together instead of the
-    // status bar trailing the new colours.
-    paintBrowserChrome();
     if (persist) {
       try { localStorage.setItem(THEME_KEY, pref); } catch (err) {}
     }
@@ -350,7 +368,6 @@
     const palette = PALETTES.filter(function (p) { return p.id === id; })[0] || PALETTES[0];
     state.palette = palette.id;
     if (switchIsVisible(persist)) crossFade();
-    paintBrowserChrome();
 
     for (let i = 0; i < WARM.length; i++) {
       root.style.setProperty('--t' + (2 << i), recolor(WARM[i], palette));

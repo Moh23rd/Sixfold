@@ -190,6 +190,24 @@ async function readPageSurface() {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/* Waits for the window strip to show the page colour. A configuration change
+   makes Android rewrite the drawable from the theme's resource, and the shell
+   reports the page colour back over the bridge, so this waits rather than
+   sleeps. A stale strip never matches and reports what it kept showing. */
+async function awaitStrip(expected, what, timeoutMs = 30000) {
+  const deadline = Date.now() + timeoutMs;
+  let seen = null;
+  while (Date.now() < deadline) {
+    seen = await readStrip();
+    if (seen.top === expected) return seen;
+    await wait(600);
+  }
+  fail(
+    `${what}: expected the strip on ${expected},` +
+      ` got top ${seen && seen.top} bottom ${seen && seen.bottom}`
+  );
+}
+
 async function until(what, probe, timeoutMs = 60000, everyMs = 400) {
   const deadline = Date.now() + timeoutMs;
   let last = null;
@@ -261,6 +279,8 @@ async function devtoolsTarget() {
 }
 
 let forwarded = false;
+let rotationSetting = null;
+let nightSetting = null;
 try {
   await until('the device to finish booting', () => adb(['shell', 'getprop', 'sys.boot_completed']) === '1', 180000, 1000);
 
@@ -405,6 +425,57 @@ try {
   }
   log(`the page surface is on the ${targetPalette} palette: ${paletteSurface}`);
 
+  // A configuration change is the other path that rewrites the window: Android
+  // re-applies the SystemBars style on a rotation or a day/night switch, and
+  // that writes the theme's windowBackground over the page colour. No appearance
+  // event fires with it, so the shell has to report the page colour again.
+  // Put the page on light first, so a system switch to dark has something to
+  // disagree with: the decor resource turns dark while the page must stay light.
+  rotationSetting = adb(['shell', 'settings', 'get', 'system', 'accelerometer_rotation']);
+  nightSetting = (adb(['shell', 'cmd', 'uimode', 'night']).match(/Night mode:\s*(\w+)/i) || [])[1] || 'no';
+  const reopen = await evaluate(
+    "(() => { const button = document.getElementById('appearance');" +
+      " if (!button) return 'the hub has no appearance button'; button.click(); return ''; })()"
+  );
+  if (reopen) fail(reopen);
+  const light = await evaluate(
+    "(() => { const option = document.querySelector('#sheet [data-theme-opt=\"light\"]');" +
+      " if (!option) return 'the appearance sheet has no light option'; option.click(); return ''; })()"
+  );
+  if (light) fail(light);
+  const lightDone = await evaluate(
+    "(() => { const done = document.getElementById('sheet-done');" +
+      " if (!done) return 'the appearance sheet has no done button'; done.click(); return ''; })()"
+  );
+  if (lightDone) fail(lightDone);
+  await wait(900);
+  const lightPage = (
+    await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--page').trim()")
+  ).toLowerCase();
+  awaitStrip(lightPage, 'the strip before the configuration changes');
+
+  log('rotating the device');
+  adb(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
+  adb(['shell', 'settings', 'put', 'system', 'user_rotation', '1']);
+  await until('the WebView to turn landscape', () => evaluate('innerWidth > innerHeight'), 30000, 250);
+  awaitStrip(lightPage, 'the strip after rotating to landscape');
+  log('the strip stayed on the page colour through the rotation');
+
+  adb(['shell', 'settings', 'put', 'system', 'user_rotation', '0']);
+  await until('the WebView to turn portrait', () => evaluate('innerWidth < innerHeight'), 30000, 250);
+  awaitStrip(lightPage, 'the strip after rotating back to portrait');
+
+  log('switching the system to dark while the app stays light');
+  adb(['shell', 'cmd', 'uimode', 'night', 'yes']);
+  await until(
+    'the system to report night mode',
+    () => evaluate("matchMedia('(prefers-color-scheme: dark)').matches"),
+    30000,
+    250
+  );
+  awaitStrip(lightPage, 'the strip after the system turned dark');
+  log('the strip stayed on the page colour through the system theme change');
+
   // The hub only proves the cover built. Opening a card is what proves the
   // game screens mount and lay out, so tap Merge and wait for its view: the
   // screen's own marker, a laid-out container, and its title.
@@ -454,6 +525,15 @@ try {
 } catch (error) {
   fail(error.message);
 } finally {
+  // The smoke may have turned the emulator to landscape and to night mode. Put
+  // the device back the way it was found, so a local run is not left changed.
+  try {
+    if (rotationSetting !== null) adb(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', rotationSetting]);
+    adb(['shell', 'settings', 'put', 'system', 'user_rotation', '0']);
+    if (nightSetting !== null) adb(['shell', 'cmd', 'uimode', 'night', nightSetting]);
+  } catch (error) {
+    // Best effort: the job's exit status is what matters.
+  }
   if (forwarded) {
     try {
       adb(['forward', '--remove', `tcp:${PORT}`]);

@@ -103,6 +103,41 @@
     resurface();
   }
 
+  // Android rewrites the window background from the theme's day/night resource
+  // on every configuration change — a rotation, a window resize, or the system
+  // switching to dark. That resource is the launch colour, not the page's, and
+  // no appearance event fires with the change, so the strip around the page kept
+  // the colour the app opened in. Report the page colour again once the config
+  // pass has settled, and once more after it: the plugin's own restyle can land
+  // late on a slow device, and the report has to be the last write.
+  var surfaceRepairTimer = 0;
+  var surfaceSettleTimer = 0;
+
+  function repairSurfaceSoon() {
+    window.clearTimeout(surfaceRepairTimer);
+    window.clearTimeout(surfaceSettleTimer);
+    surfaceRepairTimer = window.setTimeout(resurface, 120);
+    surfaceSettleTimer = window.setTimeout(resurface, 600);
+  }
+
+  window.addEventListener('resize', repairSurfaceSoon);
+  window.addEventListener('orientationchange', repairSurfaceSoon);
+
+  // Coming back from the background can deliver a configuration change that
+  // arrived while the page was hidden; nothing else would report it then.
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) repairSurfaceSoon();
+  });
+
+  // theme.js only follows the system scheme while the app is set to Auto, but
+  // Android restyles the window on the change either way, so the shell repairs
+  // the strip even when the page's own appearance does not move.
+  var scheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (scheme) {
+    if (scheme.addEventListener) scheme.addEventListener('change', repairSurfaceSoon);
+    else if (scheme.addListener) scheme.addListener(repairSurfaceSoon);
+  }
+
   function back() {
     if (location.hash && location.hash !== '#hub') {
       if (window.history.length > 1) history.back();
