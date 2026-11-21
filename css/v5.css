@@ -1760,26 +1760,28 @@ html.is-theme-fading .sheet-backdrop {
 /* A 320-tall landscape phone with the Sudoku hint open has to hold the header,
    the two-line hint, three pad rows, the tools and the footer in a 240 x 302
    rail. The pad row was the flexible one, so it collapsed to 16.7px rows and
-   its digits spilled under the tools. Every row keeps its content height now,
-   the pad has a 21px floor, and the hint chrome, row gaps and level chip give
-   back the height that floor costs. The remaining-count line, which made a key
-   23px tall, steps out; at this height the digit is what the thumb needs. */
+   its digits spilled under the tools. Only while the hint is open, every row
+   keeps its content height, the pad has a 21px floor, and the hint chrome, row
+   gaps and level chip give back the height that floor costs. The
+   remaining-count line, which made a key 23px tall, steps out; with the card
+   open the digit is what the thumb needs. With the hint closed the pad keeps
+   the rail's spare height and its counts. */
 @media (orientation: landscape) and (max-height: 360px) and (max-width: 620px) {
-  #sudoku .sudoku-shell {
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) {
     grid-template-rows: auto auto auto auto minmax(0, 1fr);
     row-gap: 1px;
   }
 
-  #sudoku .sudoku-pad { grid-auto-rows: minmax(21px, auto); }
-  #sudoku .sudoku-pad-key { min-height: 21px; height: auto; }
-  #sudoku .sudoku-pad-key::after { display: none; }
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) .sudoku-pad { grid-auto-rows: minmax(21px, auto); }
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) .sudoku-pad-key { min-height: 21px; height: auto; }
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) .sudoku-pad-key::after { display: none; }
 
   #sudoku .sudoku-hint-panel { padding: 2px 8px; }
   #sudoku .sudoku-hint-panel strong { font-size: 9px; }
   #sudoku .sudoku-hint-panel p { line-height: 1.15; }
   #sudoku .sudoku-hint-actions { margin-top: 2px; }
   #sudoku .sudoku-hint-actions button { min-height: 24px; }
-  #sudoku .play-chip { min-height: 24px; padding-block: 1px; }
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) .play-chip { min-height: 24px; padding-block: 1px; }
 
   /* "Intermediate" needs 75px of text, while three tabs in this rail are only
      70px wide. A nine-pixel label and two-pixel padding keep the whole word
