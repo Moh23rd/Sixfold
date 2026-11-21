@@ -141,3 +141,37 @@ for (const viewport of VIEWPORTS) {
     });
   });
 }
+
+// The compact 21px pad only exists to fit the hint card in a 320-tall rail.
+// It used to apply with no hint open, shrinking the pad and hiding its counts.
+test.describe('landscape 568x320', () => {
+  test.use({ viewport: { width: 568, height: 320 } });
+
+  test('the closed Sudoku pad keeps its height and remaining counts', async ({ page }) => {
+    await page.goto('/#sudoku');
+    await page.waitForSelector('#sudoku:not([hidden]) #sudoku-pad .sudoku-pad-key');
+
+    const padState = () => page.evaluate(() => {
+      const pad = document.querySelector('#sudoku-pad');
+      const keys = Array.from(pad.querySelectorAll('.sudoku-pad-key'));
+      return {
+        padHeight: pad.getBoundingClientRect().height,
+        keyHeights: keys.map((key) => key.getBoundingClientRect().height),
+        countDisplays: keys.map((key) => getComputedStyle(key, '::after').display),
+        counts: keys.map((key) => getComputedStyle(key, '::after').content)
+      };
+    });
+
+    const closed = await padState();
+    expect(closed.padHeight, 'the closed pad takes the rail height').toBeGreaterThan(100);
+    closed.keyHeights.forEach((height) => expect(height, 'a closed pad key keeps its height').toBeGreaterThan(30));
+    closed.countDisplays.forEach((display) => expect(display).not.toBe('none'));
+    expect(closed.counts.some((content) => /\d/.test(content)), 'the pad shows remaining counts').toBe(true);
+
+    await page.locator('#sudoku-hint').click();
+    await page.waitForSelector('#sudoku-hint-panel:not([hidden])');
+    const open = await padState();
+    open.keyHeights.forEach((height) => expect(height, 'the hint squeezes the pad').toBeLessThanOrEqual(21.5));
+    open.countDisplays.forEach((display) => expect(display).toBe('none'));
+  });
+});
