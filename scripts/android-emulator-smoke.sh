@@ -40,7 +40,7 @@ AVDMANAGER="$SDK/cmdline-tools/latest/bin/avdmanager"
 APK="android/app/build/outputs/apk/debug/app-debug.apk"
 OUT="${FAILURE_DIR:-emulator-failure}"
 LOG="${OUT}/emulator.log"
-ATTEMPTS="${SMOKE_ATTEMPTS:-2}"
+ATTEMPTS="${SMOKE_ATTEMPTS:-3}"
 
 mkdir -p "$OUT"
 : > "$LOG"
