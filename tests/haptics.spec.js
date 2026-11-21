@@ -120,3 +120,31 @@ test('Wordle sends a pulse to the plugin for every key and the guess', async ({ 
   await page.locator('#wordle-keyboard [data-key="Backspace"]').click();
   expect(await page.evaluate(() => window.__pulses)).toEqual([TAP]);
 });
+
+test('vibration switches follow each other between screens', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.locator('.home-game[data-game="merge"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'merge');
+  const footer = page.locator('#vibration-toggle');
+  await expect(footer).toHaveAttribute('aria-pressed', 'true');
+
+  // Merge's footer and the shared play-tool row are two views of one setting.
+  // Turning vibration off here must not leave the next screen saying it is on.
+  await footer.click();
+  await expect(footer).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('#back-to-games').click();
+  await page.locator('.home-game[data-game="ttt"]').click();
+  await page.waitForSelector('#ttt');
+
+  const tool = page.locator('#ttt [data-play-tool="haptics"]');
+  await expect(tool).toHaveAttribute('aria-pressed', 'false');
+  await tool.click();
+  await expect(tool).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('#ttt [data-back]').first().click();
+  await page.locator('.home-game[data-game="merge"]').click();
+  await expect(page.locator('#vibration-toggle')).toBeVisible();
+  await expect(page.locator('#vibration-toggle')).toHaveAttribute('aria-pressed', 'true');
+});

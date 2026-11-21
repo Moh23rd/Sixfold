@@ -364,6 +364,22 @@
     return cleanState(load(key || STATE_KEY, null));
   }
 
+  function activeDailyKey() {
+    try {
+      const raw = localStorage.getItem(ACTIVE_DAILY_KEY);
+      if (!raw) return '';
+      let value = raw;
+      // Older builds wrote the bare date. Accept both that and a JSON string so
+      // a daily started before this build still resumes.
+      if (raw.charAt(0) === '"') {
+        try { value = JSON.parse(raw); } catch (err) { return ''; }
+      }
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? String(value) : '';
+    } catch (err) {
+      return '';
+    }
+  }
+
   function currentElapsed() {
     if (!state) return 0;
     if (!runStart) return state.elapsed;
@@ -707,10 +723,18 @@
   }
 
   function findLearnHint() {
+    // Hints follow the puzzle's real solution. A wrong entry must not hide the
+    // digit the player needs, and the digit announced here has to match the
+    // solution digit applyPendingHint places.
+    const hintGrid = state.grid.slice();
+    for (let i = 0; i < CELLS; i += 1) {
+      if (hintGrid[i] && hintGrid[i] !== state.solution[i]) hintGrid[i] = 0;
+    }
+
     const singles = [];
     for (let i = 0; i < CELLS; i += 1) {
-      if (state.grid[i] || state.puzzle[i]) continue;
-      const mask = candidateMask(state.grid, i);
+      if (hintGrid[i] || state.puzzle[i]) continue;
+      const mask = candidateMask(hintGrid, i);
       if (popcount(mask) !== 1) continue;
       let digit = 1;
       while (digit <= 9 && !(mask & (1 << (digit - 1)))) digit += 1;
@@ -751,7 +775,7 @@
       for (let digit = 1; digit <= 9; digit += 1) {
         const bit = 1 << (digit - 1);
         const spots = unit.cells.filter(function (index) {
-          return !state.grid[index] && (candidateMask(state.grid, index) & bit);
+          return !hintGrid[index] && (candidateMask(hintGrid, index) & bit);
         });
         if (spots.length === 1) {
           return {
@@ -1209,9 +1233,13 @@
     const savedDifficulty = load(DIFF_KEY, null);
     if (LEVELS[savedDifficulty]) difficulty = savedDifficulty;
     stats = cleanStats(load(STATS_KEY, null));
-    const activeDaily = load(ACTIVE_DAILY_KEY, null);
-    state = activeDaily ? loadState(DAILY_PREFIX + activeDaily) : loadState();
-    dailyKey = state && activeDaily && state.solved !== undefined ? activeDaily : '';
+    const activeDaily = activeDailyKey();
+    const dailyState = activeDaily ? loadState(DAILY_PREFIX + activeDaily) : null;
+    state = dailyState || loadState();
+    dailyKey = dailyState ? activeDaily : '';
+    if (!dailyState && activeDaily) {
+      try { localStorage.removeItem(ACTIVE_DAILY_KEY); } catch (err) {}
+    }
     if (state) difficulty = state.difficulty;
 
     if (!state) {

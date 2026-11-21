@@ -580,3 +580,68 @@ test.describe('service worker locale cache', () => {
     await expect.poll(() => page.evaluate(async (name) => (await caches.keys()).includes(name), stagingName)).toBe(false);
   });
 });
+
+test('Water Sort pour effects use a real light tint', async ({ page }) => {
+  await page.goto('/#water');
+  await page.waitForSelector('#water-tubes .water-tube');
+
+  const colours = await page.evaluate(() => {
+    const tubes = document.querySelectorAll('#water-tubes .water-tube');
+    tubes[0].click();
+    tubes[3].click();
+    const ring = document.querySelector('.water-pour-ring');
+    const drop = document.querySelector('.water-pour-drop');
+    return {
+      ring: ring && ring.getAttribute('stroke'),
+      drop: drop && drop.getAttribute('fill')
+    };
+  });
+
+  // A missing light tone used to become the literal SVG attribute "undefined",
+  // so the splash ring and droplets painted with no colour at all.
+  expect(colours.ring).toMatch(/^#[0-9a-f]{6}$/i);
+  expect(colours.drop).toMatch(/^#[0-9a-f]{6}$/i);
+});
+
+test('an in-progress daily Sudoku resumes after a reload', async ({ page }) => {
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  await page.waitForFunction(() => window.SixfoldSudoku);
+  await page.evaluate(() => window.SixfoldSudoku.startDaily('2026-11-21'));
+  await page.waitForFunction(() => {
+    const cells = Array.from(document.querySelectorAll('#sudoku-board .sudoku-cell'));
+    return window.SixfoldSudoku.currentDaily() === '2026-11-21' &&
+      cells.length === 81 && cells.some((cell) => cell.textContent.trim());
+  });
+
+  await page.reload();
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  await expect.poll(() => page.evaluate(() => window.SixfoldSudoku.currentDaily())).toBe('2026-11-21');
+});
+
+test('finishing the sixth game of a week announces Perfect six', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    const start = window.SixfoldDaily.weekStartKey(window.SixfoldDaily.todayKey());
+    const days = {};
+    days[start] = { games: { merge: true, sudoku: true, ttt: true, mines: true, water: true } };
+    localStorage.setItem('sixfold.daily.v1', JSON.stringify({ days, best: 0 }));
+  });
+  await page.reload();
+  await page.waitForFunction(() => window.SixfoldDaily);
+
+  const result = await page.evaluate(() => {
+    const ok = window.SixfoldDaily.complete('fruit', null, window.SixfoldDaily.todayKey());
+    return {
+      ok: ok,
+      weekly: window.SixfoldDaily.weeklyBadge(),
+      pulse: document.getElementById('daily-badge').classList.contains('is-new')
+    };
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.weekly).toBe(true);
+  // The completion itself used to be counted before the "previous" week was
+  // read, which made this branch unreachable on the sixth game.
+  expect(result.pulse, 'the weekly badge is celebrated').toBe(true);
+});

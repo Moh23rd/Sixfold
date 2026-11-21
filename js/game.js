@@ -1250,6 +1250,9 @@
       hapticBtn.setAttribute('aria-label', on ? 'Vibration on' : 'Vibration off');
     };
     syncHapticBtn();
+    // The other game screens carry the same switch; whichever one changes it,
+    // this footer has to keep showing the current state.
+    window.addEventListener('sixfold:haptics', syncHapticBtn);
     hapticBtn.addEventListener('click', function () {
       haptics.toggle();
       syncHapticBtn();

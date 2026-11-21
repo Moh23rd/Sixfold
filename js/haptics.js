@@ -53,6 +53,14 @@
     }
   }
 
+  function announce() {
+    try {
+      window.dispatchEvent(new CustomEvent('sixfold:haptics', { detail: { enabled: enabled } }));
+    } catch (err) {
+      /* an old WebView without CustomEvent keeps the local switches working */
+    }
+  }
+
   function buzz(pattern, force) {
     if (!enabled || !api) return false;
     const now = performance.now();
@@ -117,6 +125,7 @@
           /* ignore */
         }
         cancel();
+        announce();
         return false;
       }
 
@@ -129,6 +138,7 @@
       // A crisp confirmation on the switch itself, even if the last pulse was
       // a moment ago.
       buzz(PATTERN.tap, true);
+      announce();
       return true;
     }
   };

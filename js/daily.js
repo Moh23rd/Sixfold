@@ -316,10 +316,12 @@
       render();
       return false;
     }
+    // Read the week before the game is written, or this completion is already
+    // part of the "previous" state and Perfect six can never be announced.
+    const previousWeekly = weeklyBadge();
     day.games[game] = true;
     data.days[key] = day;
     const previousBest = data.best || 0;
-    const previousWeekly = weeklyBadge();
     const current = streak();
     const previousBadge = highestMilestone(previousBest);
     const earnedBadge = highestMilestone(current);

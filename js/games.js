@@ -1103,6 +1103,9 @@
       });
     }
 
+    // Merge's footer has its own vibration switch. A toggle in either place is
+    // the same device setting, so every visible switch has to follow it.
+    window.addEventListener('sixfold:haptics', syncHaptics);
     syncHaptics();
   }
 
@@ -1126,13 +1129,13 @@
     const STATE_KEY = 'merge-games.water.state.v3';
     const CAP = 4;
     const COLORS = [
-      { name: 'coral', hex: '#e85f3b', deep: '#b83828' },
-      { name: 'amber', hex: '#e3a92f', deep: '#ad7414' },
-      { name: 'lime', hex: '#8bbd54', deep: '#5d8e2f' },
-      { name: 'teal', hex: '#39a9a1', deep: '#167b77' },
-      { name: 'blue', hex: '#5b8fd5', deep: '#3264a5' },
-      { name: 'grape', hex: '#9a6bb5', deep: '#6d4389' },
-      { name: 'rose', hex: '#d96b8a', deep: '#a33d5e' }
+      { name: 'coral', hex: '#e85f3b', light: '#f39b7e', deep: '#b83828' },
+      { name: 'amber', hex: '#e3a92f', light: '#f2d07a', deep: '#ad7414' },
+      { name: 'lime', hex: '#8bbd54', light: '#bfe08f', deep: '#5d8e2f' },
+      { name: 'teal', hex: '#39a9a1', light: '#8ddcd6', deep: '#167b77' },
+      { name: 'blue', hex: '#5b8fd5', light: '#a8c6ef', deep: '#3264a5' },
+      { name: 'grape', hex: '#9a6bb5', light: '#cdaee0', deep: '#6d4389' },
+      { name: 'rose', hex: '#d96b8a', light: '#f0a8bb', deep: '#a33d5e' }
     ];
     const LEVELS = [
       { tier: 'Easy', colors: 3, tubes: [[2, 1, 0, 0], [1, 2, 0, 1], [1, 2, 0, 2], [], []] },
@@ -1163,7 +1166,12 @@
       const base = COLORS[index] || COLORS[0];
       const theme = window.MergeTheme;
       if (theme && theme.colour) {
-        return { name: base.name, hex: theme.colour(base.hex), deep: theme.colour(base.deep) };
+        return {
+          name: base.name,
+          hex: theme.colour(base.hex),
+          light: theme.colour(base.light),
+          deep: theme.colour(base.deep)
+        };
       }
       return base;
     }
@@ -2511,6 +2519,9 @@
     /* True when nothing is moving and no merge effect is still playing. */
     function atRest() {
       if (effects.length || dropLock > 0) return false;
+      // The round is over: step() stops simulating, so its last velocities are
+      // frozen and must not keep the frame loop alive behind the result card.
+      if (over) return true;
       for (let i = 0; i < fruits.length; i += 1) {
         const fruit = fruits[i];
         if (Math.abs(fruit.vx) + Math.abs(fruit.vy) > 4) return false;
