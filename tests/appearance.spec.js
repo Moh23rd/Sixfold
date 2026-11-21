@@ -183,6 +183,70 @@ test('a native theme switch reports the surface without waiting for the bars', a
   expect(calls[calls.length - 1], 'the last report is the new page colour').toBe(state.page);
 });
 
+test('the surface report is queued behind the bar restyle, not behind a timer', async ({ page }) => {
+  // SystemBars.setStyle() is what rewrites the decor background to the theme's
+  // windowBackground, so the repair report has to reach native after it. The
+  // switch does report the new page colour while it paints (before the bars are
+  // restyled), and that report is the one the bar call overwrites; what matters
+  // is the repair sent afterwards.
+  //
+  // The deadline is a microtask. Capacitor posts a plugin call from one, so the
+  // stub queues setStyle the same way, and the tap queues one more microtask as
+  // a sentinel. The repair has to land between them: made inline it overtakes
+  // the bar call, and deferred to a timer it lands after the sentinel — which on
+  // a phone is after a frame has already shown the launch colour.
+  await page.addInitScript(() => {
+    const calls = [];
+    window.__bridge = calls;
+    window.Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: {
+        SystemBars: {
+          setStyle: () => {
+            Promise.resolve().then(() => calls.push('SystemBars.setStyle'));
+            // Never resolves: the answer coming back over the bridge is not
+            // part of this ordering.
+            return new Promise(() => {});
+          }
+        },
+        WindowSurface: {
+          setColor: ({ color }) => {
+            calls.push('WindowSurface.setColor ' + color);
+            return Promise.resolve();
+          }
+        }
+      }
+    };
+  });
+  await openLook(page);
+
+  // Tap and arm the sentinel in one task: whatever the switch queues behind the
+  // click runs before the sentinel, and anything it hands to a timer runs after.
+  await page.evaluate(() => {
+    window.__bridge.length = 0;
+    document.querySelector('[data-theme-opt="dark"]').click();
+    Promise.resolve().then(() => window.__bridge.push('sentinel'));
+  });
+  await page.waitForFunction(() => window.__bridge.includes('sentinel'));
+
+  const calls = await page.evaluate(() => window.__bridge.slice());
+  const bar = calls.indexOf('SystemBars.setStyle');
+  const sentinel = calls.indexOf('sentinel');
+  const report = calls.reduce(
+    (last, call, index) => (call.startsWith('WindowSurface.setColor') ? index : last),
+    -1
+  );
+
+  expect(bar, 'the switch restyles the bars').toBeGreaterThan(-1);
+  expect(report, 'the switch reports the surface').toBeGreaterThan(-1);
+  expect(report, 'the bar restyle is not the last write').toBeGreaterThan(bar);
+  expect(sentinel, 'the sentinel runs after the tap').toBeGreaterThan(-1);
+  expect(report, 'the repair report lands before the sentinel').toBeLessThan(sentinel);
+  expect(calls[report], 'the repair report is the page colour').toMatch(
+    /^WindowSurface\.setColor #[0-9a-f]{6}$/
+  );
+});
+
 test('reduced motion switches in one frame', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openLook(page);
