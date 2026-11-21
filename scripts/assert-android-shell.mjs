@@ -321,13 +321,15 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
   );
 }
 
-async function until(what, probe, timeoutMs = 60000, everyMs = 400) {
+/* Like `until`, but answers null instead of exiting when the deadline passes,
+   so a caller can recover (relaunch the app) before giving up. */
+async function waitFor(what, probe, timeoutMs = 60000, everyMs = 400) {
   const deadline = Date.now() + timeoutMs;
   let last = null;
   while (Date.now() < deadline) {
     try {
       const value = await probe();
-      if (value) return value;
+      if (value) return { value };
     } catch (error) {
       // A dead emulator is not a slow page: report it as such instead of
       // timing out as if the WebView never came up. A lost transport or a
@@ -341,7 +343,13 @@ async function until(what, probe, timeoutMs = 60000, everyMs = 400) {
     }
     await wait(everyMs);
   }
-  fail(`timed out after ${Math.round(timeoutMs / 1000)}s waiting for ${what}${last ? `: ${last.message}` : ''}`);
+  return { value: null, error: last };
+}
+
+async function until(what, probe, timeoutMs = 60000, everyMs = 400) {
+  const { value, error } = await waitFor(what, probe, timeoutMs, everyMs);
+  if (value) return value;
+  fail(`timed out after ${Math.round(timeoutMs / 1000)}s waiting for ${what}${error ? `: ${error.message}` : ''}`);
 }
 
 function attach(url) {
@@ -402,8 +410,56 @@ function session(socket) {
 
 let currentSession = null;
 
-async function connectToWebView() {
-  const target = await until('the WebView devtools target', devtoolsTarget, 90000);
+function appPid() {
+  try {
+    return adb(['shell', 'pidof', PACKAGE], 15000);
+  } catch (error) {
+    return '';
+  }
+}
+
+/* Starts the activity and points the devtools port at its WebView. A cold
+   boot can start the process and then lose the WebView before it exposes the
+   socket (adbd keeps refusing `webview_devtools_remote_<pid>` and the launcher
+   is left on screen), so the launch has to be repeatable. */
+async function launchApp() {
+  adb(['shell', 'am', 'force-stop', PACKAGE]);
+  const started = adb(['shell', 'am', 'start', '-n', ACTIVITY]);
+  if (/^Error/im.test(started) || /does not exist/i.test(started)) {
+    fail(`the activity did not start: ${started}`);
+  }
+  const pid = await until('the app process', appPid, 45000, 300);
+  log(`running as pid ${pid}`);
+  if (forwarded) {
+    try {
+      adb(['forward', '--remove', `tcp:${PORT}`]);
+    } catch (error) {
+      // A forward that is already gone is the state we want.
+    }
+  }
+  adb(['forward', `tcp:${PORT}`, `localabstract:webview_devtools_remote_${pid}`]);
+  forwarded = true;
+}
+
+async function connectToWebView(relaunchOnMissing = false) {
+  let found = await waitFor('the WebView devtools target', devtoolsTarget, relaunchOnMissing ? 45000 : 90000);
+  if (!found.value && relaunchOnMissing) {
+    // The emulator is up and the app has a pid, but nothing is listening on
+    // its devtools socket: the launch failed before the WebView hooked up.
+    // Start it once more before calling this a failure.
+    log(`the WebView devtools target did not appear (app pid ${appPid() || 'gone'}); relaunching the app`);
+    await launchApp();
+    found = await waitFor('the WebView devtools target', devtoolsTarget, 60000);
+  }
+  if (!found.value) {
+    const live = await deviceLive();
+    fail(
+      `the WebView devtools target did not appear (app pid ${appPid() || 'gone'},` +
+        ` emulator ${live ? 'alive' : 'not answering'})` +
+        (found.error ? `: ${found.error.message}` : '')
+    );
+  }
+  const target = found.value;
   const socket = await attach(target.webSocketDebuggerUrl);
   const bound = { socket, target, closed: false, evaluate: session(socket).evaluate };
   socket.addEventListener('close', () => { bound.closed = true; });
@@ -445,19 +501,9 @@ try {
   // Not `am start -W`: the hub animates from the first frame, so the activity
   // never goes idle and the wait reports a timeout even though it launched.
   // The process and the WebView target below are the real evidence.
-  adb(['shell', 'am', 'force-stop', PACKAGE]);
-  const started = adb(['shell', 'am', 'start', '-n', ACTIVITY]);
-  if (/^Error/im.test(started) || /does not exist/i.test(started)) {
-    fail(`the activity did not start: ${started}`);
-  }
+  await launchApp();
 
-  const pid = await until('the app process', () => adb(['shell', 'pidof', PACKAGE]));
-  log(`running as pid ${pid}`);
-
-  adb(['forward', `tcp:${PORT}`, `localabstract:webview_devtools_remote_${pid}`]);
-  forwarded = true;
-
-  await connectToWebView();
+  await connectToWebView(true);
 
   await until(
     'the WebView to reach home-ready',
