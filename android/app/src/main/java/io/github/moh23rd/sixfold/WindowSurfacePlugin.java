@@ -72,7 +72,11 @@ public class WindowSurfacePlugin extends Plugin {
             return;
         }
 
-        activity.runOnUiThread(new Runnable() {
+        // Post rather than run inline: SystemBars.setStyle() queues its decor
+        // repaint on the main looper, and this write has to land after that one,
+        // not before. Inline it painted first and the queued repaint put the
+        // launch colour back until the page reported again over the bridge.
+        activity.getWindow().getDecorView().post(new Runnable() {
             @Override
             public void run() {
                 final Window window = activity.getWindow();

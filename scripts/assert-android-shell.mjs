@@ -308,11 +308,15 @@ try {
   ).toLowerCase();
   if (!/^#[0-9a-f]{6}$/.test(before)) fail(`the page colour is not a hex value: ${before}`);
 
+  // The top band is the window drawable behind the status bar. The bottom of
+  // the hub is content (the daily card reaches the bottom edge under gesture
+  // navigation), so it is not a window sample; both bands share one drawable,
+  // and the top is enough to prove it followed the page.
   await until(
     `the window strip to match the page (${before}) before the palette tap`,
     async () => {
       const strip = await readStrip();
-      return strip.top === before && strip.bottom === before ? strip : null;
+      return strip.top === before ? strip : null;
     },
     30000,
     500
@@ -351,6 +355,17 @@ try {
     )
   ).toLowerCase();
 
+  // Close the sheet before reading pixels: while it is open its card covers
+  // the navigation-bar band, so the bottom sample would be the card's colour
+  // rather than the window drawable behind the bars.
+  const closed = await evaluate(
+    "(() => { const done = document.getElementById('sheet-done');" +
+      " if (!done) return 'the appearance sheet has no done button'; done.click(); return ''; })()"
+  );
+  if (closed) fail(closed);
+  // Wait out the sheet's 320ms leave and the fade before sampling.
+  await wait(900);
+
   // Poll rather than sleep: the colour crosses the bridge asynchronously, and a
   // slow runner should still pass. A stale strip never matches and reports what
   // it actually showed.
@@ -358,10 +373,10 @@ try {
   let seenStrip = null;
   while (Date.now() < deadline) {
     seenStrip = await readStrip();
-    if (seenStrip.top === after && seenStrip.bottom === after) break;
+    if (seenStrip.top === after) break;
     await wait(600);
   }
-  if (!seenStrip || seenStrip.top !== after || seenStrip.bottom !== after) {
+  if (!seenStrip || seenStrip.top !== after) {
     fail(
       `the window strip did not follow the ${targetPalette} palette: expected ${after},` +
         ` got top ${seenStrip && seenStrip.top} bottom ${seenStrip && seenStrip.bottom}`
@@ -369,18 +384,19 @@ try {
   }
   log(`the window strip followed the ${targetPalette} palette: ${after}`);
 
-  const closed = await evaluate(
-    "(() => { const done = document.getElementById('sheet-done');" +
-      " if (!done) return 'the appearance sheet has no done button'; done.click(); return ''; })()"
-  );
-  if (closed) fail(closed);
-
   // The page surface itself, not only the strip: the WebView's composited
   // scrollers used to keep the previous appearance's raster, so the hub stayed
-  // on the old page colour while every control took the new one. Wait out the
-  // sheet's 320ms leave and the fade, then read the device's own pixels.
-  await wait(900);
-  const paletteSurface = await readPageSurface();
+  // on the old page colour while every control took the new one.
+  // Poll rather than sample once: a screencap is slow enough on a loaded
+  // emulator to return a stale frame. A stale surface never matches, and the
+  // failure reports what it kept showing.
+  const surfaceDeadline = Date.now() + 30000;
+  let paletteSurface = null;
+  while (Date.now() < surfaceDeadline) {
+    paletteSurface = await readPageSurface();
+    if (paletteSurface === after) break;
+    await wait(600);
+  }
   if (paletteSurface !== after) {
     fail(
       `the page surface did not repaint on the ${targetPalette} palette:` +

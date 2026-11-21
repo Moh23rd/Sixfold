@@ -147,6 +147,42 @@ test('the native shell fades with its page surfaces promoted', async ({ page }) 
   expect(after.hubPromotion, 'the promotion is dropped once the switch settles').not.toBe('opacity');
 });
 
+test('a native theme switch reports the surface without waiting for the bars', async ({ page }) => {
+  // SystemBars.setStyle() rewrites the decor background from the theme's
+  // windowBackground. The repair has to be queued behind that write, so the
+  // report cannot wait for the bar call's promise to come back over the bridge:
+  // that took up to a second on the emulator and left the strip on the launch
+  // colour until it landed.
+  await page.addInitScript(() => {
+    const reported = [];
+    window.__surfaces = reported;
+    window.Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: {
+        // Never resolves: the report has to happen without it.
+        SystemBars: { setStyle: () => new Promise(() => {}) },
+        WindowSurface: {
+          setColor: ({ color }) => {
+            reported.push(color);
+            return Promise.resolve();
+          }
+        }
+      }
+    };
+  });
+  await openLook(page);
+  const before = await page.evaluate(() => window.__surfaces.length);
+
+  await page.locator('[data-theme-opt="dark"]').click();
+  await page.waitForFunction((count) => window.__surfaces.length > count, before);
+  const state = await appearance(page);
+  const calls = await page.evaluate(() => window.__surfaces.slice());
+
+  expect(state.theme).toBe('dark');
+  expect(calls.length, 'the switch reports the surface').toBeGreaterThan(before);
+  expect(calls[calls.length - 1], 'the last report is the new page colour').toBe(state.page);
+});
+
 test('reduced motion switches in one frame', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openLook(page);

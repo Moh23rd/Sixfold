@@ -56,9 +56,12 @@ Styling the bars has a side effect that the surface has to work around:
 `SystemBars.setStyle()` sets the decor background to the theme's `windowBackground`
 while it changes the status and navigation bar icons, and that is the same
 drawable the page's colour is painted on. `js/native.js` therefore reports the
-page colour again once that call resolves (`MergeTheme.repaintSurface`), and it
-does not restyle the bars at all when only the palette changed, because the bar
-icons depend on light/dark alone. Without both parts the strip keeps the launch
+page colour again on the microtask after the bar call is posted
+(`MergeTheme.repaintSurface`), queued behind that repaint but ahead of the next
+frame, because waiting for the call's promise — or for a timer — left the strip
+on the launch colour until the bridge answered or the frame rendered. It does not
+restyle the bars at all when only the palette changed, because the bar icons
+depend on light/dark alone. Without both parts the strip keeps the launch
 colour after a swatch tap until the next appearance change or a restart.
 
 The same report is remembered on the device. `MainActivity` reads it before

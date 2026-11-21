@@ -53,8 +53,8 @@
   // icons. That is the same surface the page's colour is painted on, so the
   // colour reported a moment earlier is replaced by the launch colour and the
   // strip around the page stays stale until the next report or a restart. Ask
-  // for the page's colour again once the bar call has landed — native reports
-  // run in order, so this one is the last write.
+  // for the page's colour again on the microtask after the bar call is posted —
+  // native reports run in order, so this one is the last write.
   function resurface() {
     var theme = window.MergeTheme;
     if (theme && theme.repaintSurface) theme.repaintSurface();
@@ -79,22 +79,28 @@
     if (systemBars && systemBars.setStyle) {
       try {
         var result = systemBars.setStyle({ style: style });
+        // SystemBars repaints the decor background from the theme's
+        // windowBackground as part of this call. Report the page colour again
+        // on the microtask after the plugin proxy posts the bar call, so the
+        // repair is queued behind it but still ahead of the next frame:
+        // reporting inline could overtake the bar call, and a timer waits
+        // behind a rendered frame on a slow device, showing the launch colour.
+        Promise.resolve().then(resurface);
         if (result && typeof result.then === 'function') {
           result.then(function () {
             appliedBarStyle = style;
-            resurface();
           }, function () {
             styleStatusBar(dark);
             resurface();
           });
         } else {
           appliedBarStyle = style;
-          resurface();
         }
         return;
       } catch (err) {}
     }
     styleStatusBar(dark);
+    resurface();
   }
 
   function back() {
