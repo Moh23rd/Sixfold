@@ -575,9 +575,12 @@ html[data-theme="dark"] #wordle {
   /* The full label needs 46px more than a 320px screen has. The glyph plus
      "Flag" keeps the control inside the frame; the hidden words still give
      screen readers the full "Flag mode" name. */
-  .mines-flag-toggle { font-size: 0; }
-  .mines-flag-toggle > span { font-size: 13px; }
-  .mines-flag-toggle::after {
+  /* The landscape rule scopes its 9px label with #mines, so the class-level
+     zero that hides the long word loses and the button reads "⚑ Flag mode
+     Flag". Match that specificity here. */
+  #mines .mines-flag-toggle[aria-pressed] { font-size: 0; }
+  #mines .mines-flag-toggle > span { font-size: 13px; }
+  #mines .mines-flag-toggle::after {
     content: "Flag";
     font-size: 9.5px;
     font-weight: 800;

@@ -1442,6 +1442,11 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
     margin-top: 2px;
   }
 
+  /* The mines toolbar's single auto track sized itself to its widest child,
+     so the three difficulty tabs sat in a 219px block inside a 300px rail and
+     "Intermediate" spilled out of its 70px tab. The track fills the rail now. */
+  #mines .mines-toolbar { grid-template-columns: minmax(0, 1fr); }
+
   #mines .mines-difficulty { width: 100%; justify-content: space-between; }
   #mines .mines-difficulty button { min-height: 28px; padding-inline: 6px; font-size: 9px; }
   #mines .mines-flag-toggle {
@@ -1590,19 +1595,18 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   #mines .play-shell,
   #ttt .play-shell { grid-template-columns: minmax(150px, 42vw) minmax(0, 1fr); }
 
+  /* The stats sat beside the title in a 42vw rail and left it 121.5px wide:
+     "Minesweeper" broke before its last letter and "Tic Tac Toe" stacked three
+     lines. At this rail width the stats drop under the title instead, which
+     also costs no height because the rail's spare row absorbs it. */
   #mines .play-title-row,
-  #ttt .play-title-row {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 8px;
-  }
+  #ttt .play-title-row { display: block; }
 
   #mines .play-intro h1,
   #ttt .play-intro h1 { font-size: 17px; }
 
   #mines .play-stats,
-  #ttt .play-stats { width: auto; flex: none; margin-top: 0; }
+  #ttt .play-stats { width: 100%; margin-top: 4px; }
 
   #mines .play-foot,
   #ttt .play-foot { min-height: 26px; }
@@ -1751,6 +1755,51 @@ html.is-theme-fading .sheet-backdrop {
      the column instead of the canvas running past the panel's bottom edge. */
   #fruit .fruit-stage { width: min(100%, calc((100cqh - 44px) * 0.8)); }
   #fruit .fruit-hud { padding-top: 6px; }
+}
+
+/* A 320-tall landscape phone with the Sudoku hint open has to hold the header,
+   the two-line hint, three pad rows, the tools and the footer in a 240 x 302
+   rail. The pad row was the flexible one, so it collapsed to 16.7px rows and
+   its digits spilled under the tools. Every row keeps its content height now,
+   the pad has a 21px floor, and the hint chrome, row gaps and level chip give
+   back the height that floor costs. The remaining-count line, which made a key
+   23px tall, steps out; at this height the digit is what the thumb needs. */
+@media (orientation: landscape) and (max-height: 360px) and (max-width: 620px) {
+  #sudoku .sudoku-shell {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    row-gap: 1px;
+  }
+
+  #sudoku .sudoku-pad { grid-auto-rows: minmax(21px, auto); }
+  #sudoku .sudoku-pad-key { min-height: 21px; height: auto; }
+  #sudoku .sudoku-pad-key::after { display: none; }
+
+  #sudoku .sudoku-hint-panel { padding: 2px 8px; }
+  #sudoku .sudoku-hint-panel strong { font-size: 9px; }
+  #sudoku .sudoku-hint-panel p { line-height: 1.15; }
+  #sudoku .sudoku-hint-actions { margin-top: 2px; }
+  #sudoku .sudoku-hint-actions button { min-height: 24px; }
+  #sudoku .play-chip { min-height: 24px; padding-block: 1px; }
+
+  /* "Intermediate" needs 75px of text, while three tabs in this rail are only
+     70px wide. A nine-pixel label and two-pixel padding keep the whole word
+     inside its tab instead of spilling over the next one. */
+  #mines .mines-difficulty button {
+    padding-inline: 2px;
+    font-size: 9px;
+    min-height: 26px;
+    letter-spacing: -0.01em;
+  }
+
+  /* The stats now have a row of their own, so with a real status bar and
+     navigation bar the rail has 254px instead of 302. Give the outer gutters
+     back and keep the rows tight; the game stays inside both bars. */
+  #mines .play-shell,
+  #ttt .play-shell {
+    row-gap: 2px;
+    padding-top: calc(var(--sa-top) + 8px);
+    padding-bottom: calc(var(--sa-bottom) + 6px);
+  }
 }
 
 /* The rail's tabs were still 28px labels with a large void above the footer.
