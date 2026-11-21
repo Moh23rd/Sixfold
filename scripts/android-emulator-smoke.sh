@@ -77,9 +77,21 @@ EMULATOR_PID=""
 cleanup() {
   local status=$?
   if [ "$status" -ne 0 ] && [ -n "$EMULATOR_PID" ]; then
-    note "capturing the emulator's logcat and a screenshot"
+    note "capturing the emulator's logcat, screen and device state"
     timeout 120 "$ADB" logcat -d -t 400 > "$OUT/logcat.txt" 2>&1 || true
     timeout 120 "$ADB" exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
+    # A lost device is the failure this artifact has to explain: record what
+    # adb still sees, whether the emulator process survived, and what the
+    # kernel said about it. Without these, "device offline" is a guess.
+    timeout 20 "$ADB" devices -l > "$OUT/adb-devices.txt" 2>&1 || true
+    timeout 20 "$ADB" get-state > "$OUT/adb-state.txt" 2>&1 || true
+    if kill -0 "$EMULATOR_PID" 2>/dev/null; then
+      echo "alive" > "$OUT/emulator-alive.txt"
+      ps -o pid,stat,etime,pcpu,rss,args -p "$EMULATOR_PID" > "$OUT/emulator-process.txt" 2>&1 || true
+    else
+      echo "gone" > "$OUT/emulator-alive.txt"
+    fi
+    { dmesg --ctime 2>/dev/null || sudo -n dmesg --ctime 2>/dev/null; } | tail -n 200 > "$OUT/dmesg.txt" || true
   fi
   if [ -n "$EMULATOR_PID" ]; then
     kill "$EMULATOR_PID" 2>/dev/null || true

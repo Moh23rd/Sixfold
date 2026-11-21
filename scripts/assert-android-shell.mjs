@@ -58,6 +58,48 @@ function adbBuffer(args, timeout = 120000) {
   }
 }
 
+/* adb drops its transport while Android applies a rotation or a UI-mode
+   change. The WebView socket usually survives that, but the next shell call
+   fails with "device offline", which used to end the smoke. Wait for the
+   device before touching it again, and retry the calls that trigger the
+   change. */
+const TRANSIENT_ADB = /device offline|no devices\/emulators found|device not found|connection reset|protocol fault|closed/i;
+
+function adbState() {
+  try {
+    return execFileSync('adb', ['get-state'], { encoding: 'utf8', stdio: 'pipe', timeout: 10000 }).trim();
+  } catch (error) {
+    return ((error.stdout || '') + ' ' + (error.stderr || '')).trim();
+  }
+}
+
+async function settleDevice(what, timeoutMs = 45000) {
+  const deadline = Date.now() + timeoutMs;
+  let state = '';
+  while (Date.now() < deadline) {
+    state = adbState();
+    if (state === 'device') return true;
+    await wait(500);
+  }
+  log(`adb has not returned after ${what} (last state: ${state || 'nothing'})`);
+  return false;
+}
+
+async function adbRetry(args, what, attempts = 6) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return adb(args);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts || !TRANSIENT_ADB.test(error.message)) break;
+      log(`${what}: adb failed (${error.message}); waiting for the device (${attempt}/${attempts})`);
+      await settleDevice(what);
+    }
+  }
+  throw lastError;
+}
+
 /* Reads the PNG `screencap -p` returns. The smoke runs on a bare runner with no
    image library, and the package tree has no PNG dependency of its own, so the
    decoder is the few lines this job actually needs: 8-bit RGB/RGBA, no
@@ -197,14 +239,26 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function awaitStrip(expected, what, timeoutMs = 30000) {
   const deadline = Date.now() + timeoutMs;
   let seen = null;
+  let lastError = null;
   while (Date.now() < deadline) {
-    seen = await readStrip();
+    try {
+      seen = await readStrip();
+      lastError = null;
+    } catch (error) {
+      // A screencap can land in the gap while adb reconnects after a rotation
+      // or a UI-mode switch. Wait for the device and sample again; the strip
+      // deadline still bounds the whole check.
+      lastError = error;
+      await settleDevice(what, 15000);
+      continue;
+    }
     if (seen.top === expected) return seen;
     await wait(600);
   }
   fail(
     `${what}: expected the strip on ${expected},` +
-      ` got top ${seen && seen.top} bottom ${seen && seen.bottom}`
+      ` got top ${seen && seen.top} bottom ${seen && seen.bottom}` +
+      (lastError ? ` (the last read failed: ${lastError.message})` : '')
   );
 }
 
@@ -413,7 +467,13 @@ try {
   const surfaceDeadline = Date.now() + 30000;
   let paletteSurface = null;
   while (Date.now() < surfaceDeadline) {
-    paletteSurface = await readPageSurface();
+    try {
+      paletteSurface = await readPageSurface();
+    } catch (error) {
+      // Same reconnect gap as the strip read: retry until the deadline.
+      await settleDevice('reading the page surface', 15000);
+      continue;
+    }
     if (paletteSurface === after) break;
     await wait(600);
   }
@@ -432,7 +492,9 @@ try {
   // Put the page on light first, so a system switch to dark has something to
   // disagree with: the decor resource turns dark while the page must stay light.
   rotationSetting = adb(['shell', 'settings', 'get', 'system', 'accelerometer_rotation']);
-  nightSetting = (adb(['shell', 'cmd', 'uimode', 'night']).match(/Night mode:\s*(\w+)/i) || [])[1] || 'no';
+  nightSetting = (
+    (await adbRetry(['shell', 'cmd', 'uimode', 'night'], 'reading the system night mode')).match(/Night mode:\s*(\w+)/i) || []
+  )[1] || 'no';
   const reopen = await evaluate(
     "(() => { const button = document.getElementById('appearance');" +
       " if (!button) return 'the hub has no appearance button'; button.click(); return ''; })()"
@@ -456,17 +518,21 @@ try {
 
   log('rotating the device');
   adb(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
-  adb(['shell', 'settings', 'put', 'system', 'user_rotation', '1']);
+  await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '1'], 'rotating to landscape');
+  await settleDevice('rotating to landscape');
   await until('the WebView to turn landscape', () => evaluate('innerWidth > innerHeight'), 30000, 250);
   awaitStrip(lightPage, 'the strip after rotating to landscape');
   log('the strip stayed on the page colour through the rotation');
 
-  adb(['shell', 'settings', 'put', 'system', 'user_rotation', '0']);
+  await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'rotating back to portrait');
+  await settleDevice('rotating back to portrait');
   await until('the WebView to turn portrait', () => evaluate('innerWidth < innerHeight'), 30000, 250);
   awaitStrip(lightPage, 'the strip after rotating back to portrait');
 
   log('switching the system to dark while the app stays light');
-  adb(['shell', 'cmd', 'uimode', 'night', 'yes']);
+  await settleDevice('switching the system to dark');
+  await adbRetry(['shell', 'cmd', 'uimode', 'night', 'yes'], 'switching the system to dark');
+  await settleDevice('switching the system to dark');
   await until(
     'the system to report night mode',
     () => evaluate("matchMedia('(prefers-color-scheme: dark)').matches"),
@@ -528,9 +594,14 @@ try {
   // The smoke may have turned the emulator to landscape and to night mode. Put
   // the device back the way it was found, so a local run is not left changed.
   try {
-    if (rotationSetting !== null) adb(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', rotationSetting]);
-    adb(['shell', 'settings', 'put', 'system', 'user_rotation', '0']);
-    if (nightSetting !== null) adb(['shell', 'cmd', 'uimode', 'night', nightSetting]);
+    await settleDevice('restoring the device settings', 15000);
+    if (rotationSetting !== null) {
+      await adbRetry(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', rotationSetting], 'restoring the rotation setting', 3);
+    }
+    await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'restoring the portrait rotation', 3);
+    if (nightSetting !== null) {
+      await adbRetry(['shell', 'cmd', 'uimode', 'night', nightSetting], 'restoring the system night mode', 3);
+    }
   } catch (error) {
     // Best effort: the job's exit status is what matters.
   }
