@@ -202,6 +202,7 @@
     'Careful — the pile is close to the top.': 'Cuidado, la pila está cerca de arriba.',
     'Room again. Keep building pairs.': 'Hay sitio otra vez. Sigue creando parejas.',
     'Let the last fruit settle for a moment.': 'Deja que la última fruta se asiente un momento.',
+    'Nearly full — look for a match.': 'Casi lleno — busca una pareja.',
     'Tap a square to begin. Long-press to flag.': 'Toca una casilla para empezar. Mantén pulsado para marcar.',
     'Mine hit. The field is revealed.': 'Mina pisada. El campo está al descubierto.',
     'Flag placed. Tap it again to remove it.': 'Bandera colocada. Toca otra vez para quitarla.',

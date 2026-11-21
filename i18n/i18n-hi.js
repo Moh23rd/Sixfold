@@ -184,6 +184,7 @@
     "Careful — the pile is close to the top.": "सावधान — ढेर शीर्ष के करीब है।",
     "Room again. Keep building pairs.": "फिर जगह बनी। जोड़े बनाते रहें।",
     "Let the last fruit settle for a moment.": "आखिरी फल को थोड़ा ठहरने दें।",
+    "Nearly full — look for a match.": "लगभग भर गया — मिलान खोजें।",
     "Tap a square to begin. Long-press to flag.": "शुरू करने के लिए खाना टैप करें। झंडा लगाने के लिए देर तक दबाएँ।",
     "Mine hit. The field is revealed.": "बम फटा। माइनफ़ील्ड खुल गया।",
     "Flag placed. Tap it again to remove it.": "झंडा लगा। हटाने के लिए फिर टैप करें।",

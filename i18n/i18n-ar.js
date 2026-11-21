@@ -184,6 +184,7 @@
     "Careful — the pile is close to the top.": "احترس — الكومة قريبة من الأعلى.",
     "Room again. Keep building pairs.": "توفّرت مساحة مجددًا. واصل بناء الأزواج.",
     "Let the last fruit settle for a moment.": "دع الفاكهة الأخيرة تستقر قليلًا.",
+    "Nearly full — look for a match.": "يكاد يمتلئ — ابحث عن زوج.",
     "Tap a square to begin. Long-press to flag.": "اضغط على مربع للبدء. اضغط مطولًا لوضع العلم.",
     "Mine hit. The field is revealed.": "أصبت لغماً. تم الكشف عن الحقل.",
     "Flag placed. Tap it again to remove it.": "تم وضع العلم. اضغط عليه مجددًا لإزالته.",

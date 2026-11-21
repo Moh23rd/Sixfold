@@ -645,3 +645,59 @@ test('finishing the sixth game of a week announces Perfect six', async ({ page }
   // read, which made this branch unreachable on the sixth game.
   expect(result.pulse, 'the weekly badge is celebrated').toBe(true);
 });
+
+test('Sudoku hint places the digit it announces after a wrong entry', async ({ page }) => {
+  const solution = '534678912672195348198342567859761423426853791713924856961537284287419635345286179'.split('').map(Number);
+  const puzzle = '530070000600195000098000060800060003400803001700020006060000280000419005000080079'.split('').map(Number);
+  const grid = puzzle.slice();
+  // Cell 3 needs 6 and has candidates {2,6}. Put 6 in empty cell 2 on the same
+  // row: a hint built from the current grid sees cell 3 as a naked 2, while
+  // applying it writes the solution 6. That mismatch is the regression.
+  grid[2] = 6;
+  await page.addInitScript((state) => {
+    localStorage.setItem('sixfold.sudoku.state.v1', JSON.stringify(state));
+  }, {
+    puzzle: puzzle,
+    solution: solution,
+    grid: grid,
+    notes: new Array(81).fill(0),
+    difficulty: 'easy',
+    elapsed: 0,
+    hints: 0,
+    mistakes: 0,
+    solved: false
+  });
+
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  // The first-visit coach sits in the same feedback slot as the hint panel.
+  const skipCoach = page.locator('#sudoku .coach-skip');
+  if (await skipCoach.isVisible()) await skipCoach.click();
+  await expect(page.locator('.sudoku-cell[data-index="2"]')).toHaveText('6');
+  await expect(page.locator('.sudoku-cell[data-index="3"]')).toHaveText('');
+
+  await page.locator('.sudoku-cell[data-index="3"]').click();
+  await page.locator('#sudoku-hint').click();
+  await expect(page.locator('#sudoku-hint-panel')).toBeVisible();
+
+  const targetIndex = await page.evaluate(() =>
+    Number(document.querySelector('#sudoku-board .sudoku-cell.is-selected').dataset.index));
+  const announced = Number((await page.locator('#sudoku-hint-place').innerText()).match(/\d+/)[0]);
+  await page.locator('#sudoku-hint-place').click();
+  const placed = Number((await page.locator('.sudoku-cell[data-index="' + targetIndex + '"]').innerText()).trim());
+
+  expect(placed, 'the hint must place the digit it just announced').toBe(announced);
+});
+
+test('Fruit Merge stops its frame loop after a moving game over', async ({ page }) => {
+  await page.goto('/?fruit-loop-test=1#fruit');
+  await page.waitForSelector('body[data-screen="fruit"]');
+  await page.waitForFunction(() => window.__sixfoldFruitTest);
+
+  const started = await page.evaluate(() => window.__sixfoldFruitTest.finishWithMovingFruit());
+  expect(started.over).toBe(true);
+  expect(started.running, 'the frame loop is running before it is expected to stop').toBe(true);
+  expect(started.maxSpeed, 'the frozen fruit is still above the rest threshold').toBeGreaterThan(4);
+
+  await expect.poll(() => page.evaluate(() => window.__sixfoldFruitTest.state().running)).toBe(false);
+});

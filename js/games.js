@@ -3414,6 +3414,38 @@
         setStatus('Best score reset. Fresh run.');
       }
     };
+
+    // Deterministic seam for the post-game frame-loop regression. The query
+    // flag keeps these controls out of normal play; the test uses them to end
+    // a run while a fruit is still moving, which is the state that used to
+    // keep atRest() false forever.
+    if (location.search.indexOf('fruit-loop-test=1') !== -1) {
+      window.__sixfoldFruitTest = {
+        finishWithMovingFruit: function () {
+          fruits = [makeFruit(0, W / 2, BOTTOM - FRUITS[0].r)];
+          fruits[0].vx = 40;
+          fruits[0].vy = 40;
+          fruits[0].age = 1;
+          endRun();
+          // The shared auto-next starts a fresh run after three seconds, which
+          // would stop the old loop for the wrong reason.
+          if (window.MergeAutoNext) window.MergeAutoNext.cancel();
+          startLoop();
+          return snapshot();
+        },
+        state: snapshot
+      };
+
+      function snapshot() {
+        return {
+          over: over,
+          running: running,
+          maxSpeed: fruits.reduce(function (max, fruit) {
+            return Math.max(max, Math.abs(fruit.vx) + Math.abs(fruit.vy));
+          }, 0)
+        };
+      }
+    }
   })();
 
   /* ======================================================================

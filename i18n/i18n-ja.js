@@ -184,6 +184,7 @@
     "Careful — the pile is close to the top.": "注意 — 山が頂上に近づいています。",
     "Room again. Keep building pairs.": "また空きができました。ペアを作り続けましょう。",
     "Let the last fruit settle for a moment.": "最後の果物が落ち着くまで待ちましょう。",
+    "Nearly full — look for a match.": "もうすぐ満杯 — ペアを探しましょう。",
     "Tap a square to begin. Long-press to flag.": "マスをタップして開始。長押しで旗を立てます。",
     "Mine hit. The field is revealed.": "地雷を踏みました。地雷原が公開されます。",
     "Flag placed. Tap it again to remove it.": "旗を立てました。もう一度タップすると外せます。",

@@ -184,6 +184,7 @@
     "Careful — the pile is close to the top.": "조심하세요 — 더미가 꼭대기에 가깝습니다.",
     "Room again. Keep building pairs.": "다시 공간이 생겼습니다. 계속 짝을 만드세요.",
     "Let the last fruit settle for a moment.": "마지막 과일이 자리 잡을 때까지 기다리세요.",
+    "Nearly full — look for a match.": "거의 꽉 찼습니다 — 짝을 찾으세요.",
     "Tap a square to begin. Long-press to flag.": "칸을 탭해 시작하세요. 길게 눌러 깃발을 꽂으세요.",
     "Mine hit. The field is revealed.": "지뢰를 밟았습니다. 지뢰밭이 공개됩니다.",
     "Flag placed. Tap it again to remove it.": "깃발을 꽂았습니다. 다시 탭해 제거하세요.",

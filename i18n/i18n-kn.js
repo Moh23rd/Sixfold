@@ -184,6 +184,7 @@
     "Careful — the pile is close to the top.": "ಎಚ್ಚರಿಕೆಯಿಂದ - ರಾಶಿಯು ಮೇಲ್ಭಾಗಕ್ಕೆ ಹತ್ತಿರದಲ್ಲಿದೆ.",
     "Room again. Keep building pairs.": "ಮತ್ತೆ ಕೋಣೆ. ಜೋಡಿಗಳನ್ನು ನಿರ್ಮಿಸಿ.",
     "Let the last fruit settle for a moment.": "ಕೊನೆಯ ಫಲವು ಒಂದು ಕ್ಷಣ ನಿಲ್ಲಲಿ.",
+    "Nearly full — look for a match.": "ಬಹುತೇಕ ತುಂಬಿದೆ — ಜೋಡಿ ಹುಡುಕಿ.",
     "Tap a square to begin. Long-press to flag.": "ಪ್ರಾರಂಭಿಸಲು ಚೌಕವನ್ನು ಟ್ಯಾಪ್ ಮಾಡಿ. ಫ್ಲ್ಯಾಗ್ ಮಾಡಲು ದೀರ್ಘವಾಗಿ ಒತ್ತಿರಿ.",
     "Mine hit. The field is revealed.": "ಮೈನ್ ಹಿಟ್. ಕ್ಷೇತ್ರ ಬಹಿರಂಗವಾಗಿದೆ.",
     "Flag placed. Tap it again to remove it.": "ಧ್ವಜ ಇರಿಸಲಾಗಿದೆ. ಅದನ್ನು ತೆಗೆದುಹಾಕಲು ಮತ್ತೊಮ್ಮೆ ಟ್ಯಾಪ್ ಮಾಡಿ.",

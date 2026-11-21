@@ -852,19 +852,21 @@ html.perf-lite .home-ticker-track { animation: none; transform: none; }
 
 .home-game-play::after {
   content: "";
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
   flex: none;
-  border: solid currentColor;
-  border-width: 0 1.5px 1.5px 0;
-  transform: rotate(-45deg);
+  /* One vector chevron for every card. A rotated 5px border square rendered
+     as a box or an L on some densities, which made one card's arrow differ. */
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M2.2 1 5.8 4 2.2 7' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M2.2 1 5.8 4 2.2 7' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
   transition: transform 160ms ease;
 }
 
-.home-game:hover .home-game-play::after { transform: translateX(2px) rotate(-45deg); }
+.home-game:hover .home-game-play::after { transform: translateX(2px); }
 
-html[dir="rtl"] .home-game-play::after { transform: rotate(135deg); }
-html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(-2px) rotate(135deg); }
+html[dir="rtl"] .home-game-play::after { transform: scaleX(-1); }
+html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(-2px) scaleX(-1); }
 
 /* ---------- install notice ---------- */
 
@@ -1119,6 +1121,8 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 
   .home-game:hover .home-game-arrow,
   .home-game:hover .home-game-play::after { transform: none; }
+
+  html[dir="rtl"] .home-game:hover .home-game-play::after { transform: scaleX(-1); }
 }
 
 @media (prefers-reduced-motion: reduce) {

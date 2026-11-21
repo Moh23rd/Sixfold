@@ -796,13 +796,23 @@
     if (hintTitle) hintTitle.textContent = found.title;
     if (hintCopy) hintCopy.textContent = found.copy;
     if (hintPlace) hintPlace.textContent = found.reveal ? 'Reveal ' + found.digit : 'Place ' + found.digit;
-    if (hintPanel) hintPanel.hidden = false;
+    if (hintPanel) {
+      hintPanel.hidden = false;
+      // The hint card is taller than the one-line feedback slot. The class
+      // lets the slot grow and the board give up the height in portrait.
+      const main = hintPanel.closest('.play-main');
+      if (main) main.classList.add('has-hint');
+    }
     selected = found.index;
     render();
   }
 
   function hideHintPanel() {
-    if (hintPanel) hintPanel.hidden = true;
+    if (hintPanel) {
+      hintPanel.hidden = true;
+      const main = hintPanel.closest('.play-main');
+      if (main) main.classList.remove('has-hint');
+    }
   }
 
   function applyPendingHint() {

@@ -184,6 +184,7 @@
     "Careful — the pile is close to the top.": "小心——水果堆已經很接近頂端。",
     "Room again. Keep building pairs.": "又有空間了。繼續湊成對子。",
     "Let the last fruit settle for a moment.": "讓最後一顆水果稍微穩定下來。",
+    "Nearly full — look for a match.": "快滿了——找一對來合併。",
     "Tap a square to begin. Long-press to flag.": "點選方格開始。長按可插旗。",
     "Mine hit. The field is revealed.": "踩到地雷。雷區已揭曉。",
     "Flag placed. Tap it again to remove it.": "已插旗。再點一次即可移除。",

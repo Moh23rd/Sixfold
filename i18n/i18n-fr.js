@@ -180,6 +180,7 @@
     "Careful — the pile is close to the top.": "Attention — la pile approche du sommet.",
     "Room again. Keep building pairs.": "De la place à nouveau. Continuez à former des paires.",
     "Let the last fruit settle for a moment.": "Laissez le dernier fruit se stabiliser un instant.",
+    "Nearly full — look for a match.": "Presque plein — cherchez une paire.",
     "Tap a square to begin. Long-press to flag.": "Touchez une case pour commencer. Appui long pour poser un drapeau.",
     "Mine hit. The field is revealed.": "Mine touchée. Le terrain est révélé.",
     "Flag placed. Tap it again to remove it.": "Drapeau posé. Touchez-le à nouveau pour le retirer.",

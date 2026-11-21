@@ -184,6 +184,7 @@
     "Careful — the pile is close to the top.": "小心——堆叠接近顶部。",
     "Room again. Keep building pairs.": "又有空间了。继续配对。",
     "Let the last fruit settle for a moment.": "让最后的水果稍作停留。",
+    "Nearly full — look for a match.": "快满了——找一对来合并。",
     "Tap a square to begin. Long-press to flag.": "点击方格开始。长按标记。",
     "Mine hit. The field is revealed.": "踩到地雷。雷区已揭示。",
     "Flag placed. Tap it again to remove it.": "已放置旗帜。再次点击移除。",
