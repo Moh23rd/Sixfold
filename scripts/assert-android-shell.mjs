@@ -306,6 +306,14 @@ function session(socket) {
     else entry.resolve(message.result);
   });
 
+  // A cold-starting WebView can be torn down and recreated while the script is
+  // waiting on it. Without this, a pending evaluate never settles and Node
+  // empties the event loop with a top-level await outstanding (exit 13).
+  socket.addEventListener('close', () => {
+    for (const entry of pending.values()) entry.reject(new Error('the WebView devtools socket closed'));
+    pending.clear();
+  });
+
   const evaluate = async (expression, awaitPromise = false) => {
     const id = nextId++;
     const answer = new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
@@ -323,6 +331,32 @@ function session(socket) {
   };
 
   return { evaluate };
+}
+
+let currentSession = null;
+
+async function connectToWebView() {
+  const target = await until('the WebView devtools target', devtoolsTarget, 90000);
+  const socket = await attach(target.webSocketDebuggerUrl);
+  const bound = { socket, target, closed: false, evaluate: session(socket).evaluate };
+  socket.addEventListener('close', () => { bound.closed = true; });
+  currentSession = bound;
+  log(`attached to ${target.url}`);
+  return bound;
+}
+
+// Reattach on a dropped socket, then repeat the expression: the first target
+// can be replaced while Capacitor loads the page, which used to end the run.
+async function evaluate(expression, awaitPromise = false) {
+  if (!currentSession || currentSession.closed) await connectToWebView();
+  try {
+    return await currentSession.evaluate(expression, awaitPromise);
+  } catch (error) {
+    if (!/devtools socket closed/i.test(error.message)) throw error;
+    log('the WebView devtools socket closed; reattaching');
+    await connectToWebView();
+    return currentSession.evaluate(expression, awaitPromise);
+  }
 }
 
 async function devtoolsTarget() {
@@ -356,11 +390,7 @@ try {
   adb(['forward', `tcp:${PORT}`, `localabstract:webview_devtools_remote_${pid}`]);
   forwarded = true;
 
-  const target = await until('the WebView devtools target', devtoolsTarget, 90000);
-  log(`attached to ${target.url}`);
-
-  const socket = await attach(target.webSocketDebuggerUrl);
-  const { evaluate } = session(socket);
+  await connectToWebView();
 
   await until(
     'the WebView to reach home-ready',
@@ -586,7 +616,7 @@ try {
   }
   log(`the Haptics call settled: ${call.ok ? 'resolved' : `rejected (${call.message})`}`);
 
-  socket.close();
+  if (currentSession) currentSession.socket.close();
   log('the Android shell starts, renders and exposes its native plugins');
 } catch (error) {
   fail(error.message);
