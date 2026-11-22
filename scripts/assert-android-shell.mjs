@@ -67,7 +67,9 @@ async function deviceLive(attempts = 3) {
 function adb(args, timeout = 120000) {
   try {
     // Bounded: a wedged adb server otherwise hangs the job with no output.
-    return execFileSync('adb', args, { encoding: 'utf8', stdio: 'pipe', timeout }).trim();
+    // The whole events ring is larger than exec's 1 MB default, and an ENOBUFS
+    // would hide the records a death report is looking for.
+    return execFileSync('adb', args, { encoding: 'utf8', stdio: 'pipe', timeout, maxBuffer: 16 * 1024 * 1024 }).trim();
   } catch (error) {
     const detail = (error.stderr || error.message || '').toString().trim();
     throw new Error(`adb ${args.join(' ')} failed: ${detail}`);
@@ -446,22 +448,38 @@ function adbSafe(args) {
    memory", ...). Read both and report them where the death is noticed. */
 async function processDeathReport(pid = '') {
   const report = [];
-  const crash = adbSafe(['logcat', '-d', '-b', 'crash', '-t', '400']);
-  // Start the window where the trace names the process, not a fixed number of
+  const crashLines = adbSafe(['logcat', '-d', '-b', 'crash'])
+    .trim()
+    .split('\n');
+  // Start the window where the buffer names the process, not a fixed number of
   // lines from the end: a Java crash's FATAL EXCEPTION line and a native
-  // tombstone's pid line are near the top of a block that can be long.
-  const crashLines = crash.trim().split('\n');
-  const named = crashLines.findIndex((line) => line.includes(PACKAGE));
+  // tombstone's pid line are near the top of a block that can be long. The
+  // newest block is the one this launch left.
+  const named = crashLines.findLastIndex((line) => line.includes(PACKAGE));
   if (named >= 0) {
     for (const line of crashLines.slice(Math.max(0, named - 2), named + 38)) report.push(`crash: ${line}`);
   }
-  const events = adbSafe(['logcat', '-d', '-b', 'events', '-t', '800'])
+  // Read the whole events ring, not a tail of it. The ring is a few thousand
+  // lines, and the emulator's other processes keep writing to it, so by the
+  // time a launch is called dead — the devtools wait alone can spend most of a
+  // minute after a death — a fixed tail can already have rolled past the record
+  // that opened the failure. That is how a forced input-dispatch ANR was
+  // reported with only `am_kill ... user request after error` although the
+  // `am_anr` line written before the trace dump was still in the ring.
+  const all = adbSafe(['logcat', '-d', '-b', 'events'], 30000)
     .split('\n')
+    .filter((line) => line.trim());
+  const events = all
     .filter((line) => line.includes(PACKAGE) && /am_(crash|anr|kill|proc_died)/.test(line))
     // Another launch's death is not this one's answer; the events record names
     // the pid in its second field.
     .filter((line) => !pid || line.includes(`,${pid},`));
   for (const line of events) report.push(`event: ${line.trim()}`);
+  if (all.length) {
+    // Say how far back the ring still reaches: an absent record only means
+    // something when the buffer still covers the moment it was written.
+    report.push(`event: the events buffer held ${all.length} lines, the oldest from ${all[0].slice(0, 18)}`);
+  }
   return report.length ? report : ['no crash, ANR or kill was recorded for the app'];
 }
 
@@ -507,22 +525,32 @@ async function anrTraceReport() {
     );
   }
   const block = lines.slice(ours[0].from, ours[ours.length - 1].to + 1);
-  const reason = lines[0].startsWith('Subject: ') ? [`anr: ${lines[0]}`] : [];
+  // The subject is the platform's own statement of what timed out, and it is
+  // what the failing annotation quotes. It heads the file, but find it rather
+  // than assume the offset.
+  const subject = lines.find((line) => line.startsWith('Subject: '));
+  const reason = subject ? [`anr: ${subject}`] : [];
   const shown = block.slice(0, 200).map((line) => `anr: ${line}`);
   if (block.length > 200) shown.push(`anr: (${block.length - 200} more lines in /data/anr/${newest})`);
   return [`anr: /data/anr/${newest}`].concat(reason, shown);
 }
 
-/* The one line a failing check carries: an events record says why the platform
-   ended the process ("anr", "excessive cpu", "low memory"), a crash buffer
-   line says where. Prefer the named reason, then the trace, then whatever was
-   recorded. */
-function describeDeath(report) {
-  const line =
+/* The one line a failing check carries. The trace's `Subject:` names what the
+   app failed to answer, which is the closest thing to a cause; the events
+   buffer says what the platform did about it afterwards ("user request after
+   error" only means the ANR dialog was suppressed and the app ended). Neither
+   alone explains a dead launch, so quote both when both are there. A crash has
+   no trace subject, so its recorded event or FATAL EXCEPTION line is the
+   cause. */
+function describeDeath(report, trace = []) {
+  const subject = (trace.find((line) => line.startsWith('anr: Subject: ')) || '')
+    .replace(/^anr: Subject: /, '');
+  const recorded =
     report.find((entry) => /^event: .*am_(anr|kill|crash)/.test(entry)) ||
-    report.find((entry) => entry.startsWith('crash: ')) ||
-    report[0];
-  return line ? line.replace(/^(event|crash): /, '') : 'no cause was recorded';
+    report.find((entry) => entry.startsWith('crash: '));
+  const detail = recorded ? recorded.replace(/^(event|crash): /, '') : '';
+  if (subject) return detail ? `${subject}; the platform recorded: ${detail}` : subject;
+  return detail || 'no cause was recorded';
 }
 
 /* Starts the activity and points the devtools port at its WebView. A cold
@@ -541,8 +569,9 @@ async function launchApp() {
   if (!launched.value) {
     const report = await processDeathReport();
     for (const line of report) log(line);
-    for (const line of await anrTraceReport()) log(line);
-    fail(`the app process did not start: ${describeDeath(report)}`);
+    const trace = await anrTraceReport();
+    for (const line of trace) log(line);
+    fail(`the app process did not start: ${describeDeath(report, trace)}`);
   }
   const pid = launched.value;
   log(`running as pid ${pid}`);
@@ -634,10 +663,11 @@ async function startAndProveLaunch() {
     // its own is what made an earlier dead launch look like a slow one.
     const report = await processDeathReport(pid);
     for (const line of report) log(line);
-    for (const line of await anrTraceReport()) log(line);
+    const trace = await anrTraceReport();
+    for (const line of trace) log(line);
     fail(
       `the launch failed (app pid ${pid || 'unknown'}):` +
-        ` ${describeDeath(report)} [${problem}]`
+        ` ${describeDeath(report, trace)} [${problem}]`
     );
   }
   log('the WebView reached home-ready');
