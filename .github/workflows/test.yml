@@ -54,6 +54,8 @@ jobs:
         run: npm run test:i18n
       - name: Audit Wordle dictionaries
         run: npm run audit:wordle
+      - name: Test the launch death report
+        run: npm run test:death-report
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test ${{ matrix.files }}
       - if: failure()

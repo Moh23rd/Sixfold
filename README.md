@@ -32,9 +32,10 @@ real origin.
 ## Checks
 
 ```sh
-npm test              # Playwright: layout, games, accessibility, offline cache
-npm run test:i18n     # catalogs and locale coverage
-npm run audit:wordle  # dictionary provenance and policy
+npm test                  # Playwright: layout, games, accessibility, offline cache
+npm run test:i18n         # catalogs and locale coverage
+npm run audit:wordle      # dictionary provenance and policy
+npm run test:death-report # Android launch death report, from recorded buffers
 ```
 
 The Android shell lives in `android/`; build and distribution notes are in
