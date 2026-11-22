@@ -430,6 +430,50 @@ function appPid() {
   }
 }
 
+function adbSafe(args) {
+  try {
+    return adb(args, 20000);
+  } catch (error) {
+    return '';
+  }
+}
+
+/* Why the process disappeared. A launch that dies before it paints leaves
+   nothing behind but a missing pid, so the log used to say only that the app
+   was gone while the emulator was fine — enough to relaunch, not enough to know
+   what happened. Android keeps crashes in a buffer of their own, and the events
+   buffer names the reason the platform killed a process ("bg anr", "low
+   memory", ...). Read both and report them where the death is noticed. */
+async function processDeathReport() {
+  const report = [];
+  const crash = adbSafe(['logcat', '-d', '-b', 'crash', '-t', '400']);
+  // Start the window where the trace names the process, not a fixed number of
+  // lines from the end: a Java crash's FATAL EXCEPTION line and a native
+  // tombstone's pid line are near the top of a block that can be long.
+  const crashLines = crash.trim().split('\n');
+  const named = crashLines.findIndex((line) => line.includes(PACKAGE));
+  if (named >= 0) {
+    for (const line of crashLines.slice(Math.max(0, named - 2), named + 38)) report.push(`crash: ${line}`);
+  }
+  const events = adbSafe(['logcat', '-d', '-b', 'events', '-t', '800'])
+    .split('\n')
+    .filter((line) => line.includes(PACKAGE) && /am_(crash|anr|kill|proc_died)/.test(line));
+  for (const line of events) report.push(`event: ${line.trim()}`);
+  return report.length ? report : ['no crash, ANR or kill was recorded for the app'];
+}
+
+/* The one line a failing check carries: an events record says why the platform
+   ended the process ("anr", "excessive cpu", "low memory"), a crash buffer
+   line says where. Prefer the named reason, then the trace, then whatever was
+   recorded. */
+function describeDeath(report) {
+  const line =
+    report.find((entry) => /^event: .*am_(anr|kill|crash)/.test(entry)) ||
+    report.find((entry) => entry.startsWith('crash: ')) ||
+    report[0];
+  return line ? line.replace(/^(event|crash): /, '') : 'no cause was recorded';
+}
+
 /* Starts the activity and points the devtools port at its WebView. A cold
    boot can start the process and then lose the WebView before it exposes the
    socket (adbd keeps refusing `webview_devtools_remote_<pid>` and the launcher
@@ -440,7 +484,15 @@ async function launchApp() {
   if (/^Error/im.test(started) || /does not exist/i.test(started)) {
     fail(`the activity did not start: ${started}`);
   }
-  const pid = await until('the app process', appPid, 45000, 300);
+  // A launch can die before `pidof` ever sees it. That is still a death, so
+  // report what the platform recorded instead of only the timeout.
+  const launched = await waitFor('the app process', appPid, 45000, 300);
+  if (!launched.value) {
+    const report = await processDeathReport();
+    for (const line of report) log(line);
+    fail(`the app process did not start: ${describeDeath(report)}`);
+  }
+  const pid = launched.value;
   log(`running as pid ${pid}`);
   if (forwarded) {
     try {
@@ -462,6 +514,7 @@ async function connectToWebView(relaunchOnMissing = false) {
     // its devtools socket: the launch failed before the WebView hooked up.
     // Start it once more before calling this a failure.
     log(`the WebView devtools target did not appear (app pid ${appPid() || 'gone'}); relaunching the app`);
+    for (const line of await processDeathReport()) log(line);
     await launchApp();
     found = await waitFor('the WebView devtools target', devtoolsTarget, 60000);
   }
@@ -480,6 +533,66 @@ async function connectToWebView(relaunchOnMissing = false) {
   currentSession = bound;
   log(`attached to ${target.url}`);
   return bound;
+}
+
+/* The launch layer's own marker: documentElement gets `home-ready` once the
+   launch layer finished and the hub built, which is the first evidence that a
+   cold start painted rather than only connected. A socket that appeared and
+   then died with its process is what a failed first launch looks like, so the
+   socket alone does not prove a start. */
+async function homeReady() {
+  try {
+    return await evaluate("document.documentElement.classList.contains('home-ready')");
+  } catch (error) {
+    // A dead or replaced WebView is a startup failure the recovery below can
+    // act on; anything else is a real error.
+    if (/devtools target|devtools socket|did not answer/i.test(error.message)) {
+      log(`the WebView is not ready: ${error.message}`);
+      return false;
+    }
+    throw error;
+  }
+}
+
+/* Spends the cold launch on purpose. The first start after an install pays for
+   the WebView provider's dex and native libraries and for the renderer; on a
+   hosted runner that start can miss the platform's startup deadline and be
+   killed before it paints, and the checks below would then only prove that a
+   relaunch recovers. So the warm-up is asserted like any other launch: it has
+   to reach the WebView and home-ready. A death here fails the smoke with the
+   crash or kill the platform recorded, instead of passing on the strength of
+   the relaunched process. Only the emulator going away stays recoverable (exit
+   status 3), because that is not the app's failure. */
+async function warmUp() {
+  log('starting the app once to warm the WebView before the checks');
+  await launchApp();
+
+  let problem = null;
+  try {
+    await connectToWebView();
+    const ready = await waitFor('the warm-up WebView to reach home-ready', homeReady, 60000, 300);
+    if (!ready.value) problem = ready.error ? ready.error.message : 'it never reached home-ready';
+  } catch (error) {
+    if (error instanceof EmulatorLost) throw error;
+    problem = error.message;
+  }
+  if (problem) {
+    // Put the cause in the log and in the failing annotation: a missing pid on
+    // its own is what made the last dead first launch look like a slow one.
+    const report = await processDeathReport();
+    for (const line of report) log(line);
+    fail(
+      `the warm-up launch failed (app pid ${appPid() || 'gone'}):` +
+        ` ${describeDeath(report)} [${problem}]`
+    );
+  }
+  log('the warm-up launch reached home-ready');
+
+  // The cold start is proven and its provider is warm; stop the process so the
+  // launch the checks assert is a second, warm one.
+  adb(['shell', 'am', 'force-stop', PACKAGE]);
+  currentSession = null;
+  await wait(500);
 }
 
 // Reattach on a dropped socket, then repeat the expression: the first target
@@ -512,6 +625,8 @@ try {
   log(`installing ${APK}`);
   adb(['install', '-r', '-t', APK]);
 
+  await warmUp();
+
   // Not `am start -W`: the hub animates from the first frame, so the activity
   // never goes idle and the wait reports a timeout even though it launched.
   // The process and the WebView target below are the real evidence.
@@ -526,22 +641,10 @@ try {
   // A cold boot can attach and then hang before the launch layer finishes.
   // Give it 45s, then start the activity again once: a fresh process and
   // WebView replace the stuck one instead of waiting out the job.
-  const homeReady = async () => {
-    try {
-      return await evaluate("document.documentElement.classList.contains('home-ready')");
-    } catch (error) {
-      // A dead or replaced WebView is a startup failure the recovery below can
-      // act on; anything else is a real error.
-      if (/devtools target|devtools socket|did not answer/i.test(error.message)) {
-        log(`the WebView is not ready: ${error.message}`);
-        return false;
-      }
-      throw error;
-    }
-  };
   let ready = await waitFor('the WebView to reach home-ready', homeReady, 45000, 300);
   if (!ready.value) {
     log(`the WebView did not reach home-ready${ready.error ? ` (${ready.error.message})` : ''}; relaunching the app`);
+    for (const line of await processDeathReport()) log(line);
     await launchApp();
     await connectToWebView();
     ready = await waitFor('the WebView to reach home-ready', homeReady, 60000, 300);
