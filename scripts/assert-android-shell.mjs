@@ -322,7 +322,7 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
 }
 
 /* Like `until`, but answers null instead of exiting when the deadline passes,
-   so a caller can recover (relaunch the app) before giving up. */
+   so the launch can report a death with its recorded reason before giving up. */
 async function waitFor(what, probe, timeoutMs = 60000, everyMs = 400) {
   const deadline = Date.now() + timeoutMs;
   let last = null;
@@ -391,7 +391,7 @@ function session(socket) {
 
   // A WebView whose renderer has stopped answering (a startup ANR) never
   // settles a pending evaluate, which used to stall the whole job. Bound every
-  // call so the startup recovery can see the hang and relaunch.
+  // call so the launch's home-ready wait fails with a reason instead.
   const evaluate = async (expression, awaitPromise = false, timeoutMs = 20000) => {
     const id = nextId++;
     const answer = new Promise((resolve, reject) => {
@@ -444,7 +444,7 @@ function adbSafe(args) {
    what happened. Android keeps crashes in a buffer of their own, and the events
    buffer names the reason the platform killed a process ("bg anr", "low
    memory", ...). Read both and report them where the death is noticed. */
-async function processDeathReport() {
+async function processDeathReport(pid = '') {
   const report = [];
   const crash = adbSafe(['logcat', '-d', '-b', 'crash', '-t', '400']);
   // Start the window where the trace names the process, not a fixed number of
@@ -457,9 +457,60 @@ async function processDeathReport() {
   }
   const events = adbSafe(['logcat', '-d', '-b', 'events', '-t', '800'])
     .split('\n')
-    .filter((line) => line.includes(PACKAGE) && /am_(crash|anr|kill|proc_died)/.test(line));
+    .filter((line) => line.includes(PACKAGE) && /am_(crash|anr|kill|proc_died)/.test(line))
+    // Another launch's death is not this one's answer; the events record names
+    // the pid in its second field.
+    .filter((line) => !pid || line.includes(`,${pid},`));
   for (const line of events) report.push(`event: ${line.trim()}`);
   return report.length ? report : ['no crash, ANR or kill was recorded for the app'];
+}
+
+/* The platform's own account of a stalled launch: the ANR dump of the app's
+   threads. The events buffer records only that input timed out; the dump names
+   the thread that stopped answering and what it was waiting on. Android keeps
+   the dumps in /data/anr, which a release adbd cannot read, so ask adbd for
+   root first and say when the build refuses. The smoke's system images are
+   userdebug, so CI gets the dump. */
+async function anrTraceReport() {
+  const root = adbSafe(['root'], 20000);
+  if (/cannot run as root/i.test(root)) return ['anr: adbd cannot run as root, so no trace was readable'];
+  // Switching adbd to root restarts it; the device is briefly away.
+  await settleDevice('reading the last ANR trace', 15000);
+
+  const newest = adbSafe(['shell', 'ls', '-t', '/data/anr'], 20000)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !/^ls:/.test(line))[0];
+  if (!newest) return ['anr: no trace was readable from /data/anr'];
+
+  const text = adbSafe(['exec-out', 'cat', `/data/anr/${newest}`], 30000);
+  if (!text) return [`anr: /data/anr/${newest} could not be read`];
+
+  const lines = text.split('\n');
+  // Each section is headed by `----- pid N ...` (the process's threads) or
+  // `----- Waiting Channels: pid N ...` (the kernel waits). The app's are the
+  // ones with its Cmd line; a process frozen before it could be dumped has
+  // only the second kind.
+  const sections = [];
+  for (let at = 0; at < lines.length; at++) {
+    const header = /^----- (?:pid|Waiting Channels: pid) (\d+)/.exec(lines[at]);
+    if (!header) continue;
+    const end = lines.findIndex((line, after) => after > at && line === `----- end ${header[1]} -----`);
+    sections.push({ from: at, to: end > at ? end : lines.length - 1 });
+  }
+  const ours = sections.filter((section) =>
+    lines.slice(section.from, section.to + 1).some((line) => line.startsWith(`Cmd line: ${PACKAGE}`))
+  );
+  if (!ours.length) {
+    return [`anr: /data/anr/${newest} does not name ${PACKAGE}; its head follows`].concat(
+      lines.slice(0, 40).map((line) => `anr: ${line}`)
+    );
+  }
+  const block = lines.slice(ours[0].from, ours[ours.length - 1].to + 1);
+  const reason = lines[0].startsWith('Subject: ') ? [`anr: ${lines[0]}`] : [];
+  const shown = block.slice(0, 200).map((line) => `anr: ${line}`);
+  if (block.length > 200) shown.push(`anr: (${block.length - 200} more lines in /data/anr/${newest})`);
+  return [`anr: /data/anr/${newest}`].concat(reason, shown);
 }
 
 /* The one line a failing check carries: an events record says why the platform
@@ -490,6 +541,7 @@ async function launchApp() {
   if (!launched.value) {
     const report = await processDeathReport();
     for (const line of report) log(line);
+    for (const line of await anrTraceReport()) log(line);
     fail(`the app process did not start: ${describeDeath(report)}`);
   }
   const pid = launched.value;
@@ -503,21 +555,13 @@ async function launchApp() {
   }
   adb(['forward', `tcp:${PORT}`, `localabstract:webview_devtools_remote_${pid}`]);
   forwarded = true;
+  return pid;
 }
 
-async function connectToWebView(relaunchOnMissing = false) {
-  // The reattach path is called from a probe that must be able to time out and
-  // recover, so a missing target throws instead of ending the process.
-  let found = await waitFor('the WebView devtools target', devtoolsTarget, relaunchOnMissing ? 45000 : 30000);
-  if (!found.value && relaunchOnMissing) {
-    // The emulator is up and the app has a pid, but nothing is listening on
-    // its devtools socket: the launch failed before the WebView hooked up.
-    // Start it once more before calling this a failure.
-    log(`the WebView devtools target did not appear (app pid ${appPid() || 'gone'}); relaunching the app`);
-    for (const line of await processDeathReport()) log(line);
-    await launchApp();
-    found = await waitFor('the WebView devtools target', devtoolsTarget, 60000);
-  }
+async function connectToWebView() {
+  // The reattach path is called from a probe that must be able to time out, so
+  // a missing target throws instead of ending the process.
+  const found = await waitFor('the WebView devtools target', devtoolsTarget, 45000);
   if (!found.value) {
     const live = await deviceLive();
     throw new Error(
@@ -542,10 +586,14 @@ async function connectToWebView(relaunchOnMissing = false) {
    socket alone does not prove a start. */
 async function homeReady() {
   try {
-    return await evaluate("document.documentElement.classList.contains('home-ready')");
+    // A page torn down mid-launch has no documentElement; that is "not ready",
+    // not a probe failure that would hide the death recorded for the process.
+    return await evaluate(
+      "Boolean(document.documentElement && document.documentElement.classList.contains('home-ready'))"
+    );
   } catch (error) {
-    // A dead or replaced WebView is a startup failure the recovery below can
-    // act on; anything else is a real error.
+    // A dead or replaced WebView is a launch failure to report; anything else
+    // is a real error.
     if (/devtools target|devtools socket|did not answer/i.test(error.message)) {
       log(`the WebView is not ready: ${error.message}`);
       return false;
@@ -554,23 +602,28 @@ async function homeReady() {
   }
 }
 
-/* Spends the cold launch on purpose. The first start after an install pays for
-   the WebView provider's dex and native libraries and for the renderer; on a
-   hosted runner that start can miss the platform's startup deadline and be
-   killed before it paints, and the checks below would then only prove that a
-   relaunch recovers. So the warm-up is asserted like any other launch: it has
-   to reach the WebView and home-ready. A death here fails the smoke with the
-   crash or kill the platform recorded, instead of passing on the strength of
-   the relaunched process. Only the emulator going away stays recoverable (exit
-   status 3), because that is not the app's failure. */
-async function warmUp() {
-  log('starting the app once to warm the WebView before the checks');
-  await launchApp();
-
+/* Starts the app and proves it painted. This launch is the one the checks run
+   on: the start a player gets is the one asserted, not a second, warmer start.
+   The smoke used to spend a cold launch and then restart the app to assert the
+   fresh process, but that restart was not free. In run #142 the second start
+   (pid 4057) attached to the WebView's devtools socket at 04:35:42 and never
+   reported home-ready; at 04:35:49 the platform recorded `Input dispatching
+   timed out ... Waited 5004ms for FocusEvent(hasFocus=true)`, and at 04:35:54
+   it killed the process (`am_kill ... user request after error`). With error
+   dialogs hidden, ActivityManager has no dialog to show for an ANR and ends
+   the app instead; the relaunch that followed then turned a dead launch into a
+   green run. One launch removes the restart, and a death on it fails the smoke
+   with the crash or kill the platform recorded.
+   Only the emulator going away stays recoverable (exit status 3), because that
+   is not the app's failure. */
+async function startAndProveLaunch() {
+  log('starting the app');
+  let pid = '';
   let problem = null;
   try {
+    pid = await launchApp();
     await connectToWebView();
-    const ready = await waitFor('the warm-up WebView to reach home-ready', homeReady, 60000, 300);
+    const ready = await waitFor('the WebView to reach home-ready', homeReady, 60000, 300);
     if (!ready.value) problem = ready.error ? ready.error.message : 'it never reached home-ready';
   } catch (error) {
     if (error instanceof EmulatorLost) throw error;
@@ -578,21 +631,16 @@ async function warmUp() {
   }
   if (problem) {
     // Put the cause in the log and in the failing annotation: a missing pid on
-    // its own is what made the last dead first launch look like a slow one.
-    const report = await processDeathReport();
+    // its own is what made an earlier dead launch look like a slow one.
+    const report = await processDeathReport(pid);
     for (const line of report) log(line);
+    for (const line of await anrTraceReport()) log(line);
     fail(
-      `the warm-up launch failed (app pid ${appPid() || 'gone'}):` +
+      `the launch failed (app pid ${pid || 'unknown'}):` +
         ` ${describeDeath(report)} [${problem}]`
     );
   }
-  log('the warm-up launch reached home-ready');
-
-  // The cold start is proven and its provider is warm; stop the process so the
-  // launch the checks assert is a second, warm one.
-  adb(['shell', 'am', 'force-stop', PACKAGE]);
-  currentSession = null;
-  await wait(500);
+  log('the WebView reached home-ready');
 }
 
 // Reattach on a dropped socket, then repeat the expression: the first target
@@ -625,34 +673,11 @@ try {
   log(`installing ${APK}`);
   adb(['install', '-r', '-t', APK]);
 
-  await warmUp();
-
   // Not `am start -W`: the hub animates from the first frame, so the activity
   // never goes idle and the wait reports a timeout even though it launched.
-  // The process and the WebView target below are the real evidence.
-  await launchApp();
-
-  try {
-    await connectToWebView(true);
-  } catch (error) {
-    fail(error.message);
-  }
-
-  // A cold boot can attach and then hang before the launch layer finishes.
-  // Give it 45s, then start the activity again once: a fresh process and
-  // WebView replace the stuck one instead of waiting out the job.
-  let ready = await waitFor('the WebView to reach home-ready', homeReady, 45000, 300);
-  if (!ready.value) {
-    log(`the WebView did not reach home-ready${ready.error ? ` (${ready.error.message})` : ''}; relaunching the app`);
-    for (const line of await processDeathReport()) log(line);
-    await launchApp();
-    await connectToWebView();
-    ready = await waitFor('the WebView to reach home-ready', homeReady, 60000, 300);
-    if (!ready.value) {
-      fail(`the WebView did not reach home-ready after a relaunch${ready.error ? `: ${ready.error.message}` : ''}`);
-    }
-  }
-  log('the WebView reached home-ready');
+  // The process and the WebView target are the real evidence, and both are
+  // asserted before any check runs.
+  await startAndProveLaunch();
 
   const hub = await evaluate("Boolean(document.getElementById('hub'))");
   if (!hub) fail('the hub did not render after home-ready');
