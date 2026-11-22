@@ -356,6 +356,30 @@ async function until(what, probe, timeoutMs = 60000, everyMs = 400) {
   fail(`timed out after ${Math.round(timeoutMs / 1000)}s waiting for ${what}${error ? `: ${error.message}` : ''}`);
 }
 
+/* What the page says it is showing. A strip stuck on the previous page colour
+   is not the only way the palette check fails: a palette that reverted to the
+   one before it leaves the strip correctly on the old colour, which reads
+   exactly like a stale strip. Run #163 failed that way, and the artifact had to
+   be read by hand to find that the app had gone back to "Warm" while the check
+   blamed the window strip. Ask the page for its palette and resolved page
+   colour, so a failure of either kind names itself. */
+function appearanceState() {
+  return evaluate(
+    "(() => { const root = document.documentElement;" +
+      " const page = getComputedStyle(root).getPropertyValue('--page').trim().toLowerCase();" +
+      " return { palette: window.MergeTheme && window.MergeTheme.palette ? window.MergeTheme.palette() : null," +
+      " page, theme: root.dataset.theme || '' }; })()"
+  );
+}
+
+function describeAppearance(state) {
+  if (!state) return 'the app state was not readable';
+  return (
+    `the app is on ${state.palette || 'no palette'} with --page ${state.page || 'unset'}` +
+    ` and the ${state.theme || 'unknown'} theme`
+  );
+}
+
 function attach(url) {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(url.replace('://localhost', '://127.0.0.1'));
@@ -702,6 +726,26 @@ try {
   // Wait out the sheet's 320ms leave and the fade before sampling.
   await wait(900);
 
+  // The tap must still be in effect once the sheet has gone. A palette that
+  // reverted is the app dropping the appearance it just applied, which is a
+  // different defect from a strip that kept the previous raster; fail on the
+  // app's own state first, so it can never be reported as a stale strip.
+  let settled = null;
+  try {
+    settled = await appearanceState();
+  } catch (error) {
+    // A dead emulator is not an unreadable page: let the retry path see it
+    // rather than spending the strip deadline on a device that is gone.
+    if (error instanceof EmulatorLost) throw error;
+  }
+  if (settled && (settled.palette !== targetPalette || settled.page !== after)) {
+    fail(
+      `the ${targetPalette} palette did not stick: ${describeAppearance(settled)},` +
+        ` expected ${targetPalette} with --page ${after}`
+    );
+  }
+  if (settled) log(`the ${targetPalette} palette is still applied: ${after}`);
+
   // Poll rather than sleep: the colour crosses the bridge asynchronously, and a
   // slow runner should still pass. A stale strip never matches and reports what
   // it actually showed.
@@ -713,9 +757,18 @@ try {
     await wait(600);
   }
   if (!seenStrip || seenStrip.top !== after) {
+    // The palette can also go while the strip is sampled; report what the page
+    // says it shows with the pixels, so the two causes stay distinguishable.
+    let now = null;
+    try {
+      now = await appearanceState();
+    } catch (error) {
+      if (error instanceof EmulatorLost) throw error;
+    }
     fail(
       `the window strip did not follow the ${targetPalette} palette: expected ${after},` +
-        ` got top ${seenStrip && seenStrip.top} bottom ${seenStrip && seenStrip.bottom}`
+        ` got top ${seenStrip && seenStrip.top} bottom ${seenStrip && seenStrip.bottom}` +
+        (now ? `; ${describeAppearance(now)}` : '')
     );
   }
   log(`the window strip followed the ${targetPalette} palette: ${after}`);
@@ -741,9 +794,16 @@ try {
   }
   if (paletteSurface !== after) {
     if (!(await deviceLive())) throw new EmulatorLost('reading the page surface: the emulator stopped answering');
+    let now = null;
+    try {
+      now = await appearanceState();
+    } catch (error) {
+      if (error instanceof EmulatorLost) throw error;
+    }
     fail(
       `the page surface did not repaint on the ${targetPalette} palette:` +
-        ` expected ${after}, got ${paletteSurface}`
+        ` expected ${after}, got ${paletteSurface}` +
+        (now ? `; ${describeAppearance(now)}` : '')
     );
   }
   log(`the page surface is on the ${targetPalette} palette: ${paletteSurface}`);

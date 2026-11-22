@@ -99,7 +99,11 @@ cleanup() {
   local status=$?
   if [ "$status" -ne 0 ]; then
     note "capturing the emulator's logcat, screen and device state"
-    timeout 120 "$ADB" logcat -d -t 400 > "$OUT/logcat.txt" 2>&1 || true
+    # The whole ring, not a tail. A failing palette check reports itself tens of
+    # seconds after the tap that caused it, and this emulator writes about 300
+    # lines a second: a 400-line tail covered barely one second, so the run #163
+    # artifact could not show what the app did before the failure.
+    timeout 120 "$ADB" logcat -d > "$OUT/logcat.txt" 2>&1 || true
     timeout 120 "$ADB" exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
     # A lost device is the failure this artifact has to explain: record what
     # adb still sees, whether the emulator process survived, and what the
