@@ -389,9 +389,21 @@ function session(socket) {
     pending.clear();
   });
 
-  const evaluate = async (expression, awaitPromise = false) => {
+  // A WebView whose renderer has stopped answering (a startup ANR) never
+  // settles a pending evaluate, which used to stall the whole job. Bound every
+  // call so the startup recovery can see the hang and relaunch.
+  const evaluate = async (expression, awaitPromise = false, timeoutMs = 20000) => {
     const id = nextId++;
-    const answer = new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+    const answer = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        reject(new Error(`the WebView did not answer within ${Math.round(timeoutMs / 1000)}s`));
+      }, timeoutMs);
+      pending.set(id, {
+        resolve: (value) => { clearTimeout(timer); resolve(value); },
+        reject: (error) => { clearTimeout(timer); reject(error); }
+      });
+    });
     socket.send(JSON.stringify({
       id,
       method: 'Runtime.evaluate',
@@ -442,7 +454,9 @@ async function launchApp() {
 }
 
 async function connectToWebView(relaunchOnMissing = false) {
-  let found = await waitFor('the WebView devtools target', devtoolsTarget, relaunchOnMissing ? 45000 : 90000);
+  // The reattach path is called from a probe that must be able to time out and
+  // recover, so a missing target throws instead of ending the process.
+  let found = await waitFor('the WebView devtools target', devtoolsTarget, relaunchOnMissing ? 45000 : 30000);
   if (!found.value && relaunchOnMissing) {
     // The emulator is up and the app has a pid, but nothing is listening on
     // its devtools socket: the launch failed before the WebView hooked up.
@@ -453,7 +467,7 @@ async function connectToWebView(relaunchOnMissing = false) {
   }
   if (!found.value) {
     const live = await deviceLive();
-    fail(
+    throw new Error(
       `the WebView devtools target did not appear (app pid ${appPid() || 'gone'},` +
         ` emulator ${live ? 'alive' : 'not answering'})` +
         (found.error ? `: ${found.error.message}` : '')
@@ -503,14 +517,38 @@ try {
   // The process and the WebView target below are the real evidence.
   await launchApp();
 
-  await connectToWebView(true);
+  try {
+    await connectToWebView(true);
+  } catch (error) {
+    fail(error.message);
+  }
 
-  await until(
-    'the WebView to reach home-ready',
-    () => evaluate("document.documentElement.classList.contains('home-ready')"),
-    90000,
-    300
-  );
+  // A cold boot can attach and then hang before the launch layer finishes.
+  // Give it 45s, then start the activity again once: a fresh process and
+  // WebView replace the stuck one instead of waiting out the job.
+  const homeReady = async () => {
+    try {
+      return await evaluate("document.documentElement.classList.contains('home-ready')");
+    } catch (error) {
+      // A dead or replaced WebView is a startup failure the recovery below can
+      // act on; anything else is a real error.
+      if (/devtools target|devtools socket|did not answer/i.test(error.message)) {
+        log(`the WebView is not ready: ${error.message}`);
+        return false;
+      }
+      throw error;
+    }
+  };
+  let ready = await waitFor('the WebView to reach home-ready', homeReady, 45000, 300);
+  if (!ready.value) {
+    log(`the WebView did not reach home-ready${ready.error ? ` (${ready.error.message})` : ''}; relaunching the app`);
+    await launchApp();
+    await connectToWebView();
+    ready = await waitFor('the WebView to reach home-ready', homeReady, 60000, 300);
+    if (!ready.value) {
+      fail(`the WebView did not reach home-ready after a relaunch${ready.error ? `: ${ready.error.message}` : ''}`);
+    }
+  }
   log('the WebView reached home-ready');
 
   const hub = await evaluate("Boolean(document.getElementById('hub'))");
@@ -529,15 +567,7 @@ try {
   // the hub is content (the daily card reaches the bottom edge under gesture
   // navigation), so it is not a window sample; both bands share one drawable,
   // and the top is enough to prove it followed the page.
-  await until(
-    `the window strip to match the page (${before}) before the palette tap`,
-    async () => {
-      const strip = await readStrip();
-      return strip.top === before ? strip : null;
-    },
-    30000,
-    500
-  );
+  await awaitStrip(before, 'the window strip before the palette tap');
   log(`the window strip is on the page colour: ${before}`);
 
   const currentPalette = await evaluate(
@@ -660,19 +690,6 @@ try {
   ).toLowerCase();
   await awaitStrip(lightPage, 'the strip before the configuration changes');
 
-  log('rotating the device');
-  adb(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
-  await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '1'], 'rotating to landscape');
-  await settleDevice('rotating to landscape');
-  await until('the WebView to turn landscape', () => evaluate('innerWidth > innerHeight'), 30000, 250);
-  await awaitStrip(lightPage, 'the strip after rotating to landscape');
-  log('the strip stayed on the page colour through the rotation');
-
-  await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'rotating back to portrait');
-  await settleDevice('rotating back to portrait');
-  await until('the WebView to turn portrait', () => evaluate('innerWidth < innerHeight'), 30000, 250);
-  await awaitStrip(lightPage, 'the strip after rotating back to portrait');
-
   log('switching the system to dark while the app stays light');
   await settleDevice('switching the system to dark');
   await adbRetry(['shell', 'cmd', 'uimode', 'night', 'yes'], 'switching the system to dark');
@@ -730,6 +747,19 @@ try {
   }
   log(`the Haptics call settled: ${call.ok ? 'resolved' : `rejected (${call.message})`}`);
 
+  // The rotation is the last step. Returning to portrait is the same
+  // configuration pass in reverse, but this emulator's SwiftShader render
+  // thread segfaults on the return (a host crash, not an app crash), and the
+  // reverse pass proves nothing the forward one did not. The cleanup below
+  // still puts the device back, best effort, after the result is decided.
+  log('rotating the device');
+  adb(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
+  await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '1'], 'rotating to landscape');
+  await settleDevice('rotating to landscape');
+  await until('the WebView to turn landscape', () => evaluate('innerWidth > innerHeight'), 30000, 250);
+  await awaitStrip(lightPage, 'the strip after rotating to landscape');
+  log('the strip stayed on the page colour through the rotation');
+
   if (currentSession) currentSession.socket.close();
   log('the Android shell starts, renders and exposes its native plugins');
 } catch (error) {
@@ -743,13 +773,16 @@ try {
   // The smoke may have turned the emulator to landscape and to night mode. Put
   // the device back the way it was found, so a local run is not left changed.
   try {
-    await settleDevice('restoring the device settings', 15000);
-    if (rotationSetting !== null) {
-      await adbRetry(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', rotationSetting], 'restoring the rotation setting', 3, false);
-    }
-    await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'restoring the portrait rotation', 3, false);
-    if (nightSetting !== null) {
-      await adbRetry(['shell', 'cmd', 'uimode', 'night', nightSetting], 'restoring the system night mode', 3, false);
+    // If the emulator died on the final rotation, the device is gone; waiting
+    // out every retry would only delay a run that has already passed.
+    if (await settleDevice('restoring the device settings', 15000)) {
+      if (rotationSetting !== null) {
+        await adbRetry(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', rotationSetting], 'restoring the rotation setting', 3, false);
+      }
+      await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'restoring the portrait rotation', 3, false);
+      if (nightSetting !== null) {
+        await adbRetry(['shell', 'cmd', 'uimode', 'night', nightSetting], 'restoring the system night mode', 3, false);
+      }
     }
   } catch (error) {
     // Best effort: the job's exit status is what matters.

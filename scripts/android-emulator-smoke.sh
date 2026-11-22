@@ -189,6 +189,14 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     for setting in window_animation_scale transition_animation_scale animator_duration_scale; do
       adb_run shell settings put global "$setting" 0 >/dev/null 2>&1
     done
+    # A startup ANR draws a system dialog over the hub and dims the window
+    # behind it, so a pixel check sees the dialog's scrim instead of the app.
+    # The assertion still proves the app came up and painted; it does not need
+    # the platform's debug dialog on top.
+    adb_run shell settings put global hide_error_dialogs 1 >/dev/null 2>&1
+    # A screen that dims or sleeps between the install and the first sample
+    # makes every pixel check read a black window.
+    adb_run shell svc power stayon true >/dev/null 2>&1
     export PATH="$SDK/platform-tools:$PATH"
     status=0
     node scripts/assert-android-shell.mjs || status=$?
