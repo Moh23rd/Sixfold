@@ -5,6 +5,9 @@
 **Baseline:** `release/6.0` at `5dbfd74` plus this plan. Internal package/cache
 version is `6.0.0`; the public label remains `v5.0` until the release gate.
 
+**M0 output:** [M0-DAILY-SEAM.md](M0-DAILY-SEAM.md) records the completion-seam
+decision, the per-game finish and resume audit, and the rechecked estimate.
+
 ## Thesis
 
 Sixfold already has the hard parts: six seeded daily challenges, a local-date
