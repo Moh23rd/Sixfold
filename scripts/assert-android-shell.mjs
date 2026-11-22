@@ -469,6 +469,10 @@ async function processDeathReport(pid = '') {
   const all = adbSafe(['logcat', '-d', '-b', 'events'], 30000)
     .split('\n')
     .filter((line) => line.trim());
+  // A buffer read opens with logcat's own `--------- beginning of ...`
+  // switches, which carry no time. The ring's reach is the first line that
+  // does, so the annotation must quote that instead of the header.
+  const oldest = all.find((line) => /^\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}/.test(line));
   const events = all
     .filter((line) => line.includes(PACKAGE) && /am_(crash|anr|kill|proc_died)/.test(line))
     // Another launch's death is not this one's answer; the events record names
@@ -478,7 +482,11 @@ async function processDeathReport(pid = '') {
   if (all.length) {
     // Say how far back the ring still reaches: an absent record only means
     // something when the buffer still covers the moment it was written.
-    report.push(`event: the events buffer held ${all.length} lines, the oldest from ${all[0].slice(0, 18)}`);
+    report.push(
+      `event: the events buffer held ${all.length} lines, the oldest from ${
+        oldest ? oldest.slice(0, 18) : 'a line without a timestamp'
+      }`
+    );
   }
   return report.length ? report : ['no crash, ANR or kill was recorded for the app'];
 }
