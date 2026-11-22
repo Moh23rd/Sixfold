@@ -1,13 +1,31 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.30**.
+> Public release label: **v5.0**. Current development build: **6.0.31**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.30**
+Internal build: **6.0.31**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
+
+### Profile foundation
+
+- **One completion event for every finished daily round**: `SixfoldDaily.complete()`
+  dispatches `sixfold:daily-complete` with the run's date, the game and whether
+  the daily was newly credited, before the duplicate check. A replay used to be
+  invisible outside the daily store. `sixfold:daily-change` keeps its
+  first-credit meaning for the hub, badges and weekly dots.
+- **A local profile store**: `sixfold.profile.v1` keeps per-game daily counts,
+  replay counts, first/last dates and the gauntlet aggregates. The daily store
+  stays authoritative and the profile backfills from it on load, so a restore or
+  a cleared profile cannot make the two disagree.
+- **Badges page sections**: the existing `#badges` page now also lists the six
+  public games with their daily counts and live bests, plus a Daily Gauntlet
+  summary. Bests are read from each game's own key and never copied into the
+  profile; the hidden Wordle is excluded.
+- **Backup and erase cover the new key**: the existing `sixfold.*` export and
+  erase rules already include `sixfold.profile.v1`.
 
 ### Appearance and fluidity
 

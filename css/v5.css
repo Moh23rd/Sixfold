@@ -1233,6 +1233,160 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   .badge-card-number { font-size: 26px; }
 }
 
+/* ---------- Profile: six games and the gauntlet ---------- */
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.profile-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.profile-title {
+  margin: 0;
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.profile-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.profile-games {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-game {
+  --profile-color: var(--t256);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--home-rule);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 2px 0 var(--home-hard);
+}
+
+.profile-game::before {
+  content: "";
+  width: 4px;
+  height: 30px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--profile-color);
+}
+
+.profile-game-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-game-copy strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.profile-game-copy span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-game-best {
+  flex: none;
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-game[data-game="merge"] { --profile-color: var(--six-1); }
+.profile-game[data-game="sudoku"] { --profile-color: var(--six-2); }
+.profile-game[data-game="ttt"] { --profile-color: var(--six-3); }
+.profile-game[data-game="mines"] { --profile-color: var(--six-4); }
+.profile-game[data-game="water"] { --profile-color: var(--six-5); }
+.profile-game[data-game="fruit"] { --profile-color: var(--six-6); }
+
+.profile-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--home-rule);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 88%, var(--page));
+  box-shadow: 0 2px 0 var(--home-hard);
+}
+
+.profile-metric strong {
+  font-family: var(--font-ui);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-metric span {
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 8.5px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.profile-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+@media (max-width: 340px) {
+  .profile-game { flex-wrap: wrap; }
+  .profile-game-best { padding-inline-start: 15px; text-align: start; }
+}
+
 /* ---------- Daily challenge finish ---------- */
 
 .daily-finish {

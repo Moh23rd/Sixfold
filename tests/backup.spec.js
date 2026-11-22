@@ -4,7 +4,15 @@ const fs = require('fs');
 const SEED = {
   'merge2048.best': '4242',
   'sixfold.settings.v1': JSON.stringify({ highContrast: true, dailyPuzzle: false }),
-  'sixfold.daily.v1': JSON.stringify({ days: {}, best: 9 })
+  'sixfold.daily.v1': JSON.stringify({ days: {}, best: 9 }),
+  // Already in the shape the store writes: loading the app backfills an
+  // unnormalized value and would change the bytes this test compares.
+  'sixfold.profile.v1': JSON.stringify({
+    version: 1,
+    updated: '2025-03-02T00:00:00.000Z',
+    games: { merge: { done: 0, first: null, last: null, replays: 1 } },
+    gauntlet: { runs: 1, bestRounds: 6, bestTime: 420, last: null }
+  })
 };
 
 async function seed(page) {
@@ -55,11 +63,13 @@ test('a backup downloads, and restoring it replaces the device state', async ({ 
   const restored = await page.evaluate(() => ({
     best: localStorage.getItem('merge2048.best'),
     daily: localStorage.getItem('sixfold.daily.v1'),
-    settings: localStorage.getItem('sixfold.settings.v1')
+    settings: localStorage.getItem('sixfold.settings.v1'),
+    profile: localStorage.getItem('sixfold.profile.v1')
   }));
   expect(restored.best).toBe('4242');
   expect(restored.daily).toBe(SEED['sixfold.daily.v1']);
   expect(restored.settings).toBe(SEED['sixfold.settings.v1']);
+  expect(restored.profile, 'the 6.0 profile key travels with the backup').toBe(SEED['sixfold.profile.v1']);
   // The restored settings are applied, not merely written.
   await expect(page.locator('html')).toHaveAttribute('data-contrast', 'high');
 });

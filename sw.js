@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.30';
+const VERSION = 'sixfold-6.0.31';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -28,10 +28,12 @@ const GAMES_CSS = '5.3.6';
 const POLISH_CSS = '4.0.4-w21';
 const GAMES_JS = '5.4.2';
 const SUDOKU_CSS = '4.0.4';
-const V5_CSS = '5.5.5';
+const V5_CSS = '5.6.0';
 const BLUR_CSS = '1.3.1';
 const HOME_CSS = '4.1.6';
-const DAILY_CODE = '5.4.3';
+const DAILY_CODE = '5.4.4';
+const PROFILE_CODE = '1.0.0';
+const BADGES_CODE = '1.1.0';
 const I18N_CODE = '5.4.6';
 
 // Runtime assets are deliberately small. The shell is protected separately,
@@ -100,7 +102,8 @@ const SHELL = [
   './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
   './js/daily.js?v=' + DAILY_CODE,
-  './js/badges.js?v=1.0.1',
+  './js/profile.js?v=' + PROFILE_CODE,
+  './js/badges.js?v=' + BADGES_CODE,
   './js/update.js?v=5.1.0',
   // Locale catalogs are not in the install shell. The page loads only the
   // active catalog; i18n.js warms that catalog after the worker controls it.

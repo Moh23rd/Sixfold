@@ -176,6 +176,28 @@
     return Boolean(day && day.games && day.games[game]);
   }
 
+  // A normalized per-game aggregate for the 6.0 profile store. The days map
+  // stays private here; the profile only needs how often each game was
+  // credited, plus the first and last dates it happened.
+  function gameSummary() {
+    const summary = {};
+    ORDER.forEach(function (game) {
+      summary[game] = { done: 0, first: null, last: null };
+    });
+    Object.keys(data.days).forEach(function (key) {
+      const day = data.days[key];
+      if (!day || !day.games) return;
+      ORDER.forEach(function (game) {
+        if (!day.games[game]) return;
+        const entry = summary[game];
+        entry.done += 1;
+        if (!entry.first || key < entry.first) entry.first = key;
+        if (!entry.last || key > entry.last) entry.last = key;
+      });
+    });
+    return summary;
+  }
+
   function streak() {
     let cursor = countFor(todayKey()) ? todayKey() : shiftKey(todayKey(), -1);
     let total = 0;
@@ -312,7 +334,18 @@
     if (!GAMES[game]) return false;
     const key = isKey(dateKey) ? dateKey : todayKey();
     const day = data.days[key] || { games: {} };
-    if (day.games[game]) {
+    const credited = !day.games[game];
+    // Every game finishes through here exactly once, so this is the only
+    // completion boundary 6.0 needs. It fires before the duplicate check: a
+    // replay is still a finished round. `credited` says whether the daily
+    // store counted it, and `sixfold:daily-change` keeps its first-credit
+    // meaning for the hub, badges and weekly dots.
+    try {
+      window.dispatchEvent(new CustomEvent('sixfold:daily-complete', {
+        detail: { date: key, game: game, credited: credited, meta: meta || null }
+      }));
+    } catch (err) {}
+    if (!credited) {
       render();
       return false;
     }
@@ -670,6 +703,7 @@
     hideFinish: hideFinish,
     isDone: isDone,
     countFor: countFor,
+    gameSummary: gameSummary,
     seededRandom: seededRandom
   };
 

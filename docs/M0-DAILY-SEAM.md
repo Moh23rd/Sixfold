@@ -1,7 +1,8 @@
 # M0 — the daily completion seam and round-start resume
 
-**Status:** Decisions and spike complete. No 6.0 feature code is included in this
-change.
+**Status:** Decisions and spike complete. M1 applied the seam to `js/daily.js`
+and covers it with `tests/daily-complete.spec.js`; the profile foundation
+backfills from the daily-owned `gameSummary()` aggregate.
 
 **Baseline:** `release/6.0` at `c546f63`, plus this record.
 
@@ -44,7 +45,8 @@ true then false, `daily-change` still once, both return values unchanged:
   {"type":"complete","detail":{"date":"2026-11-22","game":"merge","credited":false}}]}
 ```
 
-The patch was then reverted; `js/daily.js` in this tree is unchanged.
+The patch was then reverted for the M0 record; M1 applied it unchanged
+(`js/daily.js`) and added the contract test.
 
 ## Decision: one boundary event
 
@@ -54,7 +56,7 @@ the duplicate check, with `detail: { date, game, credited, meta }`.
 date — because the hub, the badges shelf and the weekly dots already render on
 it.
 
-Proposed patch, not applied:
+Applied in M1 exactly as recorded:
 
 ```js
 const credited = !day.games[game];
@@ -156,7 +158,8 @@ still excluding translation turnaround.
 
 ## Files
 
-- `js/daily.js` — the seam, unchanged by this record.
+- `js/daily.js` — the seam, applied in M1 with `gameSummary()` for backfill.
+- `js/profile.js` — the M1 store that consumes the seam and backfills from it.
 - `js/game.js`, `js/sudoku.js`, `js/games.js` — audited, unchanged.
 - Spike evidence: a throwaway `tests/spike-daily-seam.spec.js`, deleted after
   the measurements above.
