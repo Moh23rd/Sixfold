@@ -364,8 +364,42 @@
     if (label) label.textContent = activePalette().label;
   }
 
+  // Where a palette write came from, as one stack frame. Run #163's artifact
+  // showed the app back on Warm with nothing to say what put it there: the
+  // palette changed between the swatch sample and the strip check, and the
+  // capture could only show the result. The caller is the whole cause a logcat
+  // line can carry, so each write names its own. The frame after applyPalette
+  // is the caller; the two helpers themselves sit above it and are not named.
+  function paletteCaller() {
+    try {
+      const frames = String(new Error().stack || '')
+        .split('\n')
+        .map(function (line) { return line.trim().replace(/^at\s+/, ''); })
+        .filter(function (frame) { return frame && frame !== 'Error'; });
+      for (let i = 0; i < frames.length; i++) {
+        if (frames[i].indexOf('applyPalette') !== -1) return frames[i + 1] || frames[i];
+      }
+      return frames[0] || 'an unknown caller';
+    } catch (err) {
+      return 'an unknown caller';
+    }
+  }
+
   function applyPalette(id, persist) {
     const palette = PALETTES.filter(function (p) { return p.id === id; })[0] || PALETTES[0];
+    // One line per write, boot included: a capture that starts with "warm"
+    // after a reload is the storage, and one that changes mid-session names
+    // the frame that did it.
+    try {
+      console.log(
+        '[appearance] palette ' + state.palette +
+          (state.palette === palette.id ? ' kept' : ' -> ' + palette.id) +
+          (persist ? ', saved' : ', unsaved') +
+          ', at ' + paletteCaller()
+      );
+    } catch (err) {
+      /* a logger that is not there must not stop the switch */
+    }
     state.palette = palette.id;
     if (switchIsVisible(persist)) crossFade();
 
