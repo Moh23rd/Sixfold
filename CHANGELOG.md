@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.34**.
+> Public release label: **v5.0**. Current development build: **6.0.35**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.34**
+Internal build: **6.0.35**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -21,11 +21,12 @@ release stays at 5.0 until the 6.0 feature set lands.
   stays authoritative and the profile backfills from it on load, so a restore or
   a cleared profile cannot make the two disagree.
 - **Badges page sections**: the existing `#badges` page now also lists the six
-  public games with their daily counts and live bests, plus a Daily Gauntlet
-  summary. Bests are read from each game's own key and never copied into the
-  profile; the hidden Wordle is excluded.
-- **Backup and erase cover the new key**: the existing `sixfold.*` export and
-  erase rules already include `sixfold.profile.v1`.
+  public games with their daily counts and a live best where the game keeps
+  one, plus a Daily Gauntlet summary. Bests are read from each game's own key
+  and never copied into the profile; Minesweeper and Water Sort keep no best,
+  and the hidden Wordle is excluded.
+- **Backup and erase cover the new keys**: the existing `sixfold.*` export and
+  erase rules include both `sixfold.profile.v1` and `sixfold.gauntlet.v1`.
 
 ### Daily Gauntlet
 
@@ -54,6 +55,12 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **Finished runs reach the profile**: a 6/6 run is recorded once through
   `SixfoldProfile.recordGauntlet`, so Runs, Best and Last run on the badges page
   stay aggregate-only. The run summary lists each round and its active time.
+- **The new surfaces speak all twelve languages**: the Daily Gauntlet card,
+  run panel and profile summary use catalog entries in every locale, including
+  Arabic RTL and Arabic-Indic, Devanagari and Kannada digits. Round messages
+  keep numbered placeholders so a translation can choose its own word order,
+  and a catalog guard now fails when a literal `tr()` key is missing from the
+  English source.
 
 ### Appearance and fluidity
 
@@ -67,9 +74,9 @@ release stays at 5.0 until the 6.0 feature set lands.
   motion still switches in one frame.
 - **The switch stays off the compositor's critical path**: the appearance sheet
   used to re-blur the page behind itself on every frame of the fade. The blur
-  is suspended for those 220ms, which took the number of dropped frames in a
-  switch from six to four in a controlled A/B on the same page, and the worst
-  frame from 50–66ms to 33ms.
+  is suspended for those 220ms. In a local controlled A/B on the same page, a
+  switch went from six dropped frames to four and the worst frame from 50–66ms
+  to 33ms; these are development measurements, not a checked-in benchmark.
 - **Hidden games stop re-rendering on an appearance change**: Water Sort rebuilt
   its board and Fruit Merge re-read its palette and redrew whenever the theme
   changed, even while the hub was on screen. Both now take their colours when
@@ -77,12 +84,13 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **A surface opts into the fade instead of being listed**: the cross-fade was a
   long selector list in the stylesheet, and anything added later silently cut
   while the rest of the app faded. A surface now carries `data-fade` — in the
-  markup, or at the point the script builds it — and a test loads every screen
-  in both appearances and fails on any element whose painted background changes
-  without the marker. Writing that test found forty surfaces the list had
-  missed: the hub's six mini previews, the tutorial strips, the per-game tool
-  cluster, the Water Sort glasses, the Fruit Merge next-fruit dot, the Sudoku
-  settings button and the board frames of three games.
+  markup, or at the point the script builds it — and a test loads the hub and
+  every game screen in both appearances and fails on any element whose painted
+  background changes without the marker. The badges page is not yet in that
+  sweep. Writing that test found surfaces the list had missed: the hub's six
+  mini previews, the tutorial strips, the per-game tool cluster, the Water Sort
+  glasses, the Fruit Merge next-fruit dot, the Sudoku settings button and the
+  board frames of three games.
 
 ### Android shell
 
@@ -190,8 +198,9 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **The window frame matches the page**: a dark appearance chosen on a phone in
   light system mode used to flash a cream frame around the app while a window
   animation ran, because the Android window surface only knew the system
-  setting. The page now reports each distinct colour once, whenever the
-  appearance changes, and the window keeps it. Nothing is retried or polled.
+  setting. The page now reports each distinct colour once whenever the
+  appearance changes, and the window keeps it; separate configuration changes
+  re-report the page colour after Android rewrites the window surface.
 - **The splash opens in the app's appearance**: that report is remembered on the
   device, and the next launch picks a light or dark launch theme from it, so a
   dark appearance on a light-system phone no longer opens on a cream splash. Android 12+ still paints its starting window from the manifest theme
@@ -209,10 +218,10 @@ release stays at 5.0 until the 6.0 feature set lands.
   is off for the WebView. The surface is the neutral day/night page colour and
   stays that way: it sits behind the WebView, so it does not follow the in-app
   palette and costs no native calls.
-- **Low-end mode**: a phone reporting 2 GB or fewer, four threads or fewer, or
-  a data saver paints the blur band as one solid surface, drops the full-screen
-  backdrop blurs and the blurred wordle arrival, and starts the hub's tape
-  still. `?perf=lite` / `?perf=full` force either mode.
+- **Low-end mode**: a phone reporting 2 GB or fewer, 4 GB or less with four
+  threads or fewer, or a data saver paints the blur band as one solid surface,
+  drops the full-screen backdrop blurs and the blurred wordle arrival, and
+  starts the hub's tape still. `?perf=lite` / `?perf=full` force either mode.
 - **Calmer motion**: the cover's build finishes a third sooner with no spring
   overshoot, the hidden reveal opens in 360 ms instead of 620 ms, and the hub's
   tape stops under reduced motion and pauses with the window.
@@ -254,9 +263,9 @@ release stays at 5.0 until the 6.0 feature set lands.
 ### Scrolling and saving
 
 - **The blur band no longer costs frames**: three slice-sized passes replace
-  six full-height ones. Scroll frame times now match the app with the band
-  switched off (p95 16.9ms, no frame over 25ms), and the ramp still matches the
-  old render within ~1/255 mean channel difference.
+  six full-height ones. In a local measurement, scroll frame times matched the
+  app with the band switched off (p95 16.9ms, no frame over 25ms), and the ramp
+  still matched the old render within ~1/255 mean channel difference.
 - **Saved cards keep their own day**: the daily card is drawn from the day the
   hub is showing, and the hub returns to today when the app regains focus, so a
   phone left open overnight cannot save the wrong date.
@@ -278,7 +287,11 @@ release stays at 5.0 until the 6.0 feature set lands.
 
 ### Still to come
 
-- 6.0 feature work and the public release label change.
+- M3 integration and polish: Gauntlet sharing, accessibility and RTL checks,
+  cache-footprint verification after localization, and the remaining release
+  notes.
+- M4 release gate: the full matrix, signed native artifact checks, and the
+  public label change from `v5.0` to `v6.0`.
 
 ## v5.0 — 15 November 2026
 

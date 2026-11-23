@@ -305,6 +305,97 @@ test('the daily card starts and continues the run', async ({ page }) => {
   await page.waitForFunction((game) => document.body.dataset.screen === game, started.current);
 });
 
+test('the gauntlet and profile render in Arabic with locale numerals', async ({ page }) => {
+  await page.addInitScript(() => {
+    try { localStorage.setItem('sixfold.locale.v1', 'ar'); } catch (err) {}
+  });
+  await page.goto('/');
+  const today = await page.evaluate(() => window.SixfoldDaily.todayKey());
+  await seedOnce(page, {
+    'sixfold.gauntlet.v1': runState(
+      today,
+      3,
+      [60, 120, 180, 0, 0, 0],
+      ['merge', 'sudoku', 'ttt', 'water', 'mines', 'fruit']
+    )
+  });
+  await ready(page);
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('#daily-gauntlet-title')).toHaveText('سباق الست اليومي');
+  await expect(page.locator('#daily-gauntlet-note')).toContainText('الجولة ٤ من ٦');
+  await expect(page.locator('#daily-gauntlet-action')).toHaveText('تابع');
+
+  await page.locator('#hub-badges').click();
+  await expect(page.locator('#badges')).toBeVisible();
+  await expect(page.locator('#gauntlet-run .gauntlet-run-status')).toContainText('٤ / ٦');
+  await expect(page.locator('#gauntlet-run .gauntlet-round-index').first()).toHaveText('٠١');
+  await expect(page.locator('#profile-gauntlet')).toContainText('المحاولات');
+  await expect(page.locator('#profile-gauntlet')).toContainText('لا توجد محاولات بعد.');
+
+  const text = await page.evaluate(() => [
+    document.getElementById('gauntlet-run').innerText,
+    document.getElementById('profile-gauntlet').innerText,
+    document.getElementById('daily-gauntlet').innerText
+  ].join('\n'));
+  expect(text, 'the gauntlet and profile use Arabic-Indic digits').not.toMatch(/[0-9]/);
+});
+
+test('the gauntlet uses Devanagari numerals in Hindi', async ({ page }) => {
+  await page.addInitScript(() => {
+    try { localStorage.setItem('sixfold.locale.v1', 'hi'); } catch (err) {}
+  });
+  await page.goto('/');
+  const today = await page.evaluate(() => window.SixfoldDaily.todayKey());
+  await seedOnce(page, {
+    'sixfold.gauntlet.v1': runState(
+      today,
+      3,
+      [60, 120, 180, 0, 0, 0],
+      ['merge', 'sudoku', 'ttt', 'water', 'mines', 'fruit']
+    )
+  });
+  await ready(page);
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
+  await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await expect(page.locator('#daily-gauntlet-title')).toHaveText('दैनिक गॉन्टलेट');
+  await expect(page.locator('#daily-gauntlet-note')).toContainText('राउंड ४ / ६');
+
+  await page.locator('#hub-badges').click();
+  await expect(page.locator('#badges')).toBeVisible();
+  await expect(page.locator('#gauntlet-run .gauntlet-run-status')).toContainText('राउंड ४ / ६');
+  await expect(page.locator('#gauntlet-run .gauntlet-round-index').first()).toHaveText('०१');
+
+  const text = await page.locator('#gauntlet-run').innerText();
+  expect(text, 'the gauntlet uses Devanagari digits').not.toMatch(/[0-9]/);
+});
+
+// A translation may name the same argument twice; every occurrence must be
+// filled, not just the first one the message happens to reach.
+test('a repeated placeholder is filled everywhere it appears', async ({ page }) => {
+  await page.goto('/');
+  const today = await page.evaluate(() => window.SixfoldDaily.todayKey());
+  await seedOnce(page, {
+    'sixfold.gauntlet.v1': runState(today, 3, [60, 120, 180, 0, 0, 0])
+  });
+  await ready(page);
+
+  const note = await page.evaluate(() => {
+    const original = window.SixfoldI18n.t;
+    window.SixfoldI18n.t = function (value) {
+      if (value === 'Round {1} of {2}') return 'Round {1} of {2} · again {1} of {2}';
+      return original.call(window.SixfoldI18n, value);
+    };
+    window.dispatchEvent(new CustomEvent('sixfold:daily-change'));
+    return document.getElementById('daily-gauntlet-note').textContent;
+  });
+
+  expect(note).toContain('Round 4 of 6 · again 4 of 6');
+  expect(note).not.toContain('{');
+});
+
 test('the gauntlet entry and run fit 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/');

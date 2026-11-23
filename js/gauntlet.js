@@ -35,6 +35,15 @@
     try { return window.SixfoldI18n ? window.SixfoldI18n.number(String(value)) : String(value); } catch (err) { return String(value); }
   }
 
+  // A translated message may put its numbers in a different order. Keep the
+  // placeholders in the catalog and fill them after lookup.
+  function format(value, parts) {
+    return String(tr(value)).replace(/\{(\d+)\}/g, function (match, index) {
+      var slot = Number(index) - 1;
+      return slot >= 0 && slot < parts.length ? String(parts[slot]) : match;
+    });
+  }
+
   function clock(seconds) {
     const total = Math.max(0, Math.round(Number(seconds) || 0));
     const minutes = Math.floor(total / 60);
@@ -222,7 +231,8 @@
       return {
         state: 'complete',
         note: (todayRun ? tr('Done today') + ' · '
-          : tr('Last run') + ' · ' + shortDate(view.date) + ' · ') + '6/6 · ' + clock(view.total),
+          : tr('Last run') + ' · ' + shortDate(view.date) + ' · ') +
+          number(6) + '/' + number(6) + ' · ' + clock(view.total),
         action: todayRun ? tr('Again') : tr('Start today'),
         label: todayRun ? tr('Start another Daily Gauntlet') : tr('Start today’s Daily Gauntlet')
       };
@@ -230,13 +240,14 @@
     if (view.expired) {
       return {
         state: 'expired',
-        note: tr('Run ended') + ' · ' + shortDate(view.date) + ' · ' + number(view.rounds) + '/6',
+        note: tr('Run ended') + ' · ' + shortDate(view.date) + ' · ' +
+          number(view.rounds) + '/' + number(6),
         action: tr('Start today'), label: tr('Start today’s Daily Gauntlet')
       };
     }
     return {
       state: 'active',
-      note: tr('Round') + ' ' + number(view.index + 1) + ' of 6 · ' +
+      note: format('Round {1} of {2}', [number(view.index + 1), number(6)]) + ' · ' +
         tr(LABELS[view.current]) + ' · ' + clock(view.times[view.index]),
       action: tr('Continue'), label: tr('Continue the Daily Gauntlet')
     };
@@ -303,7 +314,9 @@
     head.className = 'gauntlet-run-head';
     const status = document.createElement('p');
     status.className = 'gauntlet-run-status';
-    status.textContent = view.complete ? '6/6' : tr('Round') + ' ' + number(view.index + 1) + ' / 6';
+    status.textContent = view.complete
+      ? number(6) + '/' + number(6)
+      : format('Round {1} / {2}', [number(view.index + 1), number(6)]);
     const time = document.createElement('p');
     time.className = 'gauntlet-run-time';
     time.textContent = clock(view.total);
@@ -329,7 +342,7 @@
       item.dataset.game = game;
       const index = document.createElement('span');
       index.className = 'gauntlet-round-index';
-      index.textContent = String(i + 1).padStart(2, '0');
+      index.textContent = number(String(i + 1).padStart(2, '0'));
       const copy = document.createElement('span');
       copy.className = 'gauntlet-round-copy';
       const name = document.createElement('strong');

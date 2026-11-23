@@ -38,6 +38,27 @@ function extract(source, label, pattern) {
   return vm.runInNewContext('(' + match[1] + ')');
 }
 
+// Every literal tr('...') key used by the main UI must exist in the English
+// source catalog. Catalog-to-catalog comparison cannot catch this: a key that
+// is absent from English is absent from every catalog too, so the UI silently
+// falls back to the source text. Dynamic prefixes such as tr('Play ' + name)
+// are skipped because they are not complete keys.
+function literalTrKeys() {
+  const keys = new Map();
+  const files = readdirSync(join(root, 'js'))
+    .filter((file) => file.endsWith('.js') && file !== 'wordle.js');
+  for (const file of files) {
+    const source = read('js/' + file);
+    for (const match of source.matchAll(/\btr\(\s*(['"])((?:\\.|(?!\1).)*)\1/g)) {
+      const key = match[2].replace(/\\(['"\\])/g, '$1');
+      if (/ $/.test(key)) continue;
+      if (!keys.has(key)) keys.set(key, []);
+      keys.get(key).push(file);
+    }
+  }
+  return keys;
+}
+
 function placeholders(value) {
   // A translation may need the same argument twice (for example, repeating
   // the digit name in a sentence). Compare the set of arguments, not how
@@ -200,6 +221,15 @@ const supported = extract(
   'the supported locale registry',
   /  var SUPPORTED = (\{[\s\S]*?\n  \});/
 );
+
+const trKeys = literalTrKeys();
+const missingTrKeys = [...trKeys].filter(([key]) => !(key in english));
+if (missingTrKeys.length) {
+  fail(
+    'literal tr() key(s) missing from the English source: ' +
+    missingTrKeys.map(([key, files]) => JSON.stringify(key) + ' (' + files.join(', ') + ')').join(' | ')
+  );
+}
 
 const window = {};
 evaluate('i18n/i18n-patterns.js', { window });
