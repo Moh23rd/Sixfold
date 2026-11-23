@@ -325,6 +325,70 @@ html[data-daily="off"] #daily { display: none; }
 .daily-share:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .daily-share svg { width: 17px; height: 17px; display: block; }
 
+/* The optional gauntlet entry sits inside the daily card, beside the featured
+   action, so ignoring it leaves the daily flow unchanged. */
+.daily-gauntlet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px dashed color-mix(in srgb, var(--ink) 24%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+
+.daily-gauntlet[data-state="active"],
+.daily-gauntlet[data-state="complete"] { border-style: solid; }
+
+.daily-gauntlet-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.daily-gauntlet-title {
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.daily-gauntlet-note {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.daily-gauntlet-action {
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--page);
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 120ms ease, background-color 180ms ease;
+}
+
+.daily-gauntlet-action:hover { background: color-mix(in srgb, var(--ink) 86%, var(--page)); }
+.daily-gauntlet-action:active { transform: scale(0.97); }
+.daily-gauntlet-action:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
 .daily-week {
   display: flex;
   align-items: center;
@@ -1381,6 +1445,145 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   font-size: 11px;
   line-height: 1.35;
 }
+
+/* ---------- Daily Gauntlet run on the badges page ---------- */
+
+.gauntlet-run {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--home-rule);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 2px 0 var(--home-hard);
+}
+
+.gauntlet-run-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gauntlet-run-status {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.gauntlet-run-time {
+  margin: 0;
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauntlet-run-date {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: start;
+}
+
+.gauntlet-rounds {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gauntlet-round {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 6px 0;
+  border-top: 1px solid color-mix(in srgb, var(--home-rule) 65%, transparent);
+}
+
+.gauntlet-round:first-child { border-top: 0; }
+
+.gauntlet-round-index {
+  flex: none;
+  width: 18px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauntlet-round-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gauntlet-round-copy strong {
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.gauntlet-round-copy span {
+  flex: none;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.2;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauntlet-round.is-done .gauntlet-round-index { color: var(--gauntlet-color, var(--six-4)); }
+.gauntlet-round.is-current .gauntlet-round-index { color: var(--ink); }
+
+.gauntlet-round[data-game="merge"] { --gauntlet-color: var(--six-1); }
+.gauntlet-round[data-game="sudoku"] { --gauntlet-color: var(--six-2); }
+.gauntlet-round[data-game="ttt"] { --gauntlet-color: var(--six-3); }
+.gauntlet-round[data-game="mines"] { --gauntlet-color: var(--six-4); }
+.gauntlet-round[data-game="water"] { --gauntlet-color: var(--six-5); }
+.gauntlet-round[data-game="fruit"] { --gauntlet-color: var(--six-6); }
+
+.gauntlet-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.gauntlet-run-action {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--page);
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.gauntlet-run-action:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 @media (max-width: 340px) {
   .profile-game { flex-wrap: wrap; }

@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.31**.
+> Public release label: **v5.0**. Current development build: **6.0.33**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.31**
+Internal build: **6.0.33**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -26,6 +26,31 @@ release stays at 5.0 until the 6.0 feature set lands.
   profile; the hidden Wordle is excluded.
 - **Backup and erase cover the new key**: the existing `sixfold.*` export and
   erase rules already include `sixfold.profile.v1`.
+
+### Daily Gauntlet
+
+- **An optional six-round run**: the daily card now offers a Daily Gauntlet
+  beside the featured challenge. A run is pinned to its start date, uses a
+  date-seeded order with its own salt, and opens each game's existing daily
+  seed rather than a parallel puzzle.
+- **Run state is separate from the boards**: `sixfold.gauntlet.v1` keeps only
+  the start date, order, completed-round index and per-round active time. No
+  game board is copied, and leaving a round is not a failure: Continue reopens
+  it at the round boundary, and Sudoku keeps its own mid-round save.
+- **Only the expected round advances**: `sixfold:daily-complete` moves the run
+  only when its date is the run's start date and its game is the current
+  round. A replay (credited false) advances; a finish for another date or
+  game does not. A solved Sudoku that is already credited is satisfied on
+  entry, because reopening it shows the result and never completes again.
+- **Leaving a round keeps its time**: crossing the round boundary now saves
+  the accumulated active time, so a quick reload cannot fall back to the
+  previous 10-second autosave.
+- **A pinned run cannot resurrect an old date**: a round open across midnight
+  still finishes into its run, but replaying an old archive day does not. After
+  the date rolls over, the entry offers one action, start today's run.
+- **Finished runs reach the profile**: a 6/6 run is recorded once through
+  `SixfoldProfile.recordGauntlet`, so Runs, Best and Last run on the badges page
+  stay aggregate-only. The run summary lists each round and its active time.
 
 ### Appearance and fluidity
 
