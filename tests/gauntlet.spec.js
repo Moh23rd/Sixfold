@@ -417,3 +417,84 @@ test('the gauntlet entry and run fit 320px', async ({ page }) => {
   await expect(page.locator('#gauntlet-run .gauntlet-round')).toHaveCount(6);
   await expectNoClippedText(page, 'gauntlet run at 320px', '#badges');
 });
+
+// Arabic and Hindi at 320px: the entry, the run panel and the profile summary
+// have to stay inside their cards, and the mirrored parts have to keep their
+// inline order. A rule that loses `direction` still looks harmless, so the
+// order is measured with bounding boxes rather than read off the DOM.
+const LAYOUT_LOCALES = [
+  { locale: 'ar', dir: 'rtl', daily: 'الجولة ٤ من ٦', round: 'الجولة ٤ / ٦', runs: '١٢' },
+  { locale: 'hi', dir: 'ltr', daily: 'राउंड ४ / ६', round: 'राउंड ४ / ६', runs: '१२' }
+];
+
+for (const layout of LAYOUT_LOCALES) {
+  test('the gauntlet run and profile fit 320px in ' + layout.locale, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 });
+    await page.addInitScript((locale) => {
+      try { localStorage.setItem('sixfold.locale.v1', locale); } catch (err) {}
+    }, layout.locale);
+    await page.goto('/');
+    const today = await page.evaluate(() => window.SixfoldDaily.todayKey());
+    await seedOnce(page, {
+      'sixfold.gauntlet.v1': runState(
+        today,
+        3,
+        [60, 120, 180, 0, 0, 0],
+        ['merge', 'sudoku', 'ttt', 'water', 'mines', 'fruit']
+      ),
+      // A counted run gives both profile metrics a value, and the bests make
+      // the game rows as wide as the real summary gets.
+      'sixfold.profile.v1': JSON.stringify({
+        version: 1,
+        gauntlet: {
+          runs: 12,
+          bestRounds: 6,
+          bestTime: 3725,
+          last: { date: '2026-01-05', rounds: 6, seconds: 3725 }
+        }
+      }),
+      'merge2048.best': '123456',
+      'merge-games.ttt.stats.v2': JSON.stringify({ wins: 98765 })
+    });
+    await ready(page);
+
+    await expect(page.locator('html')).toHaveAttribute('lang', layout.locale);
+    await expect(page.locator('html')).toHaveAttribute('dir', layout.dir);
+    await expect(page.locator('#daily-gauntlet-note')).toContainText(layout.daily);
+    await expectNoClippedText(
+      page,
+      'daily gauntlet at 320px (' + layout.locale + ')',
+      '#daily-gauntlet'
+    );
+
+    await page.locator('#hub-badges').click();
+    await expect(page.locator('#badges')).toBeVisible();
+    await expect(page.locator('#gauntlet-run .gauntlet-run-status')).toContainText(layout.round);
+    await expect(page.locator('#gauntlet-run .gauntlet-round')).toHaveCount(6);
+    await expect(page.locator('#profile-gauntlet .profile-metric strong').first())
+      .toHaveText(layout.runs);
+    await expectNoClippedText(
+      page,
+      'gauntlet and profile at 320px (' + layout.locale + ')',
+      '#badges'
+    );
+
+    const boxes = await page.evaluate(() => {
+      const left = (selector) => document.querySelector(selector).getBoundingClientRect().x;
+      return {
+        status: left('#gauntlet-run .gauntlet-run-status'),
+        time: left('#gauntlet-run .gauntlet-run-time'),
+        index: left('#gauntlet-run .gauntlet-round .gauntlet-round-index'),
+        copy: left('#gauntlet-run .gauntlet-round .gauntlet-round-copy'),
+        runs: left('#profile-gauntlet .profile-metric:first-child'),
+        best: left('#profile-gauntlet .profile-metric:last-child')
+      };
+    });
+    // The first element of each pair sits at the inline start: on the right in
+    // RTL, on the left in LTR.
+    const started = (first, second) => (layout.dir === 'rtl' ? first - second : second - first);
+    expect(started(boxes.status, boxes.time), 'the run status opens its header').toBeGreaterThan(0);
+    expect(started(boxes.index, boxes.copy), 'the round number opens its row').toBeGreaterThan(0);
+    expect(started(boxes.runs, boxes.best), 'the Runs metric comes first').toBeGreaterThan(0);
+  });
+}
