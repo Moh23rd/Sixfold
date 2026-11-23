@@ -4,7 +4,10 @@
   'use strict';
 
   var KEY = 'sixfold.locale.v1';
-  var VERSION = '5.4.7';
+  // Distinguishes a language the reader picked from one the device supplied.
+  // Only the picker writes this; a detected locale is never persisted.
+  var EXPLICIT_KEY = 'sixfold.locale.explicit.v1';
+  var VERSION = '5.5.0';
   var BASE = 'i18n/';
   var PATTERNS = BASE + 'i18n-patterns.js';
   var CATALOG = {
@@ -13,6 +16,18 @@
     ja: BASE + 'i18n-ja.js', ko: BASE + 'i18n-ko.js', 'pt-BR': BASE + 'i18n-pt-br.js',
     hi: BASE + 'i18n-hi.js', kn: BASE + 'i18n-kn.js', ar: BASE + 'i18n-ar.js'
   };
+
+  // The app icon carries the language's own numeral. Korean uses Western
+  // digits in the interface, so it keeps the Latin mark.
+  var ICONS = {
+    ar: 'ar',
+    hi: 'hi',
+    kn: 'kn',
+    'zh-Hans': 'han',
+    'zh-Hant': 'han',
+    ja: 'han'
+  };
+  var ICON_VERSION = '4.2.0';
 
   function normalize(tag) {
     var value = String(tag || '').toLowerCase().replace(/_/g, '-');
@@ -25,11 +40,9 @@
     return CATALOG[code] || code === 'en' || code === 'es' ? code : '';
   }
 
-  function detect() {
-    try {
-      var saved = normalize(localStorage.getItem(KEY));
-      if (saved) return saved;
-    } catch (err) {}
+  // The language the phone is set to, ignoring any in-app choice. This is what
+  // a fresh install and the "legacy auto" migration below resolve against.
+  function device() {
     var languages = navigator.languages || [navigator.language || 'en'];
     for (var i = 0; i < languages.length; i += 1) {
       var match = normalize(languages[i]);
@@ -38,16 +51,61 @@
     return 'en';
   }
 
+  function savedLocale() {
+    try { return normalize(localStorage.getItem(KEY)); } catch (err) { return ''; }
+  }
+
+  function isExplicit() {
+    try { return localStorage.getItem(EXPLICIT_KEY) === '1'; } catch (err) { return false; }
+  }
+
+  function detect() {
+    var saved = savedLocale();
+    if (saved) {
+      if (isExplicit()) return saved;
+      // Older builds wrote the device-detected locale on every boot, which
+      // stopped the app following the phone after the first launch. If that
+      // stored value still matches the phone, drop it and resume following.
+      // A value that differs is left alone: it was almost certainly a real
+      // choice from the picker in a build without the explicit marker.
+      var current = device();
+      if (saved === current) {
+        try { localStorage.removeItem(KEY); } catch (err) {}
+        return current;
+      }
+      return saved;
+    }
+    return device();
+  }
+
+  function applyIcon(locale) {
+    var variant = ICONS[locale] || '';
+    var suffix = variant ? '-' + variant : '';
+    var root = document.documentElement;
+    root.dataset.icon = variant || 'latin';
+    function set(selector, file) {
+      var link = document.querySelector(selector);
+      if (link) link.setAttribute('href', file + '?v=' + ICON_VERSION);
+    }
+    set('link[rel="icon"][sizes="192x192"]', 'icons/icon-192' + suffix + '.png');
+    set('link[rel="icon"][sizes="512x512"]', 'icons/icon-512' + suffix + '.png');
+    set('link[rel="apple-touch-icon"]', 'icons/icon-180' + suffix + '.png');
+  }
+
   function assets(locale) {
     return CATALOG[locale] ? [PATTERNS, CATALOG[locale]] : [];
   }
 
   window.SixfoldLocale = {
     KEY: KEY,
+    EXPLICIT_KEY: EXPLICIT_KEY,
     VERSION: VERSION,
     CATALOG: CATALOG,
     normalize: normalize,
+    device: device,
     detect: detect,
+    isExplicit: isExplicit,
+    applyIcon: applyIcon,
     assets: assets
   };
 })();

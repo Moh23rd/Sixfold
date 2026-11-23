@@ -8,6 +8,16 @@
     "ogDescription": "6개의 게임. 군더더기 없음. 탭 한 번으로 플레이. 진행 상황은 이 기기에 저장됩니다."
   },
   "messages": {
+    "Welcome to Sixfold": "Sixfold에 오신 것을 환영합니다",
+    "Six games, one place. Everything saves on this device.": "여섯 게임, 한곳에서. 모든 진행 상황은 이 기기에 저장됩니다.",
+    "Tap any cover on the hub to start a game.": "홈에서 아무 표지나 눌러 게임을 시작하세요.",
+    "Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.": "데일리 Sixfold는 각 게임에 새로운 퍼즐을 하나씩 제공하고 연속 기록을 유지합니다.",
+    "Look changes the theme, language, contrast and backup. First-play tips wait inside each game.": "디자인에서 테마, 언어, 대비, 백업을 바꿀 수 있습니다. 각 게임에는 첫 플레이 팁이 있습니다.",
+    "Start playing": "플레이 시작",
+    "Replay this guide from Look & feel.": "이 가이드는 디자인에서 다시 열 수 있습니다.",
+    "Guide": "가이드",
+    "Welcome & guide": "환영 및 가이드",
+    "Six games, the daily set and where everything lives.": "여섯 게임, 데일리 세트, 그리고 모든 것이 있는 곳.",
     "Daily Gauntlet": "데일리 건틀릿",
     "Six rounds. One run.": "6라운드, 한 번의 도전.",
     "Start": "시작",

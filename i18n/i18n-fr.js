@@ -3,6 +3,16 @@
   'use strict';
 
   var M = {
+    "Welcome to Sixfold": "Bienvenue dans Sixfold",
+    "Six games, one place. Everything saves on this device.": "Six jeux, un seul endroit. Tout est enregistré sur cet appareil.",
+    "Tap any cover on the hub to start a game.": "Touchez une couverture de l’accueil pour commencer une partie.",
+    "Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.": "Sixfold quotidien vous donne un nouveau puzzle dans chaque jeu et garde votre série.",
+    "Look changes the theme, language, contrast and backup. First-play tips wait inside each game.": "Apparence règle le thème, la langue, le contraste et la sauvegarde. Des conseils de première partie attendent dans chaque jeu.",
+    "Start playing": "Commencer à jouer",
+    "Replay this guide from Look & feel.": "Vous pouvez revoir ce guide depuis Apparence.",
+    "Guide": "Guide",
+    "Welcome & guide": "Bienvenue et guide",
+    "Six games, the daily set and where everything lives.": "Les six jeux, la sélection du jour et où tout se trouve.",
     "Daily Gauntlet": "Gauntlet quotidien",
     "Six rounds. One run.": "Six manches. Une partie.",
     "Start": "Commencer",

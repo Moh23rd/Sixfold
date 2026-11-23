@@ -2,14 +2,18 @@ const { test, expect } = require('@playwright/test');
 const { LANGUAGE_NAMES, LOCALES, expectNoClippedText } = require('./helpers');
 
 // The phone hero is the whole first screen, so it has to fit without clipping
-// at both widths the design targets, the six-piece cover must stay below the
+// from the narrowest phone up, the six-piece cover must stay below the
 // headline, and the promise row must sit on the cover's foot instead of
-// hovering above the caption. The leftover height is shared above and below
-// the CTAs, so the promise row cannot strand far under the buttons again.
-// Daily Sixfold is checked on and off because hiding the card changes what
-// follows the hero, not the hero itself.
+// hovering above the caption. The description column starts at the cover's
+// top, never below it, and the hero's last line has to clear the fold with the
+// What's-new note showing, because that note is the first thing above the
+// hero. The leftover height is shared above and below the CTAs, so the promise
+// row cannot strand far under the buttons again. Daily Sixfold is checked on
+// and off because hiding the card changes what follows the hero, not the hero
+// itself.
 
 const WIDTHS = [
+  { width: 320, height: 568 },
   { width: 357, height: 784 },
   { width: 390, height: 844 }
 ];
@@ -35,14 +39,23 @@ async function expectHeroLayout(page, locale, width, daily) {
     };
     return {
       title: rect('#hub-title'),
+      body: rect('.home-body'),
       sub: rect('.home-sub'),
       ctas: rect('.home-ctas'),
       promises: rect('.home-promises'),
       art: rect('.home-hero-art'),
-      viewport: document.documentElement.clientWidth
+      viewport: document.documentElement.clientWidth,
+      fold: document.documentElement.clientHeight
     };
   });
   expect(boxes.art.top, 'the cover starts below the headline').toBeGreaterThanOrEqual(boxes.title.bottom);
+  // The description column fills its grid row, so a body taller than the
+  // bottom-aligned cover starts above it; it must never start below it, which
+  // is the empty band above the description this hero was built to remove.
+  expect(
+    boxes.body.top,
+    'the description never starts below the cover'
+  ).toBeLessThanOrEqual(boxes.art.top + 1);
   expect(boxes.art.left, 'the cover stays inside the viewport').toBeGreaterThanOrEqual(0);
   expect(boxes.art.right, 'the cover stays inside the viewport').toBeLessThanOrEqual(boxes.viewport + 1);
   expect(
@@ -61,6 +74,15 @@ async function expectHeroLayout(page, locale, width, daily) {
     gapBelow,
     'the promise row stays with the CTAs instead of stranding below them'
   ).toBeLessThanOrEqual(gapAbove + 8);
+
+  // The hero is the first screen: the promise row, its last line, has to end
+  // above the fold before the ticker starts. Measured with the release note
+  // visible (asserted by the caller), since dismissing it would buy the hero
+  // about 39px it does not have on a fresh visit.
+  expect(
+    boxes.promises.bottom,
+    'the hero ends above the fold with the release note showing'
+  ).toBeLessThanOrEqual(boxes.fold + 0.5);
 }
 
 for (const locale of LOCALES) {
@@ -82,6 +104,10 @@ for (const locale of LOCALES) {
           await page.goto('/');
           await expect(page.locator('#boot-splash')).toBeHidden();
           await expect(page.locator('html')).toHaveClass(/home-ready/);
+          // A fresh visit shows the current release note above the hero. Pin
+          // that on, or a stale dismissal key would make the fold check easier
+          // than the real first screen.
+          await expect(page.locator('#whats-new')).toBeVisible();
           await expectHeroLayout(page, locale, width, daily);
         }
       );

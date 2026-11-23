@@ -16,9 +16,9 @@ const ASSET = '5.0.0';
 // shared-baseline scripts, and an installed app must pick the new pulse up.
 const HAPTICS_JS = '5.0.1';
 const SHARE_CARD = '5.3.2';
-const STYLE_ASSET = '5.2.9';
-const FONT_ASSET = '4.0.1';
-const THEME_JS = '6.0.10';
+const STYLE_ASSET = '5.4.0';
+const FONT_ASSET = '5.0.0';
+const THEME_JS = '6.0.11';
 const OVERSCROLL_JS = '6.0.2';
 const GAME_CODE = '5.3.2';
 const WORDLE_CODE = '5.3.1-wordle';
@@ -30,12 +30,12 @@ const GAMES_JS = '5.4.2';
 const SUDOKU_CSS = '4.0.4';
 const V5_CSS = '5.6.1';
 const BLUR_CSS = '1.3.1';
-const HOME_CSS = '4.1.6';
+const HOME_CSS = '4.1.7';
 const DAILY_CODE = '5.4.4';
 const PROFILE_CODE = '1.0.0';
 const BADGES_CODE = '1.1.0';
 const GAUNTLET_CODE = '1.0.3';
-const I18N_CODE = '5.4.7';
+const I18N_CODE = '5.5.0';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.

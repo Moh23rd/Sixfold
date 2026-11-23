@@ -1196,6 +1196,50 @@ html.has-stretch .hub {
 
 .hub-top + .whats-new { margin-top: 18px; }
 
+/* ---------- first-run welcome ---------- */
+
+/* The first visit gets one sheet, in the same language as every other sheet:
+   a short mark, three numbered steps, and one way out. It is shown once and
+   can be replayed from Look & feel. */
+.welcome-card { padding-top: 20px; }
+
+/* One filled action: the start button. Skip stays quiet so the first screen
+   has a single obvious next step. */
+.welcome-card .sheet-done {
+  background: transparent;
+  color: var(--muted);
+}
+
+.welcome-mark {
+  display: flex;
+  gap: 5px;
+  margin: 16px 0 0;
+}
+
+.welcome-mark span {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.welcome-mark span:nth-child(1) { background: var(--six-1); }
+.welcome-mark span:nth-child(2) { background: var(--six-2); }
+.welcome-mark span:nth-child(3) { background: var(--six-3); }
+.welcome-mark span:nth-child(4) { background: var(--six-4); }
+.welcome-mark span:nth-child(5) { background: var(--six-5); }
+.welcome-mark span:nth-child(6) { background: var(--six-6); }
+
+.welcome-steps { margin-top: 18px; }
+
+.welcome-start {
+  display: flex;
+  width: 100%;
+  margin-top: 18px;
+  justify-content: center;
+}
+
+.welcome-note { margin: 12px 0 0; text-align: center; }
+
 /* With reduced motion the script never marks the shell, so the hub keeps the
    platform's own edge handling rather than the rebuilt stretch. */
 @media (prefers-reduced-motion: reduce) {

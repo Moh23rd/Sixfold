@@ -8,6 +8,16 @@
     "ogDescription": "ಆರು ಆಟಗಳು. ಭರ್ತಿ ಇಲ್ಲ. ಆಫ್‌ಲೈನ್ ಜೇಬಿನ ಆರ್ಕೇಡ್: ಆರು ಒಗಟುಗಳು, ಖಾತೆಗಳಿಲ್ಲ, ಜಾಹೀರಾತುಗಳಿಲ್ಲ."
   },
   "messages": {
+    "Welcome to Sixfold": "Sixfold ಗೆ ಸ್ವಾಗತ",
+    "Six games, one place. Everything saves on this device.": "ಆರು ಆಟಗಳು, ಒಂದೇ ಸ್ಥಳ. ಎಲ್ಲಾ ಪ್ರಗತಿ ಈ ಸಾಧನದಲ್ಲಿ ಉಳಿಯುತ್ತದೆ.",
+    "Tap any cover on the hub to start a game.": "ಆಟವನ್ನು ಪ್ರಾರಂಭಿಸಲು ಮುಖಪುಟದಲ್ಲಿ ಯಾವುದೇ ಕವರ್ ಟ್ಯಾಪ್ ಮಾಡಿ.",
+    "Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.": "Daily Sixfold ಪ್ರತಿ ಆಟದಲ್ಲಿ ಹೊಸ ಒಗಟನ್ನು ನೀಡುತ್ತದೆ ಮತ್ತು ನಿಮ್ಮ ಸರಣಿಯನ್ನು ಉಳಿಸುತ್ತದೆ.",
+    "Look changes the theme, language, contrast and backup. First-play tips wait inside each game.": "ನೋಟದಲ್ಲಿ ಥೀಮ್, ಭಾಷೆ, ಕಾಂಟ್ರಾಸ್ಟ್ ಮತ್ತು ಬ್ಯಾಕಪ್ ಬದಲಿಸಿ. ಪ್ರತಿ ಆಟದಲ್ಲಿ ಮೊದಲ ಆಟದ ಸಲಹೆಗಳಿವೆ.",
+    "Start playing": "ಆಡಲು ಪ್ರಾರಂಭಿಸಿ",
+    "Replay this guide from Look & feel.": "ಈ ಮಾರ್ಗದರ್ಶಿಯನ್ನು ನೋಟದಲ್ಲಿ ಮತ್ತೆ ತೆರೆಯಬಹುದು.",
+    "Guide": "ಮಾರ್ಗದರ್ಶಿ",
+    "Welcome & guide": "ಸ್ವಾಗತ ಮತ್ತು ಮಾರ್ಗದರ್ಶಿ",
+    "Six games, the daily set and where everything lives.": "ಆರು ಆಟಗಳು, ದೈನಂದಿನ ಸೆಟ್ ಮತ್ತು ಎಲ್ಲವೂ ಎಲ್ಲಿದೆ.",
     "Daily Gauntlet": "ದೈನಂದಿನ ಗಾಂಟ್ಲೆಟ್",
     "Six rounds. One run.": "ಆರು ಸುತ್ತು. ಒಂದು ಓಟ.",
     "Start": "ಪ್ರಾರಂಭಿಸಿ",

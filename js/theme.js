@@ -538,6 +538,10 @@
   const helpBtn = document.getElementById('how-to');
   const aboutSheet = document.getElementById('about');
   const aboutBtn = document.getElementById('hub-about');
+  const welcomeSheet = document.getElementById('welcome');
+  const welcomeStart = document.getElementById('welcome-start');
+  const welcomeOpen = document.getElementById('welcome-open');
+  const WELCOME_KEY = 'sixfold.welcome.v1';
   const resetSheet = document.getElementById('reset-sheet');
   const sudokuSettingsSheet = document.getElementById('sudoku-settings');
   const sudokuSettingsBtn = document.getElementById('sudoku-settings-open');
@@ -590,6 +594,78 @@
   wireSheet(helpSheet, helpBtn);
   wireSheet(aboutSheet, aboutBtn);
   wireSheet(sudokuSettingsSheet, sudokuSettingsBtn);
+
+  /* ---------- first-run welcome ---------- */
+  // A fresh install gets one short guide in the same sheet language as Look &
+  // feel: where the six games live, what the daily set is, and where the rest
+  // of the app hides. Seeing it, or tapping past it, records it; Look & feel
+  // can replay it at any time.
+  function welcomeSeen() {
+    try { return localStorage.getItem(WELCOME_KEY) === '1'; } catch (err) { return false; }
+  }
+
+  function markWelcomeSeen() {
+    try { localStorage.setItem(WELCOME_KEY, '1'); } catch (err) {}
+  }
+
+  function closeWelcome() {
+    if (!welcomeSheet || welcomeSheet.hidden) return;
+    markWelcomeSeen();
+    closeSheet(welcomeSheet);
+    // Hand the reader to the collection rather than leaving focus on a dialog
+    // that no longer exists.
+    window.setTimeout(function () {
+      const first = document.querySelector('.home-game');
+      if (first) first.focus({ preventScroll: true });
+    }, 340);
+  }
+
+  function openWelcome(opener) {
+    if (!welcomeSheet) return;
+    markWelcomeSeen();
+    openSheet(welcomeSheet, opener || null);
+    if (welcomeStart) {
+      window.setTimeout(function () {
+        if (!welcomeSheet.hidden && !welcomeSheet.classList.contains('is-closing')) {
+          welcomeStart.focus({ preventScroll: true });
+        }
+      }, 60);
+    }
+  }
+
+  function maybeWelcome() {
+    if (!welcomeSheet || welcomeSeen()) return;
+    if (document.body.dataset.screen !== 'hub') return;
+    if (document.querySelector('.sheet.is-open:not(.is-closing)')) return;
+    openWelcome(null);
+  }
+
+  if (welcomeSheet) {
+    welcomeSheet.querySelectorAll('[data-close]').forEach(function (el) {
+      el.addEventListener('click', closeWelcome);
+    });
+    if (welcomeStart) welcomeStart.addEventListener('click', closeWelcome);
+    if (welcomeOpen) {
+      welcomeOpen.addEventListener('click', function () {
+        closeSheet(appearanceSheet);
+        window.setTimeout(function () { openWelcome(appearanceBtn); }, 340);
+      });
+    }
+
+    // The launch layer marks home-ready once the hub has built. Wait past its
+    // entrance before covering the first screen, so the guide lands on a
+    // settled page instead of during the build.
+    if (document.documentElement.classList.contains('home-ready')) {
+      window.setTimeout(maybeWelcome, 520);
+    } else if ('MutationObserver' in window) {
+      const readyObserver = new MutationObserver(function () {
+        if (!document.documentElement.classList.contains('home-ready')) return;
+        readyObserver.disconnect();
+        window.setTimeout(maybeWelcome, 520);
+      });
+      readyObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    }
+  }
 
   // Erasing everything is deliberately two separate taps: the quiet button in
   // Look & feel opens a warning sheet, and only its red button clears data.
@@ -670,6 +746,7 @@
   function activeSheet() {
     const open = document.querySelector('.sheet.is-open:not(.is-closing)');
     if (open) return open;
+    if (welcomeSheet && !welcomeSheet.hidden) return welcomeSheet;
     if (appearanceSheet && !appearanceSheet.hidden) return appearanceSheet;
     if (sizeSheet && !sizeSheet.hidden) return sizeSheet;
     if (helpSheet && !helpSheet.hidden) return helpSheet;
@@ -694,7 +771,8 @@
       if (!sheet) return;
       if (e.key === 'Escape') {
         e.preventDefault();
-        closeSheet(sheet);
+        if (sheet === welcomeSheet) closeWelcome();
+        else closeSheet(sheet);
         return;
       }
       if (e.key !== 'Tab') return;

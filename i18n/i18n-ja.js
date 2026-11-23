@@ -8,6 +8,16 @@
     "ogDescription": "6つのゲーム。手抜きなし。 ワンタップでプレイ。進行状況はこの端末に保存されます。"
   },
   "messages": {
+    "Welcome to Sixfold": "Sixfold へようこそ",
+    "Six games, one place. Everything saves on this device.": "6つのゲームを1か所に。進行状況はすべてこの端末に保存されます。",
+    "Tap any cover on the hub to start a game.": "ホームのカバーをタップするとゲームが始まります。",
+    "Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.": "デイリー Sixfold は各ゲームに新しいパズルを1問ずつ出し、連続記録を保ちます。",
+    "Look changes the theme, language, contrast and backup. First-play tips wait inside each game.": "外観ではテーマ、言語、コントラスト、バックアップを変更できます。各ゲームには初回プレイのヒントがあります。",
+    "Start playing": "プレイを始める",
+    "Replay this guide from Look & feel.": "このガイドは外観からもう一度開けます。",
+    "Guide": "ガイド",
+    "Welcome & guide": "ようこそ & ガイド",
+    "Six games, the daily set and where everything lives.": "6つのゲーム、デイリーセット、そしてすべての場所。",
     "Daily Gauntlet": "デイリーガントレット",
     "Six rounds. One run.": "6ラウンド、1回の挑戦。",
     "Start": "開始",

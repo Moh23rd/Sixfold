@@ -1330,7 +1330,7 @@
             }
           }
         }
-        const face = new FontFace(family, 'url("fonts/google-sans-flex.woff2?v=4.0.1")', {
+        const face = new FontFace(family, 'url("fonts/google-sans-flex.woff2?v=5.0.0")', {
           weight: '100 1000',
           display: 'swap'
         });

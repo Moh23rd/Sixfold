@@ -8,6 +8,16 @@
     "ogDescription": "六款游戏。无凑数内容。 一键开始。进度保留在此设备。"
   },
   "messages": {
+    "Welcome to Sixfold": "欢迎来到 Sixfold",
+    "Six games, one place. Everything saves on this device.": "六款游戏，一个地方。所有进度都保存在这台设备上。",
+    "Tap any cover on the hub to start a game.": "点击主页上的任意封面即可开始游戏。",
+    "Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.": "每日 Sixfold 在每个游戏中提供一道新谜题，并保留你的连胜记录。",
+    "Look changes the theme, language, contrast and backup. First-play tips wait inside each game.": "外观可调整主题、语言、对比度和备份。每款游戏内都有首次游玩提示。",
+    "Start playing": "开始游戏",
+    "Replay this guide from Look & feel.": "你可以在外观中重新打开本指南。",
+    "Guide": "指南",
+    "Welcome & guide": "欢迎与指南",
+    "Six games, the daily set and where everything lives.": "六款游戏、每日组合，以及所有内容的位置。",
     "Daily Gauntlet": "每日六连赛",
     "Six rounds. One run.": "六轮，一次挑战。",
     "Start": "开始",

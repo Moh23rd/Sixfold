@@ -8,6 +8,16 @@
     "ogDescription": "छह खेल. कोई भराव नहीं. एक टैप में खेलें। आपकी प्रगति इसी डिवाइस पर रहती है।"
   },
   "messages": {
+    "Welcome to Sixfold": "Sixfold में आपका स्वागत है",
+    "Six games, one place. Everything saves on this device.": "छह खेल, एक जगह। सारी प्रगति इसी डिवाइस पर सहेजी जाती है।",
+    "Tap any cover on the hub to start a game.": "होम पर किसी भी कवर को टैप करके खेल शुरू करें।",
+    "Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.": "Daily Sixfold हर खेल में एक नई पहेली देता है और आपका सिलसिला बनाए रखता है।",
+    "Look changes the theme, language, contrast and backup. First-play tips wait inside each game.": "रूप-रंग से थीम, भाषा, कंट्रास्ट और बैकअप बदलें। हर खेल में पहली बार खेलने के सुझाव मौजूद हैं।",
+    "Start playing": "खेलना शुरू करें",
+    "Replay this guide from Look & feel.": "यह गाइड रूप-रंग में दोबारा खोली जा सकती है।",
+    "Guide": "गाइड",
+    "Welcome & guide": "स्वागत और गाइड",
+    "Six games, the daily set and where everything lives.": "छह खेल, रोज़ का सेट और सब कुछ कहाँ है।",
     "Daily Gauntlet": "दैनिक गॉन्टलेट",
     "Six rounds. One run.": "छह राउंड। एक दौड़।",
     "Start": "शुरू करें",

@@ -1,10 +1,12 @@
 /* Google Sans Flex is Google's open-source Material 3 Expressive face. The
-   shipped file keeps the rounded terminals, weight and optical size, and
-   includes Latin-1 and Latin Extended-A so accented English, Spanish, French
-   and German copy stays in the same face instead of falling back. */
+   shipped file is the full variable font with roundness pinned to 100 (the
+   soft, bouncy end of the ROND axis) and weight and optical size left live,
+   so headings, body copy and numerals share one rounded voice. It keeps
+   Latin-1 and Latin Extended-A so accented English, Spanish, French and
+   German copy stays in the same face instead of falling back. */
 @font-face {
   font-family: "Google Sans Flex";
-  src: url("../fonts/google-sans-flex.woff2?v=4.0.1") format("woff2");
+  src: url("../fonts/google-sans-flex.woff2?v=5.0.0") format("woff2");
   font-weight: 100 1000;
   font-style: normal;
   font-display: swap;
@@ -1086,7 +1088,7 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
 .steps li {
   counter-increment: step;
   position: relative;
-  padding-left: 30px;
+  padding-inline-start: 30px;
   font-size: 13px;
   line-height: 1.45;
 }
@@ -1094,7 +1096,7 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
 .steps li::before {
   content: counter(step);
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 1px;
   width: 20px;
   height: 20px;

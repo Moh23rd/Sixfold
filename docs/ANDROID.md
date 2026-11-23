@@ -298,8 +298,35 @@ changing that source:
 npm run native:assets
 ```
 
-`native:assets` currently targets Android. `native:assets:ios` is available when
-an iOS project is added on macOS.
+`native:assets` currently targets Android. The iOS launch images are checked in
+under `splash/` because this repository has no `ios/` project; see
+[docs/ASSETS.md](ASSETS.md) for the reproducible font, splash and icon builds.
+
+The adaptive icon is deliberately two full-bleed layers. `capacitor-assets`
+adds `<inset>` wrappers to the XML on each generation, which shrinks the mark
+inside the launcher mask; `native:assets:android` therefore ends with
+`scripts/guard-adaptive-icon.mjs`. Run `npm run assets:guard` to verify without
+regenerating.
+
+The launcher carries locale-qualified resources for Arabic, Hindi, Kannada,
+Chinese and Japanese, but only as transparent foreground layers:
+
+- `mipmap-{locale}-<density>/ic_launcher_foreground.png` supplies the localized
+  numeral.
+
+The default `mipmap-anydpi-v26` adaptive XML references
+`@mipmap/ic_launcher_foreground`, so Android resolves the localized foreground
+from the device language while applying the launcher's own mask. There are no
+locale full/round PNGs and no locale adaptive XMLs. API 24–25 has no localized
+launcher icon and uses the default icon.
+
+Do not add locale launcher PNGs or locale adaptive XMLs back. A locale-qualified
+density `ic_launcher.png` would beat the default adaptive icon on API 26+
+because Android matches the locale before the version, which is the failure the
+foreground-only layout prevents. The guard rejects any locale `ic_launcher*`
+PNG/XML other than `ic_launcher_foreground.png`. Android resolves the
+foreground from the device language, not the in-app picker, and a launcher may
+cache the icon until it restarts.
 
 ## Troubleshooting
 

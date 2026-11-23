@@ -25,6 +25,16 @@
   var catalog = { messages: {}, patterns: [] };
 
   var ES = {
+    'Welcome to Sixfold': 'Te damos la bienvenida a Sixfold',
+    'Six games, one place. Everything saves on this device.': 'Seis juegos en un solo lugar. Todo se guarda en este dispositivo.',
+    'Tap any cover on the hub to start a game.': 'Toca cualquier portada de la pantalla de inicio para empezar una partida.',
+    'Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.': 'Sixfold diario te da un puzle nuevo en cada juego y mantiene tu racha.',
+    'Look changes the theme, language, contrast and backup. First-play tips wait inside each game.': 'Aspecto cambia el tema, el idioma, el contraste y la copia de seguridad. Dentro de cada juego encontrarás consejos para la primera partida.',
+    'Start playing': 'Empezar a jugar',
+    'Replay this guide from Look & feel.': 'Puedes repetir esta guía desde Aspecto.',
+    'Guide': 'Guía',
+    'Welcome & guide': 'Bienvenida y guía',
+    'Six games, the daily set and where everything lives.': 'Los seis juegos, el set diario y dónde está todo.',
     'Daily Gauntlet': 'Gauntlet diario',
     'Six rounds. One run.': 'Seis rondas. Una partida.',
     'Start': 'Empezar',
@@ -829,9 +839,12 @@
       button.setAttribute('aria-pressed', button.dataset.locale === locale ? 'true' : 'false');
       button.addEventListener('click', function () {
         var next = button.dataset.locale;
-        if (!SUPPORTED[next] || next === locale) return;
-        try { localStorage.setItem(KEY, next); } catch (err) {}
-        location.reload();
+        if (!SUPPORTED[next]) return;
+        try {
+          localStorage.setItem(KEY, next);
+          localStorage.setItem(window.SixfoldLocale.EXPLICIT_KEY, '1');
+        } catch (err) {}
+        if (next !== locale) location.reload();
       });
     });
   }
@@ -839,7 +852,11 @@
   function setLang() {
     document.documentElement.lang = locale;
     document.documentElement.dir = RTL[locale] ? 'rtl' : 'ltr';
-    try { localStorage.setItem(KEY, locale); } catch (err) {}
+    // A detected locale is deliberately not persisted: it has to stay free to
+    // follow the phone. Only bindLanguage() marks an explicit choice.
+    if (window.SixfoldLocale && window.SixfoldLocale.applyIcon) {
+      window.SixfoldLocale.applyIcon(locale);
+    }
   }
 
   // A CSS font can occasionally fail its first decode in a browser even though
@@ -957,6 +974,19 @@
   locale = detect();
   catalog = catalogs()[locale] || { messages: {}, patterns: [] };
   setLang();
+
+  // Follow a phone language change while the app is open, unless the reader
+  // has picked a language themselves. A reload is the one path that keeps the
+  // catalog, the document direction, the script face and the icon in step.
+  if (window.addEventListener) {
+    window.addEventListener('languagechange', function () {
+      var explicit = false;
+      try {
+        explicit = localStorage.getItem(window.SixfoldLocale.EXPLICIT_KEY) === '1';
+      } catch (err) {}
+      if (!explicit && detect() !== locale) location.reload();
+    });
+  }
 
   window.SixfoldI18n = {
     locale: function () { return locale; },

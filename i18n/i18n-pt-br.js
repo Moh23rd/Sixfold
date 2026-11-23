@@ -8,6 +8,16 @@
     "ogDescription": "Seis jogos. Sem enrolação. Um toque para jogar. Seu progresso fica neste dispositivo."
   },
   "messages": {
+    "Welcome to Sixfold": "Boas-vindas ao Sixfold",
+    "Six games, one place. Everything saves on this device.": "Seis jogos em um só lugar. Tudo fica salvo neste dispositivo.",
+    "Tap any cover on the hub to start a game.": "Toque em qualquer capa da tela inicial para começar um jogo.",
+    "Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.": "O Sixfold diário traz um puzzle novo em cada jogo e mantém a sua sequência.",
+    "Look changes the theme, language, contrast and backup. First-play tips wait inside each game.": "Aparência muda o tema, o idioma, o contraste e o backup. Dicas de primeira partida ficam dentro de cada jogo.",
+    "Start playing": "Começar a jogar",
+    "Replay this guide from Look & feel.": "Você pode reabrir este guia em Aparência.",
+    "Guide": "Guia",
+    "Welcome & guide": "Boas-vindas e guia",
+    "Six games, the daily set and where everything lives.": "Os seis jogos, o conjunto diário e onde fica tudo.",
     "Daily Gauntlet": "Gauntlet diário",
     "Six rounds. One run.": "Seis rodadas. Uma partida.",
     "Start": "Começar",

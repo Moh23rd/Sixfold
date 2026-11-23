@@ -41,7 +41,5 @@
          the platform refuses to vibrate without this. -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Saving result cards to the gallery needs this only on Android 9 and older. -->
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 </manifest>

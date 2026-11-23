@@ -8,6 +8,16 @@
     "ogDescription": "ست ألعاب. بلا حشو. نقرة واحدة للعب. يبقى تقدمك على هذا الجهاز."
   },
   "messages": {
+    "Welcome to Sixfold": "مرحبًا بك في Sixfold",
+    "Six games, one place. Everything saves on this device.": "ست ألعاب في مكان واحد. يُحفظ كل شيء على هذا الجهاز.",
+    "Tap any cover on the hub to start a game.": "اضغط أي غلاف في الصفحة الرئيسية لبدء لعبة.",
+    "Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.": "يمنحك Sixfold اليومي لغزًا جديدًا في كل لعبة، ويحافظ على سلسلتك.",
+    "Look changes the theme, language, contrast and backup. First-play tips wait inside each game.": "يتيح «المظهر» تغيير السمة واللغة والتباين والنسخ الاحتياطي. ونصائح اللعب الأول تنتظرك داخل كل لعبة.",
+    "Start playing": "ابدأ اللعب",
+    "Replay this guide from Look & feel.": "يمكنك إعادة فتح هذا الدليل من «المظهر».",
+    "Guide": "دليل",
+    "Welcome & guide": "الترحيب والدليل",
+    "Six games, the daily set and where everything lives.": "الألعاب الست، ومجموعة اليوم، وأين تجد كل شيء.",
     "Daily Gauntlet": "سباق الست اليومي",
     "Six rounds. One run.": "ست جولات. محاولة واحدة.",
     "Start": "ابدأ",
