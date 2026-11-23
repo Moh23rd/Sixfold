@@ -1033,33 +1033,11 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* The phone hero is a masthead, not a poster. The cover shares the text
-   block's height instead of setting a taller row under it, and the tighter
-   rhythm keeps the daily card and the collection closer to the first screen. */
+/* Keep the roomy phone hero: the description starts at the cover's top edge
+   so the headline no longer strands an empty band above it. */
 @media (max-width: 719px) {
-  .home-hero {
-    row-gap: 12px;
-    margin-top: 16px;
-  }
-
-  .home-kicker { margin-bottom: 10px; }
-  .home-hero h1 { font-size: clamp(34px, 10.6vw, 58px); }
+  .home-hero { margin-top: clamp(24px, 4.8vh, 48px); }
   .home-body { align-self: start; }
-  .home-sub { margin-top: 11px; }
-  .home-ctas { margin-top: 12px; }
-  .home-promises { margin-top: 11px; }
-
-  .home-hero-art {
-    display: flex;
-    flex-direction: column;
-    align-self: stretch;
-  }
-
-  .home-six {
-    flex: 1 1 auto;
-    min-height: 120px;
-    aspect-ratio: auto;
-  }
 }
 
 @media (max-width: 559px) {
@@ -1091,13 +1069,16 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-hero {
     grid-template-columns: minmax(0, 1fr) 92px;
     column-gap: 13px;
+    row-gap: 16px;
+    margin-top: 24px;
   }
 
-  .home-sub { font-size: 12.5px; }
-  .home-ctas { gap: 7px; }
+  .home-hero h1 { font-size: clamp(38px, 12.4vw, 47px); }
+  .home-sub { margin-top: 14px; font-size: 12.5px; }
+  .home-ctas { margin-top: 15px; gap: 7px; }
   .home-cta { gap: 9px; min-height: 43px; padding: 0 11px; font-size: 9px; }
   .home-surprise { width: 43px; min-width: 43px; min-height: 43px; }
-  .home-promises { font-size: 7.5px; letter-spacing: 0.04em; gap: 2px 6px; }
+  .home-promises { margin-top: 13px; font-size: 7.5px; letter-spacing: 0.04em; gap: 2px 6px; }
   .home-promises span + span::before { margin-right: 5px; }
   .home-six { gap: 4px; }
   .home-six-piece { padding: 0 6px 5px; border-radius: 7px; font-size: 7px; }
