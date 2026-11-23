@@ -418,10 +418,11 @@ test('the gauntlet entry and run fit 320px', async ({ page }) => {
   await expectNoClippedText(page, 'gauntlet run at 320px', '#badges');
 });
 
-// Every translated locale at 320px: the entry, the run panel and the profile
-// summary have to stay inside their cards, and the mirrored parts have to keep
-// their inline order. A rule that loses `direction` still looks harmless, so
-// the order is measured with bounding boxes rather than read off the DOM.
+// Every translated locale at 320px: the daily card, the run panel and the
+// profile summary have to stay inside their cards, and the mirrored parts have
+// to keep their inline order. A rule that loses `direction` still looks
+// harmless, so the order is measured with bounding boxes rather than read off
+// the DOM.
 const LAYOUT_LOCALES = [
   { locale: 'es', dir: 'ltr', daily: 'Ronda 4 de 6', round: 'Ronda 4 / 6', runs: '12' },
   { locale: 'fr', dir: 'ltr', daily: 'Manche 4 sur 6', round: 'Manche 4 / 6', runs: '12' },
@@ -464,8 +465,8 @@ for (const layout of LAYOUT_LOCALES) {
     await expect(page.locator('#daily-gauntlet-note')).toContainText(layout.daily);
     await expectNoClippedText(
       page,
-      'daily gauntlet at 320px (' + layout.locale + ')',
-      '#daily-gauntlet'
+      'daily card at 320px (' + layout.locale + ')',
+      '#daily'
     );
 
     await page.locator('#hub-badges').click();
