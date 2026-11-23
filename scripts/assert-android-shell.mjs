@@ -664,6 +664,32 @@ try {
   // asserted before any check runs.
   await startAndProveLaunch();
 
+  // A fresh install opens the one-time welcome sheet. It is part of the app,
+  // but its card covers the page surface along the left edge, so the palette
+  // sample would read the sheet instead of the page. Dismiss it before
+  // asserting the settled hub a returning player sees. The sheet is delayed
+  // until after home-ready, so wait for that beat before deciding it is absent.
+  await wait(700);
+  const welcomeOpen = await evaluate(
+    "(() => { const sheet = document.getElementById('welcome');" +
+      " return Boolean(sheet && !sheet.hidden && !sheet.classList.contains('is-closing')); })()"
+  );
+  if (welcomeOpen) {
+    const started = await evaluate(
+      "(() => { const start = document.getElementById('welcome-start');" +
+        " if (!start) return 'the first-run welcome has no start button';" +
+        " start.click(); return ''; })()"
+    );
+    if (started) fail(started);
+    await until(
+      'the first-run welcome to close',
+      () => evaluate("Boolean(document.getElementById('welcome') && document.getElementById('welcome').hidden)"),
+      30000,
+      250
+    );
+    log('the first-run welcome is closed');
+  }
+
   const hub = await evaluate("Boolean(document.getElementById('hub'))");
   if (!hub) fail('the hub did not render after home-ready');
 
