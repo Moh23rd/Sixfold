@@ -1035,15 +1035,17 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 
 /* Keep the roomy phone hero: the description starts at the cover's top edge
    so the headline no longer strands an empty band above it, and the promise
-   row sits on the cover's foot instead of hovering above its caption. */
+   row sits on the cover's foot instead of hovering above its caption. The
+   leftover height is shared above and below the CTAs, so a short locale does
+   not leave the single-line promise row stranded far under the buttons. */
 @media (max-width: 719px) {
   .home-hero { margin-top: clamp(24px, 4.8vh, 48px); }
   .home-body {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     align-self: stretch;
-    grid-template-rows: auto auto 1fr;
+    justify-content: space-between;
   }
-  .home-promises { align-self: end; }
 }
 
 @media (max-width: 559px) {

@@ -4,8 +4,10 @@ const { LANGUAGE_NAMES, LOCALES, expectNoClippedText } = require('./helpers');
 // The phone hero is the whole first screen, so it has to fit without clipping
 // at both widths the design targets, the six-piece cover must stay below the
 // headline, and the promise row must sit on the cover's foot instead of
-// hovering above the caption. Daily Sixfold is checked on and off because
-// hiding the card changes what follows the hero, not the hero itself.
+// hovering above the caption. The leftover height is shared above and below
+// the CTAs, so the promise row cannot strand far under the buttons again.
+// Daily Sixfold is checked on and off because hiding the card changes what
+// follows the hero, not the hero itself.
 
 const WIDTHS = [
   { width: 357, height: 784 },
@@ -33,6 +35,8 @@ async function expectHeroLayout(page, locale, width, daily) {
     };
     return {
       title: rect('#hub-title'),
+      sub: rect('.home-sub'),
+      ctas: rect('.home-ctas'),
       promises: rect('.home-promises'),
       art: rect('.home-hero-art'),
       viewport: document.documentElement.clientWidth
@@ -45,6 +49,18 @@ async function expectHeroLayout(page, locale, width, daily) {
     Math.abs(boxes.promises.bottom - boxes.art.bottom),
     'the promise row meets the cover\'s foot'
   ).toBeLessThanOrEqual(1);
+
+  // The flex column shares the cover's leftover height between the two gaps.
+  // The promise row's own margin is a few pixels smaller than the CTAs', so
+  // the space below may be slightly tighter, never much larger. Eight pixels
+  // of tolerance leaves room for margins while catching the old layout, which
+  // dumped every spare pixel between the buttons and the promise row.
+  const gapAbove = boxes.ctas.top - boxes.sub.bottom;
+  const gapBelow = boxes.promises.top - boxes.ctas.bottom;
+  expect(
+    gapBelow,
+    'the promise row stays with the CTAs instead of stranding below them'
+  ).toBeLessThanOrEqual(gapAbove + 8);
 }
 
 for (const locale of LOCALES) {
