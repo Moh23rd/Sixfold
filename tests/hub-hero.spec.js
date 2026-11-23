@@ -2,8 +2,9 @@ const { test, expect } = require('@playwright/test');
 const { LANGUAGE_NAMES, LOCALES, expectNoClippedText } = require('./helpers');
 
 // The phone hero is the whole first screen, so it has to fit without clipping
-// at both widths the design targets, and the six-piece cover must stay below
-// the headline in every locale. Daily Sixfold is checked on and off because
+// at both widths the design targets, the six-piece cover must stay below the
+// headline, and the promise row must sit on the cover's foot instead of
+// hovering above the caption. Daily Sixfold is checked on and off because
 // hiding the card changes what follows the hero, not the hero itself.
 
 const WIDTHS = [
@@ -32,6 +33,7 @@ async function expectHeroLayout(page, locale, width, daily) {
     };
     return {
       title: rect('#hub-title'),
+      promises: rect('.home-promises'),
       art: rect('.home-hero-art'),
       viewport: document.documentElement.clientWidth
     };
@@ -39,6 +41,10 @@ async function expectHeroLayout(page, locale, width, daily) {
   expect(boxes.art.top, 'the cover starts below the headline').toBeGreaterThanOrEqual(boxes.title.bottom);
   expect(boxes.art.left, 'the cover stays inside the viewport').toBeGreaterThanOrEqual(0);
   expect(boxes.art.right, 'the cover stays inside the viewport').toBeLessThanOrEqual(boxes.viewport + 1);
+  expect(
+    Math.abs(boxes.promises.bottom - boxes.art.bottom),
+    'the promise row meets the cover\'s foot'
+  ).toBeLessThanOrEqual(1);
 }
 
 for (const locale of LOCALES) {

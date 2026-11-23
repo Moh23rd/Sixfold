@@ -1034,10 +1034,16 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 }
 
 /* Keep the roomy phone hero: the description starts at the cover's top edge
-   so the headline no longer strands an empty band above it. */
+   so the headline no longer strands an empty band above it, and the promise
+   row sits on the cover's foot instead of hovering above its caption. */
 @media (max-width: 719px) {
   .home-hero { margin-top: clamp(24px, 4.8vh, 48px); }
-  .home-body { align-self: start; }
+  .home-body {
+    display: grid;
+    align-self: stretch;
+    grid-template-rows: auto auto 1fr;
+  }
+  .home-promises { align-self: end; }
 }
 
 @media (max-width: 559px) {
