@@ -279,6 +279,7 @@
     button.type = 'button';
     button.className = 'gauntlet-run-action';
     button.dataset.gauntletStart = '';
+    button.dataset.fade = '';
     button.textContent = actionLabel(view);
     button.setAttribute('aria-label', button.textContent);
     return button;

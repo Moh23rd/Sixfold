@@ -533,12 +533,12 @@
             <svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
           </button>
         </div>
-        <div class="daily-gauntlet" id="daily-gauntlet" data-state="idle">
+        <div class="daily-gauntlet" id="daily-gauntlet" data-state="idle" data-fade>
           <span class="daily-gauntlet-copy">
             <span class="daily-gauntlet-title" id="daily-gauntlet-title">Daily Gauntlet</span>
             <span class="daily-gauntlet-note" id="daily-gauntlet-note">Six rounds. One run.</span>
           </span>
-          <button class="daily-gauntlet-action" id="daily-gauntlet-action" type="button" aria-label="Start the Daily Gauntlet">Start</button>
+          <button class="daily-gauntlet-action" id="daily-gauntlet-action" type="button" aria-label="Start the Daily Gauntlet" data-fade>Start</button>
         </div>
         <div class="daily-week" id="daily-week">
           <span class="daily-week-label">This week</span>
@@ -716,7 +716,7 @@
           <h2 class="profile-title" id="profile-gauntlet-title">Daily Gauntlet</h2>
           <p class="profile-note">Six rounds. One run.</p>
         </div>
-        <div class="gauntlet-run" id="gauntlet-run"></div>
+        <div class="gauntlet-run" id="gauntlet-run" data-fade></div>
         <div class="profile-gauntlet" id="profile-gauntlet"></div>
       </section>
     </div>
@@ -1430,7 +1430,7 @@
   <script src="js/daily.js?v=5.4.4"></script>
   <script src="js/profile.js?v=1.0.0"></script>
   <script src="js/badges.js?v=1.1.0"></script>
-  <script src="js/gauntlet.js?v=1.0.1"></script>
+  <script src="js/gauntlet.js?v=1.0.2"></script>
   <script src="js/update.js?v=5.1.0"></script>
   <script src="i18n/i18n-locale.js?v=5.4.6"></script>
   <script>

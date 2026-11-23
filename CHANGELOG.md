@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.33**.
+> Public release label: **v5.0**. Current development build: **6.0.34**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.33**
+Internal build: **6.0.34**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -45,6 +45,9 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **Leaving a round keeps its time**: crossing the round boundary now saves
   the accumulated active time, so a quick reload cannot fall back to the
   previous 10-second autosave.
+- **The new surfaces join the cross-fade**: the daily-card entry and the
+  badges run panel opt into the same appearance transition as the rest of the
+  app, so a light or dark switch does not cut on the gauntlet.
 - **A pinned run cannot resurrect an old date**: a round open across midnight
   still finishes into its run, but replaying an old archive day does not. After
   the date rolls over, the entry offers one action, start today's run.
