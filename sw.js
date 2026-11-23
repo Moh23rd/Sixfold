@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.35';
+const VERSION = 'sixfold-6.0.36';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -16,7 +16,7 @@ const ASSET = '5.0.0';
 // shared-baseline scripts, and an installed app must pick the new pulse up.
 const HAPTICS_JS = '5.0.1';
 const SHARE_CARD = '5.3.2';
-const STYLE_ASSET = '5.4.0';
+const STYLE_ASSET = '5.4.1';
 const FONT_ASSET = '5.0.0';
 const THEME_JS = '6.0.11';
 const OVERSCROLL_JS = '6.0.2';
@@ -122,9 +122,10 @@ const SHELL = [
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/icon-1024.png',
   './icons/icon-maskable-512.png',
-  './icons/icon-maskable-1024.png',
+  // The 1024px icons are install/manifest art, not shell UI. The manifest
+  // fetches them when needed; keeping the two largest files out of the
+  // offline shell leaves room for the restored six-tile art.
   './fonts/google-sans-flex.woff2?v=' + FONT_ASSET
 ];
 

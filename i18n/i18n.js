@@ -854,9 +854,6 @@
     document.documentElement.dir = RTL[locale] ? 'rtl' : 'ltr';
     // A detected locale is deliberately not persisted: it has to stay free to
     // follow the phone. Only bindLanguage() marks an explicit choice.
-    if (window.SixfoldLocale && window.SixfoldLocale.applyIcon) {
-      window.SixfoldLocale.applyIcon(locale);
-    }
   }
 
   // A CSS font can occasionally fail its first decode in a browser even though

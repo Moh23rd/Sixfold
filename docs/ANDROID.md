@@ -308,25 +308,10 @@ inside the launcher mask; `native:assets:android` therefore ends with
 `scripts/guard-adaptive-icon.mjs`. Run `npm run assets:guard` to verify without
 regenerating.
 
-The launcher carries locale-qualified resources for Arabic, Hindi, Kannada,
-Chinese and Japanese, but only as transparent foreground layers:
-
-- `mipmap-{locale}-<density>/ic_launcher_foreground.png` supplies the localized
-  numeral.
-
-The default `mipmap-anydpi-v26` adaptive XML references
-`@mipmap/ic_launcher_foreground`, so Android resolves the localized foreground
-from the device language while applying the launcher's own mask. There are no
-locale full/round PNGs and no locale adaptive XMLs. API 24–25 has no localized
-launcher icon and uses the default icon.
-
-Do not add locale launcher PNGs or locale adaptive XMLs back. A locale-qualified
-density `ic_launcher.png` would beat the default adaptive icon on API 26+
-because Android matches the locale before the version, which is the failure the
-foreground-only layout prevents. The guard rejects any locale `ic_launcher*`
-PNG/XML other than `ic_launcher_foreground.png`. Android resolves the
-foreground from the device language, not the in-app picker, and a launcher may
-cache the icon until it restarts.
+The launcher icon is static: one six-tile mark for every language. The default
+`mipmap-anydpi-v26` adaptive XML references `@mipmap/ic_launcher_foreground`,
+and there are no locale-qualified mipmap directories. The guard rejects any
+such directory so the icon cannot start following the device language again.
 
 ## Troubleshooting
 

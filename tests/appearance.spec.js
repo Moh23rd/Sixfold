@@ -452,3 +452,25 @@ test('the page colour lands while the content is still fading', async ({ page })
   expect(state.body, 'the body is already on the new page colour').toBe(state.page);
   expect(state.hub, 'the hub is already on the new page colour').toBe(state.page);
 });
+
+test('the about sheet paints its blur before the card enters', async ({ page }) => {
+  await page.goto('/?perf=full');
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.locator('#hub-about').click();
+
+  const backdrop = await page.locator('#about .sheet-backdrop').evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      opacity: style.opacity,
+      transition: style.transitionProperty,
+      filter: style.webkitBackdropFilter || style.backdropFilter
+    };
+  });
+
+  // The blur must be in the first painted frame. Animating the scrim's
+  // opacity leaves the backdrop-filter visibly late on a phone GPU.
+  expect(backdrop.opacity).toBe('1');
+  expect(backdrop.transition).toBe('none');
+  expect(backdrop.filter).toContain('blur(3px)');
+});

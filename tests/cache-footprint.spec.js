@@ -14,8 +14,8 @@ const I18N_VERSION = workerConstant('I18N_CODE');
 const WORDLE_VERSION = workerConstant('WORDLE_CODE');
 const FONT_VERSION = workerConstant('LOCALE_FONT');
 
-// The shell is about 1.37 MiB. The largest localized install is Arabic at
-// roughly 1.62 MiB; 2 MiB leaves room for normal asset updates but fails
+// The shell is about 1.40 MiB. The largest localized install is Arabic at
+// roughly 1.70 MiB; 2 MiB leaves room for normal asset updates but fails
 // before another script face or dictionary can silently double storage.
 const MAX_LOCALE_BYTES = 2 * 1024 * 1024;
 

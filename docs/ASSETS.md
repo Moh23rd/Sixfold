@@ -1,9 +1,8 @@
 # Asset builds
 
 The app ships three kinds of generated art: the rounded UI font, the iOS launch
-images, and the script-numeral icon variants. The Android adaptive icon has a
-guard because its generator changes the XML in a way that silently shrinks the
-art.
+images, and the Android launcher art. The Android adaptive icon has a guard
+because its generator changes the XML in a way that silently shrinks the art.
 
 Run all commands from the repository root. The generators need Node 22 and the
 Playwright browser already used by the tests; the font build needs Python 3.
@@ -74,59 +73,19 @@ wordmark, and the same geometry at every size:
 | Dark | background `#1a1918`, ink `#f1eae0`, rule `#42403c` |
 
 The startup links use `?v=4.0.1`. Bump that suffix if the images change.
-`assets/icon.png` remains the Android generator source; it is the numeral 6,
-not the iOS splash tile.
+`assets/icon.png` remains the Android generator source; it is the six-tile
+mark, not the iOS splash tile.
 
-## Language icon variants
+## Launcher icon
 
-The browser favicon and Apple touch icon change with the active language, and
-the Android launcher has locale-qualified resources:
+The browser favicon, Apple touch icon and Android launcher all use one static
+six-tile mark. There is no per-language icon and no `applyIcon` browser path.
+The web links use `?v=4.2.1`; change that suffix when the art changes.
 
-| Locale | Numeral | Rounded face |
-| --- | --- | --- |
-| Arabic | ٦ | Baloo Bhaijaan 2 800 |
-| Hindi | ६ | Baloo 2 800 |
-| Kannada | ೬ | Baloo Tamma 2 800 |
-| Chinese (both) / Japanese | 六 | M PLUS Rounded 1c 800 |
-| Korean, English, others | 6 | Google Sans Flex 800 |
-
-The script faces are display choices, not the UI face. The resource bundles
-keep the existing script faces for body copy.
-
-Rebuild:
-
-```sh
-node scripts/build-language-icons.mjs
-```
-
-The script requests a one-glyph `text=` subset from Google Fonts for each
-display face, draws the numeral on the same tile and ratios as the default
-icon, and writes:
-
-- `icons/icon-{180,192,512}-{ar,hi,kn,han}.png` for the web.
-- `android/app/src/main/res/mipmap-{ar,hi,kn,zh,ja}-<density>/ic_launcher_foreground.png`
-  as transparent localized foregrounds. `zh` and `ja` share the Han art.
-
-The default Latin art stays in `icons/icon-*.png` and `mipmap-*`. The browser
-mapping lives in `i18n/i18n-locale.js` (`applyIcon`), with the icon URLs at
-`?v=4.2.0`. Android resolves the localized foreground against the **device**
-locale, so the in-app language picker does not repaint a launcher icon that is
-already installed. A launcher may also cache the icon until it is restarted.
-There is no native iOS project here, so only the web `apple-touch-icon` can
-change; a native iOS alternate icon would need an Xcode asset catalog and
-`setAlternateIconName`.
-
-Localized launcher art is foreground-only. The default `mipmap-anydpi-v26`
-adaptive icon references `@mipmap/ic_launcher_foreground`, so Android resolves
-the localized transparent foreground while keeping the default mask. There are
-no locale full/round PNGs and no locale adaptive XMLs; API 24–25 uses the
-default icon. Do not add either back: a locale-qualified density PNG can beat
-the default adaptive icon on API 26+ because Android matches the locale before
-the version.
-
-The generated localized foregrounds are checked in. The generator fetches the
-font subsets at build time rather than vendoring the display fonts, so no extra
-font binaries enter the app bundle.
+`assets/icon.png` remains the Android generator source. The default
+`mipmap-<density>` and `mipmap-anydpi-v26` resources are generated from it.
+Keep the icon static: do not add locale-qualified `mipmap-*` directories or
+locale-suffixed web icon files.
 
 ## Adaptive icon guard
 
@@ -142,15 +101,14 @@ canonicalises the default adaptive XML back to the full-bleed layers:
 ```
 
 `npm run native:assets:android` now ends with the guard, so a generated icon
-cannot keep the insets. It also verifies the opaque `#1a1918` background
-resource, the default layer sizes, and the five locale foreground sets. It
-rejects any locale launcher PNG/XML other than `ic_launcher_foreground.png`,
-including a locale adaptive directory, so a full icon cannot return and
-override the default adaptive icon on API 26+.
+cannot keep the insets. It also verifies the `#f6f1e8` background
+resource and the default layer sizes, and rejects any locale-qualified
+`mipmap-*` directory so the launcher icon cannot start following the device
+language again.
 
 ```sh
 npm run native:assets      # regenerate, repair, verify
-npm run assets:guard       # verify only; exits non-zero on an inset
+npm run assets:guard       # verify only; exits non-zero on an inset or locale directory
 ```
 
 The checked-in background and foreground PNGs are separate layers; do not

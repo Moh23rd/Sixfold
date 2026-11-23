@@ -17,18 +17,6 @@
     hi: BASE + 'i18n-hi.js', kn: BASE + 'i18n-kn.js', ar: BASE + 'i18n-ar.js'
   };
 
-  // The app icon carries the language's own numeral. Korean uses Western
-  // digits in the interface, so it keeps the Latin mark.
-  var ICONS = {
-    ar: 'ar',
-    hi: 'hi',
-    kn: 'kn',
-    'zh-Hans': 'han',
-    'zh-Hant': 'han',
-    ja: 'han'
-  };
-  var ICON_VERSION = '4.2.0';
-
   function normalize(tag) {
     var value = String(tag || '').toLowerCase().replace(/_/g, '-');
     if (!value) return '';
@@ -78,20 +66,6 @@
     return device();
   }
 
-  function applyIcon(locale) {
-    var variant = ICONS[locale] || '';
-    var suffix = variant ? '-' + variant : '';
-    var root = document.documentElement;
-    root.dataset.icon = variant || 'latin';
-    function set(selector, file) {
-      var link = document.querySelector(selector);
-      if (link) link.setAttribute('href', file + '?v=' + ICON_VERSION);
-    }
-    set('link[rel="icon"][sizes="192x192"]', 'icons/icon-192' + suffix + '.png');
-    set('link[rel="icon"][sizes="512x512"]', 'icons/icon-512' + suffix + '.png');
-    set('link[rel="apple-touch-icon"]', 'icons/icon-180' + suffix + '.png');
-  }
-
   function assets(locale) {
     return CATALOG[locale] ? [PATTERNS, CATALOG[locale]] : [];
   }
@@ -105,7 +79,6 @@
     device: device,
     detect: detect,
     isExplicit: isExplicit,
-    applyIcon: applyIcon,
     assets: assets
   };
 })();

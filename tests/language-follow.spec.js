@@ -30,7 +30,12 @@ async function open(browser, { locale, entries = {} } = {}) {
   await page.goto('/');
   await expect(page.locator('#boot-splash')).toBeHidden();
   await expect(page.locator('html')).toHaveClass(/home-ready/);
-  await expect(page.locator('html')).toHaveAttribute('data-icon', /.+/);
+  // The favicon is static; language selection must not rewrite these links.
+  await expect(page.locator('link[rel="icon"][sizes="192x192"]'))
+    .toHaveAttribute('href', 'icons/icon-192.png?v=4.2.1');
+  await expect(page.locator('link[rel="apple-touch-icon"]'))
+    .toHaveAttribute('href', 'icons/icon-180.png?v=4.2.1');
+  expect(await page.locator('html').getAttribute('data-icon')).toBeNull();
   return { context, page };
 }
 
@@ -39,33 +44,27 @@ test('a fresh install takes the phone language and does not freeze it', async ({
   try {
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.locator('html')).toHaveAttribute('data-icon', 'ar');
-    await expect(page.locator('link[rel="icon"][sizes="192x192"]'))
-      .toHaveAttribute('href', 'icons/icon-192-ar.png?v=4.2.0');
-    await expect(page.locator('link[rel="apple-touch-icon"]'))
-      .toHaveAttribute('href', 'icons/icon-180-ar.png?v=4.2.0');
     expect(await page.evaluate((key) => localStorage.getItem(key), KEY)).toBeNull();
   } finally {
     await context.close();
   }
 });
 
-for (const [device, lang, dir, icon] of [
-  ['hi-IN', 'hi', 'ltr', 'hi'],
-  ['kn-IN', 'kn', 'ltr', 'kn'],
-  ['zh-TW', 'zh-Hant', 'ltr', 'han'],
-  ['zh-CN', 'zh-Hans', 'ltr', 'han'],
-  ['ja-JP', 'ja', 'ltr', 'han'],
-  ['ko-KR', 'ko', 'ltr', 'latin'],
-  ['de-AT', 'de', 'ltr', 'latin'],
-  ['pt-PT', 'pt-BR', 'ltr', 'latin']
+for (const [device, lang, dir] of [
+  ['hi-IN', 'hi', 'ltr'],
+  ['kn-IN', 'kn', 'ltr'],
+  ['zh-TW', 'zh-Hant', 'ltr'],
+  ['zh-CN', 'zh-Hans', 'ltr'],
+  ['ja-JP', 'ja', 'ltr'],
+  ['ko-KR', 'ko', 'ltr'],
+  ['de-AT', 'de', 'ltr'],
+  ['pt-PT', 'pt-BR', 'ltr']
 ]) {
   test('device ' + device + ' resolves to ' + lang, async ({ browser }) => {
     const { context, page } = await open(browser, { locale: device });
     try {
       await expect(page.locator('html')).toHaveAttribute('lang', lang);
       await expect(page.locator('html')).toHaveAttribute('dir', dir);
-      await expect(page.locator('html')).toHaveAttribute('data-icon', icon);
       expect(await page.evaluate((key) => localStorage.getItem(key), KEY)).toBeNull();
     } finally {
       await context.close();
@@ -78,7 +77,6 @@ test('a legacy auto-saved locale is migrated back to the phone', async ({ browse
   try {
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), KEY)).toBeNull();
-    await expect(page.locator('html')).toHaveAttribute('data-icon', 'ar');
   } finally {
     await context.close();
   }
@@ -92,7 +90,6 @@ test('an explicit picker choice survives a different phone language', async ({ b
   try {
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     expect(await page.evaluate((key) => localStorage.getItem(key), KEY)).toBe('fr');
-    await expect(page.locator('html')).toHaveAttribute('data-icon', 'latin');
   } finally {
     await context.close();
   }
@@ -135,7 +132,6 @@ test('a phone language change while open reloads into the new language', async (
       window.dispatchEvent(new Event('languagechange'));
     });
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-    await expect(page.locator('html')).toHaveAttribute('data-icon', 'latin');
     expect(await page.evaluate((key) => localStorage.getItem(key), KEY)).toBeNull();
   } finally {
     await context.close();

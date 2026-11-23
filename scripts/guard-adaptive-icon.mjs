@@ -2,15 +2,11 @@
 // capacitor-assets wraps the adaptive-icon layers in a 16.7% <inset> on every
 // run, which shrinks the art inside the launcher mask. This guard runs after
 // the generator: it rewrites the default adaptive XML back to the canonical
-// full-bleed layers and verifies the default PNGs and five locale foreground
-// sets at the expected sizes.
+// full-bleed layers and verifies the default PNGs at the expected sizes.
 //
-// Localized launcher art is foreground-only. The default mipmap-anydpi-v26
-// adaptive icon references @mipmap/ic_launcher_foreground, which Android
-// resolves per locale, so the mask is always the default adaptive mask. Any
-// locale full/round ic_launcher*.png or locale XML would reintroduce an icon
-// that can beat or duplicate the adaptive resource; the guard rejects both.
-// API 24–25 uses the default icon because no locale full/round resources exist.
+// The launcher icon is static. A locale-qualified mipmap directory would let
+// Android replace the icon from the device language, so the guard rejects any
+// mipmap directory other than the default density buckets and anydpi-v26.
 //
 //   node scripts/guard-adaptive-icon.mjs          # repair, then verify
 //   node scripts/guard-adaptive-icon.mjs --check  # verify only, fail on inset
@@ -31,7 +27,15 @@ const DENSITIES = [
   ['xxhdpi', 144, 324],
   ['xxxhdpi', 192, 432]
 ];
-const LOCALE_QUALIFIERS = ['ar', 'hi', 'kn', 'zh', 'ja'];
+const DEFAULT_QUALIFIERS = new Set([
+  'anydpi-v26',
+  'ldpi',
+  'mdpi',
+  'hdpi',
+  'xhdpi',
+  'xxhdpi',
+  'xxxhdpi'
+]);
 const XML = [
   'mipmap-anydpi-v26/ic_launcher.xml',
   'mipmap-anydpi-v26/ic_launcher_round.xml'
@@ -82,8 +86,8 @@ for (const relative of XML) {
 }
 
 const colors = path.join(RES, 'values/ic_launcher_background.xml');
-if (!fs.existsSync(colors) || !/#1a1918/i.test(fs.readFileSync(colors, 'utf8'))) {
-  fail('values/ic_launcher_background.xml must be #1a1918');
+if (!fs.existsSync(colors) || !/#f6f1e8/i.test(fs.readFileSync(colors, 'utf8'))) {
+  fail('values/ic_launcher_background.xml must be #f6f1e8');
 }
 
 for (const [density, legacy, foreground] of DENSITIES) {
@@ -106,39 +110,13 @@ for (const [density, legacy, foreground] of DENSITIES) {
   }
 }
 
-for (const qualifier of LOCALE_QUALIFIERS) {
-  // Only transparent foregrounds may be locale-qualified. Reject a locale
-  // full/round PNG, a locale adaptive XML, or any other launcher resource in
-  // these directories before it can override the default adaptive icon.
-  for (const entry of fs.readdirSync(RES)) {
-    if (!entry.startsWith('mipmap-' + qualifier + '-')) continue;
-    const dir = path.join(RES, entry);
-    if (!fs.statSync(dir).isDirectory()) continue;
-    if (entry.endsWith('-anydpi-v26')) {
-      fail(entry + ' must not exist; localized launcher art is foreground-only');
-      continue;
-    }
-    for (const name of fs.readdirSync(dir)) {
-      if (name === 'ic_launcher_foreground.png') continue;
-      if (/^ic_launcher.*\.(png|xml)$/i.test(name)) {
-        fail(entry + '/' + name + ' must not exist; only the locale foreground may be localized');
-      }
-    }
-  }
-
-  for (const [density, , foreground] of DENSITIES.filter(([name]) => name !== 'ldpi')) {
-    const dir = path.join(RES, 'mipmap-' + qualifier + '-' + density);
-    const file = path.join(dir, 'ic_launcher_foreground.png');
-    if (!fs.existsSync(file)) {
-      fail('mipmap-' + qualifier + '-' + density + '/ic_launcher_foreground.png is missing');
-      continue;
-    }
-    const actual = pngSize(file);
-    if (!actual || actual.width !== foreground || actual.height !== foreground) {
-      fail('mipmap-' + qualifier + '-' + density + '/ic_launcher_foreground.png should be ' + foreground + 'px square');
-    }
+for (const entry of fs.readdirSync(RES)) {
+  if (!entry.startsWith('mipmap-')) continue;
+  const qualifier = entry.slice('mipmap-'.length);
+  if (!DEFAULT_QUALIFIERS.has(qualifier)) {
+    fail(entry + ' is locale-qualified; the launcher icon is static');
   }
 }
 
 if (failed) process.exit(1);
-console.log('adaptive icon guard: default adaptive XML is inset-free; default layers and 5 locale foreground sets are present; only locale foreground PNGs are localized');
+console.log('adaptive icon guard: default adaptive XML is inset-free; default layers are present; no locale-qualified launcher resources');

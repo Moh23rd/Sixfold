@@ -40,7 +40,7 @@ npm run test:death-report # Android launch death report, from recorded buffers
 
 The Android shell lives in `android/`; build and distribution notes are in
 [docs/ANDROID.md](docs/ANDROID.md). Reproducible font, iOS launch image,
-language icon and adaptive-icon builds are in [docs/ASSETS.md](docs/ASSETS.md).
+launcher-art and adaptive-icon builds are in [docs/ASSETS.md](docs/ASSETS.md).
 [docs/](docs/) also holds the 6.0 roadmap and the Wordle audit and source
 manifest.
 

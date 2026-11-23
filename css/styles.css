@@ -1390,36 +1390,40 @@ body {
 }
 
 /* Sheets use the same language: a soft scrim and a card that rises, then
-   leaves the same way instead of disappearing between frames. */
+   leaves the same way instead of disappearing between frames. The blur is
+   kept out of the opacity transition: a backdrop-filter inside a fading
+   layer is rasterised late on phone GPUs, which made the sheet look as if it
+   was waiting a beat before it blurred. The scrim is fully painted on open;
+   only the card enters, and the scrim fades on close. */
 .sheet {
-  opacity: 0;
+  opacity: 1;
   visibility: hidden;
-  transition: opacity 260ms var(--ease-out), visibility 260ms;
 }
 
-.sheet.is-open {
+.sheet.is-open,
+.sheet.is-closing {
   opacity: 1;
   visibility: visible;
 }
 
 .sheet.is-closing {
-  opacity: 0;
-  visibility: hidden;
   pointer-events: none;
 }
 
 .sheet-backdrop {
   animation: none;
   opacity: 0;
-  transition: opacity 260ms var(--ease-out);
+  transition: opacity 220ms var(--ease-out);
 }
 
 .sheet.is-open .sheet-backdrop {
   opacity: 1;
+  transition: none;
 }
 
 .sheet.is-closing .sheet-backdrop {
   opacity: 0;
+  transition: opacity 220ms var(--ease-out);
 }
 
 .sheet-card {
