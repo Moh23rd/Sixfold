@@ -134,6 +134,8 @@
     "Try again": "Réessayer",
     "Save image": "Enregistrer l’image",
     "Saved to your gallery.": "Enregistré dans votre galerie.",
+    "Image downloaded.": "Image téléchargée.",
+    "Full screen": "Plein écran",
     "Couldn’t save the image.": "Impossible d’enregistrer l’image.",
     "New game": "Nouvelle partie",
     "Tip: park your biggest tile in a corner.": "Astuce : gardez votre plus grande tuile dans un coin.",

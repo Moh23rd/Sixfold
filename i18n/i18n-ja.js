@@ -138,6 +138,8 @@
     "Try again": "もう一度",
     "Save image": "画像を保存",
     "Saved to your gallery.": "ギャラリーに保存しました。",
+    "Image downloaded.": "画像をダウンロードしました。",
+    "Full screen": "全画面表示",
     "Couldn’t save the image.": "画像を保存できませんでした。",
     "New game": "新しいゲーム",
     "Tip: park your biggest tile in a corner.": "ヒント：一番大きいタイルを角に置きましょう。",

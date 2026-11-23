@@ -85,7 +85,7 @@ async function saveCard(page, card) {
   return { name: download.suggestedFilename(), size, shareCalls };
 }
 
-test('every game saves its PNG to the gallery instead of opening a share sheet', async ({ page }) => {
+test('every game downloads its PNG instead of opening a share sheet', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await openPage(page);
@@ -95,7 +95,7 @@ test('every game saves its PNG to the gallery instead of opening a share sheet',
     expect(result.shareCalls, card.title + ' should not call navigator.share').toBe(0);
     expect(result.name, card.title + ' saved file name').toBe(card.fileName);
     expect(result.size, card.title + ' saved a non-empty PNG').toBeGreaterThan(1000);
-    await expect(page.locator('#toast')).toHaveText('Saved to your gallery.');
+    await expect(page.locator('#toast')).toHaveText('Image downloaded.');
   }
 
   expect(pageErrors).toEqual([]);

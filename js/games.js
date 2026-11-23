@@ -7,6 +7,10 @@
     return window.SixfoldI18n ? window.SixfoldI18n.t(value) : value;
   }
 
+  function isNativeShell() {
+    return Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+
   const $ = function (id) { return document.getElementById(id); };
   const $$ = function (selector) { return Array.from(document.querySelectorAll(selector)); };
 
@@ -100,7 +104,10 @@
       return;
     }
     window.MergeShareCard.save(file).then(function (saved) {
-      toast(localize(saved ? 'Saved to your gallery.' : 'Couldn’t save the image.'));
+      const message = saved
+        ? (isNativeShell() ? 'Saved to your gallery.' : 'Image downloaded.')
+        : 'Couldn’t save the image.';
+      toast(localize(message));
     });
   }
 
@@ -1598,8 +1605,9 @@
 
     function restore() {
       const saved = load(STATE_KEY, null);
-      if (saved && Number.isInteger(saved.level) && Array.isArray(saved.tubes) &&
-          saved.tubes.length === LEVELS[saved.level]?.tubes.length &&
+      const savedLevel = saved && Number.isInteger(saved.level) ? LEVELS[saved.level] : null;
+      if (savedLevel && Array.isArray(saved.tubes) &&
+          saved.tubes.length === savedLevel.tubes.length &&
           saved.tubes.every(function (tube) { return Array.isArray(tube) && tube.length <= CAP; })) {
         level = saved.level;
         tubes = saved.tubes.map(function (tube) {

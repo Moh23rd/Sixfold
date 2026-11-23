@@ -107,7 +107,44 @@ html[data-theme="dark"] {
 
 .hub-share:active { transform: scale(0.95); }
 
+.hub-focus {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid var(--home-rule);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.hub-focus[hidden] { display: none; }
+
+.hub-focus svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.hub-focus .focus-exit { display: none; }
+.hub-focus[aria-pressed="true"] .focus-enter { display: none; }
+.hub-focus[aria-pressed="true"] .focus-exit { display: block; }
+
+.hub-focus:hover {
+  transform: none;
+  border-color: var(--ink);
+  background: var(--home-faint);
+}
+
+.hub-focus:active { transform: scale(0.95); }
+
 .hub-share:focus-visible,
+.hub-focus:focus-visible,
 .hub-look:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
@@ -1072,6 +1109,7 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .hub-mark { width: 29px; height: 29px; }
   .hub-actions { gap: 5px; }
   .hub-share { width: 36px; height: 36px; }
+  .hub-focus { width: 36px; height: 36px; }
   .hub-look { min-height: 36px; padding: 0 7px; }
 
   .home-hero {

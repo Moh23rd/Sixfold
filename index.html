@@ -95,7 +95,7 @@
       var link = document.createElement('link');
       link.rel = 'manifest';
       link.id = 'manifest-link';
-      link.href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=6.0.37';
+      link.href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=6.0.38';
       document.head.appendChild(link);
 
       // Capture Chrome's install event early enough that the Help panel can
@@ -361,7 +361,7 @@
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.0" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/styles.css?v=5.4.1" />
   <link rel="stylesheet" href="css/games.css?v=5.3.6" />
-  <link rel="stylesheet" href="css/home.css?v=4.1.7" />
+  <link rel="stylesheet" href="css/home.css?v=4.1.8" />
   <link rel="stylesheet" href="css/polish.css?v=4.0.4-w21" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.4" />
   <link rel="stylesheet" href="css/v5.css?v=5.6.1" />
@@ -422,6 +422,10 @@
         <div class="hub-actions">
           <button class="hub-share" id="hub-share" type="button" aria-label="Save image" title="Save image" data-fade>
             <svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
+          </button>
+          <button class="hub-focus" id="home-focus-toggle" type="button" aria-pressed="false" aria-label="Full screen" title="Full screen" data-fade>
+            <svg class="focus-enter" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <svg class="focus-exit" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </button>
           <button class="hub-look" id="appearance" type="button" aria-haspopup="dialog" aria-controls="sheet" data-fade>
             <span class="hub-look-dots" aria-hidden="true"><i data-fade></i><i data-fade></i><i data-fade></i></span>
@@ -1445,17 +1449,17 @@
   <script src="js/overscroll.js?v=6.0.2"></script>
   <script src="js/celebrate.js?v=5.0.0"></script>
   <script src="js/sharecard.js?v=5.3.2"></script>
-  <script src="js/theme.js?v=6.0.11"></script>
+  <script src="js/theme.js?v=6.0.12"></script>
   <script src="js/game.js?v=5.3.2"></script>
   <script src="js/install.js?v=5.0.0"></script>
   <script src="js/sudoku.js?v=5.3.1"></script>
-  <script src="js/games.js?v=5.4.2"></script>
+  <script src="js/games.js?v=5.4.3"></script>
   <script src="js/daily.js?v=5.4.4"></script>
   <script src="js/profile.js?v=1.0.0"></script>
   <script src="js/badges.js?v=1.1.0"></script>
   <script src="js/gauntlet.js?v=1.0.3"></script>
   <script src="js/update.js?v=5.1.0"></script>
-  <script src="i18n/i18n-locale.js?v=5.5.0"></script>
+  <script src="i18n/i18n-locale.js?v=5.5.1"></script>
   <script>
     // Only the active language pack is on the first-visit critical path. Every
     // other catalog is cached when its language is selected.
@@ -1466,7 +1470,7 @@
       });
     })();
   </script>
-  <script src="i18n/i18n.js?v=5.5.0"></script>
+  <script src="i18n/i18n.js?v=5.5.1"></script>
   <script src="js/native.js?v=5.1.5"></script>
   <script src="js/wordle-loader.js?v=5.3.1-wordle"></script>
   <script>

@@ -247,7 +247,7 @@
       link.id = 'manifest-link';
       document.head.appendChild(link);
     }
-    const href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=6.0.37';
+    const href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=6.0.38';
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
   }
 
@@ -458,6 +458,60 @@
       });
       wrap.appendChild(btn);
     });
+  }
+
+  /* ---------- fullscreen ---------- */
+
+  function fullscreenAvailable() {
+    return !!(root.requestFullscreen || root.webkitRequestFullscreen || root.webkitRequestFullScreen);
+  }
+
+  function fullscreenElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement || null;
+  }
+
+  function standaloneDisplay() {
+    try {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) ||
+        window.navigator.standalone === true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  const homeFocusBtn = document.getElementById('home-focus-toggle');
+  if (homeFocusBtn) {
+    if (!fullscreenAvailable() || isNativeShell() || standaloneDisplay()) {
+      homeFocusBtn.hidden = true;
+    } else {
+      const syncHomeFocus = function () {
+        homeFocusBtn.setAttribute('aria-pressed', String(!!fullscreenElement()));
+      };
+
+      const toggleHomeFocus = function () {
+        if (fullscreenElement()) {
+          const exit = document.exitFullscreen || document.webkitExitFullscreen || document.webkitCancelFullScreen;
+          if (!exit) return;
+          try {
+            const pending = exit.call(document);
+            if (pending && typeof pending.catch === 'function') pending.catch(function () {});
+          } catch (err) {}
+          return;
+        }
+        const request = root.requestFullscreen || root.webkitRequestFullscreen || root.webkitRequestFullScreen;
+        if (!request) return;
+        try {
+          const pending = request.call(root);
+          if (pending && typeof pending.catch === 'function') pending.catch(function () {});
+        } catch (err) {}
+      };
+
+      homeFocusBtn.addEventListener('click', toggleHomeFocus);
+      document.addEventListener('fullscreenchange', syncHomeFocus);
+      document.addEventListener('webkitfullscreenchange', syncHomeFocus);
+      syncHomeFocus();
+    }
   }
 
   /* ---------- sheet ---------- */

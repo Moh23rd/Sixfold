@@ -134,6 +134,8 @@
     "Try again": "Nochmal versuchen",
     "Save image": "Bild speichern",
     "Saved to your gallery.": "In deiner Galerie gespeichert.",
+    "Image downloaded.": "Bild heruntergeladen.",
+    "Full screen": "Vollbild",
     "Couldn’t save the image.": "Das Bild konnte nicht gespeichert werden.",
     "New game": "Neues Spiel",
     "Tip: park your biggest tile in a corner.": "Tipp: Halte deine größte Kachel in einer Ecke.",

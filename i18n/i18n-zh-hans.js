@@ -138,6 +138,8 @@
     "Try again": "再试一次",
     "Save image": "保存图片",
     "Saved to your gallery.": "已保存到相册。",
+    "Image downloaded.": "图片已下载。",
+    "Full screen": "全屏",
     "Couldn’t save the image.": "无法保存图片。",
     "New game": "新游戏",
     "Tip: park your biggest tile in a corner.": "提示：把最大的方块放在角落里。",

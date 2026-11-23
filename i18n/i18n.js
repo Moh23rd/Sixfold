@@ -156,6 +156,8 @@
     'Try again': 'Intentar de nuevo',
     'Save image': 'Guardar imagen',
     'Saved to your gallery.': 'Guardado en tu galería.',
+    'Image downloaded.': 'Imagen descargada.',
+    'Full screen': 'Pantalla completa',
     'Couldn’t save the image.': 'No se pudo guardar la imagen.',
     'New game': 'Nueva partida',
     'Tip: park your biggest tile in a corner.': 'Consejo: guarda tu ficha más grande en una esquina.',

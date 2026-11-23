@@ -138,6 +138,8 @@
     "Try again": "다시 시도",
     "Save image": "이미지 저장",
     "Saved to your gallery.": "갤러리에 저장했습니다.",
+    "Image downloaded.": "이미지를 다운로드했습니다.",
+    "Full screen": "전체 화면",
     "Couldn’t save the image.": "이미지를 저장하지 못했습니다.",
     "New game": "새 게임",
     "Tip: park your biggest tile in a corner.": "팁: 가장 큰 타일을 모서리에 두세요.",

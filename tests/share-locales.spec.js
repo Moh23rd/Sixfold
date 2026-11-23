@@ -106,14 +106,14 @@ test('share-card chrome and data follow every interface language', async ({ page
 });
 
 for (const locale of ['ar', 'hi', 'ja']) {
-  test('gallery-save feedback follows ' + LANGUAGE_NAMES[locale], async ({ page }) => {
+  test('save feedback follows ' + LANGUAGE_NAMES[locale], async ({ page }) => {
     await page.addInitScript((next) => {
       localStorage.setItem('sixfold.locale.v1', next);
     }, locale);
     await page.goto('/');
     await page.waitForFunction(() => window.MergeShare && window.MergeShare.result && window.MergeShareCard);
 
-    const copy = await page.evaluate(() => window.SixfoldI18n.t('Saved to your gallery.'));
+    const copy = await page.evaluate(() => window.SixfoldI18n.t('Image downloaded.'));
     const downloadPromise = page.waitForEvent('download');
     await page.evaluate((card) => {
       window.MergeShare.result(card.title, card.text, card.data);

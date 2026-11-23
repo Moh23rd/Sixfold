@@ -138,6 +138,8 @@
     "Try again": "फिर कोशिश करें",
     "Save image": "छवि सहेजें",
     "Saved to your gallery.": "आपकी गैलरी में सहेजा गया।",
+    "Image downloaded.": "छवि डाउनलोड हो गई।",
+    "Full screen": "पूर्ण स्क्रीन",
     "Couldn’t save the image.": "छवि सहेजी नहीं जा सकी।",
     "New game": "नया खेल",
     "Tip: park your biggest tile in a corner.": "संकेत: सबसे बड़ी टाइल को कोने में रखें।",

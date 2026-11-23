@@ -281,13 +281,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # API 24 and 26 system images bundle WebViews older than the app's
-          # JavaScript. They still prove the APK installs and the activity
-          # reaches its first paint; the WebView assertions run on 33 and 36.
+          # API 24's system WebView predates async/await. It still proves the
+          # APK installs and the activity reaches its first paint. API 26 and
+          # newer run the full WebView assertions.
           - api: 24
             launch_only: true
           - api: 26
-            launch_only: true
+            launch_only: false
           - api: 33
             launch_only: false
           - api: 36

@@ -138,6 +138,8 @@
     "Try again": "Tentar novamente",
     "Save image": "Salvar imagem",
     "Saved to your gallery.": "Salvo na sua galeria.",
+    "Image downloaded.": "Imagem baixada.",
+    "Full screen": "Tela cheia",
     "Couldn’t save the image.": "Não foi possível salvar a imagem.",
     "New game": "Novo jogo",
     "Tip: park your biggest tile in a corner.": "Dica: deixe a maior peça em um canto.",

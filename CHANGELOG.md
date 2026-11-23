@@ -1,13 +1,24 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.37**.
+> Public release label: **v5.0**. Current development build: **6.0.38**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.37**
+Internal build: **6.0.38**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
+
+### Web parity
+
+- **Browser fullscreen returns**: the hub offers a fullscreen toggle in a normal
+  browser tab, hidden in the edge-to-edge APK and an installed PWA where the
+  system already removes the browser chrome.
+- **Accurate web save feedback**: a browser reports “Image downloaded.” after a
+  result card is saved, while the Android shell keeps “Saved to your gallery.”
+- **API 26 WebView coverage**: the game shell no longer uses optional chaining,
+  so the API 26 emulator can run the full WebView assertions. API 24 remains
+  launch-only because its WebView predates async/await.
 
 ### Profile foundation
 

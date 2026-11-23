@@ -138,6 +138,8 @@
     "Try again": "حاول مرة أخرى",
     "Save image": "حفظ الصورة",
     "Saved to your gallery.": "تم الحفظ في معرض الصور.",
+    "Image downloaded.": "تم تنزيل الصورة.",
+    "Full screen": "ملء الشاشة",
     "Couldn’t save the image.": "تعذّر حفظ الصورة.",
     "New game": "لعبة جديدة",
     "Tip: park your biggest tile in a corner.": "نصيحة: ضع أكبر بلاطة في الزاوية.",

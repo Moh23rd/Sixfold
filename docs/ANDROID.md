@@ -26,7 +26,9 @@ behind `Capacitor.isNativePlatform()` or a missing-plugin guard, as haptics
 (`navigator.vibrate`), card saving (`<a download>`) and backup export (a normal
 download) already do. An APK-only change must not be the only way to reach a
 feature the web build already has, and a new native feature needs a browser
-fallback before it ships.
+fallback before it ships. In a browser tab the hub also offers a fullscreen
+toggle; it is hidden in the edge-to-edge APK and in an installed PWA, where the
+system already removes the browser chrome.
 
 ## Edge-to-edge and safe areas
 
@@ -226,9 +228,9 @@ an equivalent command when npm is available.
 
 After it passes, check that the home screen is visible, the header clears the
 status bar/cutout, the bottom controls clear the gesture bar, and one game can
-be opened and played. CI runs a launch check on API 24/26/33/36 and the full
-WebView assertions on 33/36; use a physical cutout device when native layout or
-system-bar behavior changes.
+be opened and played. CI installs and launches the APK on API 24, 26, 33 and
+36, and runs the full WebView assertions on 26/33/36; use a physical cutout
+device when native layout or system-bar behavior changes.
 
 ## CI verification
 
@@ -244,13 +246,12 @@ APK job, plus the native and emulator jobs, so an APK failure cannot be hidden
 by a green test shard.
 
 The emulator job now runs the installed APK through API **24, 26, 33 and 36**,
-one matrix entry per level. API 24 and 26 prove the APK installs and the
-activity reaches its first paint; their system images bundle WebViews older
-than the app's JavaScript, so they do not run the WebView assertions. API 33
-and 36 run the full shell checks, including the About sheet's first-frame paint
-trace, the device-side check for the delayed-blur regression. Each job
-downloads the signed APK from the Android job instead of rebuilding it, so all
-API levels install the same artifact.
+one matrix entry per level. API 24 proves the APK installs and the activity
+reaches its first paint; its WebView predates async/await, so it does not run
+the WebView assertions. API 26, 33 and 36 run the full shell checks, including
+the About sheet's first-frame paint trace, the device-side check for the
+delayed-blur regression. Each job downloads the signed APK from the Android job
+instead of rebuilding it, so all API levels install the same artifact.
 
 The launcher resources themselves remain audited in source (the static icon
 snapshots, adaptive-icon guard, and no-locale-mipmap check), because a launcher

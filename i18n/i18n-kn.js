@@ -138,6 +138,8 @@
     "Try again": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
     "Save image": "ಚಿತ್ರ ಉಳಿಸಿ",
     "Saved to your gallery.": "ನಿಮ್ಮ ಗ್ಯಾಲರಿಗೆ ಉಳಿಸಲಾಗಿದೆ.",
+    "Image downloaded.": "ಚಿತ್ರ ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ.",
+    "Full screen": "ಪೂರ್ಣ ಪರದೆ",
     "Couldn’t save the image.": "ಚಿತ್ರವನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
     "New game": "ಹೊಸ ಆಟ",
     "Tip: park your biggest tile in a corner.": "ಸಲಹೆ: ನಿಮ್ಮ ದೊಡ್ಡ ಟೈಲ್ ಅನ್ನು ಒಂದು ಮೂಲೆಯಲ್ಲಿ ನಿಲ್ಲಿಸಿ.",
