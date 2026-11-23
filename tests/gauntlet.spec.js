@@ -418,13 +418,22 @@ test('the gauntlet entry and run fit 320px', async ({ page }) => {
   await expectNoClippedText(page, 'gauntlet run at 320px', '#badges');
 });
 
-// Arabic and Hindi at 320px: the entry, the run panel and the profile summary
-// have to stay inside their cards, and the mirrored parts have to keep their
-// inline order. A rule that loses `direction` still looks harmless, so the
-// order is measured with bounding boxes rather than read off the DOM.
+// Every translated locale at 320px: the entry, the run panel and the profile
+// summary have to stay inside their cards, and the mirrored parts have to keep
+// their inline order. A rule that loses `direction` still looks harmless, so
+// the order is measured with bounding boxes rather than read off the DOM.
 const LAYOUT_LOCALES = [
-  { locale: 'ar', dir: 'rtl', daily: 'الجولة ٤ من ٦', round: 'الجولة ٤ / ٦', runs: '١٢' },
-  { locale: 'hi', dir: 'ltr', daily: 'राउंड ४ / ६', round: 'राउंड ४ / ६', runs: '१२' }
+  { locale: 'es', dir: 'ltr', daily: 'Ronda 4 de 6', round: 'Ronda 4 / 6', runs: '12' },
+  { locale: 'fr', dir: 'ltr', daily: 'Manche 4 sur 6', round: 'Manche 4 / 6', runs: '12' },
+  { locale: 'de', dir: 'ltr', daily: 'Runde 4 von 6', round: 'Runde 4 / 6', runs: '12' },
+  { locale: 'zh-Hans', dir: 'ltr', daily: '第 4 轮，共 6 轮', round: '第 4 / 6 轮', runs: '12' },
+  { locale: 'zh-Hant', dir: 'ltr', daily: '第 4 輪，共 6 輪', round: '第 4 / 6 輪', runs: '12' },
+  { locale: 'ja', dir: 'ltr', daily: '全 6 ラウンド中 4', round: 'ラウンド 4 / 6', runs: '12' },
+  { locale: 'ko', dir: 'ltr', daily: '6라운드 중 4라운드', round: '라운드 4 / 6', runs: '12' },
+  { locale: 'pt-BR', dir: 'ltr', daily: 'Rodada 4 de 6', round: 'Rodada 4 / 6', runs: '12' },
+  { locale: 'hi', dir: 'ltr', daily: 'राउंड ४ / ६', round: 'राउंड ४ / ६', runs: '१२' },
+  { locale: 'kn', dir: 'ltr', daily: 'ಸುತ್ತು ೪ / ೬', round: 'ಸುತ್ತು ೪ / ೬', runs: '೧೨' },
+  { locale: 'ar', dir: 'rtl', daily: 'الجولة ٤ من ٦', round: 'الجولة ٤ / ٦', runs: '١٢' }
 ];
 
 for (const layout of LAYOUT_LOCALES) {
@@ -436,19 +445,12 @@ for (const layout of LAYOUT_LOCALES) {
     await page.goto('/');
     const today = await page.evaluate(() => window.SixfoldDaily.todayKey());
     await seedOnce(page, {
-      'sixfold.gauntlet.v1': runState(
-        today,
-        3,
-        [60, 120, 180, 0, 0, 0],
-        ['merge', 'sudoku', 'ttt', 'water', 'mines', 'fruit']
-      ),
+      'sixfold.gauntlet.v1': runState(today, 3, [60, 120, 180, 0, 0, 0]),
       // A counted run gives both profile metrics a value, and the bests make
       // the game rows as wide as the real summary gets.
       'sixfold.profile.v1': JSON.stringify({
-        version: 1,
         gauntlet: {
           runs: 12,
-          bestRounds: 6,
           bestTime: 3725,
           last: { date: '2026-01-05', rounds: 6, seconds: 3725 }
         }
@@ -456,7 +458,6 @@ for (const layout of LAYOUT_LOCALES) {
       'merge2048.best': '123456',
       'merge-games.ttt.stats.v2': JSON.stringify({ wins: 98765 })
     });
-    await ready(page);
 
     await expect(page.locator('html')).toHaveAttribute('lang', layout.locale);
     await expect(page.locator('html')).toHaveAttribute('dir', layout.dir);
@@ -492,9 +493,9 @@ for (const layout of LAYOUT_LOCALES) {
     });
     // The first element of each pair sits at the inline start: on the right in
     // RTL, on the left in LTR.
-    const started = (first, second) => (layout.dir === 'rtl' ? first - second : second - first);
-    expect(started(boxes.status, boxes.time), 'the run status opens its header').toBeGreaterThan(0);
-    expect(started(boxes.index, boxes.copy), 'the round number opens its row').toBeGreaterThan(0);
-    expect(started(boxes.runs, boxes.best), 'the Runs metric comes first').toBeGreaterThan(0);
+    const inlineLead = (first, second) => (layout.dir === 'rtl' ? first - second : second - first);
+    expect(inlineLead(boxes.status, boxes.time), 'the run status opens its header').toBeGreaterThan(0);
+    expect(inlineLead(boxes.index, boxes.copy), 'the round number opens its row').toBeGreaterThan(0);
+    expect(inlineLead(boxes.runs, boxes.best), 'the Runs metric comes first').toBeGreaterThan(0);
   });
 }
