@@ -112,8 +112,8 @@ unchanged: there the layer is the only launch screen, and it keeps its hold so
 the progress rail finishes before the lift.
 
 Edge-to-edge needs a device or emulator check, especially around display
-cutouts and gesture navigation. Verify at least API 24, API 28, API 35 and
-API 36 before releasing an APK.
+cutouts and gesture navigation. CI covers API 24, 26, 33 and 36; a release
+visual check should still include a cutout device and gesture navigation.
 
 ## Checked-in Android project
 
@@ -226,8 +226,9 @@ an equivalent command when npm is available.
 
 After it passes, check that the home screen is visible, the header clears the
 status bar/cutout, the bottom controls clear the gesture bar, and one game can
-be opened and played. The full API 24/28/35/36 matrix is only needed when
-native layout or system-bar behavior changes.
+be opened and played. CI runs a launch check on API 24/26/33/36 and the full
+WebView assertions on 33/36; use a physical cutout device when native layout or
+system-bar behavior changes.
 
 ## CI verification
 
@@ -239,7 +240,22 @@ artifact for 14 days. Download it from the Actions run summary; no local SDK is
 required to verify a build.
 
 The required `check` job waits for both the Playwright matrix and the Android
-APK job, so an APK failure cannot be hidden by a green test shard.
+APK job, plus the native and emulator jobs, so an APK failure cannot be hidden
+by a green test shard.
+
+The emulator job now runs the installed APK through API **24, 26, 33 and 36**,
+one matrix entry per level. API 24 and 26 prove the APK installs and the
+activity reaches its first paint; their system images bundle WebViews older
+than the app's JavaScript, so they do not run the WebView assertions. API 33
+and 36 run the full shell checks, including the About sheet's first-frame paint
+trace, the device-side check for the delayed-blur regression. Each job
+downloads the signed APK from the Android job instead of rebuilding it, so all
+API levels install the same artifact.
+
+The launcher resources themselves remain audited in source (the static icon
+snapshots, adaptive-icon guard, and no-locale-mipmap check), because a launcher
+icon is rendered by the device launcher rather than by the app's WebView. A
+device language change therefore cannot regenerate it from a locale catalog.
 
 CI debug APKs are signed with a stable test key stored in repository Actions
 secrets (`ANDROID_TEST_KEYSTORE_BASE64`, `ANDROID_TEST_KEYSTORE_PASSWORD`,
@@ -291,16 +307,23 @@ source they downloaded it from.
 ## Native icons and splash
 
 The checked-in launcher and splash resources were generated from
-`assets/icon.png` using the existing app colours. To regenerate them after
-changing that source:
+`assets/icon.png` using the existing app colours. The launcher has a
+reproducible web/Android pipeline and hash snapshots; see
+[docs/ASSETS.md](ASSETS.md). To regenerate them after changing that source:
 
 ```sh
 npm run native:assets
+npm run assets:icons:check
 ```
 
 `native:assets` currently targets Android. The iOS launch images are checked in
 under `splash/` because this repository has no `ios/` project; see
 [docs/ASSETS.md](ASSETS.md) for the reproducible font, splash and icon builds.
+
+`native:assets:android` still runs `capacitor-assets` for the splash surfaces,
+then rebuilds the launcher from `assets/icon.png` so its generated insets or
+locale-qualified resources cannot survive. The static generator needs Python 3
+with Pillow; the CI snapshot check is Node-only and always runs.
 
 The adaptive icon is deliberately two full-bleed layers. `capacitor-assets`
 adds `<inset>` wrappers to the XML on each generation, which shrinks the mark
@@ -312,6 +335,8 @@ The launcher icon is static: one six-tile mark for every language. The default
 `mipmap-anydpi-v26` adaptive XML references `@mipmap/ic_launcher_foreground`,
 and there are no locale-qualified mipmap directories. The guard rejects any
 such directory so the icon cannot start following the device language again.
+There is no monochrome layer yet, so Android 13's themed-icon setting keeps the
+colored static mark rather than tinting a separately designed silhouette.
 
 ## Troubleshooting
 

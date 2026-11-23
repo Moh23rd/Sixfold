@@ -36,6 +36,9 @@ npm test                  # Playwright: layout, games, accessibility, offline ca
 npm run test:i18n         # catalogs and locale coverage
 npm run audit:wordle      # dictionary provenance and policy
 npm run test:death-report # Android launch death report, from recorded buffers
+npm run assets:icons:check # static launcher art and its pixel snapshots
+npm run assets:manifest:check # shell content hashes
+npm run test:cache-budget # shell bytes by asset class
 ```
 
 The Android shell lives in `android/`; build and distribution notes are in

@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
-// Internal build 6.0.0: 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.36';
+// 6.0 development baseline; the public release remains 5.0.
+const VERSION = 'sixfold-6.0.37';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -119,10 +119,10 @@ const SHELL = [
   './js/wordle-words.js?v=' + WORDLE_CODE,
   './i18n/wordle-i18n.js?v=' + WORDLE_CODE,
   './js/wordle.js?v=' + WORDLE_CODE,
-  './icons/icon-180.png',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-maskable-512.png',
+  './icons/icon-180.png?v=4.2.2',
+  './icons/icon-192.png?v=4.2.2',
+  './icons/icon-512.png?v=4.2.2',
+  './icons/icon-maskable-512.png?v=4.2.2',
   // The 1024px icons are install/manifest art, not shell UI. The manifest
   // fetches them when needed; keeping the two largest files out of the
   // offline shell leaves room for the restored six-tile art.

@@ -32,7 +32,8 @@ test('the launcher icon stays full-bleed and static', () => {
 
   const scripts = require('../package.json').scripts;
   expect(scripts['native:assets:android']).toContain('guard-adaptive-icon.mjs');
-  expect(scripts['assets:icons']).toBeUndefined();
+  expect(scripts['assets:icons']).toContain('build-static-icons.py');
+  expect(scripts['assets:icons']).toContain('--write');
   for (const size of [180, 192, 512, 1024]) {
     for (const locale of ['ar', 'hi', 'kn', 'han']) {
       expect(

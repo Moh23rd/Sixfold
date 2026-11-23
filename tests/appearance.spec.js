@@ -458,6 +458,7 @@ test('the about sheet paints its blur before the card enters', async ({ page }) 
   await page.waitForSelector('#daily');
   await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
   await page.locator('#hub-about').click();
+  await page.waitForFunction(() => window.__sixfoldSheetPaint && window.__sixfoldSheetPaint.sheet === 'about');
 
   const backdrop = await page.locator('#about .sheet-backdrop').evaluate((el) => {
     const style = getComputedStyle(el);
@@ -473,4 +474,10 @@ test('the about sheet paints its blur before the card enters', async ({ page }) 
   expect(backdrop.opacity).toBe('1');
   expect(backdrop.transition).toBe('none');
   expect(backdrop.filter).toContain('blur(3px)');
+
+  const paint = await page.evaluate(() => window.__sixfoldSheetPaint);
+  expect(paint.sheet).toBe('about');
+  expect(paint.ms).toBeGreaterThanOrEqual(0);
+  expect(paint.ms).toBeLessThan(1000);
+  expect(paint.filter).toContain('blur(3px)');
 });

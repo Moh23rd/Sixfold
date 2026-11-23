@@ -1,8 +1,10 @@
 # Asset builds
 
 The app ships three kinds of generated art: the rounded UI font, the iOS launch
-images, and the Android launcher art. The Android adaptive icon has a guard
-because its generator changes the XML in a way that silently shrinks the art.
+images, and the launcher mark. The launcher is generated from one master into
+every web size and Android density; its checked-in snapshots make a stale
+output visible. The Android adaptive icon has an additional guard because the
+legacy generator changes the XML in a way that silently shrinks the art.
 
 Run all commands from the repository root. The generators need Node 22 and the
 Playwright browser already used by the tests; the font build needs Python 3.
@@ -80,12 +82,28 @@ mark, not the iOS splash tile.
 
 The browser favicon, Apple touch icon and Android launcher all use one static
 six-tile mark. There is no per-language icon and no `applyIcon` browser path.
-The web links use `?v=4.2.1`; change that suffix when the art changes.
+The web links use `?v=4.2.2`; change that suffix when the art changes.
 
-`assets/icon.png` remains the Android generator source. The default
-`mipmap-<density>` and `mipmap-anydpi-v26` resources are generated from it.
+`assets/icon.png` is the single source. Rebuild the web favicons, maskable PWA
+art and every Android density from it:
+
+```sh
+python3 -m pip install pillow
+npm run assets:icons
+npm run assets:icons:check
+```
+
+`assets:icons` writes `icons/icon-{180,192,512,1024}.png`, the two maskable
+sizes, the Android legacy/round/foreground/background layers for all six
+densities, and `assets/icon-snapshots.json`. The snapshot records the source
+hash, byte size and SHA-256 of every output. `assets:icons:check` is the
+dependency-light guard CI runs; if the master changes without regenerating the
+outputs, it fails instead of letting two kinds of launcher art drift apart.
+
 Keep the icon static: do not add locale-qualified `mipmap-*` directories or
-locale-suffixed web icon files.
+locale-suffixed web icon files. `npm run native:assets:android` still uses
+`capacitor-assets` for the splash surfaces, then runs the static generator so
+the launcher cannot be replaced by a language-following or inset version.
 
 ## Adaptive icon guard
 
@@ -118,10 +136,56 @@ transparent outside the glyph.
 ## Checks
 
 ```sh
+npm run assets:icons:check
 npm run assets:guard
+npm run assets:manifest:check
+npm run test:cache-budget
 npm run test:i18n
 npm run native:check
 ```
 
-Focused Playwright coverage lives in `tests/adaptive-icon.spec.js` and
-`tests/language-follow.spec.js`.
+Focused Playwright coverage lives in `tests/static-icons.spec.js`,
+`tests/adaptive-icon.spec.js` and `tests/language-follow.spec.js`.
+
+## Shell content manifest
+
+`asset-manifest.json` records the SHA-256 and byte size of every file in the
+service-worker shell. The `?v=` suffixes in `index.html` and `sw.js` remain
+cache epochs; the manifest is the byte-level contract and catches a file that
+changed without a version bump.
+
+```sh
+npm run assets:manifest        # regenerate after an intentional shell change
+npm run assets:manifest:check  # verify every recorded byte
+```
+
+## Cache budgets
+
+`npm run test:cache-budget` classifies the raw shell by document, stylesheet,
+script, locale catalog, icon and font bytes and fails when a class or the whole
+shell crosses its budget. It prints the largest files in each class so the
+cause of a regression is visible without opening the report.
+
+## Cache footprint baselines
+
+The Playwright core shard records the installed Cache Storage footprint for
+all twelve locales. A normal run compares it with the latest successful
+artifact and fails when a locale grows by more than the larger of 24 KiB or
+1.5% of its previous footprint.
+
+An intentional growth needs a new baseline, not a quiet limit change. Record
+the current report with the reason and approver, then upload that file as the
+`locale-cache-footprints-*` artifact (or attach it to the approved review):
+
+```sh
+node scripts/rebaseline-cache-footprint.mjs \
+  --current test-results/<run>/locale-cache-footprints.json \
+  --output locale-cache-footprints-rebaselined.json \
+  --reason "Arabic catalog grew for the accessibility copy" \
+  --approved-by "release-review"
+```
+
+In GitHub Actions, dispatch **Test** with `rebaseline_reason` (and optionally
+`rebaseline_approved_by`) filled in. The core shard records the current report
+with that metadata and uploads it as the next baseline; the drift comparison is
+skipped for that approved run, then resumes against the new artifact.

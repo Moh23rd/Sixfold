@@ -247,7 +247,7 @@
       link.id = 'manifest-link';
       document.head.appendChild(link);
     }
-    const href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=6.0.0';
+    const href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=6.0.37';
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
   }
 
@@ -479,6 +479,7 @@
     // Commit the display change before the entering styles, so the card rises
     // rather than appearing on the same frame it is revealed.
     void sheet.offsetWidth;
+    traceSheetPaint(sheet);
     sheet.classList.remove('is-closing');
     sheet.classList.add('is-open');
     // The page behind the sheet can't be tabbed into or tapped while it's open.
@@ -501,6 +502,38 @@
         }
       }, 40);
     }
+  }
+
+  /* A device trace for the first frame that carries the scrim. Playwright can
+     read the computed style, but only the phone can say when the compositor
+     actually painted the backdrop-filter. The marker is deliberately tiny and
+     fires once per open; it is not a polling loop. */
+  function traceSheetPaint(sheet) {
+    if (!window.performance || typeof window.performance.now !== 'function' || !window.requestAnimationFrame) return;
+    const start = window.performance.now();
+    const id = sheet.id || 'sheet';
+    window.requestAnimationFrame(function () {
+      const backdrop = sheet.querySelector('.sheet-backdrop');
+      const style = backdrop ? window.getComputedStyle(backdrop) : null;
+      const record = {
+        sheet: id,
+        ms: Math.round((window.performance.now() - start) * 10) / 10,
+        lite: Boolean(window.MergePerf && window.MergePerf.lite),
+        filter: style ? (style.webkitBackdropFilter || style.backdropFilter || 'none') : 'none',
+        background: style ? style.backgroundColor : ''
+      };
+      window.__sixfoldSheetPaint = record;
+      try {
+        const from = 'sixfold-sheet-' + id + '-start';
+        const to = 'sixfold-sheet-' + id + '-first-frame';
+        window.performance.mark(from);
+        window.performance.mark(to);
+        window.performance.measure(to, from, to);
+      } catch (err) {}
+      if (typeof window.CustomEvent === 'function' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('sixfold:sheet-paint', { detail: record }));
+      }
+    });
   }
 
   function closeSheet(sheet) {

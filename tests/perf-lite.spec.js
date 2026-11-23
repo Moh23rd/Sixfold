@@ -69,6 +69,24 @@ test('the query string can force either mode for testing', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.classList.contains('perf-lite'))).toBe(false);
 });
 
+test('the lite sheet uses a readable solid scrim instead of a blur', async ({ page }) => {
+  await withDevice(page, { memory: 2, cores: 8 });
+  await page.goto('/');
+  await page.locator('#hub-about').click();
+
+  const backdrop = await page.locator('#about .sheet-backdrop').evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      filter: style.webkitBackdropFilter || style.backdropFilter,
+      background: style.backgroundColor
+    };
+  });
+
+  expect(backdrop.filter).toBe('none');
+  expect(backdrop.background).not.toBe('rgba(0, 0, 0, 0)');
+  expect(backdrop.background).toContain('0.96');
+});
+
 test('reduced motion stops the tape', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await withDevice(page, { memory: 8, cores: 8 });

@@ -1,0 +1,189 @@
+{
+  "shell": [
+    {
+      "path": "index.html",
+      "bytes": 106767,
+      "sha256": "c3a0700b20305dd512e5af6ca33f000fe08d81ada71e23b107581735be94eda6"
+    },
+    {
+      "path": "licenses.html",
+      "bytes": 42452,
+      "sha256": "b5cbae26d667ec72ccb16d1809d9e263672fa0faea98c189f0e402d2351b06f0"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "css/styles.css",
+      "bytes": 48205,
+      "sha256": "7652470a3bc11a6df81f28559ead6bb8af1a01e342175e8ee033fb4c7a814dd0"
+    },
+    {
+      "path": "js/theme.js",
+      "bytes": 35266,
+      "sha256": "9ed3d3ae5cdb92c6dbdbfb4d638496413dab8c4f629f5023f82fe1a2faf9d919"
+    },
+    {
+      "path": "js/game.js",
+      "bytes": 46283,
+      "sha256": "4afcb4ebb66e72131a19725445e72c42913806e5076e99ea5ce04564cbf3bcf6"
+    },
+    {
+      "path": "js/haptics.js",
+      "bytes": 4349,
+      "sha256": "2d253d577a63b07815bed23bc81c82d5a0c4bece47ec3a90f2e0501e170eccd1"
+    },
+    {
+      "path": "js/overscroll.js",
+      "bytes": 11999,
+      "sha256": "a87e8a46414c4e04c6efcbfdb705dc2e36cc42172937c521fa735a7bf782251b"
+    },
+    {
+      "path": "js/celebrate.js",
+      "bytes": 3915,
+      "sha256": "f77c9ee897c54d3289d66dc83cf69cdb9776a59a322ea914b3a1939d62a77f27"
+    },
+    {
+      "path": "js/sharecard.js",
+      "bytes": 21193,
+      "sha256": "7c48b18aafac92f1a0cca805a5a60b32e811a16ef4a4c9e3e34a4e4f5e057c22"
+    },
+    {
+      "path": "js/install.js",
+      "bytes": 4856,
+      "sha256": "127158bfe4027c0df5012c7b9ba263667f3bcd28da5b003669c2336bc8b6477b"
+    },
+    {
+      "path": "css/games.css",
+      "bytes": 108097,
+      "sha256": "653f3755b9c7ca60d9220ae7f6b6b13c682814c09e9b92f2bfc7512ec6a4f3a6"
+    },
+    {
+      "path": "css/home.css",
+      "bytes": 31564,
+      "sha256": "aac7ed7d6458408a37db13e48eab7ec2513c144669cbe4dde5f67fe890094503"
+    },
+    {
+      "path": "css/polish.css",
+      "bytes": 40810,
+      "sha256": "0d38af20f190ba1a62a87b2e0680c7ea4d7e486c8905e4ce173a0c30c79ddaac"
+    },
+    {
+      "path": "css/sudoku.css",
+      "bytes": 22539,
+      "sha256": "fdf78e58e7f160ef60f1b1c9f71fa915bf412db08ed9d4b9cd32d56caae08ac8"
+    },
+    {
+      "path": "css/v5.css",
+      "bytes": 61899,
+      "sha256": "1d0412b21dde092594980d45025ee1aedb0c995b4a4e9e0572eadb62d2c15cfb"
+    },
+    {
+      "path": "css/progressive-blur.css",
+      "bytes": 7422,
+      "sha256": "459f060d788123aae32a75e3f017d73341b90531f1c9d2b874097870f3ac08b9"
+    },
+    {
+      "path": "js/settings.js",
+      "bytes": 9575,
+      "sha256": "0e7459d8db272aef6ad8ba155cfc26942fb008087db65e046ba25af192d72e69"
+    },
+    {
+      "path": "js/sudoku.js",
+      "bytes": 45924,
+      "sha256": "66fb903e13db96fe8686b585228c9a0b982b1489ff4a87a80aa3a0016e8ef2ce"
+    },
+    {
+      "path": "js/games.js",
+      "bytes": 153312,
+      "sha256": "ddc2f54680b3b0c94c2dba4f6fbe4116d5fec04abfbe268a776dfcb35d16ad2b"
+    },
+    {
+      "path": "js/daily.js",
+      "bytes": 24736,
+      "sha256": "9ec4e46c9ec3ac31f3d39a6c8fcd0f576c0980f6619633bf008ff1efb98bedbc"
+    },
+    {
+      "path": "js/profile.js",
+      "bytes": 8767,
+      "sha256": "9f6b4810a5f426a343b3d5a28431d211426cda99ca16687a48d8f2cfca46a3b6"
+    },
+    {
+      "path": "js/badges.js",
+      "bytes": 8266,
+      "sha256": "822160bd0e919e13e65ab5ad0a946fccaacd5e58d52cc5aeec700a8dcca81689"
+    },
+    {
+      "path": "js/gauntlet.js",
+      "bytes": 18445,
+      "sha256": "409aaaf841b805c77fcbad49e9692aa1ec08c7bf23b43e13d01d14100de52278"
+    },
+    {
+      "path": "js/update.js",
+      "bytes": 2402,
+      "sha256": "b828ea2ec215f813ea34cb7cf64ce3ac47af5d5fde192f2be49a907291f97f72"
+    },
+    {
+      "path": "i18n/i18n-locale.js",
+      "bytes": 2942,
+      "sha256": "0ca7c2912203beade360c26ad001414574918fa92880a05af3283d3fe8bad5d8"
+    },
+    {
+      "path": "i18n/i18n.js",
+      "bytes": 66459,
+      "sha256": "847b32fd13d71ff9404dd266883ce0bbf8bb25e7acb6dea595030fef35889124"
+    },
+    {
+      "path": "js/native.js",
+      "bytes": 6723,
+      "sha256": "fff6a3e754b288df2fcbaf8cd9186dfff36ccfaa534c94f5f46b31ab40fb4ed8"
+    },
+    {
+      "path": "js/wordle-loader.js",
+      "bytes": 4740,
+      "sha256": "de7b24d8180e8542e7723446f966beadc15c44abc278a8a538ef2ef76f9e18d6"
+    },
+    {
+      "path": "js/wordle-words.js",
+      "bytes": 147107,
+      "sha256": "010defd95136cb6ac803e13b23b1f954d97dcec05a6be50933eca6053eee2b3e"
+    },
+    {
+      "path": "i18n/wordle-i18n.js",
+      "bytes": 20547,
+      "sha256": "6b1e176bed55cf72d701fa3a01a2a3b04c1e42376ea7b3b09b9f87674c26a4ab"
+    },
+    {
+      "path": "js/wordle.js",
+      "bytes": 24742,
+      "sha256": "c0bb1fe77decc78957c0dfbadc9a78d2f5b98d379765b37cbf049148102af4f0"
+    },
+    {
+      "path": "icons/icon-180.png",
+      "bytes": 7475,
+      "sha256": "17d5cd63ec22d1795676746a0a356b1a909aaaf8019b0b3b771dd9337cf7561a"
+    },
+    {
+      "path": "icons/icon-192.png",
+      "bytes": 7917,
+      "sha256": "183628af38f6908bf6f8bda2c562000aa54b34964bbda1180bdb2233dd1406e8"
+    },
+    {
+      "path": "icons/icon-512.png",
+      "bytes": 22734,
+      "sha256": "9aff06f6dcda9e899a05cb07ba4ac464715b7a26ffde4aec4280664b6262dc16"
+    },
+    {
+      "path": "icons/icon-maskable-512.png",
+      "bytes": 14486,
+      "sha256": "c3a148ce52762812924003729da88818e780ac3d3b8ab7e950b53afbf3ee6a07"
+    },
+    {
+      "path": "fonts/google-sans-flex.woff2",
+      "bytes": 141004,
+      "sha256": "2305dcc02dc8b181abc648608faa2b3f851778d50c1c0f3aadb86a4307c2bf7a"
+    }
+  ]
+}

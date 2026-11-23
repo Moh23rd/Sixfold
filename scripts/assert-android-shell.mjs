@@ -664,6 +664,22 @@ try {
   // asserted before any check runs.
   await startAndProveLaunch();
 
+  // API 24 and 26 system images ship WebViews older than the app's JavaScript.
+  // The install and first paint above are the meaningful checks on those
+  // levels; driving the page further would report a syntax error as an app
+  // defect. The workflow sets this only for those two matrix entries.
+  if (process.env.SMOKE_LAUNCH_ONLY === '1') {
+    log('the APK installed and the activity reached its first paint; skipping the WebView assertions on this API');
+    if (forwarded) {
+      try {
+        adb(['forward', '--remove', `tcp:${PORT}`]);
+      } catch (error) {
+        // Best effort: the job's exit status is what matters.
+      }
+    }
+    process.exit(0);
+  }
+
   // A fresh install opens the one-time welcome sheet. It is part of the app,
   // but its card covers the page surface along the left edge, so the palette
   // sample would read the sheet instead of the page. Dismiss it before
@@ -692,6 +708,53 @@ try {
 
   const hub = await evaluate("Boolean(document.getElementById('hub'))");
   if (!hub) fail('the hub did not render after home-ready');
+
+  // The About sheet is the first page the blur fix was reported against. Its
+  // scrim must carry the backdrop filter in the first frame, not after the
+  // card has already started moving. The page-level test covers Chromium; this
+  // is the only check that sees the Android WebView compositor paint it.
+  const aboutOpened = await evaluate(
+    "(() => { const button = document.getElementById('hub-about');" +
+      " if (!button) return 'the hub has no about button'; button.click(); return ''; })()"
+  );
+  if (aboutOpened) fail(aboutOpened);
+  const aboutPaint = await until(
+    'the About sheet first paint trace',
+    () => evaluate(
+      "window.__sixfoldSheetPaint && window.__sixfoldSheetPaint.sheet === 'about'" +
+        " ? window.__sixfoldSheetPaint : null"
+    ),
+    30000,
+    200
+  );
+  if (!Number.isFinite(aboutPaint.ms)) {
+    fail('the About sheet did not report a first-frame time');
+  }
+  const supportsBackdropFilter = await evaluate(
+    "Boolean(window.CSS && CSS.supports && (CSS.supports('backdrop-filter', 'blur(3px)') ||" +
+      " CSS.supports('-webkit-backdrop-filter', 'blur(3px)'))) "
+  );
+  if (!aboutPaint.lite && supportsBackdropFilter && !/blur\(3px\)/.test(aboutPaint.filter || '')) {
+    fail(`the About sheet scrim painted without its blur: ${aboutPaint.filter}`);
+  }
+  if (aboutPaint.lite && (!aboutPaint.background || aboutPaint.background === 'rgba(0, 0, 0, 0)')) {
+    fail(`the About sheet lite scrim has no readable background: ${aboutPaint.background}`);
+  }
+  log(
+    `the About sheet scrim painted on its first frame` +
+      (aboutPaint.lite ? ' (lite fallback)' : ' with blur')
+  );
+  const aboutClosed = await evaluate(
+    "(() => { const done = document.querySelector('#about .sheet-done');" +
+      " if (!done) return 'the About sheet has no done button'; done.click(); return ''; })()"
+  );
+  if (aboutClosed) fail(aboutClosed);
+  await until(
+    'the About sheet to close',
+    () => evaluate("Boolean(document.getElementById('about') && document.getElementById('about').hidden)"),
+    30000,
+    250
+  );
 
   // The strip behind the bars is the window drawable. It has to agree with the
   // page before a palette tap, and it has to follow the tap: this is the exact
@@ -841,9 +904,14 @@ try {
   // Put the page on light first, so a system switch to dark has something to
   // disagree with: the decor resource turns dark while the page must stay light.
   rotationSetting = adb(['shell', 'settings', 'get', 'system', 'accelerometer_rotation']);
-  nightSetting = (
-    (await adbRetry(['shell', 'cmd', 'uimode', 'night'], 'reading the system night mode')).match(/Night mode:\s*(\w+)/i) || []
-  )[1] || 'no';
+  // `cmd uimode` is only present on Android 10 and later. The matrix includes
+  // API 24 and 26, where the command is unknown; the rotation below still
+  // exercises the configuration-change path there.
+  const nightQuery = adbSafe(['shell', 'cmd', 'uimode', 'night']);
+  const nightSupported = /Night mode:\s*\w+/i.test(nightQuery);
+  nightSetting = nightSupported
+    ? (nightQuery.match(/Night mode:\s*(\w+)/i) || [])[1] || 'no'
+    : null;
   const reopen = await evaluate(
     "(() => { const button = document.getElementById('appearance');" +
       " if (!button) return 'the hub has no appearance button'; button.click(); return ''; })()"
@@ -865,18 +933,22 @@ try {
   ).toLowerCase();
   await awaitStrip(lightPage, 'the strip before the configuration changes');
 
-  log('switching the system to dark while the app stays light');
-  await settleDevice('switching the system to dark');
-  await adbRetry(['shell', 'cmd', 'uimode', 'night', 'yes'], 'switching the system to dark');
-  await settleDevice('switching the system to dark');
-  await until(
-    'the system to report night mode',
-    () => evaluate("matchMedia('(prefers-color-scheme: dark)').matches"),
-    30000,
-    250
-  );
-  await awaitStrip(lightPage, 'the strip after the system turned dark');
-  log('the strip stayed on the page colour through the system theme change');
+  if (nightSupported) {
+    log('switching the system to dark while the app stays light');
+    await settleDevice('switching the system to dark');
+    await adbRetry(['shell', 'cmd', 'uimode', 'night', 'yes'], 'switching the system to dark');
+    await settleDevice('switching the system to dark');
+    await until(
+      'the system to report night mode',
+      () => evaluate("matchMedia('(prefers-color-scheme: dark)').matches"),
+      30000,
+      250
+    );
+    await awaitStrip(lightPage, 'the strip after the system turned dark');
+    log('the strip stayed on the page colour through the system theme change');
+  } else {
+    log('system night mode is not available on this API; skipping that configuration');
+  }
 
   // The hub only proves the cover built. Opening a card is what proves the
   // game screens mount and lay out, so tap Merge and wait for its view: the

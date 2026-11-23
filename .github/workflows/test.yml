@@ -4,6 +4,15 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      rebaseline_reason:
+        description: 'Reason for accepting a one-time locale-cache increase'
+        required: false
+        type: string
+      rebaseline_approved_by:
+        description: 'Name recorded as the baseline approver (defaults to the dispatcher)'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -24,7 +33,7 @@ jobs:
           - group: axe-states
             files: tests/axe-states.spec.js
           - group: core
-            files: tests/smoke.spec.js tests/daily-complete.spec.js tests/profile.spec.js tests/gauntlet.spec.js tests/cache-footprint.spec.js tests/cache-footprint-drift.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/language-follow.spec.js tests/release-labels.spec.js tests/adaptive-icon.spec.js
+            files: tests/smoke.spec.js tests/daily-complete.spec.js tests/profile.spec.js tests/gauntlet.spec.js tests/cache-footprint.spec.js tests/cache-footprint-drift.spec.js tests/cache-budget.spec.js tests/cache-footprint-rebaseline.spec.js tests/asset-manifest.spec.js tests/static-icons.spec.js tests/pwa-install.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/language-follow.spec.js tests/release-labels.spec.js tests/adaptive-icon.spec.js
           - group: games
             files: tests/layout.spec.js tests/progressive-blur.spec.js tests/wordle.spec.js tests/haptics.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js tests/save.spec.js tests/perf-lite.spec.js
           - group: responsive
@@ -58,6 +67,20 @@ jobs:
         run: npm run test:death-report
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test ${{ matrix.files }}
+      - name: Record an approved cache-footprint baseline
+        if: success() && matrix.group == 'core' && github.event_name == 'workflow_dispatch' && inputs.rebaseline_reason != ''
+        env:
+          REASON: ${{ inputs.rebaseline_reason }}
+          APPROVER: ${{ inputs.rebaseline_approved_by || github.actor }}
+        run: |
+          set -euo pipefail
+          current=$(find test-results -name locale-cache-footprints.json -print -quit)
+          test -n "$current"
+          node scripts/rebaseline-cache-footprint.mjs \
+            --current "$current" \
+            --output "$current" \
+            --reason "$REASON" \
+            --approved-by "$APPROVER"
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -142,7 +165,7 @@ jobs:
             fi
           fi
       - name: Check locale cache footprint drift
-        if: success() && matrix.group == 'core'
+        if: success() && matrix.group == 'core' && (github.event_name != 'workflow_dispatch' || inputs.rebaseline_reason == '')
         env:
           BASELINE: ${{ steps.previous-footprints.outputs.baseline }}
         run: |
@@ -232,6 +255,12 @@ jobs:
           unzip -l "$apk" > "$listing"
           grep -q 'assets/public/index.html' "$listing"
           grep -q 'assets/public/native-plugins.js' "$listing"
+          grep -q 'res/mipmap-anydpi-v26/ic_launcher.xml' "$listing"
+          grep -q 'res/mipmap-anydpi-v26/ic_launcher_round.xml' "$listing"
+          if grep -Eq 'res/mipmap-(ar|hi|kn|han)([-/])' "$listing"; then
+            echo "::error::the APK contains a locale-qualified launcher resource"
+            exit 1
+          fi
           ls -lh "$apk"
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
@@ -242,11 +271,27 @@ jobs:
           retention-days: 14
 
   emulator:
-    name: Android emulator smoke
+    name: Android emulator API ${{ matrix.api }}
     runs-on: ubuntu-latest
+    needs: android
     # A cold run downloads the emulator and its system image before it boots
     # anything; the cache makes later runs short, but the first one needs room.
-    timeout-minutes: 45
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # API 24 and 26 system images bundle WebViews older than the app's
+          # JavaScript. They still prove the APK installs and the activity
+          # reaches its first paint; the WebView assertions run on 33 and 36.
+          - api: 24
+            launch_only: true
+          - api: 26
+            launch_only: true
+          - api: 33
+            launch_only: false
+          - api: 36
+            launch_only: false
     steps:
       - uses: actions/checkout@v7
       - name: Set up Node
@@ -254,22 +299,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Set up JDK 21
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+          packages: 'platform-tools'
       - run: npm ci
-      # The APK job proves the artifact is signed and complete; this job is the
-      # only one that opens it. Build here without the signing secrets so the
-      # debug keystore is used: installability is all the emulator needs.
-      - name: Build debug APK
-        run: npm run native:apk:debug
+      # Reuse the signed artifact the Android job already proved. Building a
+      # second APK here would spend one build per API level and could diverge
+      # from the artifact users actually install.
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: sixfold-debug-apk
+          path: android/app/build/outputs/apk/debug
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -284,20 +326,23 @@ jobs:
           path: |
             /usr/local/lib/android/sdk/emulator
             /usr/local/lib/android/sdk/system-images
-          key: emulator-api34-google_apis-x86_64-v1
+          key: emulator-api${{ matrix.api }}-google_apis-x86_64-v1
       # Plain SDK tooling rather than an emulator action: the boot, the install
       # and the assertions are the same commands a workstation runs, so a
       # failure here can be reproduced instead of guessed at.
-      - name: Boot emulator, install and assert the shell
+      - name: Boot emulator, install and check the shell
         env:
-          API_LEVEL: '34'
+          API_LEVEL: ${{ matrix.api }}
+          AVD_NAME: sixfold-smoke-${{ matrix.api }}
+          FAILURE_DIR: emulator-failure-${{ matrix.api }}
+          SMOKE_LAUNCH_ONLY: ${{ matrix.launch_only && '1' || '0' }}
         run: bash scripts/android-emulator-smoke.sh
       - name: Keep a failed launch's logcat and screen
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: emulator-failure
-          path: emulator-failure/
+          name: emulator-failure-api-${{ matrix.api }}
+          path: emulator-failure-${{ matrix.api }}/
           if-no-files-found: ignore
           retention-days: 14
 
@@ -315,6 +360,8 @@ jobs:
       # The shells are generated, so this job builds them first and then proves
       # every pin and every precached byte against the source tree. It fails in
       # about a minute, instead of at the end of an APK build.
+      - name: Verify the generated asset manifest
+        run: npm run assets:manifest:check
       - name: Build the shell and verify every pin and asset
         run: |
           npm run native:build

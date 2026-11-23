@@ -1328,6 +1328,13 @@ html.perf-lite .sudoku-paused {
   backdrop-filter: none;
 }
 
+/* The sheet has no backdrop-filter in lite mode, so its normal 44% scrim is
+   too transparent over a busy board. Keep a readable veil without asking a
+   weak GPU to blur the whole viewport. */
+html.perf-lite .sheet-backdrop {
+  background: color-mix(in srgb, var(--page) 96%, transparent);
+}
+
 /* Without a blur behind them these veils have to be nearly opaque, or a busy
    board shows through the card that sits on top. */
 html.perf-lite .overlay,
