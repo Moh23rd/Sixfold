@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Build the static launcher mark from assets/icon.png.
+"""Build the static launcher mark from the checked-in icon sources.
 
-The launcher is deliberately not localized. This script is the single source
-for the web favicon/touch sizes, the maskable PWA art, and every Android
-density. It writes a snapshot file as it goes, so a stale output or a changed
-master is visible in review instead of only on a phone.
+The launcher is deliberately not localized. The app-icon renderer writes four
+master layers: the rounded icon, a full-bleed maskable square, the adaptive
+background and the adaptive foreground. This script is the single source for
+the web favicon/touch sizes, the maskable PWA art, and every Android density.
+It writes a snapshot file as it goes, so a stale output or a changed master is
+visible in review instead of only on a phone.
 
+    node scripts/build-app-icon.mjs
     python3 scripts/build-static-icons.py --write
-    python3 scripts/check-icon-snapshots.mjs
+    node scripts/check-icon-snapshots.mjs
     python3 scripts/build-static-icons.py --check
 """
 
@@ -22,15 +25,37 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "assets/icon.png"
+SOURCES = {
+    "assets/icon.png": ROOT / "assets/icon.png",
+    "assets/icon-maskable.png": ROOT / "assets/icon-maskable.png",
+    "assets/icon-adaptive-background.png": ROOT / "assets/icon-adaptive-background.png",
+    "assets/icon-adaptive-foreground.png": ROOT / "assets/icon-adaptive-foreground.png",
+}
 SNAPSHOTS = ROOT / "assets/icon-snapshots.json"
-DARK = (59, 56, 51, 255)
-CREAM = (246, 241, 232, 255)
-MASKABLE_SCALE = 0.75
-# The adaptive foreground holds only the six tiles, sized to the launcher's
-# 66dp safe zone. A full-bleed foreground put the outer tiles under the mask,
-# which read as a zoomed, cropped icon in App info and on round launchers.
-ADAPTIVE_TILE_SCALE = 0.56
+
+DENSITIES = [
+    ("ldpi", 36, 81),
+    ("mdpi", 48, 108),
+    ("hdpi", 72, 162),
+    ("xhdpi", 96, 216),
+    ("xxhdpi", 144, 324),
+    ("xxxhdpi", 192, 432),
+]
+# (path, size, source layer). Apple's touch icon is square because iOS applies
+# its own squircle; the regular browser sizes keep the rounded plate.
+WEB = [
+    ("icons/icon-180.png", 180, "assets/icon-maskable.png"),
+    ("icons/icon-192.png", 192, "assets/icon.png"),
+    ("icons/icon-512.png", 512, "assets/icon.png"),
+    ("icons/icon-1024.png", 1024, "assets/icon.png"),
+    ("icons/icon-maskable-512.png", 512, "assets/icon-maskable.png"),
+    ("icons/icon-maskable-1024.png", 1024, "assets/icon-maskable.png"),
+]
+ANDROID = [
+    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+    "android/app/src/main/res/values/ic_launcher_background.xml",
+]
 ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@mipmap/ic_launcher_background" />
@@ -42,29 +67,6 @@ BACKGROUND_XML = """<?xml version="1.0" encoding="utf-8"?>
     <color name="ic_launcher_background">#3b3833</color>
 </resources>
 """
-ADAPTIVE_BACKGROUND = "#3b3833"
-
-DENSITIES = [
-    ("ldpi", 36, 81),
-    ("mdpi", 48, 108),
-    ("hdpi", 72, 162),
-    ("xhdpi", 96, 216),
-    ("xxhdpi", 144, 324),
-    ("xxxhdpi", 192, 432),
-]
-WEB = [
-    ("icons/icon-180.png", 180),
-    ("icons/icon-192.png", 192),
-    ("icons/icon-512.png", 512),
-    ("icons/icon-1024.png", 1024),
-    ("icons/icon-maskable-512.png", 512),
-    ("icons/icon-maskable-1024.png", 1024),
-]
-ANDROID = [
-    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
-    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
-    "android/app/src/main/res/values/ic_launcher_background.xml",
-]
 
 
 def digest(data: bytes) -> str:
@@ -84,44 +86,6 @@ def legacy(image: Image.Image, size: int) -> Image.Image:
     return out
 
 
-def maskable(image: Image.Image, size: int) -> Image.Image:
-    # A maskable icon needs its important content inside the central safe zone,
-    # and the transparent rounded corners of the normal mark must be filled.
-    art_size = max(1, round(size * MASKABLE_SCALE))
-    art = resize(image, art_size)
-    out = Image.new("RGBA", (size, size), DARK)
-    out.alpha_composite(art, ((size - art_size) // 2, (size - art_size) // 2))
-    return out
-
-
-def adaptive_foreground(source: Image.Image, size: int) -> Image.Image:
-    # The tile grid is the mark once the dark plate becomes the background
-    # layer. Crop to it and fit it into the mask's safe circle.
-    pixels = source.load()
-    min_x, min_y, max_x, max_y = source.width, source.height, 0, 0
-    for y in range(source.height):
-        for x in range(source.width):
-            r, g, b, a = pixels[x, y]
-            if a > 8 and abs(r - DARK[0]) + abs(g - DARK[1]) + abs(b - DARK[2]) > 30:
-                min_x = min(min_x, x)
-                min_y = min(min_y, y)
-                max_x = max(max_x, x)
-                max_y = max(max_y, y)
-    pad = 4
-    tiles = source.crop((
-        max(0, min_x - pad),
-        max(0, min_y - pad),
-        min(source.width, max_x + pad + 1),
-        min(source.height, max_y + pad + 1),
-    ))
-    art_width = max(1, round(size * ADAPTIVE_TILE_SCALE))
-    art_height = max(1, round(tiles.height * art_width / tiles.width))
-    art = tiles.resize((art_width, art_height), Image.Resampling.LANCZOS)
-    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    out.alpha_composite(art, ((size - art_width) // 2, (size - art_height) // 2))
-    return out
-
-
 def round_icon(image: Image.Image, size: int) -> Image.Image:
     art = resize(image, size)
     mask = Image.new("L", (size, size), 0)
@@ -131,12 +95,12 @@ def round_icon(image: Image.Image, size: int) -> Image.Image:
 
 
 def build() -> tuple[dict[str, bytes], list[dict]]:
-    source = Image.open(SOURCE).convert("RGBA")
+    layers = {path: Image.open(file).convert("RGBA") for path, file in SOURCES.items()}
     files: dict[str, bytes] = {}
     entries: list[dict] = []
 
-    for relative, size in WEB:
-        image = maskable(source, size) if "-maskable-" in relative else resize(source, size)
+    for relative, size, source in WEB:
+        image = resize(layers[source], size)
         data = save_png(image)
         files[relative] = data
         entries.append(entry(relative, data, image.size))
@@ -145,10 +109,10 @@ def build() -> tuple[dict[str, bytes], list[dict]]:
     for qualifier, legacy_size, foreground_size in DENSITIES:
         directory = res / f"mipmap-{qualifier}"
         generated = {
-            "ic_launcher_background.png": Image.new("RGBA", (foreground_size, foreground_size), DARK),
-            "ic_launcher_foreground.png": adaptive_foreground(source, foreground_size),
-            "ic_launcher.png": legacy(source, legacy_size),
-            "ic_launcher_round.png": round_icon(source, legacy_size),
+            "ic_launcher_background.png": resize(layers["assets/icon-adaptive-background.png"], foreground_size),
+            "ic_launcher_foreground.png": resize(layers["assets/icon-adaptive-foreground.png"], foreground_size),
+            "ic_launcher.png": legacy(layers["assets/icon.png"], legacy_size),
+            "ic_launcher_round.png": round_icon(layers["assets/icon.png"], legacy_size),
         }
         for name, image in generated.items():
             relative = f"android/app/src/main/res/mipmap-{qualifier}/{name}"
@@ -169,10 +133,11 @@ def build() -> tuple[dict[str, bytes], list[dict]]:
         })
 
     entries.sort(key=lambda item: item["path"])
-    source_bytes = SOURCE.read_bytes()
+    source_bytes = {path: file.read_bytes() for path, file in SOURCES.items()}
     snapshot = {
         "source": "assets/icon.png",
-        "sourceSha256": digest(source_bytes),
+        "sourceSha256": digest(source_bytes["assets/icon.png"]),
+        "sources": {path: digest(data) for path, data in source_bytes.items()},
         "files": entries,
     }
     return files, [snapshot]
@@ -214,6 +179,8 @@ def check(files: dict[str, bytes], snapshots: list[dict]) -> int:
     current = json.loads(SNAPSHOTS.read_text(encoding="utf-8"))
     if current.get("sourceSha256") != expected["sourceSha256"]:
         problems.append("assets/icon.png changed; rebuild the icons and snapshots")
+    if current.get("sources") != expected.get("sources"):
+        problems.append("an icon source changed; rebuild the icons and snapshots")
 
     current_by_path = {item.get("path"): item for item in current.get("files", []) if isinstance(item, dict)}
     for item in expected["files"]:
@@ -234,7 +201,7 @@ def check(files: dict[str, bytes], snapshots: list[dict]) -> int:
         for problem in problems:
             print("[static icons] " + problem, file=sys.stderr)
         return 1
-    print(f"[static icons] {len(expected['files'])} files match assets/icon.png and their snapshots")
+    print(f"[static icons] {len(expected['files'])} files match the icon sources and their snapshots")
     return 0
 
 

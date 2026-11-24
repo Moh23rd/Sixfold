@@ -29,6 +29,30 @@ if (!fs.existsSync(SNAPSHOTS)) {
     problems.push('assets/icon.png does not match the snapshot source hash');
   }
 
+  // Four layers feed the launcher now: the rounded icon, the maskable square,
+  // the adaptive background and the adaptive foreground. Verify each one so a
+  // change to a layer cannot silently leave the generated sizes stale.
+  const sources = snapshots.sources && typeof snapshots.sources === 'object' ? snapshots.sources : {};
+  const sourcePaths = Object.keys(sources);
+  if (sourcePaths.length !== 4) {
+    problems.push('the snapshot must record all four icon sources');
+  }
+  for (const relative of sourcePaths) {
+    if (!relative.startsWith('assets/')) {
+      problems.push(relative + ' is not an asset source');
+      continue;
+    }
+    const file = path.join(ROOT, relative);
+    if (!fs.existsSync(file)) {
+      problems.push(relative + ' is missing');
+    } else if (!/^[0-9a-f]{64}$/.test(sources[relative]) || digest(file) !== sources[relative]) {
+      problems.push(relative + ' does not match its snapshot');
+    }
+  }
+  if (sources['assets/icon.png'] && sources['assets/icon.png'] !== snapshots.sourceSha256) {
+    problems.push('the rounded source and sourceSha256 disagree');
+  }
+
   const files = Array.isArray(snapshots.files) ? snapshots.files : [];
   const seen = new Set();
   for (const entry of files) {

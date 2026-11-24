@@ -172,9 +172,10 @@
   html.perf-lite .progressive-blur > span { display: none; }
 }
 
-/* The bands exist for the hub, the only screen that scrolls under the system
-   bars. A play screen owns its own frame, so no glass sits over a board. */
-body:not([data-screen="hub"]) .progressive-blur { display: none; }
+/* The bands exist for the screens that scroll under the system bars: the hub
+   and the badge collection, which is a long reading page rather than a game
+   frame. A play screen owns its own frame, so no glass sits over a board. */
+body:not([data-screen="hub"]):not([data-screen="badges"]) .progressive-blur { display: none; }
 
 /* Safari and iOS can ask for less transparency; respect it and show nothing. */
 @media (prefers-reduced-transparency: reduce) {

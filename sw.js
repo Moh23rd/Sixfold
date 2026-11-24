@@ -28,8 +28,8 @@ const GAMES_CSS = '5.3.6';
 const POLISH_CSS = '4.0.4-w21';
 const GAMES_JS = '5.4.4';
 const SUDOKU_CSS = '4.0.4';
-const V5_CSS = '5.6.1';
-const BLUR_CSS = '1.3.1';
+const V5_CSS = '5.6.2';
+const BLUR_CSS = '1.4.0';
 const HOME_CSS = '4.1.8';
 const DAILY_CODE = '5.4.4';
 const PROFILE_CODE = '1.0.0';
@@ -119,13 +119,11 @@ const SHELL = [
   './js/wordle-words.js?v=' + WORDLE_CODE,
   './i18n/wordle-i18n.js?v=' + WORDLE_CODE,
   './js/wordle.js?v=' + WORDLE_CODE,
-  './icons/icon-180.png?v=4.2.2',
-  './icons/icon-192.png?v=4.2.2',
-  './icons/icon-512.png?v=4.2.2',
-  './icons/icon-maskable-512.png?v=4.2.2',
-  // The 1024px icons are install/manifest art, not shell UI. The manifest
-  // fetches them when needed; keeping the two largest files out of the
-  // offline shell leaves room for the restored six-tile art.
+  './icons/icon-180.png?v=6.0.1',
+  './icons/icon-192.png?v=6.0.1',
+  // The 512px and 1024px icons are install/manifest art, not shell UI. The
+  // manifest fetches them when needed; keeping the large gradient art out of
+  // the offline shell leaves room for the sixfold scripts and fonts.
   './fonts/google-sans-flex.woff2?v=' + FONT_ASSET
 ];
 

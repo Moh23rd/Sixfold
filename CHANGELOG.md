@@ -13,9 +13,11 @@ whole set feel settled. No accounts, ads, tracking or server.
 
 ### Fixes and polish
 
-- **The launcher icon sits inside the mask**: the adaptive foreground now carries
-  only the six tiles, scaled into the launcher safe zone over an ink background
-  layer, so App info and circular launchers no longer crop a zoomed mark.
+- **The launcher mark is redrawn**: a cream six with a coral hard shadow on a
+  warm ink plate replaces the six-tile grid. The rounded, maskable and adaptive
+  layers are rendered separately, so the numeral keeps its margins on circular
+  and squircle launchers, the iOS splash uses the same mark, and the old
+  full-bleed tiles no longer appear zoomed in App info.
 - **Display text renders cleanly**: common ligatures are off, so the bundled
   display face cannot draw its broken `fi` in What’s New, and the stray spark
   beside that header is gone.
@@ -30,6 +32,13 @@ whole set feel settled. No accounts, ads, tracking or server.
   the page colour as a fallback and only blends it with `color-mix()` where that
   is supported, so API 33's Chromium 109 no longer computes the About sheet's
   scrim to transparent.
+- **The badges page and the legal page get the edge blur**: both are long
+  scrolling pages, so their content now dissolves under the transparent system
+  bars like the hub. The standalone `licenses.html` carries its own band because
+  it does not load the app shell.
+- **The GPL text is collapsible**: the license page opens on the dictionary
+  sources and keeps the full GNU GPL v3.0 text behind a native disclosure, so the
+  canonical terms are still in the page without burying everything else.
 
 ### Release polish
 

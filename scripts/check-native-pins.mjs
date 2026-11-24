@@ -228,6 +228,18 @@ function main() {
 
   const contents = new Set([...source.keys(), ...shell.files]);
 
+  // index.html pins install art the worker does not cache (the 512px browser
+  // icon, for one). The native copies still serve those bytes, so compare them
+  // too; a pinned icon with no file behind it is a broken URL, not a skip.
+  for (const [file] of pinnedUrls(indexSource)) {
+    if (!file.startsWith('icons/')) continue;
+    if (!existsSync(join(root, file))) {
+      problems.push('index.html pins ' + file + ', which the source tree does not have');
+      continue;
+    }
+    contents.add(file);
+  }
+
   for (const [file, version] of pinnedUrls(indexSource)) {
     if (source.has(file) || contents.has(file) || UNPINNED.test(file)) continue;
     problems.push(

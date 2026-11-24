@@ -2,13 +2,13 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 113286,
-      "sha256": "b8420e67216acb16cdc47d30eb2fdc784d90a19095c85ac63dda5c2d6d029761"
+      "bytes": 113280,
+      "sha256": "4c0e58124b9a7feaf4746e7c7de2e99206d258a3b80a10ec87615511638aed55"
     },
     {
       "path": "licenses.html",
-      "bytes": 42452,
-      "sha256": "b5cbae26d667ec72ccb16d1809d9e263672fa0faea98c189f0e402d2351b06f0"
+      "bytes": 46390,
+      "sha256": "5686e578174243bf10f3c4f068f9c332a4f72b41e4dcc912282c97b4f3364747"
     },
     {
       "path": "LICENSE",
@@ -77,13 +77,13 @@
     },
     {
       "path": "css/v5.css",
-      "bytes": 64408,
-      "sha256": "dac4fb572506aaa2f6782aa9b850af5cd8baf185835165a6e5e6601370eee571"
+      "bytes": 64604,
+      "sha256": "339916f19dbd4abb65bcfd411c3ab2d3a86b458be3d44e6232384f079e4cbeca"
     },
     {
       "path": "css/progressive-blur.css",
-      "bytes": 7422,
-      "sha256": "459f060d788123aae32a75e3f017d73341b90531f1c9d2b874097870f3ac08b9"
+      "bytes": 7528,
+      "sha256": "07d189ae25c2783c978a6f6b41123d3def9dfa7616954bd72653feb50150daee"
     },
     {
       "path": "js/settings.js",
@@ -162,23 +162,13 @@
     },
     {
       "path": "icons/icon-180.png",
-      "bytes": 7475,
-      "sha256": "17d5cd63ec22d1795676746a0a356b1a909aaaf8019b0b3b771dd9337cf7561a"
+      "bytes": 21586,
+      "sha256": "200b7cd2dba5f8ca92cf748222aeaf5e34b2f03773c62dfc2ad2f4220081c333"
     },
     {
       "path": "icons/icon-192.png",
-      "bytes": 7917,
-      "sha256": "183628af38f6908bf6f8bda2c562000aa54b34964bbda1180bdb2233dd1406e8"
-    },
-    {
-      "path": "icons/icon-512.png",
-      "bytes": 22734,
-      "sha256": "9aff06f6dcda9e899a05cb07ba4ac464715b7a26ffde4aec4280664b6262dc16"
-    },
-    {
-      "path": "icons/icon-maskable-512.png",
-      "bytes": 14486,
-      "sha256": "c3a148ce52762812924003729da88818e780ac3d3b8ab7e950b53afbf3ee6a07"
+      "bytes": 26155,
+      "sha256": "b24265fa5be399fb0bab0d7a2ff5fa76d6a24c69b0cab232a4dcaf4b4518ef3f"
     },
     {
       "path": "fonts/google-sans-flex.woff2",

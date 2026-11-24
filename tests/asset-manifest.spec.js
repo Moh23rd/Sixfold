@@ -25,5 +25,5 @@ test('the shell content-hash manifest is generated and current', () => {
     expect(entry.sha256).toMatch(/^[0-9a-f]{64}$/);
   }
   expect(manifest.shell.some((entry) => entry.path === 'css/styles.css')).toBe(true);
-  expect(manifest.shell.some((entry) => entry.path === 'icons/icon-512.png')).toBe(true);
+  expect(manifest.shell.some((entry) => entry.path === 'icons/icon-192.png')).toBe(true);
 });

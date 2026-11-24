@@ -1139,6 +1139,9 @@ html[data-fruit-numbers="on"] .is-fruit-mode { display: none; }
   height: auto;
   min-height: 100%;
   gap: 16px;
+  /* Clear the fixed blur band: the collection scrolls under the status bar,
+     but its first row must rest below the feather instead of inside it. */
+  padding-top: calc(var(--sa-top) + 22px);
   padding-bottom: calc(var(--sa-bottom) + 24px);
 }
 

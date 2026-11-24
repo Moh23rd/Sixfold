@@ -12,6 +12,9 @@ const CASES = [
 // row (the header a reader sees at scroll position zero) and the last one.
 const SCREENS = [
   { name: 'hub', path: '/', container: '#hub', first: '.hub-top', last: '.home-ticker', blur: true },
+  // The badge collection is a scrolling page, not a fixed game frame. It gets
+  // the same bands as the hub so its cards dissolve under the status bar.
+  { name: 'badges', path: '/#badges', container: '#badges', first: '.badges-head', last: '#badges .profile-gauntlet', blur: true },
   { name: 'merge', path: '/#merge', container: 'main.app', first: 'main.app .header', last: 'main.app footer' },
   { name: 'sudoku', path: '/#sudoku', container: '#sudoku', first: '#sudoku .play-head', last: '#sudoku .play-foot' },
   { name: 'tic tac toe', path: '/#ttt', container: '#ttt', first: '#ttt .play-head', last: '#ttt .play-foot' },
@@ -60,8 +63,9 @@ for (const testCase of CASES) {
       await expect(page.locator(screen.container)).toBeVisible();
       await expect(page.locator('#boot-splash')).toBeHidden();
 
-      // The bands belong to the hub, the one screen that scrolls under the
-      // bars. A play screen owns its frame, so nothing sits over a board.
+      // The bands belong to the hub and the badge collection, the two screens
+      // that scroll under the bars. A play screen owns its frame, so nothing
+      // sits over a board.
       if (!screen.blur) {
         await expect(page.locator('.progressive-blur--top')).toBeHidden();
         await expect(page.locator('.progressive-blur--bottom')).toBeHidden();
@@ -98,6 +102,41 @@ for (const testCase of CASES) {
     });
   }
 }
+
+// The standalone legal page has its own edge blur because it does not load the
+// app shell. The GPL is kept behind a native disclosure so the page opens on
+// the licenses that are actually short enough to scan.
+test('the legal page blurs its edges and keeps the GPL collapsible', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const session = await page.context().newCDPSession(page);
+  await session.send('Emulation.setSafeAreaInsetsOverride', {
+    insets: { top: 47, bottom: 34, left: 0, right: 0 }
+  });
+
+  await page.goto('/licenses.html');
+  const details = page.locator('#gpl-text');
+  await expect(details).not.toHaveAttribute('open', '');
+  await expect(page.locator('.edge-blur--top')).toBeVisible();
+  await expect(page.locator('.edge-blur--top > span').first()).toHaveCSS('backdrop-filter', 'blur(0.6px)');
+  // Each band feathers toward its own edge. Reusing the top band's direction
+  // left the navigation bar sharp and peaked the blur mid-band.
+  const direction = await page.locator('.edge-blur--bottom').evaluate((el) =>
+    getComputedStyle(el).getPropertyValue('--edge-direction').trim()
+  );
+  expect(direction).toBe('to bottom');
+
+  // The bands are fixed to the page, not left at their static position after
+  // the content. Scroll first so a missing `top: 0` cannot pass at rest.
+  await page.evaluate(() => window.scrollTo(0, 520));
+  const topBand = await page.locator('.edge-blur--top').boundingBox();
+  const bottomBand = await page.locator('.edge-blur--bottom').boundingBox();
+  expect(topBand?.y).toBe(0);
+  expect(Math.round((bottomBand?.y ?? 0) + (bottomBand?.height ?? 0))).toBe(844);
+
+  await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  await expect(details.locator('pre')).toContainText('GNU GENERAL PUBLIC LICENSE');
+});
 
 // Merge is a play screen too, including its full-bleed desktop grid.
 test('the Merge board carries no blur band', async ({ page }) => {

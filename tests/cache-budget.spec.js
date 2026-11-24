@@ -40,6 +40,6 @@ test('the plain report names each class and its largest file', () => {
   expect(result.status, result.stderr).toBe(0);
   expect(result.stdout).toContain('[cache budgets] raw shell:');
   expect(result.stdout).toContain('Largest icons files:');
-  expect(result.stdout).toContain('icons/icon-512.png');
+  expect(result.stdout).toContain('icons/icon-192.png');
   expect(result.stdout).toContain('[cache budgets] every asset class is within its budget.');
 });

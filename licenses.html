@@ -37,7 +37,7 @@
     body {
       max-width: 900px;
       margin: 0 auto;
-      padding: 0 22px max(34px, env(safe-area-inset-bottom));
+      padding: 0 22px max(34px, calc(env(safe-area-inset-bottom) + 28px));
       background: var(--page);
       color: var(--ink);
       font-family: var(--font-ui);
@@ -49,7 +49,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: max(20px, calc(env(safe-area-inset-top) + 12px)) 0 12px;
+      padding: max(24px, calc(env(safe-area-inset-top) + 24px)) 0 12px;
       border-bottom: 1px solid var(--line);
       font-size: 12px;
       font-weight: 800;
@@ -96,6 +96,98 @@
       font: 11px/1.55 var(--font-ui);
       white-space: pre-wrap;
     }
+
+    /* The GPL is long enough to bury every other license note. Keep the
+       canonical text in the page, but behind a native disclosure so the page
+       opens on the sources and a reader opts into the full terms. */
+    .license-text {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }
+    .license-text > summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 54px;
+      padding: 0 16px;
+      cursor: pointer;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      list-style: none;
+    }
+    .license-text > summary::-webkit-details-marker { display: none; }
+    .license-text > summary::after {
+      content: "+";
+      display: grid;
+      flex: none;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 16px;
+      line-height: 1;
+    }
+    .license-text[open] > summary::after { content: "−"; }
+    .license-text pre {
+      border: 0;
+      border-top: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+    }
+
+    /* The legal page has no app shell, so it carries its own edge blur. Same
+       sliced ramp as the app: content dissolves under the transparent system
+       bars without touching the first or last resting row. */
+    .edge-blur { display: none; }
+    @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .edge-blur {
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        z-index: 40;
+        display: block;
+        height: calc(env(safe-area-inset-top, 0px) + 16px);
+        pointer-events: none;
+      }
+      .edge-blur--bottom {
+        top: auto;
+        bottom: 0;
+        height: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        /* The ramp has to run toward the band's own edge: with the top band's
+           direction the deepest blur peaked mid-band and left the navigation
+           bar sharp. */
+        --edge-direction: to bottom;
+      }
+      .edge-blur > span {
+        position: absolute;
+        right: 0;
+        left: 0;
+        -webkit-backdrop-filter: blur(var(--edge-blur, 1px));
+        backdrop-filter: blur(var(--edge-blur, 1px));
+        -webkit-mask-image: linear-gradient(var(--edge-direction, to top), transparent 0%, #000 var(--edge-fade, 55%), #000 100%);
+        mask-image: linear-gradient(var(--edge-direction, to top), transparent 0%, #000 var(--edge-fade, 55%), #000 100%);
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+      }
+      .edge-blur--top > span:nth-child(1) { bottom: 0; height: 40%; --edge-blur: 0.6px; --edge-fade: 65%; }
+      .edge-blur--top > span:nth-child(2) { bottom: 28%; height: 50%; --edge-blur: 2.2px; --edge-fade: 60%; }
+      .edge-blur--top > span:nth-child(3) { bottom: 55%; height: 45%; --edge-blur: 8px; --edge-fade: 55%; }
+      .edge-blur--bottom > span:nth-child(1) { top: 0; height: 45%; --edge-blur: 0.6px; --edge-fade: 60%; }
+      .edge-blur--bottom > span:nth-child(2) { top: 25%; height: 55%; --edge-blur: 2.2px; --edge-fade: 50%; }
+      .edge-blur--bottom > span:nth-child(3) { top: 50%; height: 50%; --edge-blur: 8px; --edge-fade: 45%; }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .edge-blur { display: none !important; }
+    }
     footer {
       display: flex;
       flex-wrap: wrap;
@@ -141,7 +233,9 @@
     <section aria-labelledby="gpl-title">
       <h2 id="gpl-title">GNU General Public License v3.0</h2>
       <p class="section-note">The canonical license text distributed with Sixfold.</p>
-      <pre>                    GNU GENERAL PUBLIC LICENSE
+      <details class="license-text" id="gpl-text">
+        <summary>Read the full GNU GPL v3.0 text</summary>
+        <pre>                    GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. &lt;https://fsf.org/&gt;
@@ -815,7 +909,8 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 &lt;https://www.gnu.org/licenses/why-not-lgpl.html&gt;.
-</pre>
+        </pre>
+      </details>
     </section>
 
   </main>
@@ -823,6 +918,14 @@ Public License instead of this License.  But first, please read
     <span>Sixfold · GPL-3.0-only</span>
     <span><a href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener">Source code</a></span>
   </footer>
+
+  <div class="edge-blur edge-blur--top" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="edge-blur edge-blur--bottom" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+
   <script>
     // Load the bundled Google Sans Flex face directly; the standalone legal page
     // does not use the app's stylesheet font-loading/recovery path.

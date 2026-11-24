@@ -1,10 +1,11 @@
 # Asset builds
 
 The app ships three kinds of generated art: the rounded UI font, the iOS launch
-images, and the launcher mark. The launcher is generated from one master into
-every web size and Android density; its checked-in snapshots make a stale
-output visible. The Android adaptive icon has an additional guard because the
-legacy generator changes the XML in a way that silently shrinks the art.
+images, and the launcher mark. The launcher is rendered from one canvas
+description into four source layers, then every web size and Android density;
+its checked-in snapshots make a stale output visible. The Android adaptive icon
+has an additional guard because the legacy generator changes the XML in a way
+that silently shrinks the art.
 
 Run all commands from the repository root. The generators need Node 22 and the
 Playwright browser already used by the tests; the font build needs Python 3.
@@ -74,31 +75,40 @@ wordmark, and the same geometry at every size:
 | Light | background `#f6f1e8`, ink `#3b3833`, rule `#dad6cd` |
 | Dark | background `#1a1918`, ink `#f1eae0`, rule `#42403c` |
 
-The startup links use `?v=4.0.1`. Bump that suffix if the images change.
-`assets/icon.png` remains the Android generator source; it is the six-tile
-mark, not the iOS splash tile.
+The startup links use `?v=6.0.1`. Bump that suffix if the images change.
+`icons/icon-512.png` is the rounded launcher mark, rendered from
+`assets/icon.png`; the splash has no separate artwork.
 
 ## Launcher icon
 
 The browser favicon, Apple touch icon and Android launcher all use one static
-six-tile mark. There is no per-language icon and no `applyIcon` browser path.
-The web links use `?v=4.2.2`; change that suffix when the art changes.
+mark: a cream six on a warm ink plate with a coral hard shadow. There is no
+per-language icon and no `applyIcon` browser path. The web and splash links use
+`?v=6.0.1`; change that suffix when the art changes.
 
-`assets/icon.png` is the single source. Rebuild the web favicons, maskable PWA
-art and every Android density from it:
+The mark is rendered by `scripts/build-app-icon.mjs` into four checked-in
+sources: `assets/icon.png` (rounded plate), `assets/icon-maskable.png`
+(full-bleed square), `assets/icon-adaptive-background.png` (the plate without
+the numeral) and `assets/icon-adaptive-foreground.png` (the numeral alone,
+sized for Android's safe circle). Rebuild the layers and every derived size:
 
 ```sh
 python3 -m pip install pillow
+npm run assets:icon
 npm run assets:icons
 npm run assets:icons:check
 ```
 
-`assets:icons` writes `icons/icon-{180,192,512,1024}.png`, the two maskable
-sizes, the Android legacy/round/foreground/background layers for all six
-densities, and `assets/icon-snapshots.json`. The snapshot records the source
-hash, byte size and SHA-256 of every output. `assets:icons:check` is the
-dependency-light guard CI runs; if the master changes without regenerating the
-outputs, it fails instead of letting two kinds of launcher art drift apart.
+`assets:icon` needs the Playwright Chromium already used by the tests. It
+measures the glyph's ink, not the font's line box, so the numeral is centred by
+what the eye sees. `assets:icons` writes `icons/icon-{180,192,512,1024}.png`,
+the two maskable sizes, the Android legacy/round/foreground/background layers
+for all six densities, and `assets/icon-snapshots.json`. The Apple touch icon
+uses the square layer because iOS applies its own squircle; the regular browser
+sizes keep the rounded plate. The snapshot records every source hash, byte size
+and SHA-256 of every output. `assets:icons:check` is the dependency-light guard
+CI runs; if a source changes without regenerating the outputs, it fails instead
+of letting two kinds of launcher art drift apart.
 
 Keep the icon static: do not add locale-qualified `mipmap-*` directories or
 locale-suffixed web icon files. `npm run native:assets:android` still uses
@@ -124,10 +134,10 @@ cannot keep the insets. It also verifies the `#3b3833` background resource and
 the default layer sizes, and rejects any locale-qualified `mipmap-*` directory
 so the launcher icon cannot start following the device language again.
 
-The adaptive foreground is generated from the tile grid alone and scaled to
-0.56 of the 108dp canvas, inside the 66dp safe circle; the ink plate is the
-background layer. Keeping the old full-bleed foreground put the outer tiles
-under circular launcher masks, which looked like a zoomed icon.
+The adaptive foreground is the cream six and its coral shadow, scaled so the
+numeral's ink fits inside the 66dp safe circle; the ink plate and its glow are
+the background layer. A full-bleed foreground put the old outer tiles under
+circular launcher masks, which looked like a zoomed icon.
 
 ```sh
 npm run native:assets      # regenerate, repair, verify

@@ -24,6 +24,7 @@
     "native:ios": "npm run native:build && npx cap sync ios && npm run native:check",
     "native:assets": "npm run native:assets:android",
     "native:assets:android": "npx capacitor-assets generate --android --iconBackgroundColor \"#f6f1e8\" --iconBackgroundColorDark \"#1a1918\" --splashBackgroundColor \"#f6f1e8\" --splashBackgroundColorDark \"#1a1918\" && python3 scripts/build-static-icons.py --write && node scripts/guard-adaptive-icon.mjs",
+    "assets:icon": "node scripts/build-app-icon.mjs",
     "assets:icons": "python3 scripts/build-static-icons.py --write",
     "assets:icons:check": "node scripts/check-icon-snapshots.mjs",
     "assets:guard": "node scripts/guard-adaptive-icon.mjs --check",

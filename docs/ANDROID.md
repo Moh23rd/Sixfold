@@ -183,7 +183,8 @@ visual check should still include a cutout device and gesture navigation.
 
 - `capacitor.config.json` — app ID, name and `native/www` asset directory.
 - `android/` — Capacitor Android project, Gradle wrapper and launcher art.
-- `assets/icon.png` — source for the generated launcher icon and splash screens.
+- `assets/icon*.png` — the rounded, maskable and adaptive icon source layers
+  used by the generated launcher icon and splash screens.
 
 Generated web assets and build output are deliberately ignored:
 
@@ -377,12 +378,13 @@ source they downloaded it from.
 
 ## Native icons and splash
 
-The checked-in launcher and splash resources were generated from
-`assets/icon.png` using the existing app colours. The launcher has a
-reproducible web/Android pipeline and hash snapshots; see
-[docs/ASSETS.md](ASSETS.md). To regenerate them after changing that source:
+The checked-in launcher and splash resources were generated from the four
+icon source layers in `assets/` using the existing app colours. The launcher
+has a reproducible web/Android pipeline and hash snapshots; see
+[docs/ASSETS.md](ASSETS.md). To regenerate them after changing the mark:
 
 ```sh
+npm run assets:icon
 npm run native:assets
 npm run assets:icons:check
 ```
@@ -392,22 +394,22 @@ under `splash/` because this repository has no `ios/` project; see
 [docs/ASSETS.md](ASSETS.md) for the reproducible font, splash and icon builds.
 
 `native:assets:android` still runs `capacitor-assets` for the splash surfaces,
-then rebuilds the launcher from `assets/icon.png` so its generated insets or
+then rebuilds the launcher from the icon sources so its generated insets or
 locale-qualified resources cannot survive. The static generator needs Python 3
 with Pillow; the CI snapshot check is Node-only and always runs.
 
 The adaptive icon uses a full-bleed ink background and a foreground holding
-only the six tiles, fitted to the launcher's 66dp safe zone. A full-bleed
-foreground put the outer tiles under the mask, which read as a zoomed, cropped
-icon in App info and on circular launchers. `capacitor-assets` adds `<inset>`
-wrappers to the XML on each generation, which would shrink the art inside the
-launcher mask; `native:assets:android` therefore ends with
-`scripts/guard-adaptive-icon.mjs`. Run `npm run assets:guard` to verify without
-generating.
+only the cream six and its coral shadow, fitted inside the launcher's 66dp safe
+zone. A full-bleed foreground put the old outer tiles under the mask, which
+read as a zoomed, cropped icon in App info and on circular launchers.
+`capacitor-assets` adds `<inset>` wrappers to the XML on each generation, which
+would shrink the art inside the launcher mask; `native:assets:android`
+therefore ends with `scripts/guard-adaptive-icon.mjs`. Run
+`npm run assets:guard` to verify without generating.
 
-The launcher icon is static: one six-tile mark for every language. The ink
+The launcher icon is static: one six mark for every language. The ink
 background is `#3b3833`, so the dark plate and the mask share one colour and
-only the tiles need a safe margin. The default
+only the numeral needs a safe margin. The default
 `mipmap-anydpi-v26` adaptive XML references `@mipmap/ic_launcher_foreground`,
 and there are no locale-qualified mipmap directories. The guard rejects any
 such directory so the icon cannot start following the device language again.
