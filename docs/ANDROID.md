@@ -61,7 +61,10 @@ The stylesheets are newer than that WebView. `color-mix()` (Chromium 111),
 `inset` (87), `:focus-visible` (86), flex `gap` (84), `min()`/`max()`/`clamp()`
 (79), `aspect-ratio` (88), `dvh` units (108) and `env()` safe areas (69) are
 used directly; `backdrop-filter` and `:has()` are the only features behind an
-`@supports` check. On an old engine those declarations are dropped or left
+`@supports` check. The low-end sheet scrim is the one exception: it paints the
+opaque page colour first and only applies its `color-mix()` blend behind an
+`@supports` guard, because Chromium 109 parses the function but computes it to
+transparent, which would leave the About sheet with no veil at all. On an old engine those declarations are dropped or left
 unresolved, so missing tints, spacing and sheet geometry are expected. A
 fallback sheet would have to restate the layout primitives across all seven
 stylesheets, which is a second design rather than a small patch, so the API 26

@@ -26,6 +26,10 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **Hub settings read as settings**: Accessibility is a contained row with its
   explanation instead of a bare summary, and landscape keeps the Look label and
   chevron inside the pill.
+- **The lite sheet scrim keeps its veil on older WebViews**: low-end mode paints
+  the page colour as a fallback and only blends it with `color-mix()` where that
+  is supported, so API 33's Chromium 109 no longer computes the About sheet's
+  scrim to transparent.
 
 ### Release polish
 
