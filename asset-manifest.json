@@ -3,7 +3,7 @@
     {
       "path": "index.html",
       "bytes": 107440,
-      "sha256": "3e704fbd2de8d98c23e42595d5f6205bed27b3af254e9b157aa29ae380a85f48"
+      "sha256": "cfd6d976ce00f9e54639903d49efc8762f134e05fc7ffda46c19648850e8b8f4"
     },
     {
       "path": "licenses.html",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 153605,
-      "sha256": "6b9ff0dfb8e9fc38e9c144f7664d900c27d65850752ea7a5c11a740938925617"
+      "bytes": 153870,
+      "sha256": "8f83bacd326afce79fa309c326aa4d12a4a9c6f58ab527b672cbd3bf9be9f811"
     },
     {
       "path": "js/daily.js",

@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.38';
+const VERSION = 'sixfold-6.0.39';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -26,7 +26,7 @@ const SUDOKU_GAME_CODE = '5.3.1';
 const LOCALE_FONT = '5.1.4';
 const GAMES_CSS = '5.3.6';
 const POLISH_CSS = '4.0.4-w21';
-const GAMES_JS = '5.4.3';
+const GAMES_JS = '5.4.4';
 const SUDOKU_CSS = '4.0.4';
 const V5_CSS = '5.6.1';
 const BLUR_CSS = '1.3.1';
@@ -292,17 +292,24 @@ self.addEventListener('install', (event) => {
     (async () => {
       await caches.delete(STAGING);
       const staged = await caches.open(STAGING);
-      const results = await Promise.allSettled(
+      // Promise.allSettled() is Chromium 76. Collect the first failure by hand
+      // so an older WebView still stages every shell asset and reports one
+      // usable reason, instead of failing to parse the worker.
+      let failed = null;
+      await Promise.all(
         SHELL.map(async (url) => {
-          const response = await fetch(url, { cache: 'reload' });
-          if (!response.ok) throw new Error('Failed to cache ' + url);
-          await staged.put(url, response);
+          try {
+            const response = await fetch(url, { cache: 'reload' });
+            if (!response.ok) throw new Error('Failed to cache ' + url);
+            await staged.put(url, response);
+          } catch (error) {
+            if (!failed) failed = error;
+          }
         })
       );
-      const failed = results.find((result) => result.status === 'rejected');
       if (failed) {
         await caches.delete(STAGING);
-        throw failed.reason;
+        throw failed;
       }
 
       // Only touch the live cache after every shell asset is staged. A failed

@@ -431,7 +431,11 @@
     if (!isMerge && app.contains(document.activeElement)) {
       try { document.activeElement.blur(); } catch (err) {}
     }
-    app.toggleAttribute('inert', !isMerge);
+    // Element.toggleAttribute() is Chromium 69; the API 26 emulator's WebView
+    // predates it, and this line runs before body.dataset.screen is set, so a
+    // missing method would leave the game screen half-entered.
+    if (isMerge) app.removeAttribute('inert');
+    else app.setAttribute('inert', '');
     if (isMerge) app.removeAttribute('aria-hidden');
     else app.setAttribute('aria-hidden', 'true');
     body.dataset.screen = screen;

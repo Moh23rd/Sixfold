@@ -37,7 +37,7 @@ jobs:
           - group: games
             files: tests/layout.spec.js tests/progressive-blur.spec.js tests/wordle.spec.js tests/haptics.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js tests/save.spec.js tests/perf-lite.spec.js
           - group: responsive
-            files: tests/hub-hero.spec.js tests/landscape.spec.js tests/backup.spec.js tests/appearance.spec.js tests/sizing.spec.js tests/stretch.spec.js tests/welcome.spec.js
+            files: tests/hub-hero.spec.js tests/landscape.spec.js tests/backup.spec.js tests/appearance.spec.js tests/fullscreen.spec.js tests/sizing.spec.js tests/stretch.spec.js tests/welcome.spec.js
     name: Playwright ${{ matrix.group }}
     steps:
       - uses: actions/checkout@v7

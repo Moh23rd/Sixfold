@@ -30,6 +30,36 @@ fallback before it ships. In a browser tab the hub also offers a fullscreen
 toggle; it is hidden in the edge-to-edge APK and in an installed PWA, where the
 system already removes the browser chrome.
 
+## Old WebView compatibility
+
+The APK does not bundle a browser engine: it renders in whatever Android System
+WebView the device has. Real phones update that component through the Play
+Store, but the API 26 CI image ships a Chromium 60-era WebView, so the shell has
+a compatibility floor that is audited in source and then exercised by the API 26
+emulator assertions.
+
+In JavaScript the newest syntax in the boot path is ES2017 (`async`/`await` and
+object spread). The shell does not use optional chaining, nullish coalescing,
+async generators, `Element.toggleAttribute()` (Chromium 69) or
+`Promise.allSettled()` (Chromium 76). `ResizeObserver`, `visualViewport`,
+`requestIdleCallback`, `Intl.Segmenter` and the clipboard API are optional and
+guarded, and the fullscreen toggle uses the `webkit*` methods where that is all
+the engine has.
+
+The stylesheets are newer than that WebView. `color-mix()` (Chromium 111),
+`inset` (87), `:focus-visible` (86), flex `gap` (84), `min()`/`max()`/`clamp()`
+(79), `aspect-ratio` (88), `dvh` units (108) and `env()` safe areas (69) are
+used directly; `backdrop-filter` and `:has()` are the only features behind an
+`@supports` check. On an old engine those declarations are dropped or left
+unresolved, so missing tints, spacing and sheet geometry are expected while the
+page still boots and responds. The API 26 assertions therefore prove the
+launch, screen navigation, appearance state and native bridge, not the intended
+visual design; check the visual design on a current device.
+
+This section is a static audit. The API 26 emulator run is the first time the
+shell actually executes on that engine, so a CI failure there is still the
+source of truth.
+
 ## Edge-to-edge and safe areas
 
 `MainActivity` draws the WebView behind transparent status and navigation bars.
