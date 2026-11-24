@@ -281,6 +281,11 @@ jobs:
     timeout-minutes: 50
     strategy:
       fail-fast: false
+      # The two full-WebView jobs boot a SwiftShader emulator and the page's
+      # first paint is the heaviest thing this workflow runs. Started together
+      # on the same host they were both losing qemu mid-assertion; one at a
+      # time keeps the host's memory and GPU translator to a single guest.
+      max-parallel: 1
       matrix:
         include:
           # API 24's system WebView predates async/await. API 26's stock WebView
