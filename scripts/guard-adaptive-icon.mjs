@@ -122,5 +122,17 @@ for (const entry of fs.readdirSync(RES)) {
   }
 }
 
+// The launch theme must use the 288dp splash icon, not the 108dp adaptive
+// layers. Android draws windowSplashScreenAnimatedIcon at 288dp and masks the
+// inner 192dp, so the adaptive layer would be upscaled 2.67x on every screen.
+// The icon files themselves are covered by the static-icon snapshots.
+const styles = path.join(RES, 'values/styles.xml');
+const launchIcon = fs.existsSync(styles)
+  ? fs.readFileSync(styles, 'utf8').match(/windowSplashScreenAnimatedIcon">([^<]+)</)
+  : null;
+if (!launchIcon || launchIcon[1].trim() !== '@drawable/splash_icon') {
+  fail('values/styles.xml must point windowSplashScreenAnimatedIcon at @drawable/splash_icon');
+}
+
 if (failed) process.exit(1);
 console.log('adaptive icon guard: default adaptive XML is inset-free; default layers are present; no locale-qualified launcher resources');

@@ -6,7 +6,7 @@
 //   node scripts/build-ios-splash.mjs
 //
 // The composition is intentionally CSS-only: the icon tile is the same
-// icons/icon-512.png used by the app, the wordmark is the bundled Google Sans
+// icons/icon-1024.png used by the app, the wordmark is the bundled Google Sans
 // Flex, and the rule uses the same 0.855vw height at every screen size. The
 // geometry below reproduces the checked-in images at any width.
 
@@ -22,13 +22,24 @@ const SIZES = [
   [1488, 2266], [1536, 2048], [1620, 2160], [1640, 2360],
   [1668, 2388], [2048, 2732]
 ];
+const ICON_SIZE = 1024;
+
+// Each launch image is 1:1 device pixels, and the tile is 34vw of its width,
+// so a size needs ceil(width * 0.34) source pixels. The 1024 icon covers the
+// largest tile here (697px) and a 2732px landscape iPad; the old 512 icon was
+// upscaled up to 1.36x on the 1536-2048px iPads.
+for (const [width] of SIZES) {
+  if (Math.ceil(width * 0.34) > ICON_SIZE) {
+    throw new Error(width + 'px launch image needs a ' + Math.ceil(width * 0.34) + 'px tile; use a larger icon than ' + ICON_SIZE + 'px');
+  }
+}
 const THEMES = {
   light: { bg: '#f6f1e8', ink: '#3b3833', rule: '#dad6cd' },
   dark: { bg: '#1a1918', ink: '#f1eae0', rule: '#42403c' }
 };
 
 const font = fs.readFileSync(path.join(ROOT, 'fonts/google-sans-flex.woff2')).toString('base64');
-const icon = fs.readFileSync(path.join(ROOT, 'icons/icon-512.png')).toString('base64');
+const icon = fs.readFileSync(path.join(ROOT, 'icons/icon-' + ICON_SIZE + '.png')).toString('base64');
 
 const pageHtml = (theme) => {
   const colors = THEMES[theme];

@@ -5,7 +5,7 @@ The launcher is deliberately not localized. The app-icon renderer writes four
 master layers: the rounded icon, a full-bleed maskable square, the adaptive
 background and the adaptive foreground. This script is the single source for
 the web favicon/touch sizes, the boot-splash UI mark, the maskable PWA art, and
-every Android density.
+every Android density, including the system launch icon.
 It writes a snapshot file as it goes, so a stale output or a changed master is
 visible in review instead of only on a phone.
 
@@ -56,6 +56,13 @@ WEB = [
 # 3x screen. WebP keeps that near 8 KiB where a PNG would be about 120 KiB, and
 # the Chromium 60 WebView floor renders it.
 SPLASH_MARK = ("icons/mark-456.webp", 456, "assets/icon.png", 80)
+# Android draws windowSplashScreenAnimatedIcon at 288dp and masks the inner
+# 192dp circle. The old launch theme used the 108dp adaptive icon, which the
+# system scaled 2.67x at every density; this 288dp drawable carries the rounded
+# mark in the inner two-thirds, so the mask sees the plate at 1:1. WebP keeps
+# the six densities near 60 KiB where lossless PNG would add about 800 KiB.
+SPLASH_ICON_DP = 288
+SPLASH_ICON_QUALITY = 90
 ANDROID = [
     "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
     "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
@@ -118,6 +125,23 @@ def build() -> tuple[dict[str, bytes], list[dict]]:
 
     res = ROOT / "android/app/src/main/res"
     for qualifier, legacy_size, foreground_size in DENSITIES:
+        splash_size = round(legacy_size / 48 * SPLASH_ICON_DP)
+        art = round(splash_size * 2 / 3)
+        if art > layers["assets/icon.png"].width:
+            raise SystemExit(
+                f"[static icons] the {qualifier} splash icon needs {art}px of art from a "
+                f"{layers['assets/icon.png'].width}px master; it would be upscaled"
+            )
+        splash = Image.new("RGBA", (splash_size, splash_size), (0, 0, 0, 0))
+        splash.alpha_composite(
+            resize(layers["assets/icon.png"], art),
+            ((splash_size - art) // 2, (splash_size - art) // 2),
+        )
+        data = save_webp(splash, SPLASH_ICON_QUALITY)
+        relative = f"android/app/src/main/res/drawable-{qualifier}/splash_icon.webp"
+        files[relative] = data
+        entries.append(entry(relative, data, splash.size))
+
         directory = res / f"mipmap-{qualifier}"
         generated = {
             "ic_launcher_background.png": resize(layers["assets/icon-adaptive-background.png"], foreground_size),

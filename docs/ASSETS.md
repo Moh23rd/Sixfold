@@ -64,7 +64,7 @@ node scripts/build-ios-splash.mjs
 ```
 
 The script renders all 18 portrait sizes in light and dark with Playwright. It
-uses `icons/icon-512.png` for the tile, the bundled Google Sans Flex for the
+uses `icons/icon-1024.png` for the tile, the bundled Google Sans Flex for the
 wordmark, and the same geometry at every size:
 
 | Element | Geometry |
@@ -75,9 +75,15 @@ wordmark, and the same geometry at every size:
 | Light | background `#f6f1e8`, ink `#3b3833`, rule `#dad6cd` |
 | Dark | background `#1a1918`, ink `#f1eae0`, rule `#42403c` |
 
-The startup links use `?v=6.0.1`. Bump that suffix if the images change.
-`icons/icon-512.png` is the rounded launcher mark, rendered from
+The startup links use `?v=6.0.2`. Bump that suffix if the images change.
+`icons/icon-1024.png` is the rounded launcher mark, rendered from
 `assets/icon.png`; the iOS launch images have no separate artwork.
+
+Each launch image is 1:1 device pixels and the tile is 34vw of its width, so a
+size needs `ceil(width × 0.34)` source pixels. The 1024 icon covers the largest
+tile (697px on `2048x2732`); the old 512 icon was upscaled up to 1.36× on the
+1536–2048px iPads. The generator refuses a size whose tile would need more than
+the icon, so a new iPad size cannot silently bring the soft tile back.
 
 ## Launcher icon
 
@@ -103,7 +109,8 @@ npm run assets:icons:check
 measures the glyph's ink, not the font's line box, so the numeral is centred by
 what the eye sees. `assets:icons` writes `icons/icon-{180,192,512,1024}.png`,
 the two maskable sizes, `icons/mark-456.webp` for the web boot splash, the
-Android legacy/round/foreground/background layers for all six densities, and
+Android legacy/round/foreground/background layers for all six densities, the
+288dp `drawable-<density>/splash_icon.webp` launch icon, and
 `assets/icon-snapshots.json`. The Apple touch icon
 uses the square layer because iOS applies its own squircle; the regular browser
 sizes keep the rounded plate. The snapshot records every source hash, byte size
@@ -157,6 +164,16 @@ npm run assets:guard       # verify only; exits non-zero on an inset or locale d
 The checked-in background and foreground PNGs are separate layers; do not
 flatten the foreground into the background. The adaptive foreground must stay
 transparent outside the glyph.
+
+The launch theme does not use the adaptive icon. Android draws
+`windowSplashScreenAnimatedIcon` at 288dp and masks the inner 192dp circle, so
+the 108dp adaptive layers would be upscaled 2.67× on every screen. The theme
+points at `@drawable/splash_icon` instead: a 288dp WebP per density with the
+rounded plate in the inner two-thirds, resized from the same 1024 master. The
+six files total about 60 KiB; lossless PNG would add about 800 KiB to the APK.
+`build-static-icons.py` refuses a density whose art would exceed the master,
+and `guard-adaptive-icon.mjs` fails if the theme points back at the adaptive
+icon.
 
 ## Checks
 

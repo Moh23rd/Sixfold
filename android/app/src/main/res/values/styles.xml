@@ -31,10 +31,14 @@
     <!-- Launch. The system splash API paints the icon on the same surface
          colour, then postSplashScreenTheme swaps in the running theme; without
          that swap the full-screen splash drawable stayed the window background
-         and reappeared around the WebView during the closing animation. -->
+         and reappeared around the WebView during the closing animation.
+
+         The icon is the 288dp splash drawable, not @mipmap/ic_launcher: the
+         system draws this attribute at 288dp and masks the inner 192dp, so the
+         108dp adaptive layers would be upscaled 2.67x at every density. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/app_surface</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
         <item name="android:windowBackground">@color/app_surface</item>
     </style>

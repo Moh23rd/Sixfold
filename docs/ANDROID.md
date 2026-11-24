@@ -163,7 +163,10 @@ Without it the WebView paints white until the page has a background, which read
 as a second, blank splash between the launch screen and the hub. The launch
 splash itself is the system one, dismissed on the page's first painted frame;
 `launchShowDuration` in `capacitor.config.json` is only a safety net for a page
-that never paints, not a delay before the app appears.
+that never paints, not a delay before the app appears. Its
+`windowSplashScreenAnimatedIcon` is `@drawable/splash_icon`, a 288dp drawable
+generated per density (see `docs/ASSETS.md`); the 108dp adaptive icon would be
+upscaled 2.67× on every screen.
 
 The page's own launch layer is a hand-off there, not a second splash. The OS
 splash already shows the mark, wordmark and rail, so `js/native.js` signals
