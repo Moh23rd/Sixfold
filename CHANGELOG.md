@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.39**.
+> Public release label: **v5.0**. Current development build: **6.0.40**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.39**
+Internal build: **6.0.40**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -16,14 +16,20 @@ release stays at 5.0 until the 6.0 feature set lands.
   system already removes the browser chrome.
 - **Accurate web save feedback**: a browser reports “Image downloaded.” after a
   result card is saved, while the Android shell keeps “Saved to your gallery.”
-- **API 26 WebView coverage**: the game shell no longer uses optional chaining,
-  so the API 26 emulator can run the full WebView assertions. API 24 remains
+- **API 26 stays launch-only**: the API 26 image's Chromium 60-era WebView
+  predates the shell's structural CSS (`inset`, flex `gap`, `min()`/`max()`/
+  `clamp()`, `aspect-ratio`), so a full assertion run there would exercise a
+  degraded layout. The entry still proves the APK installs and reaches first
+  paint; API 33 and 36 run the full WebView assertions. API 24 stays
   launch-only because its WebView predates async/await.
 - **Older WebView hardening**: screen changes set and remove the `inert`
   attribute directly instead of relying on `Element.toggleAttribute()`
   (Chromium 69), and the service-worker install pass collects a failed asset
   itself instead of calling `Promise.allSettled()` (Chromium 76). The remaining
-  Chromium 79+ stylesheet floor is documented in `docs/ANDROID.md`.
+  Chromium 79–111 stylesheet floor is documented in `docs/ANDROID.md`.
+- **Manifest pin follows the build**: a theme switch now reuses the build epoch
+  on the page's manifest link instead of a stale hard-coded number, so changing
+  the theme no longer requests the previous build's manifest.
 - **Fullscreen regression test**: Playwright now drives the hub toggle into and
   out of fullscreen, checks the pressed state and icon, and pins the button as
   hidden in the native shell and an installed app.

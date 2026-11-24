@@ -35,11 +35,11 @@ system already removes the browser chrome.
 The APK does not bundle a browser engine: it renders in whatever Android System
 WebView the device has. Real phones update that component through the Play
 Store, but the API 26 CI image ships a Chromium 60-era WebView, so the shell has
-a compatibility floor that is audited in source and then exercised by the API 26
-emulator assertions.
+a compatibility floor that is audited in source. The emulator matrix runs API 24
+and 26 as launch checks, and the full WebView assertions on 33 and 36.
 
-In JavaScript the newest syntax in the boot path is ES2017 (`async`/`await` and
-object spread). The shell does not use optional chaining, nullish coalescing,
+In JavaScript the newest syntax in the boot path is ES2017 (`async`/`await`).
+The shell does not use optional chaining, nullish coalescing,
 async generators, `Element.toggleAttribute()` (Chromium 69) or
 `Promise.allSettled()` (Chromium 76). `ResizeObserver`, `visualViewport`,
 `requestIdleCallback`, `Intl.Segmenter` and the clipboard API are optional and
@@ -51,14 +51,15 @@ The stylesheets are newer than that WebView. `color-mix()` (Chromium 111),
 (79), `aspect-ratio` (88), `dvh` units (108) and `env()` safe areas (69) are
 used directly; `backdrop-filter` and `:has()` are the only features behind an
 `@supports` check. On an old engine those declarations are dropped or left
-unresolved, so missing tints, spacing and sheet geometry are expected while the
-page still boots and responds. The API 26 assertions therefore prove the
-launch, screen navigation, appearance state and native bridge, not the intended
-visual design; check the visual design on a current device.
+unresolved, so missing tints, spacing and sheet geometry are expected. A
+fallback sheet would have to restate the layout primitives across all seven
+stylesheets, which is a second design rather than a small patch, so the API 26
+emulator entry stays launch-only: it proves the APK installs and reaches first
+paint, while API 33 and 36 run the full assertions. Real API 26 devices update
+WebView through the Play Store and are not limited to the emulator's engine.
 
-This section is a static audit. The API 26 emulator run is the first time the
-shell actually executes on that engine, so a CI failure there is still the
-source of truth.
+This section is a static audit. The API 26 image's first actual shell execution
+is still a device check; the launch row does not assert the modern design.
 
 ## Edge-to-edge and safe areas
 
@@ -278,10 +279,13 @@ by a green test shard.
 The emulator job now runs the installed APK through API **24, 26, 33 and 36**,
 one matrix entry per level. API 24 proves the APK installs and the activity
 reaches its first paint; its WebView predates async/await, so it does not run
-the WebView assertions. API 26, 33 and 36 run the full shell checks, including
-the About sheet's first-frame paint trace, the device-side check for the
-delayed-blur regression. Each job downloads the signed APK from the Android job
-instead of rebuilding it, so all API levels install the same artifact.
+the WebView assertions. API 26 does the same because its stock WebView predates
+the stylesheets' structural features (`inset`, flex gap, `min()`/`max()`/
+`clamp()`, `aspect-ratio`), so a full run there would assert a degraded layout.
+API 33 and 36 run the full shell checks, including the About sheet's first-frame
+paint trace, the device-side check for the delayed-blur regression. Each job
+downloads the signed APK from the Android job instead of rebuilding it, so all
+API levels install the same artifact.
 
 The launcher resources themselves remain audited in source (the static icon
 snapshots, adaptive-icon guard, and no-locale-mipmap check), because a launcher

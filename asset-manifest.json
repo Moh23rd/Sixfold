@@ -3,7 +3,7 @@
     {
       "path": "index.html",
       "bytes": 107440,
-      "sha256": "cfd6d976ce00f9e54639903d49efc8762f134e05fc7ffda46c19648850e8b8f4"
+      "sha256": "a842c68da263245518eee194f314f020410d54f6ce75b8a8f638711559ea4675"
     },
     {
       "path": "licenses.html",
@@ -22,8 +22,8 @@
     },
     {
       "path": "js/theme.js",
-      "bytes": 37253,
-      "sha256": "63c7c19e6560c0f30b12b678a9df4d41d6f9801459c24d16b7e4f48c0bfeb3af"
+      "bytes": 37618,
+      "sha256": "a83408ca8f251296dcde4879bcb47c138330c5382217230f29714a75e6bc4cfd"
     },
     {
       "path": "js/game.js",

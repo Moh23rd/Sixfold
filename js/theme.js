@@ -247,7 +247,12 @@
       link.id = 'manifest-link';
       document.head.appendChild(link);
     }
-    const href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=6.0.38';
+    // Follow the build epoch the page was served with. A second copy of the
+    // number here went stale for two builds and pointed the switch at the
+    // previous build's manifest; the page's own link is the single source.
+    const current = link.getAttribute('href') || '';
+    const query = current.indexOf('?') === -1 ? '' : current.slice(current.indexOf('?'));
+    const href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + query;
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
   }
 

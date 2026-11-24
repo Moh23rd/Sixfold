@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // 6.0 development baseline; the public release remains 5.0.
-const VERSION = 'sixfold-6.0.39';
+const VERSION = 'sixfold-6.0.40';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -18,7 +18,7 @@ const HAPTICS_JS = '5.0.1';
 const SHARE_CARD = '5.3.2';
 const STYLE_ASSET = '5.4.1';
 const FONT_ASSET = '5.0.0';
-const THEME_JS = '6.0.12';
+const THEME_JS = '6.0.13';
 const OVERSCROLL_JS = '6.0.2';
 const GAME_CODE = '5.3.2';
 const WORDLE_CODE = '5.3.1-wordle';

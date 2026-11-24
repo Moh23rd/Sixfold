@@ -453,6 +453,21 @@ test('the page colour lands while the content is still fading', async ({ page })
   expect(state.hub, 'the hub is already on the new page colour').toBe(state.page);
 });
 
+test('a theme switch keeps the build epoch on the manifest link', async ({ page }) => {
+  // The light and dark manifests are separate files, but the build epoch is
+  // what busts the install surface's cache. A second hard-coded epoch in the
+  // theme code went stale and asked for the previous build's manifest.
+  await openLook(page);
+  const before = await page.evaluate(() => document.getElementById('manifest-link').getAttribute('href'));
+  expect(before).toMatch(/^manifest\.webmanifest\?v=[^&]+$/);
+  const version = before.slice(before.indexOf('?v='));
+
+  await page.locator('[data-theme-opt="dark"]').click();
+  await expect
+    .poll(() => page.evaluate(() => document.getElementById('manifest-link').getAttribute('href')))
+    .toBe('manifest-dark.webmanifest' + version);
+});
+
 test('the about sheet paints its blur before the card enters', async ({ page }) => {
   await page.goto('/?perf=full');
   await page.waitForSelector('#daily');

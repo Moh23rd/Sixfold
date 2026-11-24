@@ -664,10 +664,12 @@ try {
   // asserted before any check runs.
   await startAndProveLaunch();
 
-  // API 24 and 26 system images ship WebViews older than the app's JavaScript.
+  // API 24 and 26 system images ship WebViews older than the app's JavaScript
+  // or its structural CSS (inset, flex gap, min()/max()/clamp(), aspect-ratio).
   // The install and first paint above are the meaningful checks on those
-  // levels; driving the page further would report a syntax error as an app
-  // defect. The workflow sets this only for those two matrix entries.
+  // levels; driving the page further would report a degraded layout or a
+  // syntax error as an app defect. The workflow sets this only for those two
+  // matrix entries.
   if (process.env.SMOKE_LAUNCH_ONLY === '1') {
     log('the APK installed and the activity reached its first paint; skipping the WebView assertions on this API');
     if (forwarded) {
