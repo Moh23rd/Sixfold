@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 const { LOCALES, chooseLocale } = require('./helpers');
+const pkg = require('../package.json');
 
 const SW_SOURCE = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
 const SHELL_BLOCK = SW_SOURCE.match(/const SHELL = \[([\s\S]*?)\n\];/)[1];
@@ -536,7 +537,7 @@ test.describe('service worker locale cache', () => {
     await page.goto('/');
     await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
 
-    const manifest = '/manifest.webmanifest?v=6.0.41';
+    const manifest = '/manifest.webmanifest?v=' + pkg.version;
     const cached = (url) => page.evaluate(async (target) => {
       for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
         const cache = await caches.open(name);

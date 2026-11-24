@@ -57,6 +57,12 @@ async function solveWordle(page) {
 async function showSudokuResult(page) {
   await openGame(page, 'sudoku');
   await page.waitForSelector('#sudoku-board .sudoku-cell');
+  // Sudoku's activate() pass hides the result. Wait for the timer to tick so
+  // that pass has finished before exposing the overlay for the axe scan.
+  await page.waitForFunction(() => {
+    const time = document.getElementById('sudoku-time');
+    return time && time.textContent.trim() !== '0:00';
+  });
   await page.evaluate(() => {
     document.getElementById('sudoku-result-stats').textContent = 'Easy · 4:12 · no hints';
     document.getElementById('sudoku-result').hidden = false;

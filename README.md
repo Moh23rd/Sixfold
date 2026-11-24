@@ -34,6 +34,7 @@ real origin.
 ```sh
 npm test                  # Playwright: layout, games, accessibility, offline cache
 npm run test:i18n         # catalogs and locale coverage
+npm run test:webview-floor # ES2018 and Chromium 60 API floor
 npm run audit:wordle      # dictionary provenance and policy
 npm run test:death-report # Android launch death report, from recorded buffers
 npm run assets:icons:check # static launcher art and its pixel snapshots
@@ -44,7 +45,7 @@ npm run test:cache-budget # shell bytes by asset class
 The Android shell lives in `android/`; build and distribution notes are in
 [docs/ANDROID.md](docs/ANDROID.md). Reproducible font, iOS launch image,
 launcher-art and adaptive-icon builds are in [docs/ASSETS.md](docs/ASSETS.md).
-[docs/](docs/) also holds the 6.0 roadmap and the Wordle audit and source
+[docs/](docs/) also holds the 6.0 release plan and the Wordle audit and source
 manifest.
 
 ## Layout

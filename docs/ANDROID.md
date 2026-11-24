@@ -38,9 +38,10 @@ Store, but the API 26 CI image ships a Chromium 60-era WebView, so the shell has
 a compatibility floor that is audited in source. The emulator matrix runs API 24
 and 26 as launch checks, and the full WebView assertions on 33 and 36.
 
-In JavaScript the newest syntax in the boot path is ES2017 (`async`/`await`).
-The shell does not use optional chaining, nullish coalescing,
-async generators, `Element.toggleAttribute()` (Chromium 69) or
+In JavaScript the shell parses as ES2018, the newest syntax that WebView
+supports. The boot path itself only needs `async`/`await` and object
+rest/spread. The shell does not use optional chaining, nullish coalescing,
+async generators, `for await`, `Element.toggleAttribute()` (Chromium 69) or
 `Promise.allSettled()` (Chromium 76). `ResizeObserver`, `visualViewport`,
 `requestIdleCallback`, `Intl.Segmenter` and the clipboard API are optional and
 guarded, and the fullscreen toggle uses the `webkit*` methods where that is all
@@ -67,9 +68,10 @@ phone updates it through the Play Store — so the version in the log is what th
 decision rests on.
 
 The JavaScript floor is enforced in source. `npm run test:webview-floor` parses
-every shell script and inline `index.html` block as ES2018 (Chromium 60's
-syntax set, minus async generators and `for await`, which it rejects) and fails
-on a curated list of globals and methods newer than the engine. Deliberately
+every shell script and every inline block in the root HTML pages as ES2018
+(Chromium 60's syntax set, minus async generators and `for await`, which it
+rejects) and fails on a curated list of globals and methods newer than the
+engine. Deliberately
 feature-checked APIs are listed in the guard with their reason, and an
 allowance that stops matching is itself an error. The guard found a dotAll
 `/s` regex in `i18n/i18n.js`: a parse error on this WebView, which would have
@@ -276,8 +278,9 @@ an equivalent command when npm is available.
 After it passes, check that the home screen is visible, the header clears the
 status bar/cutout, the bottom controls clear the gesture bar, and one game can
 be opened and played. CI installs and launches the APK on API 24, 26, 33 and
-36, and runs the full WebView assertions on 26/33/36; use a physical cutout
-device when native layout or system-bar behavior changes.
+36; API 24 and 26 prove the launch, and API 33 and 36 run the full WebView
+assertions. Use a physical cutout device when native layout or system-bar
+behavior changes.
 
 ## CI verification
 
@@ -343,9 +346,11 @@ source they downloaded it from.
 
 ## Versioning and data
 
-- `android/app/build.gradle` contains `versionCode 6` and `versionName "6.0"`.
-  Increase `versionCode` for every distributed build and set a user-visible
-  `versionName` before release.
+- `android/app/build.gradle` contains `versionCode 600` and `versionName
+  "6.0.0"`. `versionCode` is `major * 100 + minor * 10 + patch` (600 for
+  6.0.0), so it increases with every distributed build; `versionName` tracks
+  the package and changelog build version. `tests/release-labels.spec.js`
+  fails when the Android name drifts from `package.json`.
 - Updates preserve app data only when the application ID and signing key match.
   A different key generally requires uninstalling the old app, which removes
   its data.

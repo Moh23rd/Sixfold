@@ -392,18 +392,19 @@
 
   function applyPalette(id, persist) {
     const palette = PALETTES.filter(function (p) { return p.id === id; })[0] || PALETTES[0];
-    // One line per write, boot included: a capture that starts with "warm"
-    // after a reload is the storage, and one that changes mid-session names
-    // the frame that did it.
-    try {
-      console.log(
-        '[appearance] palette ' + state.palette +
-          (state.palette === palette.id ? ' kept' : ' -> ' + palette.id) +
-          (persist ? ', saved' : ', unsaved') +
-          ', at ' + paletteCaller()
-      );
-    } catch (err) {
-      /* a logger that is not there must not stop the switch */
+    // Opt-in only: the caller stack names the frame that moved the palette,
+    // but building it on every boot is not worth a release log line.
+    if (window.__sixfoldDebug) {
+      try {
+        console.log(
+          '[appearance] palette ' + state.palette +
+            (state.palette === palette.id ? ' kept' : ' -> ' + palette.id) +
+            (persist ? ', saved' : ', unsaved') +
+            ', at ' + paletteCaller()
+        );
+      } catch (err) {
+        /* a logger that is not there must not stop the switch */
+      }
     }
     state.palette = palette.id;
     if (switchIsVisible(persist)) crossFade();

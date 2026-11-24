@@ -1,9 +1,11 @@
 # Sixfold 6.0 — Daily Gauntlet + Profile/Stats
 
-**Status:** Scoped proposal. No 6.0 feature code is included in this change.
+**Status:** Shipped in 6.0.0. The Daily Gauntlet, the local profile, the
+badges-page sections and their backup coverage are in the release. Gauntlet
+text sharing remains a follow-up; the 6.0 release note does not promise it.
 
-**Baseline:** `release/6.0` at `5dbfd74` plus this plan. Internal package/cache
-version is `6.0.0`; the public label remains `v5.0` until the release gate.
+**Baseline:** `release/6.0` started at `5dbfd74`. The internal package/cache
+version and the public label are now `6.0.0` and `v6.0`.
 
 **M0 output:** [M0-DAILY-SEAM.md](M0-DAILY-SEAM.md) records the completion-seam
 decision, the per-game finish and resume audit, and the rechecked estimate.
@@ -167,7 +169,7 @@ profile records without double-counting.
 - Backup restore, backup round-trip and clear-data behavior pass.
 - Android/iOS WebView smoke tests pass where those wrappers are part of the
   release.
-- Public label flips from `v5.0` to `v6.0` only in the release commit.
+- The public label flipped from `v5.0` to `v6.0` in the release commit.
 
 ## Data and compatibility
 

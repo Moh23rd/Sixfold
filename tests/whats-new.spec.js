@@ -2,13 +2,13 @@ const { test, expect } = require('@playwright/test');
 const { LANGUAGE_NAMES, LOCALES, expectNoClippedText } = require('./helpers');
 
 const WHATS_NEW_ITEMS = [
-  'Wordle in all twelve languages: localized word lists, native input for Arabic, Hindi, Kannada, Japanese, Korean and Chinese, and an offline English fallback',
-  'Wordle offline support: the selected dictionary downloads in the background, and an English fallback round keeps the game playable when it is not cached',
-  'Arabic and Hindi numerals, right-to-left Arabic, localized dates and share text across every game',
-  'New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic, with complete catalogs and offline fonts'
+  'Daily Gauntlet: play all six daily challenges in one run, leave and resume at any round, and keep one finish time.',
+  'A local profile on the badges page: daily and replay counts, bests, and every finished gauntlet — stored on this device.',
+  'A calmer finish: light, dark and palette changes cross-fade, hidden games stop redrawing, and reduced motion still cuts in one frame.',
+  'A sturdier shell: saved cards reach the gallery, the window frame follows the app, and older Android WebViews stay supported.'
 ];
 
-test.describe('What’s New 5.0', () => {
+test.describe('What’s New 6.0', () => {
   for (const locale of LOCALES) {
     test(LANGUAGE_NAMES[locale] + ' translations and 320px layout', async ({ page }) => {
       await page.addInitScript(({ locale }) => {
@@ -27,12 +27,12 @@ test.describe('What’s New 5.0', () => {
       const heading = (await panel.locator('.whats-new-label').textContent()).trim();
       const expectedHeading = await page.evaluate(() => {
         const i18n = window.SixfoldI18n;
-        return i18n.number(i18n.t('What’s new in 5.0'));
+        return i18n.number(i18n.t('What’s new in 6.0'));
       });
       expect(heading).toBe(expectedHeading);
 
       if (locale !== 'en') {
-        expect(heading, locale + ' heading').not.toBe('What’s new in 5.0');
+        expect(heading, locale + ' heading').not.toBe('What’s new in 6.0');
         expected.forEach((text, index) => {
           expect(text, locale + ' item ' + (index + 1)).not.toBe(WHATS_NEW_ITEMS[index]);
         });

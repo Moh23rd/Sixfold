@@ -1,13 +1,33 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.41**.
+> Public release label: **v6.0**.
 
-## Unreleased — v6.0 development
+## v6.0 — 24 November 2026
 
-Internal build: **6.0.41**
+Internal build: **6.0.0**
 
-The 6.0 baseline refreshes the development toolchain and CI while the public
-release stays at 5.0 until the 6.0 feature set lands.
+6.0 makes the collection the daily habit. An optional Daily Gauntlet runs all
+six daily challenges as one resumable round, a local profile on the badges page
+gives that progress a home, and the appearance and Android shell work makes the
+whole set feel settled. No accounts, ads, tracking or server.
+
+### Release polish
+
+- **One version across every surface**: the package, lockfile, web label,
+  manifest epoch, service-worker cache, locale catalog epoch and Android
+  `versionName` move together, and the release-label test now checks all of
+  them. Android moves to `versionCode 600` / `versionName "6.0.0"`.
+- **The What’s New note is 6.0**: the panel describes the Gauntlet, the profile,
+  the calmer appearance switch and the sturdier shell in all twelve languages.
+  The seven stale 5.0 bullets were removed from every catalog, so the locale
+  payload no longer carries release notes the app cannot show.
+- **The WebView guard covers every page**: it now scans the inline scripts in
+  every root HTML file, including `licenses.html`, as well as the shell
+  scripts. Its exemption table is one flat entry per file and key, so the
+  guarded API list is auditable in one place.
+- **Release notes and platform docs agree with the build**: the Android guide
+  no longer says API 26 runs the full assertions, and its versioning notes
+  describe the `versionCode` scheme the project actually uses.
 
 ### Web parity
 
@@ -32,8 +52,9 @@ release stays at 5.0 until the 6.0 feature set lands.
   (`navigator.userAgent`) on every API row, and a launch-only row whose engine
   is newer than 60 warns in CI, so the API 26 exception rests on the device's
   engine rather than the image number. `npm run test:webview-floor` parses
-  every shell script as ES2018, rejects async generators and `for await`, and
-  fails on a curated list of post-Chromium-60 globals and methods.
+  every shell script and every root HTML page's inline blocks as ES2018,
+  rejects async generators and `for await`, and fails on a curated list of
+  post-Chromium-60 globals and methods.
 - **Translation survives the old WebView**: the new guard caught a dotAll `/s`
   regex in `i18n/i18n.js`, a parse error on Chromium 60 that would have
   disabled every translation; it now uses an equivalent `[\s\S]` pattern. The
@@ -321,13 +342,17 @@ release stays at 5.0 until the 6.0 feature set lands.
 - **Cleaner release metadata**: the 6.0 development build and public 5.0 label
   are now checked independently by the release-label test.
 
-### Still to come
+### Release verification
 
-- M3 integration and polish: Gauntlet sharing, accessibility and RTL checks,
-  cache-footprint verification after localization, and the remaining release
-  notes.
-- M4 release gate: the full matrix, signed native artifact checks, and the
-  public label change from `v5.0` to `v6.0`.
+- `npm test`, `npm run test:i18n`, `npm run test:webview-floor`,
+  `npm run test:death-report`, `npm run audit:wordle`,
+  `npm run assets:manifest:check`, `npm run test:cache-budget` and
+  `npm run assets:icons:check` cover the release tree.
+- CI runs the Playwright matrix, the Android APK job and the API 24/26/33/36
+  emulator smoke from the release commit. The APK is built and signed in CI;
+  this workspace has no JDK or Android SDK.
+- Gauntlet text sharing is deliberately not part of this release; the summary
+  and profile are local, and the daily share remains the share path.
 
 ## v5.0 — 15 November 2026
 
