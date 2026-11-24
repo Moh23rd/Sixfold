@@ -223,6 +223,13 @@ html {
   text-size-adjust: 100%;
 }
 
+/* The bundled face carries an fi/fl ligature that renders the i without its
+   dot, so "finish" reads as "finſh". The copy is short UI text; the joined
+   forms buy nothing and are not worth a broken letter. */
+body {
+  font-variant-ligatures: none;
+}
+
 body {
   margin: 0;
   height: 100vh;

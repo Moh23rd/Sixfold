@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 107373,
-      "sha256": "1561d4ed07dbeaeeed809f9e380d1d4342762df4593d44ea5002c7d36002f6b4"
+      "bytes": 113286,
+      "sha256": "b8420e67216acb16cdc47d30eb2fdc784d90a19095c85ac63dda5c2d6d029761"
     },
     {
       "path": "licenses.html",
@@ -17,13 +17,13 @@
     },
     {
       "path": "css/styles.css",
-      "bytes": 48205,
-      "sha256": "7652470a3bc11a6df81f28559ead6bb8af1a01e342175e8ee033fb4c7a814dd0"
+      "bytes": 48460,
+      "sha256": "76f69cee2aad15a4429de1ff461de94fabe2778f1d6ba83b445277ff88c85590"
     },
     {
       "path": "js/theme.js",
-      "bytes": 37641,
-      "sha256": "1e4829a77eccff988e9c922c35c9c719d0ca807cf87fbd15e550c4b0e4654559"
+      "bytes": 38235,
+      "sha256": "9329c9d4549905b5150cbe7885593fa449f70eb75de16ef4d1835148e62c7e68"
     },
     {
       "path": "js/game.js",
@@ -57,13 +57,13 @@
     },
     {
       "path": "css/games.css",
-      "bytes": 108097,
-      "sha256": "653f3755b9c7ca60d9220ae7f6b6b13c682814c09e9b92f2bfc7512ec6a4f3a6"
+      "bytes": 108976,
+      "sha256": "fb145b29f344875b734b9bcc0a0782fa7ad31cdf05e634a2047adc0bb213d935"
     },
     {
       "path": "css/home.css",
-      "bytes": 32355,
-      "sha256": "f557af754bc97ed0f58347637b7cad464ab070300111fb5ccf36b0a351674833"
+      "bytes": 32826,
+      "sha256": "0f1cffc28a76e0adeaea887941f43a273e8fd383bb175d99b41723c11004fc53"
     },
     {
       "path": "css/polish.css",
@@ -77,8 +77,8 @@
     },
     {
       "path": "css/v5.css",
-      "bytes": 61899,
-      "sha256": "1d0412b21dde092594980d45025ee1aedb0c995b4a4e9e0572eadb62d2c15cfb"
+      "bytes": 64408,
+      "sha256": "dac4fb572506aaa2f6782aa9b850af5cd8baf185835165a6e5e6601370eee571"
     },
     {
       "path": "css/progressive-blur.css",
@@ -87,8 +87,8 @@
     },
     {
       "path": "js/settings.js",
-      "bytes": 9575,
-      "sha256": "0e7459d8db272aef6ad8ba155cfc26942fb008087db65e046ba25af192d72e69"
+      "bytes": 9731,
+      "sha256": "83f581db6952c3486d2aca03a7ce4cf6bfd46736952db2366550cae66d59e555"
     },
     {
       "path": "js/sudoku.js",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 153870,
-      "sha256": "8f83bacd326afce79fa309c326aa4d12a4a9c6f58ab527b672cbd3bf9be9f811"
+      "bytes": 158830,
+      "sha256": "fa6118f165dfe6a936fb5c161a55333dd4c2160ac2f4c4071872f806f27dd940"
     },
     {
       "path": "js/daily.js",
@@ -132,8 +132,8 @@
     },
     {
       "path": "i18n/i18n.js",
-      "bytes": 65705,
-      "sha256": "5378f78664bd24f87faa4e283f8b080d4fe7410ba05da63b6a01009ec458a7c9"
+      "bytes": 67281,
+      "sha256": "f1749630b47e3cf4b280e761cc575aa4700c574b51488f223c399a662b953c08"
     },
     {
       "path": "js/native.js",

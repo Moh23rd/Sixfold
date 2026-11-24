@@ -85,9 +85,13 @@ for (const relative of XML) {
   }
 }
 
+// The plate is the adaptive background now, and the six tiles are the
+// foreground inside the safe zone. The neutral page cream here made the
+// foreground's dark rounded square float in a ring; the mark's own ink is the
+// surface the tiles are designed against.
 const colors = path.join(RES, 'values/ic_launcher_background.xml');
-if (!fs.existsSync(colors) || !/#f6f1e8/i.test(fs.readFileSync(colors, 'utf8'))) {
-  fail('values/ic_launcher_background.xml must be #f6f1e8');
+if (!fs.existsSync(colors) || !/#3b3833/i.test(fs.readFileSync(colors, 'utf8'))) {
+  fail('values/ic_launcher_background.xml must be #3b3833');
 }
 
 for (const [density, legacy, foreground] of DENSITIES) {

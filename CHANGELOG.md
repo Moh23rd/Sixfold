@@ -11,6 +11,22 @@ six daily challenges as one resumable round, a local profile on the badges page
 gives that progress a home, and the appearance and Android shell work makes the
 whole set feel settled. No accounts, ads, tracking or server.
 
+### Fixes and polish
+
+- **The launcher icon sits inside the mask**: the adaptive foreground now carries
+  only the six tiles, scaled into the launcher safe zone over an ink background
+  layer, so App info and circular launchers no longer crop a zoomed mark.
+- **Display text renders cleanly**: common ligatures are off, so the bundled
+  display face cannot draw its broken `fi` in What’s New, and the stray spark
+  beside that header is gone.
+- **Fruit Merge can play as numbers**: a new Numbers mode in the Fruit Merge
+  settings swaps fruit for numbered tiles that merge the same way, and the
+  choice persists with the rest of the settings. The hub card, game title, next
+  piece, statuses, share text and scores all follow the mode.
+- **Hub settings read as settings**: Accessibility is a contained row with its
+  explanation instead of a bare summary, and landscape keeps the Look label and
+  chevron inside the pill.
+
 ### Release polish
 
 - **One version across every surface**: the package, lockfile, web label,
@@ -28,6 +44,13 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **Release notes and platform docs agree with the build**: the Android guide
   no longer says API 26 runs the full assertions, and its versioning notes
   describe the `versionCode` scheme the project actually uses.
+- **Game-level accessibility controls**: Minesweeper gains larger mine numbers
+  and a hide-timer option, while Water Sort gains colour-blind layer symbols;
+  both game sheets also expose the existing high-contrast setting.
+- **Android smoke reports host trouble honestly**: the WebView assertions attach
+  to the newest visible shell page when an older activity is still listed, and
+  a lost emulator becomes a retryable failure instead of being mistaken for a
+  product bug.
 
 ### Web parity
 

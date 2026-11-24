@@ -381,13 +381,18 @@ then rebuilds the launcher from `assets/icon.png` so its generated insets or
 locale-qualified resources cannot survive. The static generator needs Python 3
 with Pillow; the CI snapshot check is Node-only and always runs.
 
-The adaptive icon is deliberately two full-bleed layers. `capacitor-assets`
-adds `<inset>` wrappers to the XML on each generation, which shrinks the mark
-inside the launcher mask; `native:assets:android` therefore ends with
+The adaptive icon uses a full-bleed ink background and a foreground holding
+only the six tiles, fitted to the launcher's 66dp safe zone. A full-bleed
+foreground put the outer tiles under the mask, which read as a zoomed, cropped
+icon in App info and on circular launchers. `capacitor-assets` adds `<inset>`
+wrappers to the XML on each generation, which would shrink the art inside the
+launcher mask; `native:assets:android` therefore ends with
 `scripts/guard-adaptive-icon.mjs`. Run `npm run assets:guard` to verify without
-regenerating.
+generating.
 
-The launcher icon is static: one six-tile mark for every language. The default
+The launcher icon is static: one six-tile mark for every language. The ink
+background is `#3b3833`, so the dark plate and the mask share one colour and
+only the tiles need a safe margin. The default
 `mipmap-anydpi-v26` adaptive XML references `@mipmap/ic_launcher_foreground`,
 and there are no locale-qualified mipmap directories. The guard rejects any
 such directory so the icon cannot start following the device language again.

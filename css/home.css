@@ -198,6 +198,7 @@ html[data-theme="dark"] {
   display: block;
   font-family: var(--font-ui);
   font-size: 6.5px;
+  line-height: 1.2;
   letter-spacing: 0.12em;
 }
 
@@ -808,9 +809,7 @@ html.perf-lite .home-ticker-track { animation: none; transform: none; }
   opacity: 0.9;
 }
 
-.home-game-stage .mini-fruit-cluster {
-  transform: scale(0.78);
-}
+.home-game-stage .mini-cluster { transform: scale(0.78); }
 
 .home-game-stage .mini-ttt {
   width: 96px;
@@ -1061,7 +1060,7 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-game-stage .mini-merge { width: 124px; }
   .home-game-stage .mini-water { transform: scale(0.95); }
   .home-game-stage .mini-sudoku { width: 116px; height: 116px; }
-  .home-game-stage .mini-fruit-cluster { transform: scale(0.94); }
+  .home-game-stage .mini-cluster { transform: scale(0.94); }
   .home-game-stage .mini-ttt { width: 110px; height: 110px; }
   .home-game-stage .mini-mines { width: 112px; height: 112px; }
 }
@@ -1094,9 +1093,21 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 
 @media (max-width: 480px) {
   .hub-tagline { display: none; }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
   .hub-look-copy span { display: none; }
   .hub-look-copy strong { max-width: 12ch; font-size: 9.5px; }
   .hub-look-chevron { display: none; }
+}
+
+/* A short landscape window is wide, not narrow. Keep the Look pill's name and
+   its chevron, and give its two-line copy enough height that a scaled-up
+   system font cannot push the label out of the border. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .hub-look { min-height: 40px; padding: 0 10px 0 9px; }
+  .hub-look-copy span { display: block; }
+  .hub-look-chevron { display: block; }
 }
 
 @media (max-width: 380px) {
@@ -1148,7 +1159,7 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-game-stage .mini-merge { width: 96px; gap: 6px; }
   .home-game-stage .mini-water { transform: scale(0.77); }
   .home-game-stage .mini-sudoku { width: 92px; height: 92px; }
-  .home-game-stage .mini-fruit-cluster { transform: scale(0.73); }
+  .home-game-stage .mini-cluster { transform: scale(0.73); }
   .home-game-stage .mini-ttt { width: 90px; height: 90px; }
   .home-game-stage .mini-mines { width: 92px; height: 92px; }
   .hub-foot { margin-top: 28px; font-size: 8px; }

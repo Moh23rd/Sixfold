@@ -206,11 +206,36 @@ body[data-screen="mines"] .app {
 .mini-tube i.g4 { --mini-liquid: var(--g4, #39a9a1); }
 .mini-tube i.g5 { --mini-liquid: var(--g5, #5b8fd5); }
 
-.mini-fruit-cluster {
+.mini-cluster {
   position: relative;
   width: 154px;
   height: 128px;
 }
+
+/* Number Merge reuses the fruit cluster's geometry so both thumbnails sit in
+   the same frame at every breakpoint. */
+.mini-num {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mini-accent) 24%, #f6f1e8);
+  box-shadow: inset 0 0 0 3px var(--mini-accent);
+  color: #2c2723;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.n1 { width: 34px; height: 34px; left: 59px; top: 84px; font-size: 13px; --mini-accent: var(--g1, #d95151); }
+.n2 { width: 42px; height: 42px; left: 88px; top: 58px; font-size: 15px; --mini-accent: var(--g2, #e98a36); }
+.n3 { width: 52px; height: 52px; left: 38px; top: 38px; font-size: 17px; --mini-accent: var(--g3, #76a84c); }
+.n4 { width: 44px; height: 44px; left: 6px; top: 72px; font-size: 14px; --mini-accent: var(--g5, #5b8fd5); }
+.n5 { width: 30px; height: 30px; left: 116px; top: 22px; font-size: 10px; --mini-accent: var(--g6, #8b63b9); }
+
+html[data-fruit-numbers="on"] .mini-fruit-cluster { display: none; }
+html:not([data-fruit-numbers="on"]) .mini-number-cluster { display: none; }
 
 .mini-fruit {
   position: absolute;
@@ -1452,7 +1477,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 @media (max-width: 720px) {
   .mini-merge { width: 124px; }
   .mini-water { height: 108px; }
-  .mini-fruit-cluster { transform: scale(0.9); }
+  .mini-cluster { transform: scale(0.9); }
 }
 
 @media (max-width: 420px) {
@@ -1631,7 +1656,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 
 .mini-merge { width: 112px; }
 .mini-water { height: 106px; }
-.mini-fruit-cluster { transform: scale(0.9); }
+.mini-cluster { transform: scale(0.9); }
 
 .hub-foot {
   padding-top: 26px;
@@ -2772,6 +2797,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 .hub-look {
   display: inline-flex;
   align-items: center;
+  flex: none;
   gap: 8px;
   min-height: 42px;
   padding: 5px 9px 5px 6px;
@@ -2802,8 +2828,9 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  flex: none;
   gap: 1px;
-  line-height: 1;
+  line-height: 1.2;
   text-align: left;
 }
 
@@ -3812,7 +3839,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   .hub h1 { font-size: 41px; }
   .mini-merge { width: 92px; gap: 6px; }
   .mini-water { transform: scale(0.82); transform-origin: bottom; }
-  .mini-fruit-cluster { transform: scale(0.78); }
+  .mini-cluster { transform: scale(0.78); }
   .mini-ttt { width: 92px; height: 92px; gap: 4px; }
   .mini-mines { width: 94px; height: 94px; gap: 4px; }
   .hub-foot { font-size: 7.5px; letter-spacing: 0.04em; }
@@ -3836,21 +3863,6 @@ html[data-theme="dark"] .reset-confirm:hover {
 .whats-new[hidden] { display: none; }
 
 [dir="rtl"] .whats-new { padding-right: 0; padding-left: 8px; }
-
-.whats-new-mark {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 22px;
-  height: 22px;
-  margin-top: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1;
-}
 
 .whats-new-details { flex: 1; min-width: 0; }
 

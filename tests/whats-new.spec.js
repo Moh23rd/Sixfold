@@ -5,7 +5,8 @@ const WHATS_NEW_ITEMS = [
   'Daily Gauntlet: play all six daily challenges in one run, leave and resume at any round, and keep one finish time.',
   'A local profile on the badges page: daily and replay counts, bests, and every finished Gauntlet — stored on this device.',
   'A calmer finish: light, dark and palette changes fade smoothly, hidden games stop redrawing, and reduced motion still switches instantly.',
-  'A sturdier app: saved cards reach the gallery, the window frame follows the app, and older Android WebViews stay supported.'
+  'A sturdier app: saved cards reach the gallery, the window frame follows the app, and older Android WebViews stay supported.',
+  'Fruit Merge plays as fruit or numbered tiles, and the app icon now sits properly inside the launcher shape.'
 ];
 
 test.describe('What’s New 6.0', () => {

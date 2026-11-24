@@ -482,7 +482,10 @@
   }
 
   function updateDocumentTitle() {
-    document.title = current === 'hub' ? 'Sixfold — Six games. No filler.' : (SCREEN_NAMES[current] || 'Sixfold') + ' — Sixfold';
+    const name = current === 'fruit' && games.fruit && games.fruit.label
+      ? games.fruit.label()
+      : SCREEN_NAMES[current];
+    document.title = current === 'hub' ? 'Sixfold — Six games. No filler.' : localize(name || 'Sixfold') + ' — Sixfold';
   }
 
   function openBadges() {
@@ -1140,13 +1143,13 @@
     const STATE_KEY = 'merge-games.water.state.v3';
     const CAP = 4;
     const COLORS = [
-      { name: 'coral', hex: '#e85f3b', light: '#f39b7e', deep: '#b83828' },
-      { name: 'amber', hex: '#e3a92f', light: '#f2d07a', deep: '#ad7414' },
-      { name: 'lime', hex: '#8bbd54', light: '#bfe08f', deep: '#5d8e2f' },
-      { name: 'teal', hex: '#39a9a1', light: '#8ddcd6', deep: '#167b77' },
-      { name: 'blue', hex: '#5b8fd5', light: '#a8c6ef', deep: '#3264a5' },
-      { name: 'grape', hex: '#9a6bb5', light: '#cdaee0', deep: '#6d4389' },
-      { name: 'rose', hex: '#d96b8a', light: '#f0a8bb', deep: '#a33d5e' }
+      { name: 'coral', symbol: '●', hex: '#e85f3b', light: '#f39b7e', deep: '#b83828' },
+      { name: 'amber', symbol: '◆', hex: '#e3a92f', light: '#f2d07a', deep: '#ad7414' },
+      { name: 'lime', symbol: '▲', hex: '#8bbd54', light: '#bfe08f', deep: '#5d8e2f' },
+      { name: 'teal', symbol: '■', hex: '#39a9a1', light: '#8ddcd6', deep: '#167b77' },
+      { name: 'blue', symbol: '★', hex: '#5b8fd5', light: '#a8c6ef', deep: '#3264a5' },
+      { name: 'grape', symbol: '✚', hex: '#9a6bb5', light: '#cdaee0', deep: '#6d4389' },
+      { name: 'rose', symbol: '✦', hex: '#d96b8a', light: '#f0a8bb', deep: '#a33d5e' }
     ];
     const LEVELS = [
       { tier: 'Easy', colors: 3, tubes: [[2, 1, 0, 0], [1, 2, 0, 1], [1, 2, 0, 2], [], []] },
@@ -1179,6 +1182,7 @@
       if (theme && theme.colour) {
         return {
           name: base.name,
+          symbol: base.symbol,
           hex: theme.colour(base.hex),
           light: theme.colour(base.light),
           deep: theme.colour(base.deep)
@@ -1328,6 +1332,9 @@
         if (segment.className !== className) segment.className = className;
         setTubeStyle(segment, '--liquid', swatch.hex);
         setTubeStyle(segment, '--liquid-deep', swatch.deep);
+        // A shape repeats the colour so the board still reads without hue
+        // vision. The tube's aria-label already carries the colour names.
+        if (segment.dataset.symbol !== swatch.symbol) segment.dataset.symbol = swatch.symbol;
         if (below) {
           setTubeStyle(segment, '--liquid-below', below.hex);
           setTubeStyle(segment, '--liquid-below-deep', below.deep);
@@ -2329,18 +2336,23 @@
     /* The canonical eleven-fruit chain. Radii rise with the rank so the
        physics naturally makes larger fruit take more space. */
     const FRUITS = [
-      { name: 'Cherry', color: '#ca4b55', light: '#f0918d', deep: '#872a35', r: 13 },
-      { name: 'Strawberry', color: '#d9565c', light: '#f4a09b', deep: '#962a38', r: 16 },
-      { name: 'Grapes', color: '#8e63b2', light: '#cba7e1', deep: '#5c397a', r: 20 },
-      { name: 'Dekopon', color: '#e58a35', light: '#f5be69', deep: '#a55418', r: 24 },
-      { name: 'Persimmon', color: '#e07b2c', light: '#f5ad5b', deep: '#a54b13', r: 29 },
-      { name: 'Apple', color: '#c64d43', light: '#ee8e78', deep: '#842c2d', r: 34 },
-      { name: 'Pear', color: '#9cac47', light: '#d4de87', deep: '#627326', r: 40 },
-      { name: 'Peach', color: '#e58c80', light: '#f7bdae', deep: '#a65350', r: 46 },
-      { name: 'Pineapple', color: '#d6a62d', light: '#f1d064', deep: '#966b1c', r: 52 },
-      { name: 'Melon', color: '#8fae5b', light: '#d0e19f', deep: '#5a7533', r: 58 },
-      { name: 'Watermelon', color: '#408454', light: '#7db78b', deep: '#215b38', r: 65 }
+      { name: 'Cherry', value: 2, color: '#ca4b55', light: '#f0918d', deep: '#872a35', r: 13 },
+      { name: 'Strawberry', value: 4, color: '#d9565c', light: '#f4a09b', deep: '#962a38', r: 16 },
+      { name: 'Grapes', value: 8, color: '#8e63b2', light: '#cba7e1', deep: '#5c397a', r: 20 },
+      { name: 'Dekopon', value: 16, color: '#e58a35', light: '#f5be69', deep: '#a55418', r: 24 },
+      { name: 'Persimmon', value: 32, color: '#e07b2c', light: '#f5ad5b', deep: '#a54b13', r: 29 },
+      { name: 'Apple', value: 64, color: '#c64d43', light: '#ee8e78', deep: '#842c2d', r: 34 },
+      { name: 'Pear', value: 128, color: '#9cac47', light: '#d4de87', deep: '#627326', r: 40 },
+      { name: 'Peach', value: 256, color: '#e58c80', light: '#f7bdae', deep: '#a65350', r: 46 },
+      { name: 'Pineapple', value: 512, color: '#d6a62d', light: '#f1d064', deep: '#966b1c', r: 52 },
+      { name: 'Melon', value: 1024, color: '#8fae5b', light: '#d0e19f', deep: '#5a7533', r: 58 },
+      { name: 'Watermelon', value: 2048, color: '#408454', light: '#7db78b', deep: '#215b38', r: 65 }
     ];
+
+    // Number Merge keeps the same physics and chain, but every piece is a
+    // numbered tile. The choice is a device setting, so it survives a restart
+    // and travels with the JSON backup.
+    let numberMode = Boolean(window.SixfoldSettings && window.SixfoldSettings.get('fruitNumbers'));
 
     // Keep the hand-picked fruit colours and recolour copies when the palette
     // changes, so the canvas follows the same six choices as Merge.
@@ -2420,7 +2432,8 @@
         const spriteCtx = sprite.getContext('2d');
         spriteCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx = spriteCtx;
-        paintFruit({ tier: tier, r: def.r, x: size / 2, y: size / 2, angle: 0 });
+        if (numberMode) paintNumber({ tier: tier, r: def.r, x: size / 2, y: size / 2, angle: 0 });
+        else paintFruit({ tier: tier, r: def.r, x: size / 2, y: size / 2, angle: 0 });
         sprites.push({ canvas: sprite, size: size });
       });
       ctx = previous;
@@ -2432,7 +2445,9 @@
       if (!sprite) return;
       ctx.save();
       ctx.translate(fruit.x, fruit.y);
-      ctx.rotate(fruit.angle || 0);
+      // Numbered tiles stay upright: a rotated two looks like a different
+      // digit, and the board has to be read at a glance.
+      ctx.rotate(numberMode ? 0 : (fruit.angle || 0));
       ctx.drawImage(sprite.canvas, -sprite.size / 2, -sprite.size / 2, sprite.size, sprite.size);
       ctx.restore();
     }
@@ -2486,12 +2501,36 @@
       if (bestEl) bestEl.textContent = String(best);
       const fruit = FRUITS[nextTier];
       if (nextDot) {
-        nextDot.style.background = 'radial-gradient(circle at 32% 28%, ' + fruit.light + ', ' + fruit.color + ' 58%, ' + fruit.deep + ')';
-        nextDot.style.boxShadow = 'inset -2px -3px 0 rgba(0,0,0,.14)';
+        // The dot previews the next piece's colour. The number itself is the
+        // label beside it, so the tiny disc stays a swatch rather than a
+        // second, harder-to-read copy of the same digit.
+        nextDot.classList.remove('is-number');
+        nextDot.textContent = '';
+        if (numberMode) {
+          nextDot.style.background = fruit.light;
+          nextDot.style.boxShadow = 'inset 0 0 0 2px ' + fruit.color;
+        } else {
+          nextDot.style.background = 'radial-gradient(circle at 32% 28%, ' + fruit.light + ', ' + fruit.color + ' 58%, ' + fruit.deep + ')';
+          nextDot.style.boxShadow = 'inset -2px -3px 0 rgba(0,0,0,.14)';
+        }
       }
-      if (nextName) nextName.textContent = fruit.name;
-      canvas.setAttribute('aria-label', 'Fruit Merge board. Score ' + score +
-        '. Next fruit: ' + fruit.name + '. Drag to aim, release to drop. Arrow keys aim, space drops.');
+      if (nextName) nextName.textContent = numberMode ? String(fruit.value) : fruit.name;
+      canvas.setAttribute('aria-label', numberMode
+        ? 'Number Merge board. Score ' + score +
+          '. Next tile: ' + fruit.value + '. Drag to aim, release to drop. Arrow keys aim, space drops.'
+        : 'Fruit Merge board. Score ' + score +
+          '. Next fruit: ' + fruit.name + '. Drag to aim, release to drop. Arrow keys aim, space drops.');
+    }
+
+    /* The mode is visible outside the canvas too: the hub card and the game
+       header swap their name and art. Markup carries both versions so the
+       translation pass sees both strings; the root attribute does the swap. */
+    function syncModeUI() {
+      const card = document.querySelector('.home-game[data-game="fruit"]');
+      if (card) card.setAttribute('aria-label', localize(numberMode ? 'Play Number Merge' : 'Play Fruit Merge'));
+      const stats = root.querySelector('.play-stats');
+      if (stats) stats.setAttribute('aria-label', localize(numberMode ? 'Number Merge score' : 'Fruit Merge score'));
+      if (current === 'fruit') updateDocumentTitle();
     }
 
     function newRun() {
@@ -2512,7 +2551,9 @@
       if (finalBest) finalBest.textContent = String(best);
       updateHud();
       if (statusEl) statusEl.hidden = false;
-      setStatus('Drag to aim. Release to drop. Match two of the same fruit.');
+      setStatus(numberMode
+        ? 'Drag to aim. Release to drop. Match two of the same number.'
+        : 'Drag to aim. Release to drop. Match two of the same fruit.');
       render(0);
     }
 
@@ -2662,14 +2703,20 @@
       addMergeEffect(a, b, newTier, points);
       score += points;
       if (newTier === FRUITS.length - 1) {
-        setStatus('Watermelon! You reached the top of the fruit chain.');
+        setStatus(numberMode
+          ? FRUITS[newTier].value + '! You reached the top of the number chain.'
+          : 'Watermelon! You reached the top of the fruit chain.');
         if (window.MergeHaptics) window.MergeHaptics.win();
         if (window.MergeCelebrate) {
-          window.MergeCelebrate.win(document.querySelector('.fruit-stage'), { stamp: 'WATERMELON' });
+          window.MergeCelebrate.win(document.querySelector('.fruit-stage'), {
+            stamp: numberMode ? String(FRUITS[newTier].value) : 'WATERMELON'
+          });
         }
       }
       if (finalClear) {
-        setStatus('Two watermelons cleared — +' + points + '!');
+        setStatus(numberMode
+          ? 'Two ' + FRUITS[FRUITS.length - 1].value + ' tiles cleared — +' + points + '!'
+          : 'Two watermelons cleared — +' + points + '!');
       }
       if (score > best) {
         best = score;
@@ -2920,6 +2967,42 @@
         ctx.ellipse(r * 0.33, r * 0.2, r * 0.1, r * 0.045, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+
+    /* A numbered tile: light face, a ring in the chain colour and dark ink.
+       Keeping the ink dark on a pale face holds contrast on every tier and in
+       both themes, unlike white digits on amber or lime. */
+    function paintNumber(fruit) {
+      const def = FRUITS[fruit.tier];
+      const r = fruit.r;
+      ctx.save();
+      ctx.translate(fruit.x, fruit.y);
+
+      ctx.beginPath();
+      ctx.ellipse(0, r * 0.86, r * 0.8, r * 0.16, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(60, 42, 24, 0.12)';
+      ctx.fill();
+
+      const face = ctx.createRadialGradient(-r * 0.36, -r * 0.44, r * 0.08, 0, 0, r * 1.06);
+      face.addColorStop(0, '#fffaf1');
+      face.addColorStop(0.7, def.light);
+      face.addColorStop(1, def.light);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = face;
+      ctx.fill();
+      ctx.strokeStyle = def.color;
+      ctx.lineWidth = Math.max(2, r * 0.1);
+      ctx.stroke();
+
+      const text = String(def.value);
+      const size = Math.round(r * (text.length >= 4 ? 0.62 : text.length === 3 ? 0.74 : 0.9));
+      ctx.font = '800 ' + size + 'px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#2c2723';
+      ctx.fillText(text, 0, r * 0.03);
+      ctx.restore();
     }
 
     function paintFruit(fruit) {
@@ -3263,8 +3346,12 @@
       dropLock = DROP_LOCK;
       updateHud();
       startLoop();
-      const droppedName = FRUITS[tier].name.toLowerCase();
-      setStatus('Dropped ' + (droppedName === 'grapes' ? 'grapes' : 'a ' + droppedName) + '. Pair it with another.');
+      if (numberMode) {
+        setStatus('Dropped ' + FRUITS[tier].value + '. Pair it with another.');
+      } else {
+        const droppedName = FRUITS[tier].name.toLowerCase();
+        setStatus('Dropped ' + (droppedName === 'grapes' ? 'grapes' : 'a ' + droppedName) + '. Pair it with another.');
+      }
       coachEvent('fruit', 'drop');
       if (window.MergeHaptics) window.MergeHaptics.merge(20);
       render();
@@ -3279,7 +3366,9 @@
       startLoop();
       setStatus(dailyActive
         ? 'Daily Sixfold. Drag to aim, release to drop.'
-        : 'Fresh fruit. Drag to aim, release to drop.');
+        : numberMode
+          ? 'Fresh run. Drag to aim, release to drop.'
+          : 'Fresh fruit. Drag to aim, release to drop.');
     }
 
     let drag = null;
@@ -3336,8 +3425,9 @@
     const shareBtn = $('fruit-share');
     if (shareBtn) {
       shareBtn.addEventListener('click', function () {
-        shareResult('Fruit Merge', 'I scored ' + score + ' in Fruit Merge. My best is ' + best + '. Can you beat it?', {
-          game: 'Fruit Merge', number: '06', kind: 'MERGING',
+        const gameName = numberMode ? 'Number Merge' : 'Fruit Merge';
+        shareResult(gameName, 'I scored ' + score + ' in ' + gameName + '. My best is ' + best + '. Can you beat it?', {
+          game: gameName, number: '06', kind: numberMode ? 'NUMBERS' : 'MERGING',
           title: 'Round complete',
           score: score,
           label: 'POINTS',
@@ -3389,13 +3479,26 @@
       newRun();
     }
 
+    window.addEventListener('sixfold:settings', function (event) {
+      const next = Boolean(event.detail && event.detail.fruitNumbers);
+      if (next === numberMode) return;
+      numberMode = next;
+      fruitSprites = [];
+      setupCanvas();
+      syncModeUI();
+      updateHud();
+      if (current === 'fruit') render();
+    });
+
     syncPalette();
     readUi();
     setupCanvas();
     newRun();
     render();
+    syncModeUI();
     games.fruit = {
       title: title,
+      label: function () { return numberMode ? 'Number Merge' : 'Fruit Merge'; },
       activate: function () {
         readUi();
         setupCanvas();

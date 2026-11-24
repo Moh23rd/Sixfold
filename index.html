@@ -437,7 +437,6 @@
 
       <!-- Bump data-version and replace this list with each release. -->
       <aside class="whats-new" id="whats-new" data-version="6.0" aria-labelledby="whats-new-title" hidden data-fade>
-        <span class="whats-new-mark" aria-hidden="true">✦</span>
         <details class="whats-new-details">
           <summary class="whats-new-label" id="whats-new-title">What’s new in 6.0</summary>
           <ul class="whats-new-list">
@@ -445,6 +444,7 @@
             <li>A local profile on the badges page: daily and replay counts, bests, and every finished Gauntlet — stored on this device.</li>
             <li>A calmer finish: light, dark and palette changes fade smoothly, hidden games stop redrawing, and reduced motion still switches instantly.</li>
             <li>A sturdier app: saved cards reach the gallery, the window frame follows the app, and older Android WebViews stay supported.</li>
+            <li>Fruit Merge plays as fruit or numbered tiles, and the app icon now sits properly inside the launcher shape.</li>
           </ul>
         </details>
         <button class="whats-new-close" id="whats-new-close" type="button" aria-label="Dismiss what’s new">×</button>
@@ -646,15 +646,16 @@
           </button>
 
           <button class="home-game home-game--fruit" type="button" data-game="fruit" aria-label="Play Fruit Merge" data-fade>
-            <span class="home-game-bar"><span class="home-game-num">06</span><span class="home-game-kind">Merging</span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
+            <span class="home-game-bar"><span class="home-game-num">06</span><span class="home-game-kind"><span class="is-fruit-mode">Merging</span><span class="is-number-mode">Numbers</span></span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
             <span class="home-game-art" aria-hidden="true" data-fade>
               <span class="home-game-stage" data-fade>
-                <span class="mini-fruit-cluster" data-fade><i class="mini-fruit f1" data-fade></i><i class="mini-fruit f2" data-fade></i><i class="mini-fruit f3" data-fade></i><i class="mini-fruit f4" data-fade></i><i class="mini-fruit f5" data-fade></i></span>
+                <span class="mini-fruit-cluster mini-cluster" data-fade><i class="mini-fruit f1" data-fade></i><i class="mini-fruit f2" data-fade></i><i class="mini-fruit f3" data-fade></i><i class="mini-fruit f4" data-fade></i><i class="mini-fruit f5" data-fade></i></span>
+                <span class="mini-number-cluster mini-cluster" data-fade><i class="mini-num n1">2</i><i class="mini-num n2">4</i><i class="mini-num n3">8</i><i class="mini-num n4">16</i><i class="mini-num n5">32</i></span>
               </span>
             </span>
             <span class="home-game-copy">
-              <span class="home-game-title" data-fade>Fruit Merge</span>
-              <span class="home-game-desc" data-fade>Drop matching fruit. Don’t overflow.</span>
+              <span class="home-game-title" data-fade><span class="is-fruit-mode">Fruit Merge</span><span class="is-number-mode">Number Merge</span></span>
+              <span class="home-game-desc" data-fade><span class="is-fruit-mode">Drop matching fruit. Don’t overflow.</span><span class="is-number-mode">Drop matching numbers. Don’t overflow.</span></span>
               <span class="home-game-meta" data-fade><span>Endless · best saved</span><span class="home-game-play" data-fade>Play</span></span>
             </span>
           </button>
@@ -824,6 +825,9 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
         <span class="play-cart" aria-hidden="true"><span class="play-cart-num">05</span><span class="play-cart-kind">Sorting</span></span>
+        <button class="sudoku-settings-open" id="water-settings-open" type="button" aria-haspopup="dialog" aria-controls="water-settings" aria-label="Water Sort settings" title="Water Sort settings" data-fade>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
@@ -954,13 +958,16 @@
         <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
-        <span class="play-cart" aria-hidden="true"><span class="play-cart-num">06</span><span class="play-cart-kind">Merging</span></span>
+        <span class="play-cart" aria-hidden="true"><span class="play-cart-num">06</span><span class="play-cart-kind"><span class="is-fruit-mode">Merging</span><span class="is-number-mode">Numbers</span></span></span>
+        <button class="sudoku-settings-open" id="fruit-settings-open" type="button" aria-haspopup="dialog" aria-controls="fruit-settings" aria-label="Fruit Merge settings" title="Fruit Merge settings" data-fade>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
             <p class="game-tag" data-fade>Drop · pair · grow</p>
-            <h1 id="fruit-title" tabindex="-1">Fruit Merge</h1>
-            <p class="sub">Pair the same fruit. Don’t reach the top.</p>
+            <h1 id="fruit-title" tabindex="-1"><span class="is-fruit-mode">Fruit Merge</span><span class="is-number-mode">Number Merge</span></h1>
+            <p class="sub"><span class="is-fruit-mode">Pair the same fruit. Don’t reach the top.</span><span class="is-number-mode">Pair the same number. Don’t reach the top.</span></p>
           </div>
           <div class="play-stats" aria-label="Fruit Merge score">
             <div class="play-stat" data-fade><span class="label">Score</span><strong id="fruit-score">0</strong></div>
@@ -1064,6 +1071,9 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
         <span class="play-cart" aria-hidden="true"><span class="play-cart-num">04</span><span class="play-cart-kind">Logic</span></span>
+        <button class="sudoku-settings-open" id="mines-settings-open" type="button" aria-haspopup="dialog" aria-controls="mines-settings" aria-label="Minesweeper settings" title="Minesweeper settings" data-fade>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
@@ -1222,7 +1232,7 @@
       <div class="palettes" id="palettes" role="group" aria-label="Colours"></div>
       <details class="settings-disclosure" id="accessibility-settings">
         <summary class="settings-summary">
-          <span>Accessibility</span>
+          <span class="setting-copy"><strong>Accessibility</strong><small>Contrast, colour cues and larger text.</small></span>
           <span class="settings-summary-chevron" aria-hidden="true">›</span>
         </summary>
         <div class="settings-list">
@@ -1377,6 +1387,54 @@
         <button data-fade type="button" data-setting-input="digit" aria-pressed="false">Digit first</button>
       </div>
       <p class="sheet-note" data-fade>Cell first selects a square, then a number. Digit first arms a number, then you tap its square.</p>
+    </div>
+  </div>
+
+  <div class="sheet" id="water-settings" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="water-settings-title" data-fade>
+      <div class="sheet-head">
+        <h2 id="water-settings-title">Water Sort settings</h2>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
+      </div>
+      <p class="sheet-sub" data-fade>Saved on this device for every Water Sort board.</p>
+      <p class="sheet-label" data-fade>Accessibility</p>
+      <div class="settings-list">
+        <button class="setting-row" type="button" data-setting="colorblind" aria-pressed="false" data-fade><span class="setting-copy"><strong>Colour-blind cues</strong><small>Symbols and patterns alongside colour.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="highContrast" aria-pressed="false" data-fade><span class="setting-copy"><strong>High contrast</strong><small>Stronger ink, borders and controls.</small></span><span class="setting-state" data-fade>Off</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="mines-settings" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="mines-settings-title" data-fade>
+      <div class="sheet-head">
+        <h2 id="mines-settings-title">Minesweeper settings</h2>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
+      </div>
+      <p class="sheet-sub" data-fade>Saved on this device for every Minesweeper field.</p>
+      <p class="sheet-label" data-fade>Accessibility</p>
+      <div class="settings-list">
+        <button class="setting-row" type="button" data-setting="largeMines" aria-pressed="false" data-fade><span class="setting-copy"><strong>Larger mine numbers</strong><small>Bigger numbers on the board.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="hideTimer" aria-pressed="false" data-fade><span class="setting-copy"><strong>Hide timer</strong><small>Play Sudoku and Minesweeper without a clock.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="highContrast" aria-pressed="false" data-fade><span class="setting-copy"><strong>High contrast</strong><small>Stronger ink, borders and controls.</small></span><span class="setting-state" data-fade>Off</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="fruit-settings" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="fruit-settings-title" data-fade>
+      <div class="sheet-head">
+        <h2 id="fruit-settings-title">Fruit Merge settings</h2>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
+      </div>
+      <p class="sheet-sub" data-fade>Saved on this device for every Fruit Merge run.</p>
+      <p class="sheet-label" data-fade>Mode</p>
+      <div class="settings-list">
+        <button class="setting-row" type="button" data-setting="fruitNumbers" aria-pressed="false" data-fade><span class="setting-copy"><strong>Numbers mode</strong><small>Swap fruit for numbered tiles.</small></span><span class="setting-state" data-fade>Off</span></button>
+      </div>
     </div>
   </div>
 

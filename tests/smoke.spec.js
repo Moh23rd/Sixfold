@@ -201,6 +201,57 @@ test('daily section can be hidden and restored from Look & feel', async ({ page 
   await expect(page.locator('#sudoku-settings')).toBeHidden();
 });
 
+test('Minesweeper and Water Sort settings live in their screens', async ({ page }) => {
+  await page.goto('/#water');
+  await page.waitForSelector('#water-tubes .water-seg');
+  await page.locator('#water-settings-open').click();
+  await expect(page.locator('#water-settings')).toBeVisible();
+  await page.locator('#water-settings [data-setting="colorblind"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-colorblind', 'on');
+  const symbol = await page.locator('#water-tubes .water-seg').first().evaluate((segment) => (
+    window.getComputedStyle(segment, '::after').content
+  ));
+  expect(symbol).not.toBe('none');
+  await page.locator('#water-settings .sheet-done').click();
+  await expect(page.locator('#water-settings')).toBeHidden();
+
+  await page.goto('/');
+  await page.locator('.home-game[data-game="mines"]').click();
+  await page.waitForSelector('#mines-board .mines-cell');
+  await page.locator('#mines-settings-open').click();
+  await expect(page.locator('#mines-settings')).toBeVisible();
+  await page.locator('#mines-settings [data-setting="largeMines"]').click();
+  await page.locator('#mines-settings [data-setting="hideTimer"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-large-mines', 'on');
+  await expect(page.locator('#mines .play-stats .play-stat:last-child')).toBeHidden();
+  const size = await page.locator('#mines-board .mines-cell').first().evaluate((cell) => parseFloat(
+    window.getComputedStyle(cell).fontSize
+  ));
+  expect(size).toBeGreaterThanOrEqual(19);
+});
+
+test('Fruit Merge switches to numbered tiles and remembers the choice', async ({ page }) => {
+  await page.goto('/#fruit');
+  await page.waitForFunction(() => window.SixfoldSettings);
+  await page.locator('#fruit-settings-open').click();
+  await expect(page.locator('#fruit-settings')).toBeVisible();
+  await page.locator('#fruit-settings [data-setting="fruitNumbers"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-fruit-numbers', 'on');
+  await expect(page.locator('#fruit-title')).toContainText('Number Merge');
+  await expect(page.locator('#fruit-next-name')).toHaveText(/^\d+$/);
+  await page.locator('#fruit-settings .sheet-done').click();
+
+  await page.goto('/');
+  const card = page.locator('.home-game[data-game="fruit"]');
+  await expect(card.locator('.home-game-title')).toContainText('Number Merge');
+  await expect(card.locator('.mini-number-cluster')).toBeVisible();
+  await expect(card.locator('.mini-fruit-cluster')).toBeHidden();
+
+  await page.reload();
+  await expect(page.locator('.home-game[data-game="fruit"] .home-game-title')).toContainText('Number Merge');
+  await expect(page.locator('.home-game[data-game="fruit"] .mini-number-cluster')).toBeVisible();
+});
+
 test('Arabic, Hindi and Kannada interface numbers use native digits', async ({ page }) => {
   await page.goto('/');
   for (const [locale, zero, digitPattern] of [
@@ -235,9 +286,9 @@ test('appearance settings update the document and backup downloads', async ({ pa
   await expect(page.locator('[data-setting="sound"]')).toHaveCount(0);
   await page.locator('#accessibility-settings summary').click();
   await expect(page.locator('#accessibility-settings')).toHaveAttribute('open', '');
-  await page.locator('[data-setting="highContrast"]').click();
+  await page.locator('#sheet [data-setting="highContrast"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-contrast', 'high');
-  await page.locator('[data-setting="highContrast"]').click();
+  await page.locator('#sheet [data-setting="highContrast"]').click();
   await expect(page.locator('html')).not.toHaveAttribute('data-contrast', 'high');
 
   const downloadPromise = page.waitForEvent('download');

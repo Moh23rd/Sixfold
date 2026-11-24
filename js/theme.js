@@ -638,6 +638,12 @@
   const resetSheet = document.getElementById('reset-sheet');
   const sudokuSettingsSheet = document.getElementById('sudoku-settings');
   const sudokuSettingsBtn = document.getElementById('sudoku-settings-open');
+  const waterSettingsSheet = document.getElementById('water-settings');
+  const waterSettingsBtn = document.getElementById('water-settings-open');
+  const minesSettingsSheet = document.getElementById('mines-settings');
+  const minesSettingsBtn = document.getElementById('mines-settings-open');
+  const fruitSettingsSheet = document.getElementById('fruit-settings');
+  const fruitSettingsBtn = document.getElementById('fruit-settings-open');
   const wipeSheet = document.getElementById('wipe-sheet');
   const wipeBtn = document.getElementById('wipe-open');
   const wipeConfirmBtn = document.getElementById('wipe-confirm');
@@ -687,6 +693,9 @@
   wireSheet(helpSheet, helpBtn);
   wireSheet(aboutSheet, aboutBtn);
   wireSheet(sudokuSettingsSheet, sudokuSettingsBtn);
+  wireSheet(waterSettingsSheet, waterSettingsBtn);
+  wireSheet(minesSettingsSheet, minesSettingsBtn);
+  wireSheet(fruitSettingsSheet, fruitSettingsBtn);
 
   /* ---------- first-run welcome ---------- */
   // A fresh install gets one short guide in the same sheet language as Look &

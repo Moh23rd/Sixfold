@@ -545,7 +545,7 @@ async function launchApp() {
 async function connectToWebView() {
   // The reattach path is called from a probe that must be able to time out, so
   // a missing target throws instead of ending the process.
-  const found = await waitFor('the WebView devtools target', devtoolsTarget, 45000);
+  const found = await waitFor('the WebView devtools target', devtoolsTargets, 45000);
   if (!found.value) {
     const live = await deviceLive();
     throw new Error(
@@ -554,13 +554,49 @@ async function connectToWebView() {
         (found.error ? `: ${found.error.message}` : '')
     );
   }
-  const target = found.value;
-  const socket = await attach(target.webSocketDebuggerUrl);
-  const bound = { socket, target, closed: false, evaluate: session(socket).evaluate };
-  socket.addEventListener('close', () => { bound.closed = true; });
-  currentSession = bound;
-  log(`attached to ${target.url}`);
-  return bound;
+  // A replaced activity can leave its old WebView exposed for a moment. Both
+  // pages answer evaluations, so choose by what the player can actually see
+  // rather than by whichever socket answered first. Prefer the newest visible,
+  // focused page, and wait if the only target is the hidden page.
+  const opened = [];
+  let lastError = null;
+  for (const target of found.value.slice().reverse()) {
+    let socket;
+    try {
+      socket = await attach(target.webSocketDebuggerUrl);
+      const bound = { socket, target, closed: false, evaluate: session(socket).evaluate };
+      socket.addEventListener('close', () => { bound.closed = true; });
+      const state = await bound.evaluate(
+        "(() => ({ visible: document.visibilityState, focused: document.hasFocus()," +
+          " origin: performance.timeOrigin || 0 }))()",
+        false,
+        20000
+      );
+      bound.state = state || {};
+      opened.push(bound);
+    } catch (error) {
+      lastError = error;
+      if (socket) socket.close();
+    }
+  }
+  if (!opened.length) {
+    throw lastError || new Error('could not attach to the WebView devtools socket');
+  }
+  const newest = (list) => list.slice().sort((a, b) => (b.state.origin || 0) - (a.state.origin || 0))[0];
+  const visible = opened.filter((bound) => bound.state.visible !== 'hidden');
+  if (!visible.length) {
+    for (const bound of opened) bound.socket.close();
+    // The old page can outlive its window for a moment. Wait for the current
+    // one rather than asserting against a page the player cannot see.
+    throw new Error('the WebView page is not visible yet');
+  }
+  const chosen = newest(visible.filter((bound) => bound.state.focused)) || newest(visible);
+  for (const bound of opened) {
+    if (bound !== chosen) bound.socket.close();
+  }
+  currentSession = chosen;
+  log(`attached to ${chosen.target.url}`);
+  return chosen;
 }
 
 /* The launch layer's own marker: documentElement gets `home-ready` once the
@@ -576,6 +612,9 @@ async function homeReady() {
       "Boolean(document.documentElement && document.documentElement.classList.contains('home-ready'))"
     );
   } catch (error) {
+    // A dead emulator is not a slow page. Propagate it so the shell sees exit
+    // status 3 and reboots instead of reporting the app as failing to launch.
+    if (error instanceof EmulatorLost) throw error;
     // A dead or replaced WebView is a launch failure to report; anything else
     // is a real error.
     if (/devtools target|devtools socket|did not answer/i.test(error.message)) {
@@ -666,11 +705,16 @@ async function evaluate(expression, awaitPromise = false) {
   }
 }
 
-async function devtoolsTarget() {
+async function devtoolsTargets() {
   const response = await fetch(`http://127.0.0.1:${PORT}/json/list`);
   if (!response.ok) throw new Error(`devtools listing returned ${response.status}`);
   const targets = await response.json();
-  return targets.find((target) => target.type === 'page' && /localhost|index\.html/.test(target.url)) || null;
+  // Android can briefly expose the WebView from the activity it is replacing
+  // as well as the one the player is looking at. Return both; connectToWebView
+  // asks each page whether it is visible instead of trusting list order.
+  const pages = targets.filter((target) => target.type === 'page' && /localhost|index\.html/.test(target.url));
+  if (pages.length > 1) log(`${pages.length} WebView page targets are open`);
+  return pages.length ? pages : null;
 }
 
 let forwarded = false;

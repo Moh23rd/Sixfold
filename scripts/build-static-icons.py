@@ -27,6 +27,10 @@ SNAPSHOTS = ROOT / "assets/icon-snapshots.json"
 DARK = (59, 56, 51, 255)
 CREAM = (246, 241, 232, 255)
 MASKABLE_SCALE = 0.75
+# The adaptive foreground holds only the six tiles, sized to the launcher's
+# 66dp safe zone. A full-bleed foreground put the outer tiles under the mask,
+# which read as a zoomed, cropped icon in App info and on round launchers.
+ADAPTIVE_TILE_SCALE = 0.56
 ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@mipmap/ic_launcher_background" />
@@ -35,9 +39,10 @@ ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
 """
 BACKGROUND_XML = """<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#f6f1e8</color>
+    <color name="ic_launcher_background">#3b3833</color>
 </resources>
 """
+ADAPTIVE_BACKGROUND = "#3b3833"
 
 DENSITIES = [
     ("ldpi", 36, 81),
@@ -89,6 +94,34 @@ def maskable(image: Image.Image, size: int) -> Image.Image:
     return out
 
 
+def adaptive_foreground(source: Image.Image, size: int) -> Image.Image:
+    # The tile grid is the mark once the dark plate becomes the background
+    # layer. Crop to it and fit it into the mask's safe circle.
+    pixels = source.load()
+    min_x, min_y, max_x, max_y = source.width, source.height, 0, 0
+    for y in range(source.height):
+        for x in range(source.width):
+            r, g, b, a = pixels[x, y]
+            if a > 8 and abs(r - DARK[0]) + abs(g - DARK[1]) + abs(b - DARK[2]) > 30:
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                max_x = max(max_x, x)
+                max_y = max(max_y, y)
+    pad = 4
+    tiles = source.crop((
+        max(0, min_x - pad),
+        max(0, min_y - pad),
+        min(source.width, max_x + pad + 1),
+        min(source.height, max_y + pad + 1),
+    ))
+    art_width = max(1, round(size * ADAPTIVE_TILE_SCALE))
+    art_height = max(1, round(tiles.height * art_width / tiles.width))
+    art = tiles.resize((art_width, art_height), Image.Resampling.LANCZOS)
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    out.alpha_composite(art, ((size - art_width) // 2, (size - art_height) // 2))
+    return out
+
+
 def round_icon(image: Image.Image, size: int) -> Image.Image:
     art = resize(image, size)
     mask = Image.new("L", (size, size), 0)
@@ -112,8 +145,8 @@ def build() -> tuple[dict[str, bytes], list[dict]]:
     for qualifier, legacy_size, foreground_size in DENSITIES:
         directory = res / f"mipmap-{qualifier}"
         generated = {
-            "ic_launcher_background.png": Image.new("RGBA", (foreground_size, foreground_size), CREAM),
-            "ic_launcher_foreground.png": resize(source, foreground_size),
+            "ic_launcher_background.png": Image.new("RGBA", (foreground_size, foreground_size), DARK),
+            "ic_launcher_foreground.png": adaptive_foreground(source, foreground_size),
             "ic_launcher.png": legacy(source, legacy_size),
             "ic_launcher_round.png": round_icon(source, legacy_size),
         }

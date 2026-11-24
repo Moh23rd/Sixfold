@@ -108,8 +108,9 @@ the launcher cannot be replaced by a language-following or inset version.
 ## Adaptive icon guard
 
 `capacitor-assets` wraps the adaptive foreground and background in `<inset>`
-elements on every run. That shrinks the art inside the launcher mask. The guard
-canonicalises the default adaptive XML back to the full-bleed layers:
+elements on every run. That double-insets art the static builder has already
+fitted to the launcher safe zone. The guard canonicalises the default adaptive
+XML back to the full-bleed layers:
 
 ```xml
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -119,10 +120,14 @@ canonicalises the default adaptive XML back to the full-bleed layers:
 ```
 
 `npm run native:assets:android` now ends with the guard, so a generated icon
-cannot keep the insets. It also verifies the `#f6f1e8` background
-resource and the default layer sizes, and rejects any locale-qualified
-`mipmap-*` directory so the launcher icon cannot start following the device
-language again.
+cannot keep the insets. It also verifies the `#3b3833` background resource and
+the default layer sizes, and rejects any locale-qualified `mipmap-*` directory
+so the launcher icon cannot start following the device language again.
+
+The adaptive foreground is generated from the tile grid alone and scaled to
+0.56 of the 108dp canvas, inside the 66dp safe circle; the ink plate is the
+background layer. Keeping the old full-bleed foreground put the outer tiles
+under circular launcher masks, which looked like a zoomed icon.
 
 ```sh
 npm run native:assets      # regenerate, repair, verify
