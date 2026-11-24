@@ -50,7 +50,10 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **Android smoke reports host trouble honestly**: the WebView assertions attach
   to the newest visible shell page when an older activity is still listed, and
   a lost emulator becomes a retryable failure instead of being mistaken for a
-  product bug.
+  product bug. The guest renders with `swangle`, because emulator 37's
+  SwiftShader GLES renderer segfaults in its host `RenderThread` when
+  `screencap` reads the composited window; ANGLE over SwiftShader Vulkan
+  completes the same screenshot, palette and rotation checks.
 
 ### Web parity
 

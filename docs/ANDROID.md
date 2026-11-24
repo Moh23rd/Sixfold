@@ -41,6 +41,13 @@ emulator job stays on `ubuntu-24.04`: on the 26.04 image the software-rendered
 guest is lost mid-assertion (API 33's qemu disappears, and the newer WebViews
 trip Android's 5s input-dispatch ANR while painting their first frame).
 
+The guest renders with `swangle`, not the emulator's older SwiftShader GLES
+path: emulator 37's GLES renderer segfaults in its host `RenderThread` when
+`screencap` reads the composited window, which is exactly the read behind the
+window-strip checks. `swangle` (ANGLE over SwiftShader Vulkan) completes the
+same screenshot, palette and rotation assertions. A workstation with a
+different host stack can compare renderers by setting `EMULATOR_GPU`.
+
 In JavaScript the shell parses as ES2018, the newest syntax that WebView
 supports. The boot path itself only needs `async`/`await` and object
 rest/spread. The shell does not use optional chaining, nullish coalescing,
@@ -299,7 +306,9 @@ APK job, plus the native and emulator jobs, so an APK failure cannot be hidden
 by a green test shard.
 
 The emulator job now runs the installed APK through API **24, 26, 33 and 36**,
-one matrix entry per level, on `ubuntu-24.04`. API 24 proves the APK installs
+one matrix entry per level, on `ubuntu-24.04`. The guest uses the `swangle`
+renderer so `screencap` does not crash the host SwiftShader GLES thread. API 24
+proves the APK installs
 and the activity reaches its first paint; its WebView predates async/await, so
 it does not run the WebView assertions. API 26 does the same because its stock
 WebView predates the stylesheets' structural features (`inset`, flex gap,

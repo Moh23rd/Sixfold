@@ -129,9 +129,14 @@ trap cleanup EXIT
 boot_emulator() {
   note "starting the emulator (API $API, attempt $attempt/$ATTEMPTS)"
   echo "=== attempt $attempt ===" >> "$LOG"
+  # EMULATOR_GPU exists because the renderer is host-dependent: emulator 37's
+  # SwiftShader GLES path segfaults in its RenderThread when `screencap` reads
+  # the composited window, while ANGLE over SwiftShader Vulkan survives the same
+  # read. Default to the renderer the assertion's pixel checks are known to
+  # survive; a workstation can override it to compare.
   "$EMULATOR" -avd "$AVD" \
     -no-window -no-audio -no-boot-anim -no-snapshot \
-    -gpu swiftshader_indirect -accel on \
+    -gpu "${EMULATOR_GPU:-swangle}" -accel on \
     -camera-back none -camera-front none \
     >> "$LOG" 2>&1 &
   EMULATOR_PID=$!
