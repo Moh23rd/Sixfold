@@ -63,11 +63,10 @@ whole set feel settled. No accounts, ads, tracking or server.
   predates the shell's structural CSS (`inset`, flex `gap`, `min()`/`max()`/
   `clamp()`, `aspect-ratio`), so a full assertion run there would exercise a
   degraded layout. The entry still proves the APK installs and reaches first
-  paint; the full WebView assertions run on API 34, which survives this
-  runner's software-rendered emulator. API 33 and 36 stay launch-only there
-  (the 33 guest loses the emulator mid-assertion and the 36 WebView's first
-  paint trips the 5s input-dispatch ANR under SwiftShader). API 24 stays
-  launch-only because its WebView predates async/await.
+  paint; API 33 and 36 run the full WebView assertions. The emulator job is
+  pinned to `ubuntu-24.04`, because the 26.04 image loses its
+  software-rendered guest mid-assertion. API 24 stays launch-only because its
+  WebView predates async/await.
 - **Older WebView hardening**: screen changes set and remove the `inert`
   attribute directly instead of relying on `Element.toggleAttribute()`
   (Chromium 69), and the service-worker install pass collects a failed asset

@@ -274,39 +274,37 @@ jobs:
 
   emulator:
     name: Android emulator API ${{ matrix.api }}
-    runs-on: ubuntu-latest
+    # ubuntu-latest moved to 26.04, where every full interaction pass loses
+    # its software-rendered guest (API 33's qemu disappears, API 34/36 hit an
+    # input-dispatch ANR while the WebView paints its first frame). The
+    # emulator stays on the last image whose guest completes the assertions.
+    runs-on: ubuntu-24.04
     needs: android
     # A cold run downloads the emulator and its system image before it boots
     # anything; the cache makes later runs short, but the first one needs room.
     timeout-minutes: 50
     strategy:
       fail-fast: false
-      # The two full-WebView jobs boot a SwiftShader emulator and the page's
-      # first paint is the heaviest thing this workflow runs. Started together
-      # on the same host they were both losing qemu mid-assertion; one at a
-      # time keeps the host's memory and GPU translator to a single guest.
+      # One software-rendered guest at a time: the full interaction passes are
+      # the heaviest thing this workflow runs, and overlapping emulators made
+      # the host loss worse. The rows are fast enough to stay well inside the
+      # job timeout when serialized.
       max-parallel: 1
       matrix:
         include:
           # API 24's system WebView predates async/await. API 26's stock WebView
           # predates the shell's structural CSS (inset, flex gap, min()/max()/
-          # clamp(), aspect-ratio). Those two and 33/36 prove the APK installs
-          # and the activity reaches its first paint. The full WebView
-          # assertions run on API 34, the image whose software-rendered guest
-          # survives the interaction pass on this runner: on 33 the emulator
-          # process is lost mid-assertion, and on 36 the WebView's first paint
-          # under SwiftShader trips the 5s input-dispatch ANR before the page
-          # can be driven.
+          # clamp(), aspect-ratio). Both prove the APK installs and the activity
+          # reaches its first paint; API 33 and 36 run the full WebView
+          # assertions.
           - api: 24
             launch_only: true
           - api: 26
             launch_only: true
           - api: 33
-            launch_only: true
-          - api: 34
             launch_only: false
           - api: 36
-            launch_only: true
+            launch_only: false
     steps:
       - uses: actions/checkout@v7
       - name: Set up Node

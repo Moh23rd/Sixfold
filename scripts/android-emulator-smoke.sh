@@ -129,13 +129,9 @@ trap cleanup EXIT
 boot_emulator() {
   note "starting the emulator (API $API, attempt $attempt/$ATTEMPTS)"
   echo "=== attempt $attempt ===" >> "$LOG"
-  # Vulkan goes through SwiftShader on these runners and has been taking the
-  # emulator process down mid-assertion (the guest RenderThread segfaults and
-  # the VkInstance is torn down). GLES through SwiftShader is enough for a
-  # 320x640 smoke and does not open that path.
   "$EMULATOR" -avd "$AVD" \
     -no-window -no-audio -no-boot-anim -no-snapshot \
-    -gpu swiftshader_indirect -accel on -feature -Vulkan \
+    -gpu swiftshader_indirect -accel on \
     -camera-back none -camera-front none \
     >> "$LOG" 2>&1 &
   EMULATOR_PID=$!
