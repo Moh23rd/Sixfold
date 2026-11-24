@@ -54,22 +54,8 @@ body[data-screen="mines"] .app {
 .hub-mark {
   width: 28px;
   height: 28px;
-  display: grid;
-  grid-template-columns: repeat(3, 6px);
-  grid-auto-rows: 6px;
-  place-content: center;
-  gap: 2px;
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow:
-    0 4px 10px -5px rgba(59, 56, 51, 0.7),
-    inset 0 0 0 1px color-mix(in srgb, var(--ink) 9%, transparent);
-}
-
-.hub-mark span {
   display: block;
-  border-radius: 2px;
-  background: var(--page);
+  border-radius: 22.3%;
 }
 
 .hub-word {

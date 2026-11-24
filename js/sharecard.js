@@ -1,6 +1,6 @@
-/* The share card, in the 2.x pocket-arcade language: cream paper, the
-   six-piece mark, one huge number and the six-colour strip. Drawn locally so
-   every game can share the same object without shipping image files. */
+/* The share card, in the 2.x pocket-arcade language: cream paper, the app
+   icon's six, one huge number and the six-colour strip. Drawn locally so every
+   game can share the same object without shipping image files. */
 (function () {
   'use strict';
 
@@ -123,6 +123,30 @@
     }
   }
 
+  // The launcher mark at card scale: the app icon's cream six on its ink plate
+  // with the coral hard shadow, drawn so a saved image ships no bitmap.
+  function brandMark(ctx, x, centerY, size) {
+    const y = centerY - size / 2;
+    roundRect(ctx, x, y, size, size, size * 0.223);
+    const plate = ctx.createLinearGradient(x, y, x + size, y + size);
+    plate.addColorStop(0, '#3b3730');
+    plate.addColorStop(1, '#23201c');
+    ctx.fillStyle = plate;
+    ctx.fill();
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = font(700, size * 0.77);
+    ctx.fillStyle = '#c2532f';
+    ctx.fillText('6', x + size / 2 + size * 0.018, y + size / 2 + size * 0.022);
+    ctx.fillStyle = '#f7efe3';
+    ctx.fillText('6', x + size / 2, y + size / 2);
+    ctx.restore();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  }
+
   function drawDaily(data) {
     const W = 1080;
     const canvas = document.createElement('canvas');
@@ -149,14 +173,8 @@
 
     const markX = 80;
     const markY = 72;
-    const tile = 19;
-    const gap = 4;
-    for (let i = 0; i < 6; i += 1) {
-      roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = tiles[i];
-      ctx.fill();
-    }
-    const brandX = markX + 3 * (tile + gap) + 14;
+    brandMark(ctx, markX, 93, 64);
+    const brandX = markX + 64 + 14;
     ctx.fillStyle = INK;
     ctx.font = font(800, 40);
     ctx.fillText('SIXFOLD', brandX, markY + 25);
@@ -262,14 +280,8 @@
 
     const markX = 80;
     const markY = 72;
-    const tile = 19;
-    const gap = 4;
-    for (let i = 0; i < 6; i += 1) {
-      roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = tiles[i];
-      ctx.fill();
-    }
-    const brandX = markX + 3 * (tile + gap) + 14;
+    brandMark(ctx, markX, 93, 64);
+    const brandX = markX + 64 + 14;
     ctx.fillStyle = INK;
     ctx.font = font(800, 40);
     ctx.fillText('SIXFOLD', brandX, markY + 25);
@@ -415,14 +427,8 @@
     // Mark + wordmark.
     const markX = 80;
     const markY = 72;
-    const tile = 19;
-    const gap = 4;
-    for (let i = 0; i < 6; i += 1) {
-      roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = tiles[i];
-      ctx.fill();
-    }
-    const brandX = markX + 3 * (tile + gap) + 14;
+    brandMark(ctx, markX, 93, 64);
+    const brandX = markX + 64 + 14;
     ctx.fillStyle = INK;
     ctx.font = font(800, 40);
     ctx.fillText('SIXFOLD', brandX, markY + 25);
@@ -475,7 +481,7 @@
       ctx.fillText(meta, 80, 648);
     }
 
-    // Six-piece footer strip, anchored by the same tiles as the app mark.
+    // Six-piece footer strip in the six game colours.
     const stripY = 716;
     const strip = 64;
     for (let i = 0; i < 6; i += 1) {

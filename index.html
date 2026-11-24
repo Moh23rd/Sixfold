@@ -181,29 +181,14 @@
       animation-duration: 440ms;
     }
     .boot-mark {
-      position: relative;
+      display: block;
       width: clamp(126px, 34vw, 152px);
       aspect-ratio: 1;
       border-radius: 22.3%;
-      background: #3b3833;
       box-shadow: 0 22px 46px -24px rgba(0, 0, 0, 0.46);
-    }
-    /* Absolute geometry keeps the tile proportions exact at any width. */
-    .boot-mark span {
-      position: absolute;
-      width: 24%;
-      height: 24%;
-      border-radius: 18%;
-      background: #f3ecdf;
       opacity: 0;
-      animation: bootPiece 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation: bootMarkIn 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
     }
-    .boot-mark span:nth-child(1) { left: 10.5%; top: 24.25%; --bx: -14px; --by: -12px; --br: -8deg; animation-delay: 40ms; }
-    .boot-mark span:nth-child(2) { left: 38%; top: 24.25%; background: #ee9563; --bx: 2px; --by: -16px; --br: 5deg; animation-delay: 70ms; }
-    .boot-mark span:nth-child(3) { left: 65.5%; top: 24.25%; background: #e7c364; --bx: 16px; --by: -10px; --br: 8deg; animation-delay: 100ms; }
-    .boot-mark span:nth-child(4) { left: 10.5%; top: 51.75%; background: #efb07a; --bx: -16px; --by: 9px; --br: 6deg; animation-delay: 130ms; }
-    .boot-mark span:nth-child(5) { left: 38%; top: 51.75%; background: #ec7c55; --bx: 1px; --by: 15px; --br: -4deg; animation-delay: 160ms; }
-    .boot-mark span:nth-child(6) { left: 65.5%; top: 51.75%; background: #e85f3b; --bx: 15px; --by: 11px; --br: -7deg; animation-delay: 190ms; }
     .boot-word {
       margin: clamp(20px, 3.2vh, 30px) 0 0;
       margin-right: -0.22em;
@@ -244,10 +229,9 @@
     .boot-track span:nth-child(6) { background: #e85f3b; animation-delay: 325ms; }
     html.app-ready #boot-splash { opacity: 0; visibility: hidden; pointer-events: none; }
     html.app-ready .boot-stage { transform: translateY(-7px) scale(1.012); }
-    @keyframes bootPiece {
-      0% { opacity: 0; transform: translate(var(--bx, 0), var(--by, 0)) scale(0.72) rotate(var(--br, 0deg)); }
-      70% { opacity: 1; transform: translate(0, 0) scale(1.035) rotate(0); }
-      100% { opacity: 1; transform: none; }
+    @keyframes bootMarkIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: none; }
     }
     @keyframes bootWordIn {
       from { opacity: 0; transform: translateY(5px); }
@@ -260,7 +244,7 @@
       .boot-kicker,
       .boot-foot,
       .boot-word,
-      .boot-mark span { opacity: 1; animation: none; }
+      .boot-mark { opacity: 1; animation: none; }
       .boot-track span { transform: none; animation: none; }
       .boot-stage { transition: none; }
       html.app-ready .boot-stage { transform: none; }
@@ -360,8 +344,8 @@
   </script>
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.0" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/styles.css?v=5.4.1" />
-  <link rel="stylesheet" href="css/games.css?v=5.3.6" />
-  <link rel="stylesheet" href="css/home.css?v=4.1.8" />
+  <link rel="stylesheet" href="css/games.css?v=5.3.7" />
+  <link rel="stylesheet" href="css/home.css?v=4.1.9" />
   <link rel="stylesheet" href="css/polish.css?v=4.0.4-w21" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.4" />
   <link rel="stylesheet" href="css/v5.css?v=5.6.2" />
@@ -371,14 +355,7 @@
   <div class="boot-splash" id="boot-splash" aria-hidden="true">
     <p class="boot-kicker">The pocket arcade</p>
     <div class="boot-stage">
-      <div class="boot-mark">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
+      <img class="boot-mark" src="icons/icon-192.png?v=6.0.1" alt="" width="152" height="152" />
       <p class="boot-word">Sixfold</p>
       <div class="boot-track">
         <span></span><span></span><span></span><span></span><span></span><span></span>
@@ -413,7 +390,7 @@
     <div class="hub-shell" data-fade>
       <header class="hub-top" data-fade>
         <div class="hub-brand" data-fade>
-          <span class="hub-mark" aria-hidden="true" data-fade><span></span><span></span><span></span><span></span><span></span><span></span></span>
+          <img class="hub-mark" src="icons/icon-192.png?v=6.0.1" alt="" width="32" height="32" aria-hidden="true" data-fade />
           <span class="hub-brand-copy">
             <span class="hub-word">Sixfold</span>
             <span class="hub-tagline">Puzzle collection</span>
@@ -1506,7 +1483,7 @@
   <script src="js/haptics.js?v=5.0.1"></script>
   <script src="js/overscroll.js?v=6.0.2"></script>
   <script src="js/celebrate.js?v=5.0.0"></script>
-  <script src="js/sharecard.js?v=5.3.2"></script>
+  <script src="js/sharecard.js?v=5.3.3"></script>
   <script src="js/theme.js?v=6.0.13"></script>
   <script src="js/game.js?v=5.3.2"></script>
   <script src="js/install.js?v=5.0.0"></script>
