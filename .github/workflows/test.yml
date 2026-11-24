@@ -290,17 +290,23 @@ jobs:
         include:
           # API 24's system WebView predates async/await. API 26's stock WebView
           # predates the shell's structural CSS (inset, flex gap, min()/max()/
-          # clamp(), aspect-ratio). Both prove the APK installs and the activity
-          # reaches its first paint; API 33 and 36 run the full WebView
-          # assertions.
+          # clamp(), aspect-ratio). Those two and 33/36 prove the APK installs
+          # and the activity reaches its first paint. The full WebView
+          # assertions run on API 34, the image whose software-rendered guest
+          # survives the interaction pass on this runner: on 33 the emulator
+          # process is lost mid-assertion, and on 36 the WebView's first paint
+          # under SwiftShader trips the 5s input-dispatch ANR before the page
+          # can be driven.
           - api: 24
             launch_only: true
           - api: 26
             launch_only: true
           - api: 33
+            launch_only: true
+          - api: 34
             launch_only: false
           - api: 36
-            launch_only: false
+            launch_only: true
     steps:
       - uses: actions/checkout@v7
       - name: Set up Node
