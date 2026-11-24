@@ -129,9 +129,13 @@ trap cleanup EXIT
 boot_emulator() {
   note "starting the emulator (API $API, attempt $attempt/$ATTEMPTS)"
   echo "=== attempt $attempt ===" >> "$LOG"
+  # Vulkan goes through SwiftShader on these runners and has been taking the
+  # emulator process down mid-assertion (the guest RenderThread segfaults and
+  # the VkInstance is torn down). GLES through SwiftShader is enough for a
+  # 320x640 smoke and does not open that path.
   "$EMULATOR" -avd "$AVD" \
     -no-window -no-audio -no-boot-anim -no-snapshot \
-    -gpu swiftshader_indirect -accel on \
+    -gpu swiftshader_indirect -accel on -feature -Vulkan \
     -camera-back none -camera-front none \
     >> "$LOG" 2>&1 &
   EMULATOR_PID=$!
@@ -204,6 +208,16 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     export PATH="$SDK/platform-tools:$PATH"
     status=0
     node scripts/assert-android-shell.mjs || status=$?
+    # The assertion treats a live page's failure as the app's, but a WebView
+    # that stops answering because qemu went away looks the same from Node.
+    # Ask the device itself; a gone emulator is the retryable case.
+    if [ "$status" -ne 0 ] && [ "$status" -ne 3 ]; then
+      if ! kill -0 "$EMULATOR_PID" 2>/dev/null \
+        || [ "$(timeout 20 "$ADB" get-state 2>/dev/null)" != "device" ]; then
+        note "the emulator is gone after a failure (status $status); treating it as lost"
+        status=3
+      fi
+    fi
   else
     status=1
   fi
