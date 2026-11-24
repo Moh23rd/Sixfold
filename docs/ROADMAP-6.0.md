@@ -1,8 +1,9 @@
 # Sixfold 6.0 — Daily Gauntlet + Profile/Stats
 
-**Status:** Shipped in 6.0.0. The Daily Gauntlet, the local profile, the
-badges-page sections and their backup coverage are in the release. Gauntlet
-text sharing remains a follow-up; the 6.0 release note does not promise it.
+**Status:** Release candidate. The Daily Gauntlet, the local profile, the
+badges-page sections and their backup coverage are implemented in 6.0.0 and
+awaiting the final APK test before release. Gauntlet text sharing remains a
+follow-up; the 6.0 release note does not promise it.
 
 **Baseline:** `release/6.0` started at `5dbfd74`. The internal package/cache
 version and the public label are now `6.0.0` and `v6.0`.

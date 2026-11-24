@@ -45,7 +45,7 @@ npm run test:cache-budget # shell bytes by asset class
 The Android shell lives in `android/`; build and distribution notes are in
 [docs/ANDROID.md](docs/ANDROID.md). Reproducible font, iOS launch image,
 launcher-art and adaptive-icon builds are in [docs/ASSETS.md](docs/ASSETS.md).
-[docs/](docs/) also holds the 6.0 release plan and the Wordle audit and source
+[docs/](docs/) also holds the 6.0 roadmap and the Wordle audit and source
 manifest.
 
 ## Layout
