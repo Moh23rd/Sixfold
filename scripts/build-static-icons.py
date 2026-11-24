@@ -4,7 +4,8 @@
 The launcher is deliberately not localized. The app-icon renderer writes four
 master layers: the rounded icon, a full-bleed maskable square, the adaptive
 background and the adaptive foreground. This script is the single source for
-the web favicon/touch sizes, the maskable PWA art, and every Android density.
+the web favicon/touch sizes, the boot-splash UI mark, the maskable PWA art, and
+every Android density.
 It writes a snapshot file as it goes, so a stale output or a changed master is
 visible in review instead of only on a phone.
 
@@ -51,6 +52,10 @@ WEB = [
     ("icons/icon-maskable-512.png", 512, "assets/icon-maskable.png"),
     ("icons/icon-maskable-1024.png", 1024, "assets/icon-maskable.png"),
 ]
+# The boot splash draws the mark at up to 152 CSS px, so it needs 456 px for a
+# 3x screen. WebP keeps that near 8 KiB where a PNG would be about 120 KiB, and
+# the Chromium 60 WebView floor renders it.
+SPLASH_MARK = ("icons/mark-456.webp", 456, "assets/icon.png", 80)
 ANDROID = [
     "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
     "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
@@ -105,6 +110,12 @@ def build() -> tuple[dict[str, bytes], list[dict]]:
         files[relative] = data
         entries.append(entry(relative, data, image.size))
 
+    relative, size, source, quality = SPLASH_MARK
+    image = resize(layers[source], size)
+    data = save_webp(image, quality)
+    files[relative] = data
+    entries.append(entry(relative, data, image.size))
+
     res = ROOT / "android/app/src/main/res"
     for qualifier, legacy_size, foreground_size in DENSITIES:
         directory = res / f"mipmap-{qualifier}"
@@ -148,6 +159,14 @@ def save_png(image: Image.Image) -> bytes:
 
     buffer = BytesIO()
     image.save(buffer, format="PNG", optimize=True)
+    return buffer.getvalue()
+
+
+def save_webp(image: Image.Image, quality: int) -> bytes:
+    from io import BytesIO
+
+    buffer = BytesIO()
+    image.save(buffer, format="WEBP", quality=quality, method=6)
     return buffer.getvalue()
 
 

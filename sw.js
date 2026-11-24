@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
 // 6.0 release.
-const VERSION = 'sixfold-6.0.0';
+const VERSION = 'sixfold-6.0.1';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -121,6 +121,9 @@ const SHELL = [
   './js/wordle.js?v=' + WORDLE_CODE,
   './icons/icon-180.png?v=6.0.1',
   './icons/icon-192.png?v=6.0.1',
+  // The boot splash draws the mark at up to 152 CSS px; its own 456px WebP
+  // keeps that crisp at 3x for about 8 KiB.
+  './icons/mark-456.webp?v=6.0.1',
   // The 512px and 1024px icons are install/manifest art, not shell UI. The
   // manifest fetches them when needed; keeping the large gradient art out of
   // the offline shell leaves room for the sixfold scripts and fonts.

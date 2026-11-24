@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 111947,
-      "sha256": "6640684167f3c5d1beed4298bc1b054cb3938869fcf7ffb354c8ffbd61d56d33"
+      "bytes": 111968,
+      "sha256": "62e0a7477a29065d7c08ccf091d0366b2ac782c90d8ba090c923d1705a1ccc83"
     },
     {
       "path": "licenses.html",
@@ -169,6 +169,11 @@
       "path": "icons/icon-192.png",
       "bytes": 26155,
       "sha256": "b24265fa5be399fb0bab0d7a2ff5fa76d6a24c69b0cab232a4dcaf4b4518ef3f"
+    },
+    {
+      "path": "icons/mark-456.webp",
+      "bytes": 8150,
+      "sha256": "a616c5c6f97de146f6e771a159db9063eda337f358ab598f0d50300f2406f89e"
     },
     {
       "path": "fonts/google-sans-flex.woff2",

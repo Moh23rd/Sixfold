@@ -77,7 +77,7 @@ wordmark, and the same geometry at every size:
 
 The startup links use `?v=6.0.1`. Bump that suffix if the images change.
 `icons/icon-512.png` is the rounded launcher mark, rendered from
-`assets/icon.png`; the splash has no separate artwork.
+`assets/icon.png`; the iOS launch images have no separate artwork.
 
 ## Launcher icon
 
@@ -102,8 +102,9 @@ npm run assets:icons:check
 `assets:icon` needs the Playwright Chromium already used by the tests. It
 measures the glyph's ink, not the font's line box, so the numeral is centred by
 what the eye sees. `assets:icons` writes `icons/icon-{180,192,512,1024}.png`,
-the two maskable sizes, the Android legacy/round/foreground/background layers
-for all six densities, and `assets/icon-snapshots.json`. The Apple touch icon
+the two maskable sizes, `icons/mark-456.webp` for the web boot splash, the
+Android legacy/round/foreground/background layers for all six densities, and
+`assets/icon-snapshots.json`. The Apple touch icon
 uses the square layer because iOS applies its own squircle; the regular browser
 sizes keep the rounded plate. The snapshot records every source hash, byte size
 and SHA-256 of every output. `assets:icons:check` is the dependency-light guard
@@ -114,6 +115,15 @@ Keep the icon static: do not add locale-qualified `mipmap-*` directories or
 locale-suffixed web icon files. `npm run native:assets:android` still uses
 `capacitor-assets` for the splash surfaces, then runs the static generator so
 the launcher cannot be replaced by a language-following or inset version.
+
+## Boot splash mark
+
+The web boot splash draws the mark at up to 152 CSS px, so it loads
+`icons/mark-456.webp` (456 px, 3× the largest display size) from the same
+`assets/icon.png` master instead of upscaling the 32 px header icon.
+`assets:icons` resizes it to 456 px and encodes WebP at quality 80: about
+8 KiB, where a PNG of the same size would add 120 KiB to the offline shell.
+`icons/icon-192.png` stays for the header, favicon and the rest of the shell.
 
 ## Adaptive icon guard
 

@@ -232,6 +232,13 @@
       "height": 512,
       "bytes": 126539,
       "sha256": "e7d716044273dc6053ed5935cbd5aa88796a1e9fd792a9b149156665119412ce"
+    },
+    {
+      "path": "icons/mark-456.webp",
+      "width": 456,
+      "height": 456,
+      "bytes": 8150,
+      "sha256": "a616c5c6f97de146f6e771a159db9063eda337f358ab598f0d50300f2406f89e"
     }
   ]
 }
