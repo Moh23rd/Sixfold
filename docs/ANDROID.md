@@ -322,6 +322,18 @@ sheet's first-frame paint trace, the device-side check for the delayed-blur
 regression. Each job downloads the signed APK from the Android job instead of
 rebuilding it, so all API levels install the same artifact.
 
+A cold-starting WebView can be torn down and recreated by the system after the
+activity has started, which closes its DevTools socket before any page answers.
+The smoke retries only that attach: a new attempt starts only while a 20-second
+window from the first attempt is open, and only while the process it launched
+is still the same live pid. An attach already in progress is left to finish, so
+the whole recovery can take longer than that window. The launch itself is never
+repeated. A crash, kill or ANR recorded for that pid is fatal, a changed or
+missing pid is fatal, and the page still has to reach `home-ready` within the
+launch's own deadline, so a slow or dead first paint cannot pass as a WebView
+restart. Assertion failures after the launch proof are never retried, and the
+emulator-lost path (exit 3) still reboots the guest as before.
+
 The launcher resources themselves remain audited in source (the static icon
 snapshots, adaptive-icon guard, and no-locale-mipmap check), because a launcher
 icon is rendered by the device launcher rather than by the app's WebView. A

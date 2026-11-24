@@ -85,6 +85,16 @@ export function parseDeathReport({ crashText = '', eventsText = '', packageName,
   return report.length ? report : ['no crash, ANR or kill was recorded for the app'];
 }
 
+/* Whether the report holds a death the platform recorded, as opposed to only
+   the ring-reach line or the clean-launch placeholder. A retrying caller has
+   to know before it quotes a cause: a crash or ANR is fatal even when the
+   process is still alive. */
+const DEATH_RECORD = /^event: .*am_(anr|kill|crash)/;
+
+export function recordsDeath(report) {
+  return report.some((entry) => DEATH_RECORD.test(entry) || entry.startsWith('crash: '));
+}
+
 /* What a dump with no section for the app says. describeDeath reads the same
    string to know that its Subject belongs to another process. */
 const FOREIGN_TRACE = ' does not name ';
@@ -141,7 +151,7 @@ export function describeDeath(report, trace = []) {
       )
     : '';
   const recorded =
-    report.find((entry) => /^event: .*am_(anr|kill|crash)/.test(entry)) ||
+    report.find((entry) => DEATH_RECORD.test(entry)) ||
     report.find((entry) => entry.startsWith('crash: '));
   const detail = recorded ? recorded.replace(/^(event|crash): /, '') : '';
   if (subject) return detail ? `${subject}; the platform recorded: ${detail}` : subject;

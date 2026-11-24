@@ -9,7 +9,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { anrTraceLines, describeDeath, parseDeathReport } from './death-report.mjs';
+import { anrTraceLines, describeDeath, parseDeathReport, recordsDeath } from './death-report.mjs';
 
 const PACKAGE = 'io.github.moh23rd.sixfold';
 
@@ -127,6 +127,26 @@ test('the crash report starts at the newest block', () => {
   assert.ok(report.some((line) => line.includes('PID: 2954')));
   assert.ok(report.some((line) => line.includes('the launch that died')));
   assert.ok(!report.join('\n').includes('the older launch'));
+});
+
+test('a recorded death is told apart from the ring reach and a clean launch', () => {
+  assert.equal(
+    recordsDeath(parseDeathReport({ eventsText: EVENTS, packageName: PACKAGE, pid: '2954' })),
+    true
+  );
+  const crash = 'E AndroidRuntime: FATAL EXCEPTION: main\nProcess: io.github.moh23rd.sixfold, PID: 2954\n';
+  assert.equal(
+    recordsDeath(parseDeathReport({ crashText: crash, packageName: PACKAGE, pid: '2954' })),
+    true
+  );
+  // The ring-reach line says how far back the buffer goes; it records no death.
+  assert.equal(
+    recordsDeath(
+      parseDeathReport({ eventsText: '--------- beginning of events\n', packageName: PACKAGE })
+    ),
+    false
+  );
+  assert.equal(recordsDeath(parseDeathReport({ packageName: PACKAGE })), false);
 });
 
 test('the ANR report quotes the subject and only the app section', () => {
