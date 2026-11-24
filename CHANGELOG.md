@@ -18,7 +18,7 @@ whole set feel settled. No accounts, ads, tracking or server.
   `versionName` move together, and the release-label test now checks all of
   them. Android moves to `versionCode 600` / `versionName "6.0.0"`.
 - **The What’s New note is 6.0**: the panel describes the Gauntlet, the profile,
-  the calmer appearance switch and the sturdier shell in all twelve languages.
+  the calmer appearance switch and the sturdier app in all twelve languages.
   The seven stale 5.0 bullets were removed from every catalog, so the locale
   payload no longer carries release notes the app cannot show.
 - **The WebView guard covers every page**: it now scans the inline scripts in

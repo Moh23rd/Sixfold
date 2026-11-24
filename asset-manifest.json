@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 107371,
-      "sha256": "1062019c9ccee3e93d420b627d58b5ddf6e4206e0c27828fce1d6fa899e36395"
+      "bytes": 107373,
+      "sha256": "1561d4ed07dbeaeeed809f9e380d1d4342762df4593d44ea5002c7d36002f6b4"
     },
     {
       "path": "licenses.html",
@@ -132,8 +132,8 @@
     },
     {
       "path": "i18n/i18n.js",
-      "bytes": 65700,
-      "sha256": "7c74bea3d3ee5e8bc0ff062cb83d6b14e5878f5807bcb8b574cd1dd19f1d2502"
+      "bytes": 65705,
+      "sha256": "5378f78664bd24f87faa4e283f8b080d4fe7410ba05da63b6a01009ec458a7c9"
     },
     {
       "path": "js/native.js",
