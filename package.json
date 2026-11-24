@@ -11,6 +11,7 @@
     "test:i18n": "node scripts/check-i18n.mjs",
     "test:webview-floor": "node scripts/check-webview-floor.mjs",
     "test:death-report": "node --test scripts/lib/death-report.test.mjs",
+    "test:reattach": "node --test scripts/lib/reattach.test.mjs",
     "test:cache-budget": "node scripts/check-cache-budgets.mjs",
     "audit:wordle": "node scripts/audit-wordle-dictionaries.mjs",
     "audit:wordle:strict": "node scripts/audit-wordle-dictionaries.mjs --strict",

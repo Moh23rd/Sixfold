@@ -67,6 +67,8 @@ jobs:
         run: npm run test:webview-floor
       - name: Test the launch death report
         run: npm run test:death-report
+      - name: Test the Android attach retry
+        run: npm run test:reattach
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test ${{ matrix.files }}
       - name: Record an approved cache-footprint baseline

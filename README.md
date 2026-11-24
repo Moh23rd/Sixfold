@@ -37,6 +37,7 @@ npm run test:i18n         # catalogs and locale coverage
 npm run test:webview-floor # ES2018 and Chromium 60 API floor
 npm run audit:wordle      # dictionary provenance and policy
 npm run test:death-report # Android launch death report, from recorded buffers
+npm run test:reattach    # Android attach retry, without an emulator
 npm run assets:icons:check # static launcher art and its pixel snapshots
 npm run assets:manifest:check # shell content hashes
 npm run test:cache-budget # shell bytes by asset class

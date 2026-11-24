@@ -24,7 +24,8 @@
 import { execFileSync } from 'node:child_process';
 import { inflateSync } from 'node:zlib';
 
-import { anrTraceLines, describeDeath, parseDeathReport, recordsDeath } from './lib/death-report.mjs';
+import { anrTraceLines, describeDeath, parseDeathReport } from './lib/death-report.mjs';
+import { attachToLiveLaunch } from './lib/reattach.mjs';
 
 const PACKAGE = 'io.github.moh23rd.sixfold';
 const ACTIVITY = `${PACKAGE}/.MainActivity`;
@@ -599,37 +600,6 @@ async function connectToWebView() {
   return chosen;
 }
 
-/* A cold-starting WebView can be torn down and recreated after the activity has
-   started, which closes its devtools socket before any page answers. That is a
-   launch-layer restart, not a first-paint death: the process is still the one
-   just started and the platform recorded no crash, ANR or kill for it. Retry
-   only the attach, and only while that same process is alive. */
-const ATTACH_RETRY_WINDOW = 20000;
-
-async function attachToLiveLaunch(pid) {
-  const deadline = Date.now() + ATTACH_RETRY_WINDOW;
-  for (;;) {
-    try {
-      return await connectToWebView();
-    } catch (error) {
-      // A host that stopped answering is not a WebView restart.
-      if (error instanceof EmulatorLost) throw error;
-      // A relaunch is a different process, and a dead one is a death: neither
-      // may be attached to as if the original launch had survived.
-      if (appPid() !== pid) throw new Error(`${error.message} (the launched process is gone)`);
-      // An ANR can leave the process alive, so the platform's own record
-      // separates a recreated WebView from a stalled first paint.
-      const report = await processDeathReport(pid);
-      if (recordsDeath(report)) throw new Error(`${error.message} (${describeDeath(report)})`);
-      // The window bounds when another attach may start; an attach already
-      // waiting for its target is allowed to finish.
-      if (Date.now() >= deadline) throw error;
-      log(`reattaching to the same launch after: ${error.message}`);
-      await wait(1000);
-    }
-  }
-}
-
 /* The launch layer's own marker: documentElement gets `home-ready` once the
    launch layer finished and the hub built, which is the first evidence that a
    cold start painted rather than only connected. A socket that appeared and
@@ -700,7 +670,15 @@ async function startAndProveLaunch() {
   let problem = null;
   try {
     pid = await launchApp();
-    await attachToLiveLaunch(pid);
+    await attachToLiveLaunch({
+      pid,
+      connect: connectToWebView,
+      livePid: appPid,
+      deathReport: processDeathReport,
+      isHostLost: (error) => error instanceof EmulatorLost,
+      wait,
+      log
+    });
     const ready = await waitFor('the WebView to reach home-ready', homeReady, 60000, 300);
     if (!ready.value) problem = ready.error ? ready.error.message : 'it never reached home-ready';
   } catch (error) {
