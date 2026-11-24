@@ -1,6 +1,6 @@
 {
   "name": "sixfold",
-  "version": "6.0.40",
+  "version": "6.0.41",
   "release": "5.0",
   "private": true,
   "license": "GPL-3.0-only",
@@ -9,6 +9,7 @@
     "serve": "python3 -m http.server 8000 --bind 127.0.0.1",
     "test": "playwright test",
     "test:i18n": "node scripts/check-i18n.mjs",
+    "test:webview-floor": "node scripts/check-webview-floor.mjs",
     "test:death-report": "node --test scripts/lib/death-report.test.mjs",
     "test:cache-budget": "node scripts/check-cache-budgets.mjs",
     "audit:wordle": "node scripts/audit-wordle-dictionaries.mjs",
@@ -36,7 +37,8 @@
     "@axe-core/playwright": "^4.14.0",
     "@capacitor/assets": "^4.0.0",
     "@capacitor/cli": "^8.6.2",
-    "@playwright/test": "^1.65.1"
+    "@playwright/test": "^1.65.1",
+    "acorn": "^8.19.0"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",

@@ -778,7 +778,7 @@
   }
 
   function translateValue(value) {
-    var match = String(value).match(/^(\s*)(.*?)(\s*)$/s);
+    var match = String(value).match(/^(\s*)([\s\S]*?)(\s*)$/);
     if (!match || !match[2]) return value;
     var core = match[2].replace(/\s+/g, ' ');
     return match[1] + localizeDigits(lookup(core)) + match[3];

@@ -1,10 +1,10 @@
 # Changelog
 
-> Public release label: **v5.0**. Current development build: **6.0.40**.
+> Public release label: **v5.0**. Current development build: **6.0.41**.
 
 ## Unreleased — v6.0 development
 
-Internal build: **6.0.40**
+Internal build: **6.0.41**
 
 The 6.0 baseline refreshes the development toolchain and CI while the public
 release stays at 5.0 until the 6.0 feature set lands.
@@ -27,6 +27,17 @@ release stays at 5.0 until the 6.0 feature set lands.
   (Chromium 69), and the service-worker install pass collects a failed asset
   itself instead of calling `Promise.allSettled()` (Chromium 76). The remaining
   Chromium 79–111 stylesheet floor is documented in `docs/ANDROID.md`.
+- **The WebView floor is measured and guarded**: the emulator smoke prints the
+  Chromium version of the WebView that actually painted
+  (`navigator.userAgent`) on every API row, and a launch-only row whose engine
+  is newer than 60 warns in CI, so the API 26 exception rests on the device's
+  engine rather than the image number. `npm run test:webview-floor` parses
+  every shell script as ES2018, rejects async generators and `for await`, and
+  fails on a curated list of post-Chromium-60 globals and methods.
+- **Translation survives the old WebView**: the new guard caught a dotAll `/s`
+  regex in `i18n/i18n.js`, a parse error on Chromium 60 that would have
+  disabled every translation; it now uses an equivalent `[\s\S]` pattern. The
+  guarded `navigator.clipboard` copy path is recorded as a checked exception.
 - **Manifest pin follows the build**: a theme switch now reuses the build epoch
   on the page's manifest link instead of a stale hard-coded number, so changing
   the theme no longer requests the previous build's manifest.

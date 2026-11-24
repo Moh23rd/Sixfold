@@ -586,6 +586,30 @@ async function homeReady() {
   }
 }
 
+/* The engine behind the launch-only rows. `ro.build.version.sdk` names the
+   Android image, not the WebView that renders the page: the API 26 CI image
+   stays on a Chromium 60-era WebView, while a real API 26 phone may have a
+   current one. Read the WebView's own user agent after the first paint, so the
+   log for a launch-only row carries the evidence for its exception and a later
+   image update shows up instead of being assumed away. */
+async function reportWebViewEngine() {
+  let ua = '';
+  try {
+    ua = await evaluate('navigator.userAgent');
+  } catch (error) {
+    log(`the WebView engine could not be read: ${error.message}`);
+    return '';
+  }
+  const match = /(?:Chrome|Chromium)\/(\d+)(?:\.(\d+))?(?:\.(\d+))?/.exec(ua || '');
+  if (!match) {
+    log(`WebView engine: unidentified (${ua || 'no user agent'})`);
+    return '';
+  }
+  const version = match.slice(1).filter(Boolean).join('.');
+  log(`WebView engine: Chromium ${version} (${ua})`);
+  return version;
+}
+
 /* Starts the app and proves it painted. This launch is the one the checks run
    on: the start a player gets is the one asserted, not a second, warmer start.
    The smoke used to spend a cold launch and then restart the app to assert the
@@ -663,6 +687,7 @@ try {
   // The process and the WebView target are the real evidence, and both are
   // asserted before any check runs.
   await startAndProveLaunch();
+  const engineVersion = await reportWebViewEngine();
 
   // API 24 and 26 system images ship WebViews older than the app's JavaScript
   // or its structural CSS (inset, flex gap, min()/max()/clamp(), aspect-ratio).
@@ -671,6 +696,22 @@ try {
   // syntax error as an app defect. The workflow sets this only for those two
   // matrix entries.
   if (process.env.SMOKE_LAUNCH_ONLY === '1') {
+    // The exception is only valid while the engine really is old. Say so when
+    // the image starts shipping a newer WebView, instead of leaving a row
+    // launch-only after its reason has gone.
+    const api = process.env.API_LEVEL || 'this API level';
+    const major = Number.parseInt(engineVersion, 10);
+    if (!engineVersion) {
+      console.log(
+        `::warning title=Launch-only engine unknown::API ${api} is launch-only,` +
+          " but the smoke could not read the WebView's Chromium version, so the engine gap behind that exception is unconfirmed."
+      );
+    } else if (Number.isFinite(major) && major > 60) {
+      console.log(
+        `::warning title=Launch-only premise stale::API ${api} reports Chromium ${major}, not 60 or older;` +
+          ' the full WebView assertions can be enabled for this row.'
+      );
+    }
     log('the APK installed and the activity reached its first paint; skipping the WebView assertions on this API');
     if (forwarded) {
       try {

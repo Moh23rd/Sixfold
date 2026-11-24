@@ -58,8 +58,24 @@ emulator entry stays launch-only: it proves the APK installs and reaches first
 paint, while API 33 and 36 run the full assertions. Real API 26 devices update
 WebView through the Play Store and are not limited to the emulator's engine.
 
-This section is a static audit. The API 26 image's first actual shell execution
-is still a device check; the launch row does not assert the modern design.
+The smoke records the engine it actually got. After the first paint every API
+row prints the WebView's Chromium version from `navigator.userAgent`, so a
+launch-only row carries the evidence for its own exception; if such a row
+reports an engine newer than 60, the run emits a CI warning to turn the full
+assertions back on. The API level says nothing about the WebView — a real API 26
+phone updates it through the Play Store — so the version in the log is what the
+decision rests on.
+
+The JavaScript floor is enforced in source. `npm run test:webview-floor` parses
+every shell script and inline `index.html` block as ES2018 (Chromium 60's
+syntax set, minus async generators and `for await`, which it rejects) and fails
+on a curated list of globals and methods newer than the engine. Deliberately
+feature-checked APIs are listed in the guard with their reason, and an
+allowance that stops matching is itself an error. The guard found a dotAll
+`/s` regex in `i18n/i18n.js`: a parse error on this WebView, which would have
+disabled translation on every page, now replaced by `[\s\S]`. The CSS floor
+remains a static audit, because those declarations are dropped rather than
+throwing; the API 26 row does not assert the modern design.
 
 ## Edge-to-edge and safe areas
 
