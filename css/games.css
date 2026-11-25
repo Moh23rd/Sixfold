@@ -1053,7 +1053,7 @@ html[data-motion="reduced"] .water-seg.water-surface::before,
 html[data-motion="reduced"] .water-tube.is-target::after,
 html[data-motion="reduced"] .water-tube.is-receiving .water-seg.water-surface::before { transition: none; animation: none; }
 
-  html[data-motion="reduced"] .water-pour-layer { display: none; }
+html[data-motion="reduced"] .water-pour-layer { display: none; }
 
 /* ---------- fruit merge ---------- */
 
@@ -4294,7 +4294,7 @@ html[data-motion="reduced"] .overlay-card.is-victory {
   }
 
 
-  html[data-motion="reduced"] .victory-layer { display: none; }
+html[data-motion="reduced"] .victory-layer { display: none; }
 
 /* On phones the three difficulty choices and the flag toggle each need a
    readable row. German and French labels are wider than English, so wrap the

@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 111903,
-      "sha256": "d9698ac300eb4b0312fae2600d2373b388bd47caad34529fbab6e95eee62add9"
+      "bytes": 113498,
+      "sha256": "32fc3a9b5fcff64dcc105af3a5561e8326f05d3f984913295468e37a90dd303b"
     },
     {
       "path": "licenses.html",
@@ -17,18 +17,18 @@
     },
     {
       "path": "css/styles.css",
-      "bytes": 48460,
-      "sha256": "76f69cee2aad15a4429de1ff461de94fabe2778f1d6ba83b445277ff88c85590"
+      "bytes": 49825,
+      "sha256": "e31abf1886ff0049759abbaa781ac46aa2a1d59ce92ff8e38e9df95d9eb230e6"
     },
     {
       "path": "js/theme.js",
-      "bytes": 38235,
-      "sha256": "9329c9d4549905b5150cbe7885593fa449f70eb75de16ef4d1835148e62c7e68"
+      "bytes": 38120,
+      "sha256": "3e8cadbe8e400de36f9f9a2eac53944494b0ad41115c50f4269515d86222fa29"
     },
     {
       "path": "js/game.js",
-      "bytes": 46283,
-      "sha256": "4afcb4ebb66e72131a19725445e72c42913806e5076e99ea5ce04564cbf3bcf6"
+      "bytes": 46255,
+      "sha256": "66251ba1fdb8b4e7032f526eee0f2f2403588767a1ced6e321d8d35cdf9ea4df"
     },
     {
       "path": "js/haptics.js",
@@ -37,13 +37,13 @@
     },
     {
       "path": "js/overscroll.js",
-      "bytes": 11999,
-      "sha256": "a87e8a46414c4e04c6efcbfdb705dc2e36cc42172937c521fa735a7bf782251b"
+      "bytes": 12424,
+      "sha256": "a0fbdd870e78712491b73b71bfbb733dbab04c2b41a3e561de6a5ad8952b2707"
     },
     {
       "path": "js/celebrate.js",
-      "bytes": 3915,
-      "sha256": "f77c9ee897c54d3289d66dc83cf69cdb9776a59a322ea914b3a1939d62a77f27"
+      "bytes": 3896,
+      "sha256": "ac6bd12bb04b5f144fbf542bd3f7cdae03fe1a19cd7af51f3c7d791e308d7351"
     },
     {
       "path": "js/sharecard.js",
@@ -57,28 +57,28 @@
     },
     {
       "path": "css/games.css",
-      "bytes": 108638,
-      "sha256": "55d23dc33689b8ed5ff1984de950cb29fddcea336da6a92f3b3cdbe7390c21f2"
+      "bytes": 108822,
+      "sha256": "d8e325eb8aba8f7f2140fd5482dfed4e914047c6c33343d91174d521b856fe1e"
     },
     {
       "path": "css/home.css",
-      "bytes": 32375,
-      "sha256": "de86d1668258fd660c29495439048af9e3aae23c2c0d1c8f9a9d4db591fc9b02"
+      "bytes": 32586,
+      "sha256": "f6d48fbbc7eaa63b4afb54eaedb5cf7d1e6c5fc1f637ac1cef24e5923b75496a"
     },
     {
       "path": "css/polish.css",
-      "bytes": 41208,
-      "sha256": "21846b3aa2dcaa179465723d651c6638e1e9f8228611900d601135649eeb4764"
+      "bytes": 42581,
+      "sha256": "ab69498eb529897e81d9b27071dd9e540cb7e6ae0e7e1efdc4cb57a6b7037595"
     },
     {
       "path": "css/sudoku.css",
-      "bytes": 22539,
-      "sha256": "fdf78e58e7f160ef60f1b1c9f71fa915bf412db08ed9d4b9cd32d56caae08ac8"
+      "bytes": 22955,
+      "sha256": "5ad3b43b72eca2f9e54ab6cb05ba9f8281a31bc135659c982ab594f1853cb85e"
     },
     {
       "path": "css/v5.css",
-      "bytes": 64604,
-      "sha256": "339916f19dbd4abb65bcfd411c3ab2d3a86b458be3d44e6232384f079e4cbeca"
+      "bytes": 64637,
+      "sha256": "a057480f29fd2d4c4e634475bfebed604c7f29e265b508373679d8528ae5ac57"
     },
     {
       "path": "css/progressive-blur.css",
@@ -87,8 +87,8 @@
     },
     {
       "path": "js/settings.js",
-      "bytes": 9731,
-      "sha256": "83f581db6952c3486d2aca03a7ce4cf6bfd46736952db2366550cae66d59e555"
+      "bytes": 12013,
+      "sha256": "c5fa796086d936b745901f8a4efc7dcbc09bf1c777394a080c06af38e22e1826"
     },
     {
       "path": "js/sudoku.js",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 158830,
-      "sha256": "fa6118f165dfe6a936fb5c161a55333dd4c2160ac2f4c4071872f806f27dd940"
+      "bytes": 158741,
+      "sha256": "05fd1a122c4391def586495a61a12c4e81f5a62049913ca7f7bf2e4ffaaaf95c"
     },
     {
       "path": "js/daily.js",
@@ -132,8 +132,8 @@
     },
     {
       "path": "i18n/i18n.js",
-      "bytes": 67281,
-      "sha256": "f1749630b47e3cf4b280e761cc575aa4700c574b51488f223c399a662b953c08"
+      "bytes": 67385,
+      "sha256": "450003d9fb92daa44f6096e65d852881d97970765c08af4c1c5e6e20d14c7498"
     },
     {
       "path": "js/native.js",

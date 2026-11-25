@@ -338,6 +338,11 @@
 
 @media (orientation: portrait) and (max-height: 680px) {
   .sudoku-wrap { width: min(100%, 286px, 40dvh); }
+  /* The short-screen board is about 237px wide, so a cell is 25px. The 3.4dvh
+     digit grew to 26.2px at the 1.3 system scale, whose line box is taller
+     than the cell. Keep the digit in proportion with this smaller board
+     instead of shrinking the global cap. */
+  .sudoku-cell { font-size: clamp(13px, 2.7dvh, 20px); }
   .sudoku-main { gap: 4px; }
   .sudoku-pad-key { min-height: 32px; }
   .sudoku-tool { min-height: 31px; }

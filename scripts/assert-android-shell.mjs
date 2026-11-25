@@ -1272,49 +1272,40 @@ try {
       ' card.click(); return ""; })()'
   );
   if (openedSudoku) fail(openedSudoku);
+  // scrollWidth/scrollHeight round up; a 1px difference is the fractional
+  // edge of a 25.9px cell, not a clipped digit. Anything larger fails.
   const sudoku = await until(
     'the Sudoku board at system font scale 2.0',
     () =>
       evaluate(
         "(() => { const cells = document.querySelectorAll('#sudoku-board .sudoku-cell');" +
           ' if (cells.length !== 81) return null;' +
-          ' const canvas = document.createElement("canvas");' +
-          ' const ctx = canvas.getContext("2d");' +
-          ' const clipped = []; let worst = 0; let font = 0; let cell = 0;' +
+          ' const over = []; let worst = 0; let font = 0; let cell = 0;' +
           ' cells.forEach(function (tile, index) {' +
           '   const text = tile.textContent.trim();' +
           '   if (!text) return;' +
-          '   const style = getComputedStyle(tile);' +
-          '   ctx.font = style.fontStyle + " " + style.fontWeight + " " + style.fontSize + " " + style.fontFamily;' +
-          '   const metrics = ctx.measureText(text);' +
-          '   const inkW = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;' +
-          '   const inkH = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;' +
-          '   const x = inkW - tile.clientWidth;' +
-          '   const y = inkH - tile.clientHeight;' +
-          '   font = Math.max(font, parseFloat(style.fontSize));' +
+          '   const x = tile.scrollWidth - tile.clientWidth;' +
+          '   const y = tile.scrollHeight - tile.clientHeight;' +
+          '   font = Math.max(font, parseFloat(getComputedStyle(tile).fontSize));' +
           '   cell = Math.max(cell, tile.clientHeight);' +
           '   worst = Math.max(worst, x, y);' +
           '   if (x > 1 || y > 1) {' +
-          '     clipped.push({ index: index, text: text, by: Math.round(Math.max(x, y) * 10) / 10 });' +
+          '     over.push({ index: index, text: text, by: Math.max(x, y) });' +
           '   }' +
           ' });' +
-          ' return { cells: cells.length, worst: Math.round(worst * 10) / 10, font: font, cell: cell, clipped: clipped.slice(0, 6) }; })()'
+          ' return { cells: cells.length, worst: worst, font: font, cell: cell, over: over.slice(0, 6) }; })()'
       ),
     20000,
     250
   );
-  if (sudoku.clipped.length) {
+  if (sudoku.over.length) {
     fail(
-      'at system font scale 2.0 a Sudoku digit overflows its cell:' +
-        sudoku.clipped.map((cell) => ` cell ${cell.index} "${cell.text}" by ${cell.by}px`).join(',')
+      'at system font scale 2.0 a Sudoku cell overflows its layout box:' +
+        sudoku.over.map((cell) => ` cell ${cell.index} "${cell.text}" by ${cell.by}px`).join(',')
     );
   }
-  // The cell's line box is taller than the cell at this size, but the printed
-  // digits are not: a button does not clip its content, and the glyph ink sits
-  // 19px inside a 25px cell. Measure the ink the player can lose, not the
-  // layout box around it.
   log(
-    `no Sudoku digit overflows its cell at system 2.0 (${sudoku.cells} cells,` +
+    `no Sudoku cell overflows at system 2.0 (${sudoku.cells} cells,` +
       ` ${sudoku.font.toFixed(2)}px type in a ${sudoku.cell}px cell, worst ${sudoku.worst}px)`
   );
   await backToHub('after the Sudoku cell check');

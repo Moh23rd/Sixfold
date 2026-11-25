@@ -89,6 +89,10 @@ test('the lite sheet uses a readable solid scrim instead of a blur', async ({ pa
 
 test('reduced motion stops the tape', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  // Full is the page default now; System is the choice that follows the device.
+  await page.addInitScript(() => {
+    localStorage.setItem('sixfold.settings.v1', JSON.stringify({ motion: 'system' }));
+  });
   await withDevice(page, { memory: 8, cores: 8 });
   await page.goto('/');
 

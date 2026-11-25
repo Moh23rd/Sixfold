@@ -16,8 +16,11 @@
 
 .home-hero-art { perspective: 900px; }
 
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .home-six {
+@media (hover: hover) and (pointer: fine) {
+  /* Gated on the page's Motion choice, not just the device query: Full on a
+     reduced-motion desktop gets the pointer motion back, and Reduced on a
+     normal desktop does not silently keep it. */
+html[data-motion="full"] .home-six {
     transform: rotate(-3deg) rotateX(var(--six-tilt-x, 0deg)) rotateY(var(--six-tilt-y, 0deg));
     transform-style: preserve-3d;
     transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -27,52 +30,52 @@
      while the pointer is over the cover. A permanent will-change layer and a
      420ms transition made every mouse event retarget a long animation, which
      is what felt sticky on desktop. */
-  .home-six.is-tilting {
+html[data-motion="full"] .home-six.is-tilting {
     transition-duration: 70ms;
     will-change: transform;
   }
 
-  .home-six-piece {
+html[data-motion="full"] .home-six-piece {
     cursor: pointer;
     touch-action: manipulation;
     user-select: none;
     transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .home-six-piece:hover {
+html[data-motion="full"] .home-six-piece:hover {
     transform: translateY(-3px);
   }
 
-  .home-six-piece:active { transform: translateY(0) scale(0.975); }
+html[data-motion="full"] .home-six-piece:active { transform: translateY(0) scale(0.975); }
 
-  .home-game {
+html[data-motion="full"] .home-game {
     transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
       border-color 180ms ease,
       box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .home-game:hover { transform: translateY(-5px); }
+html[data-motion="full"] .home-game:hover { transform: translateY(-5px); }
 
-  .home-game-stage { transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .home-game:hover .home-game-stage { transform: scale(1.015); }
+html[data-motion="full"] .home-game-stage { transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1); }
+html[data-motion="full"] .home-game:hover .home-game-stage { transform: scale(1.015); }
 
-  .home-cta,
-  .home-surprise,
-  .hub-share,
-  .hub-look,
-  .play-btn,
-  .play-tool,
-  .games-home,
-  .result-share {
+html[data-motion="full"] .home-cta,
+html[data-motion="full"] .home-surprise,
+html[data-motion="full"] .hub-share,
+html[data-motion="full"] .hub-look,
+html[data-motion="full"] .play-btn,
+html[data-motion="full"] .play-tool,
+html[data-motion="full"] .games-home,
+html[data-motion="full"] .result-share {
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     transition-duration: 240ms;
   }
 
-  .play-btn:hover:not(:active),
-  .play-tool:hover,
-  .games-home:hover { transform: translateY(-2px); }
+html[data-motion="full"] .play-btn:hover:not(:active),
+html[data-motion="full"] .play-tool:hover,
+html[data-motion="full"] .games-home:hover { transform: translateY(-2px); }
 
-  .result-share:hover { transform: translateY(-1px); }
+html[data-motion="full"] .result-share:hover { transform: translateY(-1px); }
 
   /* Merge tiles already get will-change in styles.css. Promoting every water
      glass and every Minesweeper node created hundreds of compositor layers on
@@ -103,8 +106,8 @@
 
 /* Merge tiles keep their responsive 150ms feel on touch, but a mouse gets a
    slightly longer, springier slide so a fast swipe no longer looks like a snap. */
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .tile { transition: transform 170ms cubic-bezier(0.22, 1, 0.36, 1); }
+@media (hover: hover) and (pointer: fine) {
+html[data-motion="full"] .tile { transition: transform 170ms cubic-bezier(0.22, 1, 0.36, 1); }
 }
 
 /* A screen settles in with a little more travel on a large display, while the
@@ -505,7 +508,7 @@ html[data-motion="reduced"] .wordle-result-card {
     transition: none;
   }
 
-  html[data-motion="reduced"] .home-six-piece.is-six-hit { animation: none; }
+html[data-motion="reduced"] .home-six-piece.is-six-hit { animation: none; }
 
 /* ==========================================================================
    Inner-game audit — desktop Wordle keys, the 320px Minesweeper toolbar and
@@ -934,21 +937,21 @@ html[data-motion="reduced"] .play-feedback .play-win.has-win::before {
 
 /* 40ms steps instead of 50: the last card used to start at 390ms and land
      at 910ms, which read as the hub still loading. */
-  html[data-motion="full"].home-ready .home-grid .home-game {
+html[data-motion="full"].home-ready .home-grid .home-game {
     animation: homeCardIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(1) { animation-delay: 40ms; }
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(1) { animation-delay: 40ms; }
 
-  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(2) { animation-delay: 80ms; }
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(2) { animation-delay: 80ms; }
 
-  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(3) { animation-delay: 120ms; }
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(3) { animation-delay: 120ms; }
 
-  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(4) { animation-delay: 160ms; }
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(4) { animation-delay: 160ms; }
 
-  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(5) { animation-delay: 200ms; }
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(5) { animation-delay: 200ms; }
 
-  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(6) { animation-delay: 240ms; }
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(6) { animation-delay: 240ms; }
 
 .hub.is-returning .hub-shell {
   animation: hubReturn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -1268,15 +1271,15 @@ html[data-motion="reduced"] .hidden-reveal-tiles span {
     animation: none;
   }
 
-  html[data-motion="reduced"] .hidden-reveal,
+html[data-motion="reduced"] .hidden-reveal,
 html[data-motion="reduced"] .hidden-reveal-tiles span { transition: none; }
 
-  html[data-motion="reduced"] .hidden-reveal-card,
+html[data-motion="reduced"] .hidden-reveal-card,
 html[data-motion="reduced"] .hidden-reveal-tiles span { opacity: 1; transform: none; }
 
-  html[data-motion="reduced"] .hidden-reveal-tiles span.is-key { transform: rotate(3deg); }
+html[data-motion="reduced"] .hidden-reveal-tiles span.is-key { transform: rotate(3deg); }
 
-  html[data-motion="reduced"] .hidden-reveal.is-open .hidden-reveal-card { opacity: 1; transform: none; }
+html[data-motion="reduced"] .hidden-reveal.is-open .hidden-reveal-card { opacity: 1; transform: none; }
 
 /* Touch targets must stay clickable even when the pointer is a finger rather
    than a mouse. The six pieces are intentionally not game buttons, so Safari

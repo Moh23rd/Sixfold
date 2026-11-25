@@ -1233,16 +1233,16 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
 
 html[data-motion="reduced"] .tile { transition-duration: 0.01ms; }
 
-  html[data-motion="reduced"] .face.appear,
+html[data-motion="reduced"] .face.appear,
 html[data-motion="reduced"] .face.bump { animation-duration: 0.01ms; }
 
-  html[data-motion="reduced"] .overlay,
+html[data-motion="reduced"] .overlay,
 html[data-motion="reduced"] .sheet-backdrop,
 html[data-motion="reduced"] .sheet-card { animation: none; }
 
-  html[data-motion="reduced"] .result-thumb img.is-fresh { animation: none; }
+html[data-motion="reduced"] .result-thumb img.is-fresh { animation: none; }
 
-  html[data-motion="reduced"] .btn,
+html[data-motion="reduced"] .btn,
 html[data-motion="reduced"] .seg button,
 html[data-motion="reduced"] .palette,
 html[data-motion="reduced"] .sheet-done { transition-duration: 0.01ms; }
@@ -1294,11 +1294,11 @@ html[data-motion="full"].app-ready .header {
     animation: appRise 480ms var(--ease-out) 40ms both;
   }
 
-  html[data-motion="full"].app-ready .board {
+html[data-motion="full"].app-ready .board {
     animation: boardReveal 560ms var(--ease-out) 80ms both;
   }
 
-  html[data-motion="full"].app-ready .footer {
+html[data-motion="full"].app-ready .footer {
     animation: appRise 480ms var(--ease-out) 150ms both;
   }
 
@@ -1456,7 +1456,7 @@ html[data-motion="reduced"] .score:not(.is-record).is-scoring .value {
     animation: none;
   }
 
-  html[data-motion="reduced"] .tile,
+html[data-motion="reduced"] .tile,
 html[data-motion="reduced"] .face,
 html[data-motion="reduced"] .overlay,
 html[data-motion="reduced"] .overlay-card,
@@ -1472,11 +1472,28 @@ html[data-motion="reduced"] .hint {
     transition-duration: 0.01ms;
   }
 
-  html[data-motion="reduced"] .face.appear,
+html[data-motion="reduced"] .face.appear,
 html[data-motion="reduced"] .face.bump,
 html[data-motion="reduced"] .hint.is-warning {
-    animation: none;
-  }
+  animation: none;
+}
+
+/* Reduced removes movement, not every transition: an instant cut is its own
+   little jolt, and opacity is not motion. Large surfaces stop lifting and
+   sliding; they and their scrims fade in place. */
+html[data-motion="reduced"] .overlay,
+html[data-motion="reduced"] .sheet-backdrop,
+html[data-motion="reduced"] .overlay-card,
+html[data-motion="reduced"] .sheet-card {
+  transition: opacity 160ms var(--ease-out);
+}
+
+html[data-motion="reduced"] .overlay-card,
+html[data-motion="reduced"] .overlay.is-closing .overlay-card,
+html[data-motion="reduced"] .sheet-card,
+html[data-motion="reduced"] .sheet.is-closing .sheet-card {
+  transform: none;
+}
 
 /* ---------- desktop ---------- */
 

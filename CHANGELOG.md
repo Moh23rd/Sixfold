@@ -226,6 +226,9 @@ whole set feel settled. No accounts, ads, tracking or server.
   off and no way to get it back. Motion now defaults to Full, with System (follow
   the device live) and Reduced next to Theme and Colours; the choice lives in
   the existing settings record, so the head boot resolves it before first paint.
+- **Reduced means no movement, not a hard cut**: overlays and sheets fade over
+  160ms in place instead of snapping, and the two desktop pointer blocks that
+  still read the OS query now follow the page's Motion choice too.
 - **A surface opts into the fade instead of being listed**: the cross-fade was a
   long selector list in the stylesheet, and anything added later silently cut
   while the rest of the app faded. A surface now carries `data-fade` — in the
@@ -255,7 +258,11 @@ whole set feel settled. No accounts, ads, tracking or server.
   pressed while the app is open routes through `onNewIntent`.
 - **System text size is no longer ignored**: the WebView applies Android's font
   scale (85–130%) as text zoom. At 1.3× the hub title measured 29.3px instead
-  of 22.5px, with no horizontal overflow.
+  of 22.5px, with no horizontal overflow. On the 320×592 shell a Sudoku cell is
+  only 25px, so the short-screen layout sizes its digits from the board
+  (2.7dvh) rather than the page height alone; the API 36 smoke opens Sudoku at
+  the largest system size and fails if any cell's scroll box is larger than the
+  cell.
 - **The page no longer flashes under an IME**: the SystemBars native handler
   padded the DecorView, and Android 16 cleared that padding between inset
   passes, so the page height flipped by 48px every few frames; typing in Hindi
