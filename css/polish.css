@@ -1291,15 +1291,17 @@ html[data-motion="reduced"] .hidden-reveal.is-open .hidden-reveal-card { opacity
   user-select: none;
 }
 
-/* The cover now starts its build after the launch layer is removed. Keep the
-   cascade brisk so the hub is alive as soon as the splash clears. */
-html.home-ready .six-1 { animation-delay: 60ms; }
-html.home-ready .six-2 { animation-delay: 110ms; }
-html.home-ready .six-3 { animation-delay: 160ms; }
-html.home-ready .six-4 { animation-delay: 210ms; }
-html.home-ready .six-5 { animation-delay: 260ms; }
-html.home-ready .six-6 { animation-delay: 310ms; }
-html.home-ready .home-six-caption { animation-delay: 340ms; }
+/* The cover starts its build as the launch layer lifts, so the finished cover
+   is never painted under the fading splash. These delays apply from app-ready
+   through home-ready; changing them at the hand-off retimed the running
+   animation and made the cover jump to near its end. */
+html.app-ready .six-1 { animation-delay: 60ms; }
+html.app-ready .six-2 { animation-delay: 110ms; }
+html.app-ready .six-3 { animation-delay: 160ms; }
+html.app-ready .six-4 { animation-delay: 210ms; }
+html.app-ready .six-5 { animation-delay: 260ms; }
+html.app-ready .six-6 { animation-delay: 310ms; }
+html.app-ready .home-six-caption { animation-delay: 340ms; }
 
 /* Keep short descriptions from stranding a single word on their last line. */
 .play-intro .sub,

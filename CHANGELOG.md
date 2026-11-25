@@ -229,6 +229,14 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **Reduced means no movement, not a hard cut**: overlays and sheets fade over
   160ms in place instead of snapping, and the two desktop pointer blocks that
   still read the OS query now follow the page's Motion choice too.
+- **The cover and the budget heuristics follow the same answer**: the desktop
+  pointer tilt was wired once at load, so choosing Full from Reduced left the
+  cover flat until a reload; it now attaches for the pointer and reads the
+  current choice. The six-piece build starts as the launch layer lifts, so its
+  finished cover is never painted under the fading splash and reset a few
+  frames later. A 4 GB desktop with four cores no longer takes the budget-phone
+  paint path (which stopped the tape and dropped the blur) unless the pointer
+  or viewport is actually phone-shaped.
 - **A surface opts into the fade instead of being listed**: the cross-fade was a
   long selector list in the stylesheet, and anything added later silently cut
   while the rest of the app faded. A surface now carries `data-fade` — in the

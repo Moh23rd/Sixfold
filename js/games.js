@@ -880,39 +880,21 @@
   }
 
   /* A small pointer tilt on the cover gives desktop mice the same sense of
-     physicality that touch scrolling already gives the phone layout. */
+     physicality that touch scrolling already gives the phone layout. The
+     listeners attach whenever a fine pointer exists; the current Motion choice
+     is read per frame, so switching Reduced to Full restores the tilt without
+     a reload. */
   if (sixArt && sixGrid && window.matchMedia &&
-      window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
-      !(window.SixfoldMotion && window.SixfoldMotion.reduced())) {
+      window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     let tiltFrame = 0;
     let tiltRect = null;
     let tiltPoint = null;
 
-    function paintTilt() {
-      tiltFrame = 0;
-      if (!tiltPoint) return;
-      if (!tiltRect) tiltRect = sixArt.getBoundingClientRect();
-      if (!tiltRect.width || !tiltRect.height) return;
-      const x = (tiltPoint.x - tiltRect.left) / tiltRect.width - 0.5;
-      const y = (tiltPoint.y - tiltRect.top) / tiltRect.height - 0.5;
-      sixGrid.style.setProperty('--six-tilt-x', (y * -4.5).toFixed(2) + 'deg');
-      sixGrid.style.setProperty('--six-tilt-y', (x * 6.5).toFixed(2) + 'deg');
+    function reduced() {
+      return Boolean(window.SixfoldMotion && window.SixfoldMotion.reduced());
     }
 
-    function queueTilt() {
-      if (!tiltFrame) tiltFrame = window.requestAnimationFrame(paintTilt);
-    }
-
-    sixArt.addEventListener('pointerenter', function () {
-      tiltRect = sixArt.getBoundingClientRect();
-      sixGrid.classList.add('is-tilting');
-    });
-    sixArt.addEventListener('pointermove', function (event) {
-      if (event.pointerType === 'touch') return;
-      tiltPoint = { x: event.clientX, y: event.clientY };
-      queueTilt();
-    });
-    sixArt.addEventListener('pointerleave', function () {
+    function clearTilt() {
       tiltPoint = null;
       tiltRect = null;
       if (tiltFrame) {
@@ -922,6 +904,37 @@
       sixGrid.classList.remove('is-tilting');
       sixGrid.style.removeProperty('--six-tilt-x');
       sixGrid.style.removeProperty('--six-tilt-y');
+    }
+
+    function paintTilt() {
+      tiltFrame = 0;
+      if (!tiltPoint || reduced()) return;
+      if (!tiltRect) tiltRect = sixArt.getBoundingClientRect();
+      if (!tiltRect.width || !tiltRect.height) return;
+      const x = (tiltPoint.x - tiltRect.left) / tiltRect.width - 0.5;
+      const y = (tiltPoint.y - tiltRect.top) / tiltRect.height - 0.5;
+      sixGrid.classList.add('is-tilting');
+      sixGrid.style.setProperty('--six-tilt-x', (y * -4.5).toFixed(2) + 'deg');
+      sixGrid.style.setProperty('--six-tilt-y', (x * 6.5).toFixed(2) + 'deg');
+    }
+
+    function queueTilt() {
+      if (!tiltFrame) tiltFrame = window.requestAnimationFrame(paintTilt);
+    }
+
+    sixArt.addEventListener('pointerenter', function () {
+      if (reduced()) return;
+      tiltRect = sixArt.getBoundingClientRect();
+      sixGrid.classList.add('is-tilting');
+    });
+    sixArt.addEventListener('pointermove', function (event) {
+      if (event.pointerType === 'touch' || reduced()) return;
+      tiltPoint = { x: event.clientX, y: event.clientY };
+      queueTilt();
+    });
+    sixArt.addEventListener('pointerleave', clearTilt);
+    window.addEventListener('sixfold:settings', function () {
+      if (reduced()) clearTilt();
     });
     // A scroll changes the element's page position without a pointerenter.
     // Drop the cached box so the next mouse frame measures it again.

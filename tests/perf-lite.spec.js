@@ -60,6 +60,22 @@ test('a capable phone keeps the blurred band', async ({ page }) => {
   expect(state.blur).toContain('blur');
 });
 
+test('a four-core desktop keeps the full paint path', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await withDevice(page, { memory: 4, cores: 4 });
+  await page.goto('/');
+
+  const state = await page.evaluate(() => ({
+    lite: document.documentElement.classList.contains('perf-lite'),
+    ticker: getComputedStyle(document.querySelector('.home-ticker-track')).animationName
+  }));
+
+  // Four gigabytes and four cores read as a budget phone only when the
+  // pointer or viewport is actually phone-shaped.
+  expect(state.lite).toBe(false);
+  expect(state.ticker).not.toBe('none');
+});
+
 test('the query string can force either mode for testing', async ({ page }) => {
   await withDevice(page, { memory: 8, cores: 8 });
   await page.goto('/?perf=lite');

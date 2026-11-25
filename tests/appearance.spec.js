@@ -306,6 +306,32 @@ test('Motion defaults to Full and System follows the device', async ({ page }) =
   expect((await read()).motion).toBe('full');
 });
 
+/* The pointer tilt used to be wired only when the page loaded in Full, so a
+   reduced-motion desktop that chose Full got the motion back everywhere but
+   on the cover until a reload. */
+test('choosing Full restores the desktop pointer tilt without a reload', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('sixfold.settings.v1', JSON.stringify({ motion: 'reduced' }));
+  });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openLook(page);
+  expect(await page.evaluate(() => document.documentElement.dataset.motion)).toBe('reduced');
+
+  await page.locator('[data-motion-opt="full"]').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#sheet')).toBeHidden();
+
+  const box = await page.locator('.home-hero-art').boundingBox();
+  await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.25);
+  await expect.poll(() => page.evaluate(() => (
+    document.querySelector('.home-six').classList.contains('is-tilting')
+  ))).toBe(true);
+  const tilt = await page.evaluate(() => (
+    document.querySelector('.home-six').style.getPropertyValue('--six-tilt-y')
+  ));
+  expect(tilt).not.toBe('');
+});
+
 test('a second switch inside the fade re-arms one flag and clears it', async ({ page }) => {
   await openLook(page);
   const before = await appearance(page);

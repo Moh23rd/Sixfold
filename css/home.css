@@ -505,6 +505,16 @@ html[data-motion="full"] .home-game.is-picked { animation: cardPicked 430ms cubi
   text-transform: uppercase;
 }
 
+/* app-ready is set when the launch layer starts to lift; home-ready only
+   arrives once it is gone. Starting the cover here keeps the finished cover
+   from showing through the fading splash and then resetting to its first
+   keyframe a few frames later. */
+html[data-motion="full"].app-ready .home-six-piece { animation-name: sixBuild; }
+
+html[data-motion="full"].app-ready .home-six-caption {
+  animation: sixCaptionIn 360ms var(--ease-out) 340ms both;
+}
+
 html.home-ready .home-six-piece { animation-name: sixBuild; }
 
 html.home-ready .home-six-caption {

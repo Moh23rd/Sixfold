@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 113498,
-      "sha256": "32fc3a9b5fcff64dcc105af3a5561e8326f05d3f984913295468e37a90dd303b"
+      "bytes": 113885,
+      "sha256": "7be478b3d2e9e7c68587de65a70c50911cede76f517ab89907279e733380071a"
     },
     {
       "path": "licenses.html",
@@ -62,13 +62,13 @@
     },
     {
       "path": "css/home.css",
-      "bytes": 32586,
-      "sha256": "f6d48fbbc7eaa63b4afb54eaedb5cf7d1e6c5fc1f637ac1cef24e5923b75496a"
+      "bytes": 33046,
+      "sha256": "db4122d40d57b43a8282f87ee265773a150495a416a9303b500143836a943efe"
     },
     {
       "path": "css/polish.css",
-      "bytes": 42581,
-      "sha256": "ab69498eb529897e81d9b27071dd9e540cb7e6ae0e7e1efdc4cb57a6b7037595"
+      "bytes": 42714,
+      "sha256": "7a06ab008d7a6ee82dc767dcca715b07a807f3750daaf8020a69329ddaa25084"
     },
     {
       "path": "css/sudoku.css",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 158741,
-      "sha256": "05fd1a122c4391def586495a61a12c4e81f5a62049913ca7f7bf2e4ffaaaf95c"
+      "bytes": 159188,
+      "sha256": "88b4aae8a32f7b378073085950381e8b3d7f0372499c65e60ab32265e9a5a0f8"
     },
     {
       "path": "js/daily.js",

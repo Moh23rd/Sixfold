@@ -347,7 +347,14 @@
         var conn = navigator.connection || {};
         var fewCores = typeof cpu === 'number' && cpu > 0 && cpu <= 4;
         var tinyRam = typeof mem === 'number' && mem > 0 && mem <= 2;
-        var smallPhone = typeof mem === 'number' && mem > 0 && mem <= 4 && fewCores;
+        // A 4 GB desktop with four cores is not a budget phone. The memory
+        // heuristic only applies to a phone-shaped pointer or viewport;
+        // save-data still applies everywhere.
+        var phoneShape = window.matchMedia && (
+          window.matchMedia('(pointer: coarse)').matches ||
+          window.matchMedia('(max-width: 640px)').matches
+        );
+        var smallPhone = typeof mem === 'number' && mem > 0 && mem <= 4 && fewCores && phoneShape;
         lite = tinyRam || smallPhone || conn.saveData === true;
         var forced = /[?&]perf=(lite|full)/.exec(window.location.search);
         if (forced) lite = forced[1] === 'lite';
