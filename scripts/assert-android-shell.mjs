@@ -14,9 +14,12 @@
      3. a card opens its game, which proves the game screens mount and lay out;
      4. the Haptics plugin is present in the bridge's plugin map;
      5. calling it settles instead of failing as unimplemented;
-     6. a palette tap repaints the window strip behind the system bars — the
-        surface SystemBars rewrote when the strip went stale;
-     7. the page surface itself repaints on that tap — the composited scroller
+     6. both strips behind the system bars carry the page colour in the light
+        and the dark appearance — the window drawable and the padded content
+        view, which is what read as black borders on a phone;
+     7. a palette tap repaints those strips — the surface SystemBars rewrote
+        when the strip went stale;
+     8. the page surface itself repaints on that tap — the composited scroller
         used to keep the previous appearance's raster.
 
    Run it with an emulator attached and the debug APK already built. */
@@ -196,14 +199,19 @@ function decodePng(buffer) {
   return { width, height, bpp, pixels };
 }
 
-/* The dominant colour of the band behind the system bars. The window drawable is
-   the only thing there: the SystemBars plugin insets the WebView by the bar
-   heights, so the strip is exactly the surface the palette report paints. Icons
-   and the clock sit in those rows too, so take the mode rather than one pixel,
-   and skip pure black (a simulated cutout or a letterboxed row). */
+/* The dominant colour of the band behind the system bars. That band is the
+   surface the palette report paints: MainActivity pads the activity content by
+   the bar heights, so nothing from the page reaches these rows. Icons and the
+   clock sit in those rows too, so take the mode rather than one pixel, and skip
+   pure black (a rounded corner, a simulated cutout or a letterboxed row).
+
+   Stay inside the bar itself. A status bar is about 24dp, a gesture bar 24dp
+   and a 3-button bar 48dp; on a 640dp-tall screen that is 1.5-7.5% of the
+   height. The old 3.5%-wide window ran past the bar on a tall screen and
+   sampled page content, which is not the strip this assertion is about. */
 function stripColour(png, edge) {
-  const from = edge === 'top' ? Math.round(png.height * 0.012) : Math.round(png.height * 0.965);
-  const to = edge === 'top' ? Math.round(png.height * 0.055) : Math.round(png.height * 0.995);
+  const from = edge === 'top' ? Math.round(png.height * 0.006) : Math.round(png.height * 0.975);
+  const to = edge === 'top' ? Math.round(png.height * 0.038) : Math.round(png.height * 0.994);
   const counts = new Map();
   for (let y = from; y < to; y += 2) {
     for (let x = 0; x < png.width; x += 8) {
@@ -276,10 +284,16 @@ async function readPageSurface() {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/* Waits for the window strip to show the page colour. A configuration change
-   makes Android rewrite the drawable from the theme's resource, and the shell
-   reports the page colour back over the bridge, so this waits rather than
-   sleeps. A stale strip never matches and reports what it kept showing. */
+/* Waits for both strips to show the page colour. A configuration change makes
+   Android rewrite the drawable from the theme's resource, and the shell reports
+   the page colour back over the bridge, so this waits rather than sleeps. Both
+   edges are asserted: the same background paints them, and a phone that read as
+   black borders had one or both wrong. A stale strip never matches and reports
+   what it kept showing. */
+function stripOnPage(seen, expected) {
+  return Boolean(seen) && seen.top === expected && seen.bottom === expected;
+}
+
 async function awaitStrip(expected, what, timeoutMs = 30000) {
   const deadline = Date.now() + timeoutMs;
   let seen = null;
@@ -303,7 +317,7 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
       await settleDevice(what, 15000);
       continue;
     }
-    if (seen.top === expected) return seen;
+    if (stripOnPage(seen, expected)) return seen;
     await wait(600);
   }
   // Before calling a mismatch an app defect, take one more sample: the frame
@@ -312,7 +326,7 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
   // device still painting the wrong colour.
   try {
     const final = await readStrip();
-    if (final.top === expected) return final;
+    if (stripOnPage(final, expected)) return final;
     seen = final;
     lastError = null;
   } catch (error) {
@@ -320,7 +334,7 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
     if (error instanceof EmulatorLost) throw error;
   }
   fail(
-    `${what}: expected the strip on ${expected},` +
+    `${what}: expected both strips on ${expected},` +
       ` got top ${seen && seen.top} bottom ${seen && seen.bottom}` +
       (lastError ? ` (the last read failed: ${lastError.message})` : '')
   );
@@ -934,21 +948,64 @@ try {
     250
   );
 
-  // The strip behind the bars is the window drawable. It has to agree with the
-  // page before a palette tap, and it has to follow the tap: this is the exact
-  // regression where the bar restyle rewrote the drawable after the report and
-  // the strip sat on the colour the app opened with until a restart.
+  /* Both strips are the surface `WindowSurfacePlugin.applySurface` paints: the
+     window drawable behind the status bar, and the content view's padding above
+     the navigation bar. Assert them in both appearances, not only whichever one
+     this run started in. Light and dark cross the bridge as different colours,
+     so a surface left on the launch resource matches one and fails the other —
+     which is how a phone read as black strips while the emulator showed the app
+     colour. */
+  async function stripsFollow(theme) {
+    const opener = await evaluate(
+      "(() => { const button = document.getElementById('appearance');" +
+        " if (!button) return 'the hub has no appearance button'; button.click(); return ''; })()"
+    );
+    if (opener) fail(opener);
+    const picked = await evaluate(
+      `(() => { const option = document.querySelector('#sheet [data-theme-opt="${theme}"]');` +
+        ` if (!option) return 'the appearance sheet has no ${theme} option'; option.click(); return ''; })()`
+    );
+    if (picked) fail(picked);
+    const done = await evaluate(
+      "(() => { const button = document.getElementById('sheet-done');" +
+        " if (!button) return 'the appearance sheet has no done button'; button.click(); return ''; })()"
+    );
+    if (done) fail(done);
+    // Wait out the sheet's 320ms leave and its fade before sampling: while it is
+    // open its card covers the navigation-bar band.
+    await wait(900);
+    const state = await appearanceState();
+    if (state.theme !== theme) {
+      fail(`the appearance sheet did not switch to ${theme}: ${describeAppearance(state)}`);
+    }
+    const seen = await awaitStrip(state.page, `the strips in the ${theme} appearance`);
+    log(`both strips are the ${theme} page colour: ${seen.top}`);
+    return state.page;
+  }
+
+  const lightStrips = await stripsFollow('light');
+  const darkStrips = await stripsFollow('dark');
+  if (lightStrips === darkStrips) {
+    fail(`light and dark resolved to the same page colour ${lightStrips}; the appearance did not change`);
+  }
+  // Leave the app on light: the palette check below measures its own before and
+  // after colours, and the rest of the run expects the light appearance.
+  await stripsFollow('light');
+
+  // The strips have to agree with the page before a palette tap, and they have
+  // to follow the tap: this is the exact regression where the bar restyle
+  // rewrote the drawable after the report and the strip sat on the colour the
+  // app opened with until a restart.
   const before = (
     await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--page').trim()")
   ).toLowerCase();
   if (!/^#[0-9a-f]{6}$/.test(before)) fail(`the page colour is not a hex value: ${before}`);
 
-  // The top band is the window drawable behind the status bar. The bottom of
-  // the hub is content (the daily card reaches the bottom edge under gesture
-  // navigation), so it is not a window sample; both bands share one drawable,
-  // and the top is enough to prove it followed the page.
-  await awaitStrip(before, 'the window strip before the palette tap');
-  log(`the window strip is on the page colour: ${before}`);
+  // The daily card does not reach the bottom rows: the activity content is
+  // padded by the navigation-bar inset, so that band is the content view's own
+  // background. Both bands are painted by applySurface.
+  await awaitStrip(before, 'the window strips before the palette tap');
+  log(`both window strips are on the page colour: ${before}`);
 
   const currentPalette = await evaluate(
     "window.MergeTheme && window.MergeTheme.palette ? window.MergeTheme.palette() : null"
@@ -1020,10 +1077,10 @@ try {
   let seenStrip = null;
   while (Date.now() < deadline) {
     seenStrip = await readStrip();
-    if (seenStrip.top === after) break;
+    if (stripOnPage(seenStrip, after)) break;
     await wait(600);
   }
-  if (!seenStrip || seenStrip.top !== after) {
+  if (!stripOnPage(seenStrip, after)) {
     // The palette can also go while the strip is sampled; report what the page
     // says it shows with the pixels, so the two causes stay distinguishable.
     let now = null;

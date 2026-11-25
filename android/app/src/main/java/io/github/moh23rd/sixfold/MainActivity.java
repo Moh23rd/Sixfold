@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -60,27 +59,16 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         // installSplashScreen swaps in postSplashScreenTheme during super.onCreate,
-        // so this lands after the handoff and gives the window the exact palette
-        // colour rather than the flat light/dark one the themes carry.
-        if (surface != 0) {
-            getWindow().setBackgroundDrawable(new ColorDrawable(surface));
-        }
-
-        // The WebView paints white until the page has a background of its own,
+        // so this lands after the handoff and gives every surface the exact palette
+        // colour rather than the flat light/dark one the themes carry. The WebView
+        // needs it too: it paints white until the page has a background of its own,
         // which read as a second, blank splash between the launch screen and the
-        // hub. Give it the same surface the window is using.
+        // hub. One helper owns all three, so the launch and every later report
+        // cannot drift apart.
         final int webViewSurface = surface != 0 ? surface : ContextCompat.getColor(this, R.color.app_surface);
         final Bridge bridge = getBridge();
         final WebView webView = bridge.getWebView();
-        webView.setBackgroundColor(webViewSurface);
-        getWindow().getDecorView().setBackgroundColor(webViewSurface);
-
-        // The activity content is padded for the system bars, so its padding is
-        // the strip visible around the page. Give that view the same surface as
-        // the page; without it the strip falls back to a flat platform colour
-        // (black on this API) instead of matching the app.
-        final View content = findViewById(android.R.id.content);
-        if (content != null) content.setBackgroundColor(webViewSurface);
+        WindowSurfacePlugin.applySurface(this, webView, webViewSurface);
 
         // Android's font-size setting is otherwise invisible to a WebView: it
         // renders CSS pixels at a fixed scale, so a reader who raised the system

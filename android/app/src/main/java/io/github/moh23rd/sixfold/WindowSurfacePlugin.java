@@ -1,11 +1,11 @@
 package io.github.moh23rd.sixfold;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.view.View;
-import android.view.Window;
 import android.webkit.WebView;
 
 import androidx.fragment.app.FragmentActivity;
@@ -47,6 +47,20 @@ public class WindowSurfacePlugin extends Plugin {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_SURFACE, 0);
     }
 
+    /* Paints every surface the page colour has to cover: the window background
+       drawable, which is the strip behind the system bars; the activity content,
+       which is the strip its system-bar padding exposes; and the WebView, which
+       is everything the page leaves transparent. The window drawable already is
+       the decor's background — PhoneWindow installs it there — so setting the
+       decor colour as well painted the same rows twice. Callers pass a null
+       WebView only before the bridge has one. */
+    static void applySurface(Activity activity, WebView webView, int color) {
+        activity.getWindow().setBackgroundDrawable(new ColorDrawable(color));
+        final View content = activity.findViewById(android.R.id.content);
+        if (content != null) content.setBackgroundColor(color);
+        if (webView != null) webView.setBackgroundColor(color);
+    }
+
     @PluginMethod
     public void setColor(final PluginCall call) {
         final String value = call.getString("color");
@@ -81,13 +95,7 @@ public class WindowSurfacePlugin extends Plugin {
         activity.getWindow().getDecorView().post(new Runnable() {
             @Override
             public void run() {
-                final Window window = activity.getWindow();
-                window.setBackgroundDrawable(new ColorDrawable(color));
-                window.getDecorView().setBackgroundColor(color);
-                final View content = activity.findViewById(android.R.id.content);
-                if (content != null) content.setBackgroundColor(color);
-                final WebView webView = getBridge().getWebView();
-                if (webView != null) webView.setBackgroundColor(color);
+                applySurface(activity, getBridge().getWebView(), color);
                 call.resolve();
             }
         });

@@ -140,13 +140,27 @@ The window surface behind the WebView is the static day/night `@color/app_surfac
 from the theme. That is enough for a phone whose app appearance follows the
 system, but not for a dark appearance chosen on a light-system phone: the window
 edges would flash cream during a scale or fade. `WindowSurfacePlugin` therefore
-repaints that one drawable whenever the page reports its colour
-(`paintWindowSurface` in `js/theme.js`), and remembers the last report so the
-next launch can pick the matching launch theme. Nothing is retried or polled.
+repaints the surfaces whenever the page reports its colour (`paintWindowSurface`
+in `js/theme.js`), and remembers the last report so the next launch can pick the
+matching launch theme. Nothing is retried or polled.
 
-`scripts/assert-android-shell.mjs` samples a second of animation frames at the
-hub and fails if the page height moves without a size change. That is the guard
-against an inset handler drifting back into the padded/unpadded loop.
+A report paints three things, through one helper
+(`WindowSurfacePlugin.applySurface`): the window background drawable, which is
+the strip behind the system bars; `android.R.id.content`, which is the strip its
+system-bar padding exposes; and the WebView, which is everything the page leaves
+transparent. `PhoneWindow` installs the window drawable as the decor's
+background, so setting the decor colour as well painted the same rows twice.
+The activity content has no background of its own, and once it is padded for the
+bars those rows fall back to the platform default — which is where a black
+border comes from.
+
+`scripts/assert-android-shell.mjs` samples the top and bottom strips from a real
+`screencap` and fails unless both carry the page colour, in the light and the
+dark appearance separately. That is the guard for the surface fix: a strip left
+on the launch resource matches one appearance and fails the other, and a black
+strip fails both. It also samples a second of animation frames at the hub and
+fails if the page height moves without a size change, which is the guard against
+an inset handler drifting back into the padded/unpadded loop.
 
 Styling the bars has a side effect that the surface has to work around:
 `SystemBars.setStyle()` sets the decor background to the theme's `windowBackground`
@@ -213,6 +227,44 @@ the progress rail finishes before the lift.
 Edge-to-edge needs a device or emulator check, especially around display
 cutouts and gesture navigation. CI covers API 24, 26, 33 and 36; a release
 visual check should still include a cutout device and gesture navigation.
+
+### Android 14 and below
+
+The platform only enforces edge-to-edge from API 35, so on 24–34 the app's own
+call is the whole opt-in. That call is
+`WindowCompat.setDecorFitsSystemWindows(window, false)` in
+`MainActivity.onCreate`, which androidx implements with
+`LAYOUT_FULLSCREEN | LAYOUT_HIDE_NAVIGATION` below API 30 and with the window
+flag from API 30. Capacitor never calls it: `SystemBars`' `insetsHandling:
+"disable"` only skips that plugin's decor padding and its `--safe-area-inset-*`
+injection (`initWindowInsetsListener` returns early). Edge-to-edge is therefore
+on by the same statement from Android 7 through 16, not by a 35+ platform
+default.
+
+Three details differ below 35, and all three are already handled:
+
+- `setStatusBarColor(TRANSPARENT)` and `setNavigationBarColor(TRANSPARENT)` are
+  honoured; from API 35 they are deprecated no-ops because the platform makes
+  both bars transparent itself.
+- API 29–34 draw a translucent contrast scrim behind a transparent navigation
+  bar in 3-button mode unless it is turned off;
+  `setNavigationBarContrastEnforced(false)` is guarded on `Q` and does that.
+  Below API 29 there is no scrim.
+- `windowLayoutInDisplayCutoutMode="shortEdges"` needs API 28, and cutouts do
+  not exist below it.
+
+The one real gap is API 24–25: `SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR` arrived in
+API 26, so a light page leaves the 3-button navigation icons white on the cream
+surface. Those releases are already launch-only in the CI matrix because their
+WebView predates the shell, and the app does not work around the platform here:
+an opaque navigation bar would trade the edge-to-edge look for legible icons on
+two releases that cannot run the full shell anyway. Recorded rather than
+silently changed.
+
+API 33 is the highest pre-35 row that runs the full assertions, so Android 13
+executes the strip checks on the path Android 14 uses; API 34 itself is not in
+the matrix. Adding `- api: 34` next to 33 would execute it directly, at the cost
+of one more emulator job.
 
 ## Checked-in Android project
 
