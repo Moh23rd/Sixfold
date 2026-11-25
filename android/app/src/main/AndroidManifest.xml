@@ -34,9 +34,9 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
-
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Permissions. There is deliberately no INTERNET permission: every page,
+         dictionary and font is bundled and served through Capacitor's local
+         asset loader, so the shell never opens a socket. -->
     <!-- The WebView has no Vibration API; HapticsPlugin drives the motor, and
          the platform refuses to vibrate without this. -->
     <uses-permission android:name="android.permission.VIBRATE" />
