@@ -1106,13 +1106,11 @@ html[data-fruit-numbers="on"] .is-fruit-mode { display: none; }
   .sudoku-hint-actions button { min-height: 28px; font-size: 9px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .daily-badge,
-  .daily-badge-progress i,
-  .daily-badge.is-new,
-  .daily-play,
-  .daily-calendar-btn { animation: none; transition: none; }
-}
+html[data-motion="reduced"] .daily-badge,
+html[data-motion="reduced"] .daily-badge-progress i,
+html[data-motion="reduced"] .daily-badge.is-new,
+html[data-motion="reduced"] .daily-play,
+html[data-motion="reduced"] .daily-calendar-btn { animation: none; transition: none; }
 
 /* ---------- Badge collection ---------- */
 
@@ -1764,9 +1762,7 @@ html[data-fruit-numbers="on"] .is-fruit-mode { display: none; }
 
 .daily-finish-close:hover { color: var(--ink); background: var(--panel); }
 
-@media (prefers-reduced-motion: reduce) {
-  .daily-finish { transition: none; }
-}
+html[data-motion="reduced"] .daily-finish { transition: none; }
 
 /* ==========================================================================
    Collection v6 — landscape on phones, and the smallest portrait screens
@@ -2060,16 +2056,14 @@ html[data-fruit-numbers="on"] .is-fruit-mode { display: none; }
    phone on the light paint path or with reduced motion never raises it at all.
    ========================================================================== */
 
-@media (prefers-reduced-motion: no-preference) {
-  /* Full-page surfaces are left out: their colour has to land in the frame the
+/* Full-page surfaces are left out: their colour has to land in the frame the
      system bar does. A faded page layer is what could keep the previous
      appearance's raster in the WebView. */
-  html.is-theme-fading [data-fade]:not(body):not(.hub):not(.play-screen):not(.app) {
+  html[data-motion="full"].is-theme-fading [data-fade]:not(body):not(.hub):not(.play-screen):not(.app) {
     transition-property: color, background-color, border-color, outline-color, fill, stroke, box-shadow, text-decoration-color, transform, opacity;
     transition-duration: 220ms;
     transition-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
   }
-}
 
 /* The sheet dims the page behind it with a backdrop blur, and that filter is
    recomputed for every frame of a colour fade — the most expensive thing on

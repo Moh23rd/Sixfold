@@ -1180,6 +1180,27 @@ try {
   // ratio is derived from what 2.0 resolves to, so a cap change does not need a
   // second number kept in step here.
   await backToHub('before the text-scale checks');
+
+  // A native inset handler that flips the content padding between the system
+  // bars and nothing moves the page by 48px every few frames; the whole page
+  // jumps, and an IME re-dispatching insets turns it into a flash. One second
+  // of frames at the hub has to report one height.
+  const steady = await evaluate(
+    'new Promise(function (resolve) {' +
+      ' const seen = []; let frames = 0;' +
+      ' (function tick() {' +
+      '   seen.push(innerHeight);' +
+      '   frames += 1;' +
+      '   if (frames < 60) { requestAnimationFrame(tick); return; }' +
+      '   resolve({ min: Math.min.apply(null, seen), max: Math.max.apply(null, seen) });' +
+      ' })();' +
+      '})',
+    true
+  );
+  if (steady.max - steady.min > 1) {
+    fail(`the page height moves without a size change: ${steady.min}-${steady.max}px`);
+  }
+  log(`the page height is steady at ${steady.max}px`);
   fontScaleSetting = adbSafe(['shell', 'settings', 'get', 'system', 'font_scale']).trim() || null;
   await setFontScale('1.0');
   const baseText = await until(
@@ -1239,6 +1260,64 @@ try {
     `text follows the system size and its cap: 1.5 -> ${largeText.size.toFixed(2)}px` +
       ` (${ratioLarge.toFixed(2)}x), 2.0 -> ${largestText.size.toFixed(2)}px (${ratioLargest.toFixed(2)}x)`
   );
+
+  // The hub check only sees the hub: a fixed game board can still clip a digit
+  // while every hub control fits. Sudoku is the tightest grid in the app, so
+  // open it at the largest system size and fail if any digit is taller or wider
+  // than the cell that paints it. This is the check that would catch the cap
+  // being raised past the point the board can hold.
+  const openedSudoku = await evaluate(
+    '(() => { const card = document.querySelector(\'.home-game[data-game="sudoku"]\');' +
+      " if (!card) return 'the hub has no Sudoku card';" +
+      ' card.click(); return ""; })()'
+  );
+  if (openedSudoku) fail(openedSudoku);
+  const sudoku = await until(
+    'the Sudoku board at system font scale 2.0',
+    () =>
+      evaluate(
+        "(() => { const cells = document.querySelectorAll('#sudoku-board .sudoku-cell');" +
+          ' if (cells.length !== 81) return null;' +
+          ' const canvas = document.createElement("canvas");' +
+          ' const ctx = canvas.getContext("2d");' +
+          ' const clipped = []; let worst = 0; let font = 0; let cell = 0;' +
+          ' cells.forEach(function (tile, index) {' +
+          '   const text = tile.textContent.trim();' +
+          '   if (!text) return;' +
+          '   const style = getComputedStyle(tile);' +
+          '   ctx.font = style.fontStyle + " " + style.fontWeight + " " + style.fontSize + " " + style.fontFamily;' +
+          '   const metrics = ctx.measureText(text);' +
+          '   const inkW = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;' +
+          '   const inkH = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;' +
+          '   const x = inkW - tile.clientWidth;' +
+          '   const y = inkH - tile.clientHeight;' +
+          '   font = Math.max(font, parseFloat(style.fontSize));' +
+          '   cell = Math.max(cell, tile.clientHeight);' +
+          '   worst = Math.max(worst, x, y);' +
+          '   if (x > 1 || y > 1) {' +
+          '     clipped.push({ index: index, text: text, by: Math.round(Math.max(x, y) * 10) / 10 });' +
+          '   }' +
+          ' });' +
+          ' return { cells: cells.length, worst: Math.round(worst * 10) / 10, font: font, cell: cell, clipped: clipped.slice(0, 6) }; })()'
+      ),
+    20000,
+    250
+  );
+  if (sudoku.clipped.length) {
+    fail(
+      'at system font scale 2.0 a Sudoku digit overflows its cell:' +
+        sudoku.clipped.map((cell) => ` cell ${cell.index} "${cell.text}" by ${cell.by}px`).join(',')
+    );
+  }
+  // The cell's line box is taller than the cell at this size, but the printed
+  // digits are not: a button does not clip its content, and the glyph ink sits
+  // 19px inside a 25px cell. Measure the ink the player can lose, not the
+  // layout box around it.
+  log(
+    `no Sudoku digit overflows its cell at system 2.0 (${sudoku.cells} cells,` +
+      ` ${sudoku.font.toFixed(2)}px type in a ${sudoku.cell}px cell, worst ${sudoku.worst}px)`
+  );
+  await backToHub('after the Sudoku cell check');
 
   // Leave the page at its design size for the shortcut checks; the original
   // setting is restored in the cleanup.

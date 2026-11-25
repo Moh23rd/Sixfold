@@ -107,6 +107,24 @@
       });
     })();
   </script>
+  <script>
+    (function () {
+      // Motion is a page setting, not only the phone's: "System" follows the
+      // device, while Full and Reduced let the player override it (an OS set to
+      // reduce motion used to switch every transition and entrance in the app
+      // off with no way back). Full is the default so the app cannot open with
+      // no motion; the stylesheets gate on this attribute, and the value is
+      // resolved here so the first painted frame already has it.
+      var choice = 'full';
+      try {
+        var saved = JSON.parse(localStorage.getItem('sixfold.settings.v1') || 'null');
+        if (saved && typeof saved.motion === 'string') choice = saved.motion;
+      } catch (err) {}
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.documentElement.dataset.motion =
+        choice === 'full' ? 'full' : choice === 'reduced' || reduce ? 'reduced' : 'full';
+    })();
+  </script>
   <style>
     /* The launch screen is the same composition as the native iOS image:
        mark, wordmark and an empty progress rail. The page only animates the
@@ -241,16 +259,14 @@
     @keyframes bootFade { from { opacity: 0; } to { opacity: 1; } }
     @keyframes bootRail { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     @keyframes bootFallback { to { opacity: 0; visibility: hidden; pointer-events: none; } }
-    @media (prefers-reduced-motion: reduce) {
-      .boot-kicker,
-      .boot-foot,
-      .boot-word,
-      .boot-mark { opacity: 1; animation: none; }
-      .boot-track span { transform: none; animation: none; }
-      .boot-stage { transition: none; }
-      html.app-ready .boot-stage { transform: none; }
-      #boot-splash { transition-duration: 0.01ms; animation: none; }
-    }
+    html[data-motion="reduced"] .boot-kicker,
+    html[data-motion="reduced"] .boot-foot,
+    html[data-motion="reduced"] .boot-word,
+    html[data-motion="reduced"] .boot-mark { opacity: 1; animation: none; }
+    html[data-motion="reduced"] .boot-track span { transform: none; animation: none; }
+    html[data-motion="reduced"] .boot-stage { transition: none; }
+    html[data-motion="reduced"].app-ready .boot-stage { transform: none; }
+    html[data-motion="reduced"] #boot-splash { transition-duration: 0.01ms; animation: none; }
   </style>
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=6.0.1" />
   <!-- Native iOS launch images, light and dark, portrait phone and tablet sizes. -->
@@ -353,7 +369,7 @@
   <link rel="stylesheet" href="css/progressive-blur.css?v=1.4.0" />
 </head>
 <body data-screen="hub" data-fade>
-  <div class="boot-splash" id="boot-splash" aria-hidden="true">
+  <div class="boot-splash" id="boot-splash" aria-hidden="true" data-fade>
     <p class="boot-kicker">The pocket arcade</p>
     <div class="boot-stage">
       <img class="boot-mark" src="icons/mark-456.webp?v=6.0.1" alt="" width="152" height="152" />
@@ -1206,7 +1222,14 @@
         <button data-fade type="button" data-theme-opt="auto" aria-pressed="true">Auto</button>
         <button data-fade type="button" data-theme-opt="light" aria-pressed="false">Light</button>
         <button data-fade type="button" data-theme-opt="dark" aria-pressed="false">Dark</button>
-      </div>        <p class="sheet-label" data-fade>Colours</p>
+      </div>
+      <p class="sheet-label" data-fade>Motion</p>
+      <div class="seg" id="motion-seg" role="group" aria-label="Motion" data-fade>
+        <button data-fade type="button" data-motion-opt="system" aria-pressed="false">System</button>
+        <button data-fade type="button" data-motion-opt="full" aria-pressed="true">Full</button>
+        <button data-fade type="button" data-motion-opt="reduced" aria-pressed="false">Reduced</button>
+      </div>
+      <p class="sheet-label" data-fade>Colours</p>
       <div class="palettes" id="palettes" role="group" aria-label="Colours"></div>
       <details class="settings-disclosure" id="accessibility-settings">
         <summary class="settings-summary">
@@ -1520,7 +1543,7 @@
       var native = false;
       try {
         standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        calm = document.documentElement.getAttribute('data-motion') === 'reduced';
         native = document.documentElement.classList.contains('is-native');
       } catch (err) {}
       // An installed app keeps the full launch composition; a browser visit

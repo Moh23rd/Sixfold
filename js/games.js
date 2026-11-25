@@ -408,7 +408,7 @@
   };
 
   function reducedMotion() {
-    return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    return Boolean(window.SixfoldMotion && window.SixfoldMotion.reduced());
   }
 
   function setScreen(screen) {
@@ -526,7 +526,7 @@
   let hiddenRevealCloseTimer = 0;
 
   function calmMotion() {
-    return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    return Boolean(window.SixfoldMotion && window.SixfoldMotion.reduced());
   }
 
   function wordleWasFound() {
@@ -866,7 +866,7 @@
 
   function replaySixBuild() {
     if (!document.documentElement.classList.contains('home-ready')) return;
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.SixfoldMotion && window.SixfoldMotion.reduced()) return;
     const cover = document.querySelector('.home-six');
     if (!cover) return;
     sixStep = 0;
@@ -883,7 +883,7 @@
      physicality that touch scrolling already gives the phone layout. */
   if (sixArt && sixGrid && window.matchMedia &&
       window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
-      !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      !(window.SixfoldMotion && window.SixfoldMotion.reduced())) {
     let tiltFrame = 0;
     let tiltRect = null;
     let tiltPoint = null;

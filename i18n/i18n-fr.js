@@ -3,6 +3,10 @@
   'use strict';
 
   var M = {
+    "Motion": "Mouvement",
+    "System": "Système",
+    "Full": "Complet",
+    "Reduced": "Réduit",
     "Welcome to Sixfold": "Bienvenue dans Sixfold",
     "Six games, one place. Everything saves on this device.": "Six jeux, un seul endroit. Tout est enregistré sur cet appareil.",
     "Tap any cover on the hub to start a game.": "Touchez une couverture de l’accueil pour commencer une partie.",

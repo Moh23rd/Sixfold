@@ -414,9 +414,7 @@ html:not([data-fruit-numbers="on"]) .mini-number-cluster { display: none; }
   .play-tools { gap: 4px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .play-tool { transition: none; }
-}
+html[data-motion="reduced"] .play-tool { transition: none; }
 
 /* ---------- shared game screen ---------- */
 
@@ -1047,16 +1045,15 @@ html[data-theme="dark"] .water-glass {
   .water-tube.is-selected .water-glass { transform: translateY(-8px) rotate(-2deg); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .water-glass,
-  .water-liquid,
-  .water-drain,
-  .water-seg,
-  .water-seg.water-surface::before,
-  .water-tube.is-target::after,
-  .water-tube.is-receiving .water-seg.water-surface::before { transition: none; animation: none; }
-  .water-pour-layer { display: none; }
-}
+html[data-motion="reduced"] .water-glass,
+html[data-motion="reduced"] .water-liquid,
+html[data-motion="reduced"] .water-drain,
+html[data-motion="reduced"] .water-seg,
+html[data-motion="reduced"] .water-seg.water-surface::before,
+html[data-motion="reduced"] .water-tube.is-target::after,
+html[data-motion="reduced"] .water-tube.is-receiving .water-seg.water-surface::before { transition: none; animation: none; }
+
+  html[data-motion="reduced"] .water-pour-layer { display: none; }
 
 /* ---------- fruit merge ---------- */
 
@@ -1454,9 +1451,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
   .mines-board-wrap { border-radius: 19px; padding: 7px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mines-cell { transition: none; }
-}
+html[data-motion="reduced"] .mines-cell { transition: none; }
 
 /* ---------- responsive ---------- */
 
@@ -1518,11 +1513,9 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
   .fruit-stage { width: min(44vw, 290px); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .water-glass,
-  .ttt-cell,
-  .play-btn { transition: none; }
-}
+html[data-motion="reduced"] .water-glass,
+html[data-motion="reduced"] .ttt-cell,
+html[data-motion="reduced"] .play-btn { transition: none; }
 
 
 /* ---------- collection v2 layout ---------- */
@@ -1887,9 +1880,7 @@ html[data-theme="dark"] .ttt-cell { box-shadow: none; }
   to { clip-path: inset(0 0 0 0); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ttt-strike { animation: none; }
-}
+html[data-motion="reduced"] .ttt-strike { animation: none; }
 
 .ttt-cell:focus-visible {
   z-index: 2;
@@ -2090,9 +2081,7 @@ html[data-theme="dark"] .ttt-cell { box-shadow: none; }
   .water-glass { height: min(25vh, 100px); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .play-tool { transition: none; }
-}
+html[data-motion="reduced"] .play-tool { transition: none; }
 
 /* =====================================================================
    v1.6 — one fixed play frame, square boards, palette everywhere
@@ -3039,9 +3028,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   .play-note { display: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hub-look { transition: none; }
-}
+html[data-motion="reduced"] .hub-look { transition: none; }
 
 @media (orientation: landscape) and (max-height: 520px) {
   .play-foot {
@@ -3221,10 +3208,8 @@ html[data-theme="dark"] .reset-confirm:hover {
   .hub-share { width: 38px; height: 38px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hub-share,
-  .games-home { transition: none; }
-}
+html[data-motion="reduced"] .hub-share,
+html[data-motion="reduced"] .games-home { transition: none; }
 
 /* Copy feedback for sharing. It floats above the build label, never moves
    layout, and is announced politely rather than stealing focus. */
@@ -3251,9 +3236,7 @@ html[data-theme="dark"] .reset-confirm:hover {
 
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 
-@media (prefers-reduced-motion: reduce) {
-  .toast { transition: none; }
-}
+html[data-motion="reduced"] .toast { transition: none; }
 
 /* ==========================================================================
    Landscape legibility
@@ -3398,9 +3381,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   .coach-skip { min-width: 32px; padding-inline: 4px; font-size: 8.5px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .coach.coach-in { animation: none; }
-}
+html[data-motion="reduced"] .coach.coach-in { animation: none; }
 
 /* ==========================================================================
    Portrait phone controls — one centred group, like Merge
@@ -3887,9 +3868,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   transform: translateY(4px) rotate(-135deg);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .whats-new-label::after { transition: none; }
-}
+html[data-motion="reduced"] .whats-new-label::after { transition: none; }
 
 .whats-new-label:focus-visible {
   outline: 2px solid var(--ink);
@@ -3963,9 +3942,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   .whats-new-mark { display: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .whats-new-label::after { transition: none; }
-}
+html[data-motion="reduced"] .whats-new-label::after { transition: none; }
 
 /* Keep the install notice in the same printed language as the shelf. */
 .install-fix {
@@ -4307,18 +4284,17 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   100% { transform: scale(1); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .play-screen:not([hidden]) .play-shell,
-  .play-win:not([hidden]),
-  .fruit-over-card:not([hidden]),
-  .play-win.is-victory,
-  .fruit-over-card.is-victory,
-  .overlay-card.is-victory {
+html[data-motion="reduced"] .play-screen:not([hidden]) .play-shell,
+html[data-motion="reduced"] .play-win:not([hidden]),
+html[data-motion="reduced"] .fruit-over-card:not([hidden]),
+html[data-motion="reduced"] .play-win.is-victory,
+html[data-motion="reduced"] .fruit-over-card.is-victory,
+html[data-motion="reduced"] .overlay-card.is-victory {
     animation: none;
   }
 
-  .victory-layer { display: none; }
-}
+
+  html[data-motion="reduced"] .victory-layer { display: none; }
 
 /* On phones the three difficulty choices and the flag toggle each need a
    readable row. German and French labels are wider than English, so wrap the

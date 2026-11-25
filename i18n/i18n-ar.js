@@ -8,6 +8,10 @@
     "ogDescription": "ست ألعاب. بلا حشو. نقرة واحدة للعب. يبقى تقدمك على هذا الجهاز."
   },
   "messages": {
+    "Motion": "الحركة",
+    "System": "النظام",
+    "Full": "كامل",
+    "Reduced": "مخفّض",
     "Welcome to Sixfold": "مرحبًا بك في Sixfold",
     "Six games, one place. Everything saves on this device.": "ست ألعاب في مكان واحد. يُحفظ كل شيء على هذا الجهاز.",
     "Tap any cover on the hub to start a game.": "اضغط أي غلاف في الصفحة الرئيسية لبدء لعبة.",

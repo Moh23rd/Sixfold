@@ -10,7 +10,7 @@
   const COUNT = 16;
 
   function reduced() {
-    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return Boolean(window.SixfoldMotion && window.SixfoldMotion.reduced());
   }
 
   function asTarget(anchor) {

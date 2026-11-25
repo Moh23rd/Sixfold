@@ -25,6 +25,10 @@
   var catalog = { messages: {}, patterns: [] };
 
   var ES = {
+    "Motion": "Movimiento",
+    "System": "Sistema",
+    "Full": "Completo",
+    "Reduced": "Reducido",
     'Welcome to Sixfold': 'Te damos la bienvenida a Sixfold',
     'Six games, one place. Everything saves on this device.': 'Seis juegos en un solo lugar. Todo se guarda en este dispositivo.',
     'Tap any cover on the hub to start a game.': 'Toca cualquier portada de la pantalla de inicio para empezar una partida.',

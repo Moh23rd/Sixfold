@@ -8,6 +8,10 @@
     "ogDescription": "6つのゲーム。手抜きなし。 ワンタップでプレイ。進行状況はこの端末に保存されます。"
   },
   "messages": {
+    "Motion": "モーション",
+    "System": "システム",
+    "Full": "フル",
+    "Reduced": "控えめ",
     "Welcome to Sixfold": "Sixfold へようこそ",
     "Six games, one place. Everything saves on this device.": "6つのゲームを1か所に。進行状況はすべてこの端末に保存されます。",
     "Tap any cover on the hub to start a game.": "ホームのカバーをタップするとゲームが始まります。",

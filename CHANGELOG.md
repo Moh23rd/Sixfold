@@ -220,6 +220,12 @@ whole set feel settled. No accounts, ads, tracking or server.
   its board and Fruit Merge re-read its palette and redrew whenever the theme
   changed, even while the hub was on screen. Both now take their colours when
   they are opened.
+- **Motion is a setting, not a hidden OS switch**: every transition and
+  entrance used to sit behind `prefers-reduced-motion: no-preference`, so a
+  desktop or phone with the OS reduce setting opened with the whole app's motion
+  off and no way to get it back. Motion now defaults to Full, with System (follow
+  the device live) and Reduced next to Theme and Colours; the choice lives in
+  the existing settings record, so the head boot resolves it before first paint.
 - **A surface opts into the fade instead of being listed**: the cross-fade was a
   long selector list in the stylesheet, and anything added later silently cut
   while the rest of the app faded. A surface now carries `data-fade` — in the
@@ -250,6 +256,14 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **System text size is no longer ignored**: the WebView applies Android's font
   scale (85–130%) as text zoom. At 1.3× the hub title measured 29.3px instead
   of 22.5px, with no horizontal overflow.
+- **The page no longer flashes under an IME**: the SystemBars native handler
+  padded the DecorView, and Android 16 cleared that padding between inset
+  passes, so the page height flipped by 48px every few frames; typing in Hindi
+  Wordle made it read as a flash. The activity content is padded once, the IME
+  inset is included while the keyboard is up, and the listener consumes the
+  insets. The API 36 smoke holds the hub at one height for a second and opens
+  Sudoku at the largest system text size, measuring the digits against their
+  cells.
 - **Themed icons on Android 13+**: the adaptive icon gains a monochrome layer
   generated from the numeral alone, so a themed launcher tints a clean
   silhouette instead of falling back to the coloured mark.

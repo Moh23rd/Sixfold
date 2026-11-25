@@ -8,6 +8,10 @@
     "ogDescription": "6개의 게임. 군더더기 없음. 탭 한 번으로 플레이. 진행 상황은 이 기기에 저장됩니다."
   },
   "messages": {
+    "Motion": "모션",
+    "System": "시스템",
+    "Full": "전체",
+    "Reduced": "줄이기",
     "Welcome to Sixfold": "Sixfold에 오신 것을 환영합니다",
     "Six games, one place. Everything saves on this device.": "여섯 게임, 한곳에서. 모든 진행 상황은 이 기기에 저장됩니다.",
     "Tap any cover on the hub to start a game.": "홈에서 아무 표지나 눌러 게임을 시작하세요.",

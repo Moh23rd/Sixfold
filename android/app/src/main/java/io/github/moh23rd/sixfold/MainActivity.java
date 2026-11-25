@@ -8,12 +8,16 @@ import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
@@ -100,14 +104,45 @@ public class MainActivity extends BridgeActivity {
             }
         });
 
-        // Draw the WebView behind the system bars. The bundled SystemBars
-        // plugin applies the Android insets to the WebView.
+        // Draw the WebView behind the system bars. installStableInsets below
+        // pads the activity content for them (SystemBars' handling is off).
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(Color.TRANSPARENT);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             getWindow().setNavigationBarContrastEnforced(false);
         }
+
+        installStableInsets();
+    }
+
+    /* The app pads the activity content itself; SystemBars' inset handling is
+       disabled in capacitor.config.json. Padding the DecorView, as that plugin
+       does, is not stable on API 36's edge-to-edge window: the framework
+       clears the DecorView's padding between inset passes, so the page height
+       flipped between padded and unpadded every few frames. The whole page
+       jumped, and an IME keeps dispatching insets, which turned the jump into
+       a flash. The content view keeps the padding it is given, and consuming
+       the insets stops anything below it from adding a second copy. The IME
+       inset is the keyboard's height, so the page shrinks to the visible area
+       and the focused field stays above the keyboard. */
+    private void installStableInsets() {
+        final View content = findViewById(android.R.id.content);
+        if (content == null) return;
+        ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
+            final Insets bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            final Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            final boolean keyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
+            view.setPadding(
+                bars.left,
+                bars.top,
+                bars.right,
+                keyboard ? Math.max(bars.bottom, ime.bottom) : bars.bottom
+            );
+            return WindowInsetsCompat.CONSUMED;
+        });
+        ViewCompat.requestApplyInsets(content);
     }
 
     @Override

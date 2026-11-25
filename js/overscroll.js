@@ -45,7 +45,6 @@
   const motion = window.matchMedia
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null;
-  if (motion && motion.matches) return;
 
   const root = document.documentElement;
 
@@ -81,7 +80,7 @@
   let lastY = 0;
   let lastAt = 0;
   let speed = 0;             // px/ms, finger or momentum
-  let allowed = true;
+  let allowed = !(window.SixfoldMotion && window.SixfoldMotion.reduced());
   let lastTop = null;
   let lastScrollAt = 0;
 
@@ -295,7 +294,7 @@
     hub = document.getElementById('hub');
     if (!hub) return;
     measure();
-    root.classList.add('has-stretch');
+    if (allowed) root.classList.add('has-stretch');
     hub.addEventListener('touchstart', onStart, { passive: true });
     hub.addEventListener('touchmove', onMove, { passive: false });
     hub.addEventListener('touchend', onEnd, { passive: true });
@@ -308,16 +307,21 @@
     });
   }
 
+  // The stretch is part of the motion system, so it follows the page's answer
+  // rather than the raw media query: a player who chose Full keeps the stretch
+  // on a device that asks for reduced motion, and switching the setting applies
+  // without a reload. The settings module announces every change.
+  const syncMotion = function () {
+    allowed = !(window.SixfoldMotion && window.SixfoldMotion.reduced());
+    if (!allowed) {
+      rest();
+      root.classList.remove('has-stretch');
+    } else if (hub) {
+      root.classList.add('has-stretch');
+    }
+  };
+  window.addEventListener('sixfold:settings', syncMotion);
   if (motion) {
-    const syncMotion = function () {
-      allowed = !motion.matches;
-      if (!allowed) {
-        rest();
-        root.classList.remove('has-stretch');
-      } else {
-        root.classList.add('has-stretch');
-      }
-    };
     if (motion.addEventListener) motion.addEventListener('change', syncMotion);
     else if (motion.addListener) motion.addListener(syncMotion);
   }

@@ -4,8 +4,7 @@
   "webDir": "native/www",
   "plugins": {
     "SystemBars": {
-      "insetsHandling": "native",
-      "initialViewportFitValueHint": "cover"
+      "insetsHandling": "disable"
     },
     "SplashScreen": {
       "launchShowDuration": 1200,

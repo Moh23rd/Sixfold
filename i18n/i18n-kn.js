@@ -8,6 +8,10 @@
     "ogDescription": "ಆರು ಆಟಗಳು. ಭರ್ತಿ ಇಲ್ಲ. ಆಫ್‌ಲೈನ್ ಜೇಬಿನ ಆರ್ಕೇಡ್: ಆರು ಒಗಟುಗಳು, ಖಾತೆಗಳಿಲ್ಲ, ಜಾಹೀರಾತುಗಳಿಲ್ಲ."
   },
   "messages": {
+    "Motion": "ಚಲನೆ",
+    "System": "ಸಿಸ್ಟಂ",
+    "Full": "ಪೂರ್ಣ",
+    "Reduced": "ಕಡಿಮೆ",
     "Welcome to Sixfold": "Sixfold ಗೆ ಸ್ವಾಗತ",
     "Six games, one place. Everything saves on this device.": "ಆರು ಆಟಗಳು, ಒಂದೇ ಸ್ಥಳ. ಎಲ್ಲಾ ಪ್ರಗತಿ ಈ ಸಾಧನದಲ್ಲಿ ಉಳಿಯುತ್ತದೆ.",
     "Tap any cover on the hub to start a game.": "ಆಟವನ್ನು ಪ್ರಾರಂಭಿಸಲು ಮುಖಪುಟದಲ್ಲಿ ಯಾವುದೇ ಕವರ್ ಟ್ಯಾಪ್ ಮಾಡಿ.",

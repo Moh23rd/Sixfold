@@ -362,16 +362,14 @@
   .sudoku-status { font-size: 12px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sudoku-cell,
-  .sudoku-cell.is-hint,
-  .sudoku-pad-key,
-  .sudoku-tool,
-  .sudoku-result-card {
+html[data-motion="reduced"] .sudoku-cell,
+html[data-motion="reduced"] .sudoku-cell.is-hint,
+html[data-motion="reduced"] .sudoku-pad-key,
+html[data-motion="reduced"] .sudoku-tool,
+html[data-motion="reduced"] .sudoku-result-card {
     animation: none;
     transition: none;
   }
-}
 
 /* Landscape gives the grid and the keypad their own columns. The board can
    then use the full height instead of stacking a small grid above a wide pad

@@ -117,13 +117,19 @@ throwing; the API 26 row does not assert the modern design.
 ## Edge-to-edge and safe areas
 
 `MainActivity` draws the WebView behind transparent status and navigation bars.
-`capacitor.config.json` configures Capacitor's bundled `SystemBars` plugin with
-`insetsHandling: "native"`, Capacitor's recommended mode. On Android WebViews
-older than Chromium 140, Capacitor pads the native WebView and reports zero
-`env(safe-area-inset-*)` values. On newer WebViews the page is edge-to-edge and
-the `env()` values are correct. The stylesheets already use those `env()`
-values, so no CSS-only fallback layer is needed. iOS and normal browsers use
-the same `env()` values.
+`capacitor.config.json` sets Capacitor's bundled `SystemBars` plugin to
+`insetsHandling: "disable"`; the app pads the activity content itself in
+`MainActivity.installStableInsets()`. Capacitor's native handler pads the
+DecorView, and Android 16's edge-to-edge window clears that padding between
+inset passes: the page height flipped between padded (592px on the smoke AVD)
+and unpadded (640px) every few frames. That was the whole-page jump, and an IME
+keeps dispatching insets, which turned the jump into the flash seen while typing
+in a non-Latin Wordle. The activity content keeps the padding it is given, and
+the listener consumes the insets so nothing below it adds a second copy. The IME
+inset pads the bottom only while the keyboard is visible, so the focused field
+stays above the keyboard. Inside the shell `env(safe-area-inset-*)` is zero
+because the content is already padded; iOS and normal browsers use the `env()`
+values as before.
 
 `js/native.js` uses `SystemBars.setStyle()` for both system bars, so their icons
 follow Sixfold's light/dark setting. `StatusBar.setBackgroundColor()` is
@@ -137,6 +143,10 @@ edges would flash cream during a scale or fade. `WindowSurfacePlugin` therefore
 repaints that one drawable whenever the page reports its colour
 (`paintWindowSurface` in `js/theme.js`), and remembers the last report so the
 next launch can pick the matching launch theme. Nothing is retried or polled.
+
+`scripts/assert-android-shell.mjs` samples a second of animation frames at the
+hub and fails if the page height moves without a size change. That is the guard
+against an inset handler drifting back into the padded/unpadded loop.
 
 Styling the bars has a side effect that the surface has to work around:
 `SystemBars.setStyle()` sets the decor background to the theme's `windowBackground`

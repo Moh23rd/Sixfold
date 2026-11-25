@@ -408,10 +408,9 @@ html[data-theme="dark"] {
   100% { transform: none; }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .home-surprise.is-rolling svg { animation: diceRoll 430ms cubic-bezier(0.3, 0.9, 0.3, 1); }
-  .home-game.is-picked { animation: cardPicked 430ms cubic-bezier(0.22, 1, 0.36, 1); }
-}
+html[data-motion="full"] .home-surprise.is-rolling svg { animation: diceRoll 430ms cubic-bezier(0.3, 0.9, 0.3, 1); }
+
+  html[data-motion="full"] .home-game.is-picked { animation: cardPicked 430ms cubic-bezier(0.22, 1, 0.36, 1); }
 
 .home-promises {
   display: flex;
@@ -1178,23 +1177,22 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   html[dir="rtl"] .home-game:hover .home-game-play::after { transform: scaleX(-1); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hub-share,
-  .hub-look,
-  .home-cta,
-  .home-surprise,
-  html.home-ready .home-six-piece,
-  html.home-ready .home-six-caption,
-  .home-ticker-track,
-  .home-game,
-  .home-game-arrow,
-  .home-game-play::after {
+html[data-motion="reduced"] .hub-share,
+html[data-motion="reduced"] .hub-look,
+html[data-motion="reduced"] .home-cta,
+html[data-motion="reduced"] .home-surprise,
+html[data-motion="reduced"].home-ready .home-six-piece,
+html[data-motion="reduced"].home-ready .home-six-caption,
+html[data-motion="reduced"] .home-ticker-track,
+html[data-motion="reduced"] .home-game,
+html[data-motion="reduced"] .home-game-arrow,
+html[data-motion="reduced"] .home-game-play::after {
     animation: none;
     transition: none;
   }
 
-  .home-ticker-track { animation: none; transform: none; }
-}
+
+  html[data-motion="reduced"] .home-ticker-track { animation: none; transform: none; }
 
 /* ---------- Android stretch overscroll ----------
    Android 12+ stretches the content instead of rubber-banding it, but a fixed
@@ -1280,6 +1278,4 @@ html.has-stretch .hub {
 
 /* With reduced motion the script never marks the shell, so the hub keeps the
    platform's own edge handling rather than the rebuilt stretch. */
-@media (prefers-reduced-motion: reduce) {
-  .hub { overscroll-behavior-y: contain; }
-}
+html[data-motion="reduced"] .hub { overscroll-behavior-y: contain; }

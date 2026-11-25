@@ -379,11 +379,9 @@ h1 {
 .score.is-record { animation: recordRing 900ms ease-out; }
 .score.is-record .value { animation: recordPop 640ms cubic-bezier(0.2, 0.9, 0.3, 1); }
 
-@media (prefers-reduced-motion: reduce) {
-  .score.is-record,
-  .score.is-record .value,
-  .hint.is-warning { animation: none; }
-}
+html[data-motion="reduced"] .score.is-record,
+html[data-motion="reduced"] .score.is-record .value,
+html[data-motion="reduced"] .hint.is-warning { animation: none; }
 
 /* ---------- board ---------- */
 
@@ -873,11 +871,9 @@ button:focus-visible {
 /* The browser's native fullscreen resize is outside the page's control. Step
    the content back under a short fade, settle at the new size, then bring it
    back, so the board never snaps between two viewport layouts. */
-@media (prefers-reduced-motion: no-preference) {
-  .app {
+html[data-motion="full"] .app {
     transition: opacity 160ms var(--ease-out), transform 240ms var(--ease-out);
   }
-}
 
 .btn.icon .slash { display: none; }
 .btn.icon.is-off { color: var(--muted); }
@@ -1235,19 +1231,21 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tile { transition-duration: 0.01ms; }
-  .face.appear,
-  .face.bump { animation-duration: 0.01ms; }
-  .overlay,
-  .sheet-backdrop,
-  .sheet-card { animation: none; }
-  .result-thumb img.is-fresh { animation: none; }
-  .btn,
-  .seg button,
-  .palette,
-  .sheet-done { transition-duration: 0.01ms; }
-}
+html[data-motion="reduced"] .tile { transition-duration: 0.01ms; }
+
+  html[data-motion="reduced"] .face.appear,
+html[data-motion="reduced"] .face.bump { animation-duration: 0.01ms; }
+
+  html[data-motion="reduced"] .overlay,
+html[data-motion="reduced"] .sheet-backdrop,
+html[data-motion="reduced"] .sheet-card { animation: none; }
+
+  html[data-motion="reduced"] .result-thumb img.is-fresh { animation: none; }
+
+  html[data-motion="reduced"] .btn,
+html[data-motion="reduced"] .seg button,
+html[data-motion="reduced"] .palette,
+html[data-motion="reduced"] .sheet-done { transition-duration: 0.01ms; }
 
 /* ---------- motion system ---------- */
 
@@ -1292,17 +1290,17 @@ body {
 
 /* The board itself lifts in after the launch screen, rather than appearing
    underneath it with a hard cut. */
-@media (prefers-reduced-motion: no-preference) {
-  html.app-ready .header {
+html[data-motion="full"].app-ready .header {
     animation: appRise 480ms var(--ease-out) 40ms both;
   }
-  html.app-ready .board {
+
+  html[data-motion="full"].app-ready .board {
     animation: boardReveal 560ms var(--ease-out) 80ms both;
   }
-  html.app-ready .footer {
+
+  html[data-motion="full"].app-ready .footer {
     animation: appRise 480ms var(--ease-out) 150ms both;
   }
-}
 
 @keyframes appRise {
   from { opacity: 0; transform: translateY(7px); }
@@ -1451,34 +1449,34 @@ body {
   transition-duration: 220ms;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.app-ready .header,
-  html.app-ready .board,
-  html.app-ready .footer,
-  .score:not(.is-record).is-scoring .value {
+html[data-motion="reduced"].app-ready .header,
+html[data-motion="reduced"].app-ready .board,
+html[data-motion="reduced"].app-ready .footer,
+html[data-motion="reduced"] .score:not(.is-record).is-scoring .value {
     animation: none;
   }
-  .tile,
-  .face,
-  .overlay,
-  .overlay-card,
-  .sheet,
-  .sheet-backdrop,
-  .sheet-card,
-  .btn,
-  .seg button,
-  .palette,
-  .sheet-done,
-  .contact-link,
-  .hint {
+
+  html[data-motion="reduced"] .tile,
+html[data-motion="reduced"] .face,
+html[data-motion="reduced"] .overlay,
+html[data-motion="reduced"] .overlay-card,
+html[data-motion="reduced"] .sheet,
+html[data-motion="reduced"] .sheet-backdrop,
+html[data-motion="reduced"] .sheet-card,
+html[data-motion="reduced"] .btn,
+html[data-motion="reduced"] .seg button,
+html[data-motion="reduced"] .palette,
+html[data-motion="reduced"] .sheet-done,
+html[data-motion="reduced"] .contact-link,
+html[data-motion="reduced"] .hint {
     transition-duration: 0.01ms;
   }
-  .face.appear,
-  .face.bump,
-  .hint.is-warning {
+
+  html[data-motion="reduced"] .face.appear,
+html[data-motion="reduced"] .face.bump,
+html[data-motion="reduced"] .hint.is-warning {
     animation: none;
   }
-}
 
 /* ---------- desktop ---------- */
 

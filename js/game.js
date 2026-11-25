@@ -733,7 +733,7 @@
     window.clearTimeout(overlayHideTimer);
     overlayEl.classList.remove('is-open');
     overlayEl.classList.add('is-closing');
-    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.SixfoldMotion && window.SixfoldMotion.reduced();
     overlayHideTimer = window.setTimeout(function () {
       finishHideOverlay();
       try {

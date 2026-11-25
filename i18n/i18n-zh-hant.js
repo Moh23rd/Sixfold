@@ -8,6 +8,10 @@
     "ogDescription": "六款遊戲。絕不湊數。 輕點一下就能玩。進度只留在這部裝置上。"
   },
   "messages": {
+    "Motion": "動效",
+    "System": "跟隨系統",
+    "Full": "完整",
+    "Reduced": "精簡",
     "Welcome to Sixfold": "歡迎來到 Sixfold",
     "Six games, one place. Everything saves on this device.": "六款遊戲，一個地方。所有進度都保存在這部裝置上。",
     "Tap any cover on the hub to start a game.": "點擊主頁上的任何封面即可開始遊戲。",

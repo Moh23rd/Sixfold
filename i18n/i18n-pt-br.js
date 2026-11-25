@@ -8,6 +8,10 @@
     "ogDescription": "Seis jogos. Sem enrolação. Um toque para jogar. Seu progresso fica neste dispositivo."
   },
   "messages": {
+    "Motion": "Movimento",
+    "System": "Sistema",
+    "Full": "Completo",
+    "Reduced": "Reduzido",
     "Welcome to Sixfold": "Boas-vindas ao Sixfold",
     "Six games, one place. Everything saves on this device.": "Seis jogos em um só lugar. Tudo fica salvo neste dispositivo.",
     "Tap any cover on the hub to start a game.": "Toque em qualquer capa da tela inicial para começar um jogo.",

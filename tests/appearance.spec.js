@@ -250,6 +250,8 @@ test('the surface report is queued behind the bar restyle, not behind a timer', 
 test('reduced motion switches in one frame', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openLook(page);
+  // Full is the default now; choose Reduced explicitly.
+  await page.locator('[data-motion-opt="reduced"]').click();
   const before = await appearance(page);
 
   await page.locator('[data-theme-opt="dark"]').click();
@@ -258,6 +260,50 @@ test('reduced motion switches in one frame', async ({ page }) => {
   expect(state.theme).toBe('dark');
   expect(state.fading, 'calm motion never raises the flag').toBe(false);
   expect(state.cardProperties).toBe(before.cardProperties);
+});
+
+/* The app used to hide every transition behind the device's reduced-motion
+   query, so a machine with that setting opened with no motion at all and no
+   way to get it back. Full is the default now; System follows the device live
+   and Reduced is the explicit opt-out. */
+test('Motion defaults to Full and System follows the device', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openLook(page);
+
+  const read = () => page.evaluate(() => ({
+    motion: document.documentElement.dataset.motion,
+    ticker: getComputedStyle(document.querySelector('.home-ticker-track')).animationName,
+    pressed: document.querySelector('[data-motion-opt="full"]').getAttribute('aria-pressed')
+  }));
+
+  const fresh = await read();
+  expect(fresh.motion, 'a fresh install animates even when the device asks for less').toBe('full');
+  expect(fresh.ticker, 'the tape runs on a fresh install').not.toBe('none');
+  expect(fresh.pressed, 'Full is the default option').toBe('true');
+
+  // System follows the device.
+  await page.locator('[data-motion-opt="system"]').click();
+  expect((await read()).motion).toBe('reduced');
+  expect((await read()).ticker, 'the tape stops on a reduced-motion device').toBe('none');
+
+  // An explicit Reduced survives a reload.
+  await page.locator('[data-motion-opt="reduced"]').click();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('sixfold.settings.v1')).motion)).toBe('reduced');
+  await page.reload();
+  await page.waitForSelector('#daily');
+  expect(await page.evaluate(() => document.documentElement.dataset.motion)).toBe('reduced');
+
+  // Full overrides the device and persists.
+  await page.locator('#appearance').click();
+  await page.locator('[data-motion-opt="full"]').click();
+  expect((await read()).motion).toBe('full');
+  expect((await read()).ticker).not.toBe('none');
+
+  // A live device change is followed on System.
+  await page.locator('[data-motion-opt="system"]').click();
+  expect((await read()).motion).toBe('reduced');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  expect((await read()).motion).toBe('full');
 });
 
 test('a second switch inside the fade re-arms one flag and clears it', async ({ page }) => {

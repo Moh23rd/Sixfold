@@ -488,25 +488,24 @@ html[data-theme="dark"] #wordle {
   .wordle-status { font-size: 10.5px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .home-six,
-  .home-six.is-unlocking,
-  .home-six-piece,
-  .home-game,
-  .home-game-stage,
-  .play-screen:not([hidden]) .play-shell,
-  .play-win:not([hidden]),
-  .fruit-over-card:not([hidden]),
-  .wordle-tile,
-  .wordle-tile.is-revealing,
-  .wordle-row.is-shaking,
-  .wordle-key,
-  .wordle-result-card {
+html[data-motion="reduced"] .home-six,
+html[data-motion="reduced"] .home-six.is-unlocking,
+html[data-motion="reduced"] .home-six-piece,
+html[data-motion="reduced"] .home-game,
+html[data-motion="reduced"] .home-game-stage,
+html[data-motion="reduced"] .play-screen:not([hidden]) .play-shell,
+html[data-motion="reduced"] .play-win:not([hidden]),
+html[data-motion="reduced"] .fruit-over-card:not([hidden]),
+html[data-motion="reduced"] .wordle-tile,
+html[data-motion="reduced"] .wordle-tile.is-revealing,
+html[data-motion="reduced"] .wordle-row.is-shaking,
+html[data-motion="reduced"] .wordle-key,
+html[data-motion="reduced"] .wordle-result-card {
     animation: none;
     transition: none;
   }
-  .home-six-piece.is-six-hit { animation: none; }
-}
+
+  html[data-motion="reduced"] .home-six-piece.is-six-hit { animation: none; }
 
 /* ==========================================================================
    Inner-game audit — desktop Wordle keys, the 320px Minesweeper toolbar and
@@ -901,14 +900,12 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .play-feedback .play-win:not([hidden]),
-  .play-feedback .play-win.is-victory,
-  .win-stamp,
-  .play-feedback .play-win.has-win::before {
+html[data-motion="reduced"] .play-feedback .play-win:not([hidden]),
+html[data-motion="reduced"] .play-feedback .play-win.is-victory,
+html[data-motion="reduced"] .win-stamp,
+html[data-motion="reduced"] .play-feedback .play-win.has-win::before {
     animation: none;
   }
-}
 
 /* A finished entrance animation must not leave a transform on the shell:
    a transformed ancestor becomes the containing block for the fixed win
@@ -935,19 +932,23 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
   to { opacity: 1; transform: none; }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* 40ms steps instead of 50: the last card used to start at 390ms and land
+/* 40ms steps instead of 50: the last card used to start at 390ms and land
      at 910ms, which read as the hub still loading. */
-  html.home-ready .home-grid .home-game {
+  html[data-motion="full"].home-ready .home-grid .home-game {
     animation: homeCardIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  html.home-ready .home-grid .home-game:nth-child(1) { animation-delay: 40ms; }
-  html.home-ready .home-grid .home-game:nth-child(2) { animation-delay: 80ms; }
-  html.home-ready .home-grid .home-game:nth-child(3) { animation-delay: 120ms; }
-  html.home-ready .home-grid .home-game:nth-child(4) { animation-delay: 160ms; }
-  html.home-ready .home-grid .home-game:nth-child(5) { animation-delay: 200ms; }
-  html.home-ready .home-grid .home-game:nth-child(6) { animation-delay: 240ms; }
-}
+
+  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(1) { animation-delay: 40ms; }
+
+  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(2) { animation-delay: 80ms; }
+
+  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(3) { animation-delay: 120ms; }
+
+  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(4) { animation-delay: 160ms; }
+
+  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(5) { animation-delay: 200ms; }
+
+  html[data-motion="full"].home-ready .home-grid .home-game:nth-child(6) { animation-delay: 240ms; }
 
 .hub.is-returning .hub-shell {
   animation: hubReturn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -1257,23 +1258,25 @@ html.hidden-reveal-open body {
   .hidden-reveal-foot { margin-top: 8px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.home-ready .home-grid .home-game,
-  .hub.is-returning .hub-shell,
-  #wordle:not([hidden]) .wordle-shell,
-  .wordle-result.is-revealed,
-  .wordle-result.is-revealed .wordle-result-card,
-  .hidden-reveal-card,
-  .hidden-reveal-tiles span {
+html[data-motion="reduced"].home-ready .home-grid .home-game,
+html[data-motion="reduced"] .hub.is-returning .hub-shell,
+html[data-motion="reduced"] #wordle:not([hidden]) .wordle-shell,
+html[data-motion="reduced"] .wordle-result.is-revealed,
+html[data-motion="reduced"] .wordle-result.is-revealed .wordle-result-card,
+html[data-motion="reduced"] .hidden-reveal-card,
+html[data-motion="reduced"] .hidden-reveal-tiles span {
     animation: none;
   }
-  .hidden-reveal,
-  .hidden-reveal-tiles span { transition: none; }
-  .hidden-reveal-card,
-  .hidden-reveal-tiles span { opacity: 1; transform: none; }
-  .hidden-reveal-tiles span.is-key { transform: rotate(3deg); }
-  .hidden-reveal.is-open .hidden-reveal-card { opacity: 1; transform: none; }
-}
+
+  html[data-motion="reduced"] .hidden-reveal,
+html[data-motion="reduced"] .hidden-reveal-tiles span { transition: none; }
+
+  html[data-motion="reduced"] .hidden-reveal-card,
+html[data-motion="reduced"] .hidden-reveal-tiles span { opacity: 1; transform: none; }
+
+  html[data-motion="reduced"] .hidden-reveal-tiles span.is-key { transform: rotate(3deg); }
+
+  html[data-motion="reduced"] .hidden-reveal.is-open .hidden-reveal-card { opacity: 1; transform: none; }
 
 /* Touch targets must stay clickable even when the pointer is a finger rather
    than a mouse. The six pieces are intentionally not game buttons, so Safari

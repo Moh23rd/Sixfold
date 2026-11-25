@@ -8,6 +8,10 @@
     "ogDescription": "छह खेल. कोई भराव नहीं. एक टैप में खेलें। आपकी प्रगति इसी डिवाइस पर रहती है।"
   },
   "messages": {
+    "Motion": "गति",
+    "System": "सिस्टम",
+    "Full": "पूर्ण",
+    "Reduced": "कम",
     "Welcome to Sixfold": "Sixfold में आपका स्वागत है",
     "Six games, one place. Everything saves on this device.": "छह खेल, एक जगह। सारी प्रगति इसी डिवाइस पर सहेजी जाती है।",
     "Tap any cover on the hub to start a game.": "होम पर किसी भी कवर को टैप करके खेल शुरू करें।",

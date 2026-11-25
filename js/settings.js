@@ -14,10 +14,33 @@
     hideTimer: false,
     checkMistakes: false,
     inputMode: 'cell',
-    dailyPuzzle: true
+    dailyPuzzle: true,
+    motion: 'full'
   };
   const $ = function (id) { return document.getElementById(id); };
   let values = load();
+
+  // The page's one motion answer. "system" follows the device setting the
+  // stylesheet used to read directly; "full" and "reduced" are an explicit
+  // override. Full is the default: the app used to hide every transition
+  // behind the device's reduced-motion query, so a machine with that setting
+  // opened with no motion at all and no way to get it back. The attribute is
+  // also set by the head boot script before the first paint, so the entrance
+  // animations resolve on their first frame.
+  function systemReduced() {
+    return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  function resolvedMotion() {
+    if (values.motion === 'full') return 'full';
+    if (values.motion === 'reduced') return 'reduced';
+    return systemReduced() ? 'reduced' : 'full';
+  }
+
+  window.SixfoldMotion = {
+    reduced: function () { return resolvedMotion() === 'reduced'; },
+    choice: function () { return values.motion; }
+  };
 
   function load() {
     try {
@@ -28,6 +51,7 @@
           if (typeof raw[key] === typeof DEFAULTS[key]) next[key] = raw[key];
         });
         if (next.inputMode !== 'cell' && next.inputMode !== 'digit') next.inputMode = 'cell';
+        if (next.motion !== 'system' && next.motion !== 'full' && next.motion !== 'reduced') next.motion = 'full';
       }
       return next;
     } catch (err) {
@@ -57,6 +81,10 @@
       if (attrs[name]) root.setAttribute('data-' + name, attrs[name]);
       else root.removeAttribute('data-' + name);
     });
+    root.setAttribute('data-motion', resolvedMotion());
+    document.querySelectorAll('[data-motion-opt]').forEach(function (button) {
+      button.setAttribute('aria-pressed', button.dataset.motionOpt === values.motion ? 'true' : 'false');
+    });
     document.querySelectorAll('[data-setting]').forEach(function (button) {
       const key = button.dataset.setting;
       const on = Boolean(values[key]);
@@ -75,6 +103,7 @@
   function set(key, value) {
     if (!Object.prototype.hasOwnProperty.call(DEFAULTS, key)) return;
     if (key === 'inputMode') values.inputMode = value === 'digit' ? 'digit' : 'cell';
+    else if (key === 'motion') values.motion = value === 'full' || value === 'reduced' ? value : 'system';
     else values[key] = Boolean(value);
     save();
     apply();
@@ -246,6 +275,20 @@
     document.querySelectorAll('[data-setting-input]').forEach(function (button) {
       button.addEventListener('click', function () { set('inputMode', button.dataset.settingInput); });
     });
+    document.querySelectorAll('[data-motion-opt]').forEach(function (button) {
+      button.addEventListener('click', function () { set('motion', button.dataset.motionOpt); });
+    });
+    // On "system" the page follows the device live; a phone switching its
+    // accessibility setting should not need a reload. The other two choices
+    // ignore the device and keep what the player picked.
+    const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    if (motionQuery) {
+      const onSystemMotion = function () {
+        if (values.motion === 'system') apply();
+      };
+      if (motionQuery.addEventListener) motionQuery.addEventListener('change', onSystemMotion);
+      else if (motionQuery.addListener) motionQuery.addListener(onSystemMotion);
+    }
     const exportBtn = $('backup-export');
     if (exportBtn) exportBtn.addEventListener('click', exportBackup);
     const openImport = $('backup-import-open');

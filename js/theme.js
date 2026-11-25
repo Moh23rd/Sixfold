@@ -50,7 +50,6 @@
   // is what turns on the colour transitions at the end of v5.css: they are
   // raised for the length of one switch and taken away again, so the app pays
   // nothing for them while it is being played.
-  const calmMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   const FADE_MS = 220;
   let fadeTimer = 0;
 
@@ -65,9 +64,9 @@
   }
 
   function crossFade() {
-    // A phone that asked for calm motion, or one the launch script already put
-    // on the light paint path, keeps the instant switch it had.
-    if (calmMotion && calmMotion.matches) return;
+    // A page set to reduced motion, or one the launch script already put on
+    // the light paint path, keeps the instant switch it had.
+    if (window.SixfoldMotion && window.SixfoldMotion.reduced()) return;
     if (window.MergePerf && window.MergePerf.lite) return;
     // The shell fades too: its WebView composites each faded surface
     // separately, which used to leave a page on an in-between colour until
@@ -604,7 +603,7 @@
     // Let the scrim and card leave before removing the dialog from the page.
     sheet.classList.remove('is-open');
     sheet.classList.add('is-closing');
-    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.SixfoldMotion && window.SixfoldMotion.reduced();
     const timer = window.setTimeout(function () {
       sheet.hidden = true;
       sheet.classList.remove('is-open', 'is-closing');

@@ -8,6 +8,10 @@
     "ogDescription": "六款游戏。无凑数内容。 一键开始。进度保留在此设备。"
   },
   "messages": {
+    "Motion": "动效",
+    "System": "跟随系统",
+    "Full": "完整",
+    "Reduced": "精简",
     "Welcome to Sixfold": "欢迎来到 Sixfold",
     "Six games, one place. Everything saves on this device.": "六款游戏，一个地方。所有进度都保存在这台设备上。",
     "Tap any cover on the hub to start a game.": "点击主页上的任意封面即可开始游戏。",
