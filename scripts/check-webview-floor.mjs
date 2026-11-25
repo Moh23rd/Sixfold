@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /* Fails when shell JavaScript steps past Android WebView 60.
 
-   The API 24 and 26 emulator images do not update their System WebView, and the
-   API 26 image is the Chromium 60-era engine the launch-only row exists for. A
-   newer syntax form or helper is not a degraded feature there: the script that
-   contains it never runs, and a launch-time script takes the whole shell with
-   it. This guard keeps that floor in source.
+   The API 24 and 26 emulator images do not update their System WebView; the
+   smoke measures Chromium 69 on both, which is why those rows stay launch-only.
+   The guard still holds JavaScript to Chromium 60 — the older floor the shell
+   committed to, so a phone or an image below CI's engine still runs every
+   script. A newer syntax form or helper is not a degraded feature there: the
+   script that contains it never runs, and a launch-time script takes the whole
+   shell with it. This guard keeps that floor in source.
 
    Syntax: every shell script and inline HTML block parses as ES2018.
    Chromium 60 (V8 6.0) shipped that whole syntax set except async generators
