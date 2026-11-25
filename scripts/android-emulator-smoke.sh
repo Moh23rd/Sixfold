@@ -91,6 +91,18 @@ fi
 [ -f "$ANDROID_AVD_HOME/$AVD.ini" ] \
   || die "the $AVD virtual device is not in $ANDROID_AVD_HOME, where the emulator looks"
 
+# avdmanager's generic profile writes hw.mainKeys=yes, and Android 14 reads that
+# as a phone with hardware keys and draws no navigation bar at all — the bottom
+# strip the assertions sample is then page content, which can never match the
+# surface (#fcfbf8 card over #f6f1e8 page). The API 36 image ignores the flag,
+# so only the older rows exposed it. Every row is asserted against an on-screen
+# bar, so ask for one explicitly.
+AVD_CONFIG="$ANDROID_AVD_HOME/$AVD.avd/config.ini"
+if [ -f "$AVD_CONFIG" ] && grep -q '^hw\.mainKeys *= *yes' "$AVD_CONFIG"; then
+  note "asking the $AVD virtual device for an on-screen navigation bar"
+  sed -i 's/^hw\.mainKeys *=.*/hw.mainKeys = no/' "$AVD_CONFIG"
+fi
+
 EMULATOR_PID=""
 
 stop_emulator() {

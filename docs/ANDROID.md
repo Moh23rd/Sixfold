@@ -162,6 +162,13 @@ strip fails both. It also samples a second of animation frames at the hub and
 fails if the page height moves without a size change, which is the guard against
 an inset handler drifting back into the padded/unpadded loop.
 
+The smoke AVD asks for an on-screen navigation bar (`hw.mainKeys = no` in its
+config): `avdmanager`'s generic profile writes `hw.mainKeys = yes`, and Android
+14 reads that as a phone with hardware keys and draws no navigation bar at all,
+so the bottom sample read the page's own card instead of the strip the padding
+exposes. The API 36 image ignores the flag, which is why only the API 34 row
+caught it.
+
 Styling the bars has a side effect that the surface has to work around:
 `SystemBars.setStyle()` sets the decor background to the theme's `windowBackground`
 while it changes the status and navigation bar icons, and that is the same
