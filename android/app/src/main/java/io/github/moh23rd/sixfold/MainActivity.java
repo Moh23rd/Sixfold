@@ -2,6 +2,7 @@ package io.github.moh23rd.sixfold;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -20,6 +21,13 @@ import com.getcapacitor.BridgeWebViewClient;
 
 public class MainActivity extends BridgeActivity {
     private static final String EXTRA_ACTION = "sixfold.action";
+    private static final float TEXT_ZOOM_MIN = 0.85f;
+    // How far the page follows the system text size. 1.3 is Android's largest
+    // preset and the point the fixed chrome still holds: at 1.5 a 32.6px sudoku
+    // digit no longer fits its 29px cell, and the board's title collides with
+    // the clock. The page stops following the setting here instead of breaking
+    // the board at the accessibility sizes above it.
+    private static final float TEXT_ZOOM_MAX = 1.3f;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -30,8 +38,10 @@ public class MainActivity extends BridgeActivity {
 
         // A shortcut can start the activity before the page exists. Keep the
         // action until the page asks for it; a normal launcher start leaves it
-        // null.
-        captureAction(getIntent());
+        // null. A recreated activity is handed the original intent again — the
+        // shortcut extra is still in it — so only a fresh launch may read it,
+        // or changing the system font size would replay the shortcut.
+        if (savedInstanceState == null) captureAction(getIntent());
 
         // The page reports its surface colour whenever the appearance changes, so
         // the last reported colour is the appearance this launch should open in.
@@ -65,9 +75,7 @@ public class MainActivity extends BridgeActivity {
         // size still got the same small copy. Follow it, capped where the
         // layouts still hold together; the page's own type scale remains the
         // floor for a reader who has not changed the setting.
-        final WebSettings settings = webView.getSettings();
-        final float fontScale = getResources().getConfiguration().fontScale;
-        settings.setTextZoom(Math.round(Math.min(Math.max(fontScale, 0.85f), 1.3f) * 100));
+        webView.getSettings().setTextZoom(textZoom(getResources().getConfiguration().fontScale));
 
         // Links to GitHub belong in the browser, not in a chromeless WebView
         // with no address bar. The shell's own pages all come from localhost,
@@ -103,6 +111,19 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // The activity is kept across a system font-size change, so the page
+        // does not reload back to the hub mid-game; apply the new scale here,
+        // because onCreate ran with the previous one.
+        final Bridge bridge = getBridge();
+        if (bridge != null && bridge.getWebView() != null) {
+            final WebSettings settings = bridge.getWebView().getSettings();
+            settings.setTextZoom(textZoom(newConfig.fontScale));
+        }
+    }
+
+    @Override
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
@@ -111,6 +132,11 @@ public class MainActivity extends BridgeActivity {
             getBridge().getWebView().evaluateJavascript(
                 "window.SixfoldLaunchAction && window.SixfoldLaunchAction()", null);
         }
+    }
+
+    /** Android's font-size setting, within the range the layouts can hold. */
+    private static int textZoom(float fontScale) {
+        return Math.round(Math.min(Math.max(fontScale, TEXT_ZOOM_MIN), TEXT_ZOOM_MAX) * 100);
     }
 
     private static void captureAction(Intent intent) {

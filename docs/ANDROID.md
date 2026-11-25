@@ -19,9 +19,15 @@ Sixfold's Android target is a **direct-install APK for GitHub distribution**.
   is the manual update path.
 - Long-pressing the launcher icon offers Fruit Merge, Daily Gauntlet and
   Sudoku. The shortcut passes an action extra, consumed once after the page
-  loads and routed through the hub's own cover buttons.
+  loads and routed through the hub's own cover buttons. The emulator smoke
+  drives a cold Fruit Merge, a cold Daily Gauntlet and a warm delivery through
+  `onNewIntent`, and proves a consumed action does not replay.
 - The WebView follows Android's font-size setting (85–130%) instead of
-  rendering every device at the same fixed text size.
+  rendering every device at the same fixed text size. The activity keeps the
+  page across the change, so a game in progress survives it; 130% is the
+  ceiling the fixed Sudoku board holds — at 150% a digit no longer fits its
+  cell — so the accessibility sizes above Android's largest preset are capped
+  instead of allowed to break the chrome.
 
 Capacitor renders the bundled interface in Android's **WebView**. This is an
 installable app, not a browser shortcut or PWA install, but it is not a

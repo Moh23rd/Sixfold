@@ -513,12 +513,22 @@ async function anrTraceReport() {
    boot can start the process and then lose the WebView before it exposes the
    socket (adbd keeps refusing `webview_devtools_remote_<pid>` and the launcher
    is left on screen), so the launch has to be repeatable. */
-async function launchApp() {
-  adb(['shell', 'am', 'force-stop', PACKAGE]);
-  const started = adb(['shell', 'am', 'start', '-n', ACTIVITY]);
+/* The launcher's long-press shortcuts start the activity with an extra, not a
+   URL. `am start` with the same action and extra is the launch the launcher
+   performs, so the smoke drives the real path instead of calling the plugin. */
+function startActivity(action = '') {
+  const args = ['shell', 'am', 'start', '-n', ACTIVITY];
+  if (action) args.push('-a', 'android.intent.action.VIEW', '-e', 'sixfold.action', action);
+  const started = adb(args);
   if (/^Error/im.test(started) || /does not exist/i.test(started)) {
-    fail(`the activity did not start: ${started}`);
+    fail(`the activity did not start${action ? ` for the ${action} shortcut` : ''}: ${started}`);
   }
+  return started;
+}
+
+async function launchApp(action = '') {
+  adb(['shell', 'am', 'force-stop', PACKAGE]);
+  startActivity(action);
   // A launch can die before `pidof` ever sees it. That is still a death, so
   // report what the platform recorded instead of only the timeout.
   const launched = await waitFor('the app process', appPid, 45000, 300);
@@ -664,12 +674,12 @@ async function reportWebViewEngine() {
    with the crash or kill the platform recorded.
    Only the emulator going away stays recoverable (exit status 3), because that
    is not the app's failure. */
-async function startAndProveLaunch() {
-  log('starting the app');
+async function startAndProveLaunch(action = '') {
+  log(action ? `starting the app from the ${action} shortcut` : 'starting the app');
   let pid = '';
   let problem = null;
   try {
-    pid = await launchApp();
+    pid = await launchApp(action);
     await attachToLiveLaunch({
       pid,
       connect: connectToWebView,
@@ -698,6 +708,77 @@ async function startAndProveLaunch() {
     );
   }
   log('the WebView reached home-ready');
+}
+
+/* Leaves whatever game or sheet is open for the hub through the page's own
+   back button, which is also what a player uses. */
+async function backToHub(what) {
+  const screen = await evaluate('document.body.dataset.screen');
+  if (screen === 'hub') return;
+  // The merge screen's own back button sits in the shared play header rather
+  // than inside its section, so fall back to any back control on the page:
+  // they all call the page's single back-to-hub routine.
+  const clicked = await evaluate(
+    '(() => { const view = document.getElementById(' + JSON.stringify(screen) + ');' +
+      " const back = (view && view.querySelector('[data-back]')) || document.querySelector('[data-back]');" +
+      ' if (!back) return "the ' + screen + ' screen has no back button";' +
+      " back.click(); return ''; })()"
+  );
+  if (clicked) fail(clicked);
+  await until('the hub to return', () => evaluate("document.body.dataset.screen === 'hub'"), 20000, 200);
+  log(`returned to the hub from ${screen}${what ? ` (${what})` : ''}`);
+}
+
+/* The native side clears a shortcut on read. Asking the page again is what a
+   return from Recents does; it must not reopen the shortcut's screen. */
+async function assertNoReplay(where) {
+  await evaluate('window.SixfoldLaunchAction && window.SixfoldLaunchAction()');
+  await wait(700);
+  const screen = await evaluate('document.body.dataset.screen');
+  if (screen !== 'hub') fail(`a consumed shortcut replayed ${where}: the app moved to ${screen}`);
+  log(`the consumed shortcut did not replay ${where}`);
+}
+
+/* What the hub looks like at the current system text size: the heading's
+   rendered size, any horizontal page overflow, and any hub control or text
+   block that has run outside the viewport. */
+async function readTextLayout() {
+  return evaluate(
+    "(() => { const root = document.documentElement;" +
+      " const title = document.getElementById('hub-title');" +
+      " const boxes = [].slice.call(document.querySelectorAll('#hub-title, #hub .home-sub, #hub button, #hub a'));" +
+      ' const wide = boxes.filter(function (el) {' +
+      '   const box = el.getBoundingClientRect();' +
+      '   return box.width > 0 && (box.right > innerWidth + 1 || box.left < -1);' +
+      " }).map(function (el) { return el.id || el.getAttribute('class') || el.tagName; });" +
+      ' return {' +
+      '   size: title ? parseFloat(getComputedStyle(title).fontSize) : 0,' +
+      '   overflow: Math.max(0, root.scrollWidth - innerWidth),' +
+      '   wide: wide' +
+      ' }; })()'
+  );
+}
+
+/* Android's font-size setting. A shell that keeps the activity (the manifest
+   declares fontScale) applies it in place; one that restarts it gets a new
+   process, and the devtools forward has to follow before the page is read. */
+async function setFontScale(value) {
+  const before = appPid();
+  adb(['shell', 'settings', 'put', 'system', 'font_scale', value]);
+  await wait(900);
+  const after = appPid();
+  if (after && after !== before) {
+    try {
+      adb(['forward', '--remove', `tcp:${PORT}`]);
+    } catch (error) {
+      // A forward that is already gone is the state we want.
+    }
+    adb(['forward', `tcp:${PORT}`, `localabstract:webview_devtools_remote_${after}`]);
+    forwarded = true;
+    currentSession = null;
+    await until('the WebView to come back after the font change', homeReady, 60000, 300);
+    await backToHub('after the font change');
+  }
 }
 
 // Reattach on a dropped socket, then repeat the expression: the first target
@@ -729,6 +810,7 @@ async function devtoolsTargets() {
 let forwarded = false;
 let rotationSetting = null;
 let nightSetting = null;
+let fontScaleSetting = null;
 try {
   await until('the device to finish booting', () => adb(['shell', 'getprop', 'sys.boot_completed']) === '1', 180000, 1000);
 
@@ -1090,17 +1172,162 @@ try {
   }
   log(`the Haptics call settled: ${call.ok ? 'resolved' : `rejected (${call.message})`}`);
 
+  // System text size. Android renders WebView text at a fixed scale unless the
+  // shell asks for the reader's setting, and the shell follows it up to a cap
+  // so fixed game chrome keeps its labels. Prove the setting is followed, that
+  // the cap holds at the two largest accessibility sizes, and that neither the
+  // heading nor a hub control runs off the screen at either one. The expected
+  // ratio is derived from what 2.0 resolves to, so a cap change does not need a
+  // second number kept in step here.
+  await backToHub('before the text-scale checks');
+  fontScaleSetting = adbSafe(['shell', 'settings', 'get', 'system', 'font_scale']).trim() || null;
+  await setFontScale('1.0');
+  const baseText = await until(
+    'the hub at the default text scale',
+    async () => {
+      const state = await readTextLayout();
+      return state.size > 0 ? state : null;
+    },
+    20000,
+    250
+  );
+  log(`text at system 1.0: the hub title is ${baseText.size.toFixed(2)}px`);
+  // The manifest declares fontScale, so the activity keeps the page and only
+  // re-applies the zoom. A reload would drop the player back on the hub.
+  const pageStartedAt = await evaluate('performance.timeOrigin');
+
+  async function textScaleCase(value) {
+    await setFontScale(value);
+    const state = await until(
+      `the hub at system font scale ${value}`,
+      async () => {
+        const now = await readTextLayout();
+        return now.size > 0 && Math.abs(now.size - baseText.size) > 0.01 ? now : null;
+      },
+      20000,
+      200
+    );
+    if (state.overflow > 0) {
+      fail(`at system font scale ${value} the hub scrolls sideways by ${state.overflow}px`);
+    }
+    if (state.wide.length) {
+      fail(`at system font scale ${value} hub content sits outside the viewport: ${state.wide.join(', ')}`);
+    }
+    return state;
+  }
+
+  const largeText = await textScaleCase('1.5');
+  const largestText = await textScaleCase('2.0');
+  const ratioLarge = largeText.size / baseText.size;
+  const ratioLargest = largestText.size / baseText.size;
+  // 2.0's ratio is the cap. 1.5 must resolve to its own setting or to that same
+  // cap, never to something in between or above it.
+  if (Math.abs(ratioLarge - Math.min(1.5, ratioLargest)) > 0.03) {
+    fail(
+      `the system text scale and its cap disagree: 1.5 gives ${ratioLarge.toFixed(2)}x,` +
+        ` 2.0 gives ${ratioLargest.toFixed(2)}x`
+    );
+  }
+  if (ratioLargest < 1.2 || ratioLargest > 2.05) {
+    fail(`the system text scale is not followed: 2.0 gives ${ratioLargest.toFixed(2)}x`);
+  }
+  const pageStartedAfter = await evaluate('performance.timeOrigin');
+  if (pageStartedAfter !== pageStartedAt) {
+    fail('changing the system text size reloaded the page; fontScale is not kept by the activity');
+  }
+  log(
+    `text follows the system size and its cap: 1.5 -> ${largeText.size.toFixed(2)}px` +
+      ` (${ratioLarge.toFixed(2)}x), 2.0 -> ${largestText.size.toFixed(2)}px (${ratioLargest.toFixed(2)}x)`
+  );
+
+  // Leave the page at its design size for the shortcut checks; the original
+  // setting is restored in the cleanup.
+  await setFontScale('1.0');
+  await until(
+    'the hub to return to the design text size',
+    async () => {
+      const now = await readTextLayout();
+      return Math.abs(now.size - baseText.size) <= 0.01 ? now : null;
+    },
+    20000,
+    200
+  );
+
+  // Long-press shortcuts. The cold cases force-stop first, so the action is
+  // delivered before the page exists; consuming it before the page's own
+  // initRoute used to open a card that initRoute then replaced with the hub.
+  // The warm case must arrive through onNewIntent, in the process already
+  // running, not by starting the activity again.
+  const warmPid = appPid();
+  startActivity('sudoku');
+  await until(
+    'the warm Sudoku shortcut to route',
+    () => evaluate("document.body.dataset.screen === 'sudoku' && Boolean(document.getElementById('sudoku-board'))"),
+    30000,
+    250
+  );
+  if (appPid() !== warmPid) fail('the warm shortcut restarted the app instead of reaching onNewIntent');
+  log('a warm shortcut reached onNewIntent and opened Sudoku');
+
+  await backToHub('after the warm shortcut');
+  await assertNoReplay('after a warm shortcut');
+
+  await startAndProveLaunch('fruit');
+  const fruit = await until(
+    'the cold Fruit Merge shortcut to route',
+    () =>
+      evaluate(
+        "(() => { if (document.body.dataset.screen !== 'fruit') return null;" +
+          " const view = document.getElementById('fruit');" +
+          ' if (!view || view.hidden) return null;' +
+          " const board = document.getElementById('fruit-canvas');" +
+          ' return board ? { width: Math.round(board.getBoundingClientRect().width) } : null; })()'
+      ),
+    30000,
+    250
+  );
+  log(`a cold shortcut opened Fruit Merge (${fruit.width}px board)`);
+  await backToHub('after the cold shortcut');
+  await assertNoReplay('after a cold start');
+
+  await startAndProveLaunch('gauntlet');
+  const gauntlet = await until(
+    'the cold Daily Gauntlet shortcut to start its run',
+    () =>
+      evaluate(
+        '(() => { const state = window.SixfoldGauntlet && window.SixfoldGauntlet.summary();' +
+          ' if (!state || !state.active) return null;' +
+          ' return document.body.dataset.screen === state.current' +
+          ' ? { game: state.current, index: state.index } : null; })()'
+      ),
+    30000,
+    250
+  );
+  log(`a cold shortcut started the Daily Gauntlet on ${gauntlet.game} (round ${gauntlet.index + 1}/6)`);
+  await backToHub('after the Daily Gauntlet shortcut');
+
   // The rotation is the last step. Returning to portrait is the same
   // configuration pass in reverse, but this emulator's SwiftShader render
   // thread segfaults on the return (a host crash, not an app crash), and the
   // reverse pass proves nothing the forward one did not. The cleanup below
   // still puts the device back, best effort, after the result is decided.
+  //
+  // Anchor the colour to what the page is painting now. The shortcut cold
+  // starts above reopen the app, and a fresh launch resolves the appearance
+  // it finds rather than necessarily keeping the light theme this run chose
+  // earlier; comparing against a colour captured before those launches would
+  // report the app's own restored appearance as a stale strip.
+  const rotationPage = (
+    await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--page').trim()")
+  ).toLowerCase();
+  if (!/^#[0-9a-f]{6}$/.test(rotationPage)) fail(`the page colour is not a hex value: ${rotationPage}`);
+  await awaitStrip(rotationPage, 'the strip before rotating');
   log('rotating the device');
   adb(['shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0']);
   await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '1'], 'rotating to landscape');
   await settleDevice('rotating to landscape');
   await until('the WebView to turn landscape', () => evaluate('innerWidth > innerHeight'), 30000, 250);
-  await awaitStrip(lightPage, 'the strip after rotating to landscape');
+  await awaitStrip(rotationPage, 'the strip after rotating to landscape');
   log('the strip stayed on the page colour through the rotation');
 
   if (currentSession) currentSession.socket.close();
@@ -1125,6 +1352,9 @@ try {
       await adbRetry(['shell', 'settings', 'put', 'system', 'user_rotation', '0'], 'restoring the portrait rotation', 3, false);
       if (nightSetting !== null) {
         await adbRetry(['shell', 'cmd', 'uimode', 'night', nightSetting], 'restoring the system night mode', 3, false);
+      }
+      if (fontScaleSetting !== null) {
+        await adbRetry(['shell', 'settings', 'put', 'system', 'font_scale', fontScaleSetting], 'restoring the system font scale', 3, false);
       }
     }
   } catch (error) {
