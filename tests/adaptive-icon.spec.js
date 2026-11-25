@@ -21,6 +21,7 @@ test('the launcher icon stays full-bleed and static', () => {
     expect(xml, name + ' keeps the full-bleed layer').not.toContain('<inset');
     expect(xml).toContain('@mipmap/ic_launcher_background');
     expect(xml).toContain('@mipmap/ic_launcher_foreground');
+    expect(xml).toContain('@mipmap/ic_launcher_monochrome');
   }
 
   const res = path.join(root, 'android/app/src/main/res');

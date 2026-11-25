@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press shortcuts. Each starts the one activity with an extra; the page
+     asks LaunchAction what opened it and routes there once. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="gauntlet"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_gauntlet"
+        android:shortcutLongLabel="@string/shortcut_gauntlet_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="io.github.moh23rd.sixfold"
+            android:targetClass="io.github.moh23rd.sixfold.MainActivity">
+            <extra android:name="sixfold.action" android:value="gauntlet" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="fruit"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_merge"
+        android:shortcutLongLabel="@string/shortcut_merge_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="io.github.moh23rd.sixfold"
+            android:targetClass="io.github.moh23rd.sixfold.MainActivity">
+            <extra android:name="sixfold.action" android:value="fruit" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="sudoku"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_sudoku"
+        android:shortcutLongLabel="@string/shortcut_sudoku_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="io.github.moh23rd.sixfold"
+            android:targetClass="io.github.moh23rd.sixfold.MainActivity">
+            <extra android:name="sixfold.action" android:value="sudoku" />
+        </intent>
+    </shortcut>
+</shortcuts>

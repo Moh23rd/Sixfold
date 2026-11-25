@@ -44,6 +44,7 @@ const CANONICAL = `<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@mipmap/ic_launcher_background" />
     <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>
 `;
 
@@ -78,7 +79,7 @@ for (const relative of XML) {
       current = CANONICAL;
     }
   }
-  for (const layer of ['background', 'foreground']) {
+  for (const layer of ['background', 'foreground', 'monochrome']) {
     if (!new RegExp('<' + layer + '\\b[^>]*@mipmap/ic_launcher_' + layer + '\\b').test(current)) {
       fail(relative + ' does not reference @mipmap/ic_launcher_' + layer);
     }
@@ -99,6 +100,7 @@ for (const [density, legacy, foreground] of DENSITIES) {
   for (const [name, size] of [
     ['ic_launcher_background.png', foreground],
     ['ic_launcher_foreground.png', foreground],
+    ['ic_launcher_monochrome.png', foreground],
     ['ic_launcher.png', legacy],
     ['ic_launcher_round.png', legacy]
   ]) {
@@ -135,4 +137,4 @@ if (!launchIcon || launchIcon[1].trim() !== '@drawable/splash_icon') {
 }
 
 if (failed) process.exit(1);
-console.log('adaptive icon guard: default adaptive XML is inset-free; default layers are present; no locale-qualified launcher resources');
+console.log('adaptive icon guard: default adaptive XML is inset-free; default layers (including monochrome) are present; no locale-qualified launcher resources');

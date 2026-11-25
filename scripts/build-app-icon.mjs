@@ -46,8 +46,8 @@ async function loadFont(page) {
   }, font);
 }
 
-async function render(page, { rounded, plate, ink, file }) {
-  const dataUrl = await page.evaluate(({ rounded, plate, ink, size, face, shadow, shadowInk }) => {
+async function render(page, { rounded, plate, ink, shadow = true, file }) {
+  const dataUrl = await page.evaluate(({ rounded, plate, ink, shadow, size, face, shadowColor, shadowInk }) => {
     const canvas = document.getElementById('icon');
     canvas.width = size;
     canvas.height = size;
@@ -119,20 +119,24 @@ async function render(page, { rounded, plate, ink, file }) {
       const scale = fontSize / 780;
 
       ctx.save();
-      ctx.fillStyle = shadow;
-      ctx.fillText('6', x + 16 * scale, y + 20 * scale);
+      if (shadow) {
+        ctx.fillStyle = shadowColor;
+        ctx.fillText('6', x + 16 * scale, y + 20 * scale);
+      }
 
       ctx.fillStyle = face;
-      ctx.shadowColor = shadowInk;
-      ctx.shadowBlur = 22 * scale;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 20 * scale;
+      if (shadow) {
+        ctx.shadowColor = shadowInk;
+        ctx.shadowBlur = 22 * scale;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 20 * scale;
+      }
       ctx.fillText('6', x, y);
       ctx.restore();
     }
 
     return canvas.toDataURL('image/png');
-  }, { rounded, plate, ink, size: SIZE, face: FACE, shadow: SHADOW, shadowInk: SHADOW_INK });
+  }, { rounded, plate, ink, shadow, size: SIZE, face: FACE, shadowColor: SHADOW, shadowInk: SHADOW_INK });
 
   fs.writeFileSync(path.join(ROOT, file), Buffer.from(dataUrl.split(',')[1], 'base64'));
   console.log('[app icon] ' + file);
@@ -144,10 +148,16 @@ try {
   await page.setContent(canvasPage(), { waitUntil: 'load' });
   await loadFont(page);
 
-  await render(page, { rounded: true, plate: true, ink: 570, file: 'assets/icon.png' });
-  await render(page, { rounded: false, plate: true, ink: 570, file: 'assets/icon-maskable.png' });
-  await render(page, { rounded: false, plate: true, ink: 0, file: 'assets/icon-adaptive-background.png' });
-  await render(page, { rounded: false, plate: false, ink: 470, file: 'assets/icon-adaptive-foreground.png' });
+  // The monochrome layer is the numeral alone: Android tints its alpha, so a
+  // two-tone shadow would merge into one blob on a themed launcher.
+  const monochromeOnly = process.argv.includes('--monochrome-only');
+  if (!monochromeOnly) {
+    await render(page, { rounded: true, plate: true, ink: 570, file: 'assets/icon.png' });
+    await render(page, { rounded: false, plate: true, ink: 570, file: 'assets/icon-maskable.png' });
+    await render(page, { rounded: false, plate: true, ink: 0, file: 'assets/icon-adaptive-background.png' });
+    await render(page, { rounded: false, plate: false, ink: 470, file: 'assets/icon-adaptive-foreground.png' });
+  }
+  await render(page, { rounded: false, plate: false, ink: 470, shadow: false, file: 'assets/icon-adaptive-monochrome.png' });
 } finally {
   await browser.close();
 }

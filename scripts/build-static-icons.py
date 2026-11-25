@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Build the static launcher mark from the checked-in icon sources.
 
-The launcher is deliberately not localized. The app-icon renderer writes four
+The launcher is deliberately not localized. The app-icon renderer writes five
 master layers: the rounded icon, a full-bleed maskable square, the adaptive
-background and the adaptive foreground. This script is the single source for
+background, the adaptive foreground and the themed monochrome foreground. This
+script is the single source for
 the web favicon/touch sizes, the boot-splash UI mark, the maskable PWA art, and
 every Android density, including the system launch icon.
 It writes a snapshot file as it goes, so a stale output or a changed master is
@@ -31,6 +32,7 @@ SOURCES = {
     "assets/icon-maskable.png": ROOT / "assets/icon-maskable.png",
     "assets/icon-adaptive-background.png": ROOT / "assets/icon-adaptive-background.png",
     "assets/icon-adaptive-foreground.png": ROOT / "assets/icon-adaptive-foreground.png",
+    "assets/icon-adaptive-monochrome.png": ROOT / "assets/icon-adaptive-monochrome.png",
 }
 SNAPSHOTS = ROOT / "assets/icon-snapshots.json"
 
@@ -72,6 +74,7 @@ ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@mipmap/ic_launcher_background" />
     <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>
 """
 BACKGROUND_XML = """<?xml version="1.0" encoding="utf-8"?>
@@ -146,6 +149,7 @@ def build() -> tuple[dict[str, bytes], list[dict]]:
         generated = {
             "ic_launcher_background.png": resize(layers["assets/icon-adaptive-background.png"], foreground_size),
             "ic_launcher_foreground.png": resize(layers["assets/icon-adaptive-foreground.png"], foreground_size),
+            "ic_launcher_monochrome.png": resize(layers["assets/icon-adaptive-monochrome.png"], foreground_size),
             "ic_launcher.png": legacy(layers["assets/icon.png"], legacy_size),
             "ic_launcher_round.png": round_icon(layers["assets/icon.png"], legacy_size),
         }

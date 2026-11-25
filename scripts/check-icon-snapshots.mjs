@@ -29,13 +29,14 @@ if (!fs.existsSync(SNAPSHOTS)) {
     problems.push('assets/icon.png does not match the snapshot source hash');
   }
 
-  // Four layers feed the launcher now: the rounded icon, the maskable square,
-  // the adaptive background and the adaptive foreground. Verify each one so a
-  // change to a layer cannot silently leave the generated sizes stale.
+  // Five layers feed the launcher now: the rounded icon, the maskable square,
+  // the adaptive background, the adaptive foreground and the themed monochrome
+  // foreground. Verify each one so a change to a layer cannot silently leave
+  // the generated sizes stale.
   const sources = snapshots.sources && typeof snapshots.sources === 'object' ? snapshots.sources : {};
   const sourcePaths = Object.keys(sources);
-  if (sourcePaths.length !== 4) {
-    problems.push('the snapshot must record all four icon sources');
+  if (sourcePaths.length !== 5) {
+    problems.push('the snapshot must record all five icon sources');
   }
   for (const relative of sourcePaths) {
     if (!relative.startsWith('assets/')) {

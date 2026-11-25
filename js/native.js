@@ -156,9 +156,49 @@
     try { ignoreRejection(app.addListener('backButton', back)); } catch (err) {}
   }
 
+  // Long-press shortcuts start the activity with an action instead of a URL.
+  // The page asks for it once, after its own routing has run, and the native
+  // side clears it so returning from Recents does not replay the shortcut.
+  function routeLaunch(action) {
+    if (!action) return;
+    if (action === 'gauntlet') {
+      var start = document.getElementById('daily-gauntlet-action');
+      if (start) start.click();
+      return;
+    }
+    // The first [data-game] match can be a daily-week dot or a profile chip;
+    // the hub's actual cover is the .home-game button, which is the one with
+    // the click handler that opens the game.
+    var card = document.querySelector('.home-game[data-game="' + action + '"]');
+    if (card) card.click();
+  }
+
+  var pageReady = false;
+
+  function consumeLaunchAction() {
+    // A cold start can deliver the action before DOMContentLoaded; consuming
+    // then would click a hub card that initRoute is about to replace with the
+    // hub. Wait for load, when the page's own routing has already run.
+    if (!pageReady) return;
+    var launch = plugins.LaunchAction;
+    if (!launch || !launch.consume) return;
+    var pending;
+    try { pending = launch.consume(); } catch (err) { return; }
+    if (!pending || typeof pending.then !== 'function') return;
+    pending.then(function (result) {
+      // Wait for the page's first frame before driving its own controls: the
+      // shortcut can arrive while the hub is still building its cards.
+      window.setTimeout(function () { routeLaunch(result && result.action); }, 0);
+    }).catch(function () {});
+  }
+
+  window.SixfoldLaunchAction = consumeLaunchAction;
+
   window.addEventListener('load', function () {
+    pageReady = true;
     hideSplash();
     syncBars();
+    consumeLaunchAction();
   });
   window.addEventListener('merge:appearance', syncBars);
   wireBack();
