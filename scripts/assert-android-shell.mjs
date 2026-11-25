@@ -34,6 +34,15 @@ const PACKAGE = 'io.github.moh23rd.sixfold';
 const ACTIVITY = `${PACKAGE}/.MainActivity`;
 const APK = 'android/app/build/outputs/apk/debug/app-debug.apk';
 const PORT = 9222;
+/* The full pass asserts the modern layout, so a launch-only row can only be
+   promoted once its WebView supports every stylesheet feature the shell uses
+   directly. `color-mix()` (Chromium 111) is the newest of those and is also
+   the one that fails quietly below that version (109 parses it, then computes
+   it to transparent), so it sets the floor. `dvh` (108), `aspect-ratio` (88),
+   `inset` (87), `:focus-visible` (86), flex `gap` (84) and
+   `min()`/`max()`/`clamp()` (79) all arrive earlier, and `backdrop-filter` and
+   `:has()` sit behind `@supports`. */
+const CSS_FLOOR = 111;
 
 function log(message) {
   console.log(`[emulator] ${message}`);
@@ -838,12 +847,12 @@ try {
   await startAndProveLaunch();
   const engineVersion = await reportWebViewEngine();
 
-  // API 24 and 26 system images ship WebViews older than the app's JavaScript
-  // or its structural CSS (inset, flex gap, min()/max()/clamp(), aspect-ratio).
-  // The install and first paint above are the meaningful checks on those
-  // levels; driving the page further would report a degraded layout or a
-  // syntax error as an app defect. The workflow sets this only for those two
-  // matrix entries.
+  // The API 24 and 26 system images ship a Chromium 69 WebView, older than the
+  // shell's structural CSS (inset, flex gap, min()/max()/clamp(), aspect-ratio,
+  // dvh, color-mix()). The install and first paint above are the meaningful
+  // checks on those levels; driving the page further would report the degraded
+  // layout as an app defect. The workflow sets this only for those two matrix
+  // entries.
   if (process.env.SMOKE_LAUNCH_ONLY === '1') {
     // The exception is only valid while the engine really is old. Say so when
     // the image starts shipping a newer WebView, instead of leaving a row
@@ -855,9 +864,10 @@ try {
         `::warning title=Launch-only engine unknown::API ${api} is launch-only,` +
           " but the smoke could not read the WebView's Chromium version, so the engine gap behind that exception is unconfirmed."
       );
-    } else if (Number.isFinite(major) && major > 60) {
+    } else if (Number.isFinite(major) && major >= CSS_FLOOR) {
       console.log(
-        `::warning title=Launch-only premise stale::API ${api} reports Chromium ${major}, not 60 or older;` +
+        `::warning title=Launch-only premise stale::API ${api} reports Chromium ${major},` +
+          ` which meets the stylesheets' Chromium ${CSS_FLOOR} floor;` +
           ' the full WebView assertions can be enabled for this row.'
       );
     }

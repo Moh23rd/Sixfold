@@ -51,8 +51,8 @@ system already removes the browser chrome.
 
 The APK does not bundle a browser engine: it renders in whatever Android System
 WebView the device has. Real phones update that component through the Play
-Store, but the API 26 CI image ships a Chromium 60-era WebView, so the shell has
-a compatibility floor that is audited in source. The emulator matrix runs API
+Store, but the API 24 and 26 CI images ship a Chromium 69 WebView, so the shell
+has a compatibility floor that is audited in source. The emulator matrix runs API
 24 and 26 as launch checks, and the full WebView assertions on 33, 34 and 36. The
 emulator job stays on `ubuntu-24.04`: on the 26.04 image the software-rendered
 guest is lost mid-assertion (API 33's qemu disappears, and the newer WebViews
@@ -91,8 +91,9 @@ WebView through the Play Store and are not limited to the emulator's engine.
 
 The smoke records the engine it actually got. After the first paint every API
 row prints the WebView's Chromium version from `navigator.userAgent`, so a
-launch-only row carries the evidence for its own exception; if such a row
-reports an engine newer than 60, the run emits a CI warning to turn the full
+launch-only row carries the evidence for its own exception; if such a row's
+engine meets the stylesheets' Chromium 111 floor (`color-mix()` is the newest
+feature the shell uses directly), the run emits a CI warning to turn the full
 assertions back on.
 
 The smoke warns when the host has less than 3 GiB available. A starved guest
@@ -405,11 +406,10 @@ by a green test shard.
 The emulator job now runs the installed APK through API **24, 26, 33, 34 and 36**,
 one matrix entry per level, on `ubuntu-24.04`. The guest uses the `swangle`
 renderer so `screencap` does not crash the host SwiftShader GLES thread. API 24
-proves the APK installs
-and the activity reaches its first paint; its WebView predates async/await, so
-it does not run the WebView assertions. API 26 does the same because its stock
-WebView predates the stylesheets' structural features (`inset`, flex gap,
-`min()`/`max()`/`clamp()`, `aspect-ratio`), so a full run there would assert a
+and 26 prove the APK installs and the activity reaches its first paint, but do
+not run the WebView assertions: both images ship a Chromium 69 WebView, and the
+stylesheets need newer ones (`inset`, flex gap, `min()`/`max()`/`clamp()`,
+`aspect-ratio`, `dvh`, `color-mix()`), so a full run there would assert a
 degraded layout. API 33, 34 and 36 run the full shell checks, including the About
 sheet's first-frame paint trace, the device-side check for the delayed-blur
 regression. Each job downloads the signed APK from the Android job instead of

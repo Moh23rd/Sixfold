@@ -294,11 +294,11 @@ jobs:
       max-parallel: 1
       matrix:
         include:
-          # API 24's system WebView predates async/await. API 26's stock WebView
-          # predates the shell's structural CSS (inset, flex gap, min()/max()/
-          # clamp(), aspect-ratio). Both prove the APK installs and the activity
-          # reaches its first paint; API 33, 34 and 36 run the full WebView
-          # assertions.
+          # The API 24 and 26 images ship a Chromium 69 WebView, below the
+          # stylesheets' floor (inset, flex gap, min()/max()/clamp(),
+          # aspect-ratio, dvh, color-mix()). Both prove the APK installs and the
+          # activity reaches its first paint; API 33, 34 and 36 run the full
+          # WebView assertions.
           - api: 24
             launch_only: true
           - api: 26

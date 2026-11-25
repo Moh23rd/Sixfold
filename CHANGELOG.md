@@ -116,14 +116,13 @@ whole set feel settled. No accounts, ads, tracking or server.
   system already removes the browser chrome.
 - **Accurate web save feedback**: a browser reports “Image downloaded.” after a
   result card is saved, while the Android shell keeps “Saved to your gallery.”
-- **API 26 stays launch-only**: the API 26 image's Chromium 60-era WebView
-  predates the shell's structural CSS (`inset`, flex `gap`, `min()`/`max()`/
-  `clamp()`, `aspect-ratio`), so a full assertion run there would exercise a
-  degraded layout. The entry still proves the APK installs and reaches first
-  paint; API 33 and 36 run the full WebView assertions. The emulator job is
-  pinned to `ubuntu-24.04`, because the 26.04 image loses its
-  software-rendered guest mid-assertion. API 24 stays launch-only because its
-  WebView predates async/await.
+- **API 24 and 26 stay launch-only**: both images ship a Chromium 69 WebView,
+  which predates the shell's structural CSS (`inset`, flex `gap`, `min()`/`max()`/
+  `clamp()`, `aspect-ratio`, `dvh`, `color-mix()`), so a full assertion run there
+  would exercise a degraded layout. Both entries still prove the APK installs
+  and reaches first paint; API 33 and 36 run the full WebView assertions. The
+  emulator job is pinned to `ubuntu-24.04`, because the 26.04 image loses its
+  software-rendered guest mid-assertion.
 - **Older WebView hardening**: screen changes set and remove the `inert`
   attribute directly instead of relying on `Element.toggleAttribute()`
   (Chromium 69), and the service-worker install pass collects a failed asset
@@ -132,8 +131,9 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **The WebView floor is measured and guarded**: the emulator smoke prints the
   Chromium version of the WebView that actually painted
   (`navigator.userAgent`) on every API row, and a launch-only row whose engine
-  is newer than 60 warns in CI, so the API 26 exception rests on the device's
-  engine rather than the image number. `npm run test:webview-floor` parses
+  meets the stylesheets' Chromium 111 floor (`color-mix()`) warns in CI, so the
+  launch-only exceptions rest on the device's engine rather than the image
+  number. `npm run test:webview-floor` parses
   every shell script and every root HTML page's inline blocks as ES2018,
   rejects async generators and `for await`, and fails on a curated list of
   post-Chromium-60 globals and methods.
