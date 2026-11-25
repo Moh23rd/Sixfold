@@ -618,7 +618,9 @@
       if (opener) opener.focus();
       sheetOpeners.delete(sheet);
       sheetCloseTimers.delete(sheet);
-    }, reduced ? 0 : 320);
+    // Reduced fades the sheet in place for 160ms; keep it mounted long enough
+    // for that fade before removing the dialog.
+    }, reduced ? 180 : 320);
     sheetCloseTimers.set(sheet, timer);
   }
 

@@ -1292,16 +1292,16 @@ html[data-motion="reduced"] .hidden-reveal.is-open .hidden-reveal-card { opacity
 }
 
 /* The cover starts its build as the launch layer lifts, so the finished cover
-   is never painted under the fading splash. These delays apply from app-ready
-   through home-ready; changing them at the hand-off retimed the running
-   animation and made the cover jump to near its end. */
-html.app-ready .six-1 { animation-delay: 60ms; }
-html.app-ready .six-2 { animation-delay: 110ms; }
-html.app-ready .six-3 { animation-delay: 160ms; }
-html.app-ready .six-4 { animation-delay: 210ms; }
-html.app-ready .six-5 { animation-delay: 260ms; }
-html.app-ready .six-6 { animation-delay: 310ms; }
-html.app-ready .home-six-caption { animation-delay: 340ms; }
+   is never painted under the fading splash. home-build is the launch-only
+   switch: its delays are set before the first frame and never retimed at the
+   home-ready hand-off, which used to make the cover jump to near its end. */
+html.home-build .six-1 { animation-delay: 60ms; }
+html.home-build .six-2 { animation-delay: 110ms; }
+html.home-build .six-3 { animation-delay: 160ms; }
+html.home-build .six-4 { animation-delay: 210ms; }
+html.home-build .six-5 { animation-delay: 260ms; }
+html.home-build .six-6 { animation-delay: 310ms; }
+html.home-build .home-six-caption { animation-delay: 340ms; }
 
 /* Keep short descriptions from stranding a single word on their last line. */
 .play-intro .sub,

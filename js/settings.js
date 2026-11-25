@@ -81,7 +81,12 @@
       if (attrs[name]) root.setAttribute('data-' + name, attrs[name]);
       else root.removeAttribute('data-' + name);
     });
-    root.setAttribute('data-motion', resolvedMotion());
+    const motion = resolvedMotion();
+    root.setAttribute('data-motion', motion);
+    // A launch that began in Reduced never armed the cover build. Dropping the
+    // launch-only class on a switch to Reduced also stops a later Full switch
+    // from replaying a build the player already saw.
+    if (motion === 'reduced') root.classList.remove('home-build');
     document.querySelectorAll('[data-motion-opt]').forEach(function (button) {
       button.setAttribute('aria-pressed', button.dataset.motionOpt === values.motion ? 'true' : 'false');
     });

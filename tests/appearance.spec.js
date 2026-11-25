@@ -321,6 +321,16 @@ test('choosing Full restores the desktop pointer tilt without a reload', async (
   await page.keyboard.press('Escape');
   await expect(page.locator('#sheet')).toBeHidden();
 
+  const cover = await page.evaluate(() => {
+    const piece = document.querySelector('.home-six-piece');
+    return {
+      animation: getComputedStyle(piece).animationName,
+      opacity: Number(getComputedStyle(piece).opacity)
+    };
+  });
+  expect(cover.animation, 'choosing Full does not replay the launch build').toBe('none');
+  expect(cover.opacity).toBeGreaterThan(0.5);
+
   const box = await page.locator('.home-hero-art').boundingBox();
   await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.25);
   await expect.poll(() => page.evaluate(() => (

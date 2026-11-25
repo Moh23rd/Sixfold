@@ -1578,9 +1578,14 @@
         var wait = Math.max(0, minimum - (Date.now() - started));
         window.setTimeout(function () {
           document.documentElement.classList.add('app-ready');
-          // Start the hub choreography only after the launch layer is gone.
-          // Otherwise the six-piece build finishes behind the splash and the
-          // cover looks static when it is finally revealed.
+          // Only a launch that starts in Full owns the six-piece build. A page
+          // that starts in Reduced must stay still when the player chooses Full
+          // later; otherwise the finished cover disappears and rebuilds.
+          if (document.documentElement.getAttribute('data-motion') === 'full') {
+            document.documentElement.classList.add('home-build');
+          }
+          // The cards and the rest of the hub choreography wait until the launch
+          // layer is gone; the cover is already building behind the fade.
           window.setTimeout(function () {
             if (splash.parentNode) splash.parentNode.removeChild(splash);
             document.documentElement.classList.add('home-ready');

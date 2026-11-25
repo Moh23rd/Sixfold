@@ -741,7 +741,9 @@
       } catch (err) {
         boardEl.focus();
       }
-    }, reduced ? 0 : 260);
+    // Reduced fades the result card in place for 160ms; hide it only after
+    // that fade has had time to run.
+    }, reduced ? 200 : 260);
   }
 
   function overlayFocusables() {

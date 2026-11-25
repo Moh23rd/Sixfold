@@ -1488,6 +1488,18 @@ html[data-motion="reduced"] .sheet-card {
   transition: opacity 160ms var(--ease-out);
 }
 
+/* The open sheet's scrim and the closing states carry more specific transition
+   rules. Reduced keeps those surfaces in place but still fades them; without
+   these the scrim cut in and the close hid the sheet before its fade ran. */
+html[data-motion="reduced"] .sheet.is-open .sheet-backdrop,
+html[data-motion="reduced"] .sheet.is-closing .sheet-backdrop,
+html[data-motion="reduced"] .sheet.is-open .sheet-card,
+html[data-motion="reduced"] .sheet.is-closing .sheet-card,
+html[data-motion="reduced"] .overlay.is-closing,
+html[data-motion="reduced"] .overlay.is-closing .overlay-card {
+  transition: opacity 160ms var(--ease-out);
+}
+
 html[data-motion="reduced"] .overlay-card,
 html[data-motion="reduced"] .overlay.is-closing .overlay-card,
 html[data-motion="reduced"] .sheet-card,

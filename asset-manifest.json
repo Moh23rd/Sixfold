@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 113885,
-      "sha256": "7be478b3d2e9e7c68587de65a70c50911cede76f517ab89907279e733380071a"
+      "bytes": 114220,
+      "sha256": "a1c6d302ecd7b9afd566d5eb2e8995cdfd6cb3b5b531492d7aab9a6ee9c5f9ef"
     },
     {
       "path": "licenses.html",
@@ -17,18 +17,18 @@
     },
     {
       "path": "css/styles.css",
-      "bytes": 49825,
-      "sha256": "e31abf1886ff0049759abbaa781ac46aa2a1d59ce92ff8e38e9df95d9eb230e6"
+      "bytes": 50460,
+      "sha256": "48c4b5d52c0914a2cb1be22e0348fa3f2a3e9a1a7ec2a28245e8549c3fd724ad"
     },
     {
       "path": "js/theme.js",
-      "bytes": 38120,
-      "sha256": "3e8cadbe8e400de36f9f9a2eac53944494b0ad41115c50f4269515d86222fa29"
+      "bytes": 38250,
+      "sha256": "4bba89dff315a68b3d4e68809558a83e114ed1c8c6b6b9af9087bf9e492e191f"
     },
     {
       "path": "js/game.js",
-      "bytes": 46255,
-      "sha256": "66251ba1fdb8b4e7032f526eee0f2f2403588767a1ced6e321d8d35cdf9ea4df"
+      "bytes": 46371,
+      "sha256": "5d7575aaecb35af8f4e332a8da8747e4f99be14787989fb6fdeee8fa369e9f2e"
     },
     {
       "path": "js/haptics.js",
@@ -62,13 +62,13 @@
     },
     {
       "path": "css/home.css",
-      "bytes": 33046,
-      "sha256": "db4122d40d57b43a8282f87ee265773a150495a416a9303b500143836a943efe"
+      "bytes": 32885,
+      "sha256": "72077e7bcbb7d4395816c74a8068cd52a44e948eb7bc4d42f22b2afb93233393"
     },
     {
       "path": "css/polish.css",
-      "bytes": 42714,
-      "sha256": "7a06ab008d7a6ee82dc767dcca715b07a807f3750daaf8020a69329ddaa25084"
+      "bytes": 42743,
+      "sha256": "7577e06824b93b47b25ee209c5c87a05506438e20d1357948bb602611269fdb7"
     },
     {
       "path": "css/sudoku.css",
@@ -87,8 +87,8 @@
     },
     {
       "path": "js/settings.js",
-      "bytes": 12013,
-      "sha256": "c5fa796086d936b745901f8a4efc7dcbc09bf1c777394a080c06af38e22e1826"
+      "bytes": 12320,
+      "sha256": "a91fc93d85ef4ed074fd548cf0b539020a0d5a83219486cf4a2a96e95ed130ca"
     },
     {
       "path": "js/sudoku.js",
