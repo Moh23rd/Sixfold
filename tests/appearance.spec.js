@@ -1,5 +1,18 @@
 const { test, expect } = require('@playwright/test');
 
+const SAVED_GAME_OVER = {
+  size: 4,
+  score: 128,
+  moves: 24,
+  won: false,
+  cells: [
+    [2, 0, 0], [4, 0, 1], [2, 0, 2], [4, 0, 3],
+    [4, 1, 0], [2, 1, 1], [4, 1, 2], [2, 1, 3],
+    [2, 2, 0], [4, 2, 1], [2, 2, 2], [4, 2, 3],
+    [4, 3, 0], [2, 3, 1], [4, 3, 2], [2, 3, 3]
+  ]
+};
+
 // A theme or palette switch cross-fades the surfaces that paint a theme colour.
 // A surface joins the fade by carrying [data-fade]; the scope matters as much
 // as the fade: the document head, the hidden screens and the components that
@@ -577,4 +590,62 @@ test('the about sheet paints its blur before the card enters', async ({ page }) 
   expect(paint.ms).toBeGreaterThanOrEqual(0);
   expect(paint.ms).toBeLessThan(1000);
   expect(paint.filter).toContain('blur(3px)');
+});
+
+// The result card is removed by its own timer, not by the CSS transition. In
+// Reduced both surfaces fade in place for 160ms, so a 200ms timer has to leave
+// them mounted long enough for both transitionend events.
+test('a Reduced result card finishes its fade before the overlay is removed', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript((saved) => {
+    localStorage.setItem('sixfold.welcome.v1', '1');
+    localStorage.setItem('sixfold.settings.v1', JSON.stringify({ motion: 'reduced' }));
+    localStorage.setItem('merge2048.save', JSON.stringify(saved));
+  }, SAVED_GAME_OVER);
+
+  await page.goto('/?perf=full');
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.locator('.home-game[data-game="merge"]').click();
+  await expect(page.locator('#overlay')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (
+    Number(getComputedStyle(document.getElementById('overlay')).opacity)
+  ))).toBe(1);
+
+  const result = await page.evaluate(() => new Promise((resolve) => {
+    const overlay = document.getElementById('overlay');
+    const card = overlay.querySelector('.overlay-card');
+    const fades = [];
+    const start = performance.now();
+    let hiddenAt = null;
+
+    overlay.addEventListener('transitionend', (event) => {
+      if (event.propertyName !== 'opacity') return;
+      if (event.target !== overlay && event.target !== card) return;
+      fades.push({
+        target: event.target === overlay ? 'overlay' : 'card',
+        at: performance.now() - start
+      });
+    });
+
+    document.getElementById('overlay-btn').click();
+    const tick = () => {
+      if (overlay.hidden) {
+        hiddenAt = performance.now() - start;
+        resolve({ hiddenAt, fades });
+        return;
+      }
+      if (performance.now() - start < 600) requestAnimationFrame(tick);
+      else resolve({ hiddenAt: null, fades });
+    };
+    requestAnimationFrame(tick);
+  }));
+
+  expect(result.hiddenAt, 'the overlay is removed').not.toBeNull();
+  expect(result.hiddenAt, 'the close timer leaves room for the 160ms fade').toBeGreaterThanOrEqual(170);
+  expect(result.fades.map((event) => event.target), 'both opacity transitions finish').toEqual(
+    expect.arrayContaining(['overlay', 'card'])
+  );
+  const lastFade = Math.max(...result.fades.map((event) => event.at));
+  expect(result.hiddenAt, 'the hide timer does not cut off a fade').toBeGreaterThan(lastFade);
 });
