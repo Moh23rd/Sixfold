@@ -58,6 +58,15 @@ adb_run() { timeout 20 "$ADB" "$@" || true; }
 [ -x "$AVDMANAGER" ] || die "avdmanager is missing (install cmdline-tools)"
 [ -f "$APK" ] || die "$APK has not been built (run npm run native:apk:debug)"
 
+# The guest and the assertions together want roughly 3 GiB. A host that is
+# already tight boots, then loses the first frame to Android's 5 s
+# input-dispatch timeout, which reads exactly like an app ANR. Warn before the
+# boot so a starved workstation is not mistaken for a product failure.
+available_mib=$(awk '/^MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo 2>/dev/null || true)
+if [ -n "$available_mib" ] && [ "$available_mib" -gt 0 ] && [ "$available_mib" -lt 3000 ]; then
+  note "warning: only ${available_mib} MiB RAM is available; the emulator can ANR on its first frame"
+fi
+
 if [ ! -x "$EMULATOR" ]; then
   note "installing the emulator"
   "$SDKMANAGER" "emulator" >/dev/null || die "could not install the emulator"

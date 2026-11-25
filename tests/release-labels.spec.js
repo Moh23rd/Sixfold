@@ -5,6 +5,23 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
+test('shipped pages only link GitHub surfaces this repository exposes', () => {
+  // Discussions is disabled on the repository, so /discussions is a 404. Keep
+  // this allowlist to the surfaces the project actually uses: the issue form
+  // and the release list. Enabling another surface means widening the list in
+  // the same change, so a dead link cannot ship again.
+  const allowed = new Set(['', '/issues', '/releases']);
+  for (const file of ['index.html', 'licenses.html']) {
+    const html = read(file);
+    const links = html.match(/https:\/\/github\.com\/Moh23rd\/Sixfold(\/[^"'\s<]*)?/g) || [];
+    for (const link of links) {
+      const path = link.replace('https://github.com/Moh23rd/Sixfold', '').split(/[?#]/)[0];
+      const surface = path.replace(/\/new\/choose$/, '').replace(/\/+$/, '');
+      expect(allowed.has(surface), file + ' links to ' + link).toBe(true);
+    }
+  }
+});
+
 test('release labels, cache epochs and the Android version agree', () => {
   const pkg = require('../package.json');
   const lock = require('../package-lock.json');

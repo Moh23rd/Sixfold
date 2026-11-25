@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 111968,
-      "sha256": "1ff0d9712c9c8b1970402f666aae5285ced178748a726bb1b8b25327706e9d02"
+      "bytes": 111822,
+      "sha256": "9a6eb4978941e07ac3dd077094eeea3aa1637e96e51ee5cdf278d6e0cead8a21"
     },
     {
       "path": "licenses.html",
