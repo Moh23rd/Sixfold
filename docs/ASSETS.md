@@ -92,11 +92,13 @@ mark: a cream six on a warm ink plate with a coral hard shadow. There is no
 per-language icon and no `applyIcon` browser path. The web and splash links use
 `?v=6.0.1`; change that suffix when the art changes.
 
-The mark is rendered by `scripts/build-app-icon.mjs` into four checked-in
+The mark is rendered by `scripts/build-app-icon.mjs` into five checked-in
 sources: `assets/icon.png` (rounded plate), `assets/icon-maskable.png`
 (full-bleed square), `assets/icon-adaptive-background.png` (the plate without
-the numeral) and `assets/icon-adaptive-foreground.png` (the numeral alone,
-sized for Android's safe circle). Rebuild the layers and every derived size:
+the numeral), `assets/icon-adaptive-foreground.png` (the numeral and its
+shadow, sized for Android's safe circle) and
+`assets/icon-adaptive-monochrome.png` (the numeral alone, for Android 13+
+themed icons). Rebuild the layers and every derived size:
 
 ```sh
 python3 -m pip install pillow
@@ -108,8 +110,8 @@ npm run assets:icons:check
 `assets:icon` needs the Playwright Chromium already used by the tests. It
 measures the glyph's ink, not the font's line box, so the numeral is centred by
 what the eye sees. `assets:icons` writes `icons/icon-{180,192,512,1024}.png`,
-the two maskable sizes, `icons/mark-456.webp` for the web boot splash, the
-Android legacy/round/foreground/background layers for all six densities, the
+the two maskable sizes, `icons/mark-456.webp` for the web boot splash, the Android legacy/round/foreground/background/monochrome layers for all six
+densities, the
 288dp `drawable-<density>/splash_icon.webp` launch icon, and
 `assets/icon-snapshots.json`. The Apple touch icon
 uses the square layer because iOS applies its own squircle; the regular browser

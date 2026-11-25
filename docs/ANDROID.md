@@ -14,6 +14,14 @@ Sixfold's Android target is a **direct-install APK for GitHub distribution**.
 - It declares no `INTERNET` permission, and Android Auto Backup is off: the
   shell and its saves stay on the device, and the app's own export/restore is
   the way to move them.
+- Links to other sites open in the system browser, so the shell keeps its own
+  page and the browser keeps an address bar; the About sheet's Releases link
+  is the manual update path.
+- Long-pressing the launcher icon offers Fruit Merge, Daily Gauntlet and
+  Sudoku. The shortcut passes an action extra, consumed once after the page
+  loads and routed through the hub's own cover buttons.
+- The WebView follows Android's font-size setting (85–130%) instead of
+  rendering every device at the same fixed text size.
 
 Capacitor renders the bundled interface in Android's **WebView**. This is an
 installable app, not a browser shortcut or PWA install, but it is not a
@@ -381,7 +389,9 @@ Do not commit the keystore, passwords or `keystore.properties`. Back up the
 keystore: losing it prevents updates to an installed app.
 
 Users install the APK directly and may need to allow installation from the
-source they downloaded it from.
+source they downloaded it from. The About sheet links to the Releases page and
+opens it in the system browser; there is no in-app downloader, so the installed
+app never needs `INTERNET`.
 
 ## Versioning and data
 
@@ -401,7 +411,7 @@ source they downloaded it from.
 
 ## Native icons and splash
 
-The checked-in launcher and splash resources were generated from the four
+The checked-in launcher and splash resources were generated from the five
 icon source layers in `assets/` using the existing app colours. The launcher
 has a reproducible web/Android pipeline and hash snapshots; see
 [docs/ASSETS.md](ASSETS.md). To regenerate them after changing the mark:
@@ -436,8 +446,10 @@ only the numeral needs a safe margin. The default
 `mipmap-anydpi-v26` adaptive XML references `@mipmap/ic_launcher_foreground`,
 and there are no locale-qualified mipmap directories. The guard rejects any
 such directory so the icon cannot start following the device language again.
-There is no monochrome layer yet, so Android 13's themed-icon setting keeps the
-colored static mark rather than tinting a separately designed silhouette.
+The same adaptive XML also references `@mipmap/ic_launcher_monochrome`, a layer
+rendered from the numeral alone. Android 13's themed-icon setting tints that
+silhouette with the wallpaper palette instead of falling back to the coloured
+mark; the guard verifies the layer and its density sizes like the other two.
 
 ## Troubleshooting
 
@@ -454,6 +466,7 @@ colored static mark rather than tinting a separately designed silhouette.
 ## Current workspace status
 
 The Android project was generated and synced with Capacitor 8.6.2, and the
-launcher/splash resources were generated. This machine has no JDK or Android SDK
-on PATH, so the debug APK has **not** been built here. The GitHub Actions
-Android job is the verification path until the local toolchain is installed.
+launcher/splash resources were generated. The debug APK has since been built
+and run locally on an API 36 emulator, including the full shell assertions;
+the local JDK and Android SDK live in `/tmp/jdk21` and `~/Android/Sdk`. GitHub
+Actions remains the release verification path.

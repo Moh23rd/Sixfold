@@ -238,6 +238,21 @@ whole set feel settled. No accounts, ads, tracking or server.
   the manifest no longer declares `INTERNET`. Android Auto Backup is off too,
   because it would upload the WebView's local saves to Google Drive; the in-app
   export/restore stays the only way data leaves the device.
+- **Links leave the shell**: an http(s) link outside the bundled pages opens in
+  the system browser instead of replacing the app with a chromeless WebView.
+  The About sheet's Releases link is the update path: it opens the release page
+  in the browser, where the APK is a manual download, so the installed app
+  still never needs network access.
+- **Long-press shortcuts**: the launcher offers Fruit Merge, Daily Gauntlet and
+  Sudoku. Each passes an action to the one activity, which the page consumes
+  once after load; returning from Recents does not replay it, and a shortcut
+  pressed while the app is open routes through `onNewIntent`.
+- **System text size is no longer ignored**: the WebView applies Android's font
+  scale (85–130%) as text zoom. At 1.3× the hub title measured 29.3px instead
+  of 22.5px, with no horizontal overflow.
+- **Themed icons on Android 13+**: the adaptive icon gains a monochrome layer
+  generated from the numeral alone, so a themed launcher tints a clean
+  silhouette instead of falling back to the coloured mark.
 - **Vibration reaches the motor again**: Android's WebView does not implement the
   Vibration API, so every haptic pattern in the app was a no-op — the toggle
   changed state and the phone stayed still. A small `Haptics` plugin now plays
