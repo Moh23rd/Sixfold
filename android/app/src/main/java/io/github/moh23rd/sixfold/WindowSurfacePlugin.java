@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.view.View;
 import android.view.Window;
 import android.webkit.WebView;
 
@@ -26,10 +27,11 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * last report is remembered so the next launch can pick the matching launch
  * theme: that is what keeps the splash out of the phone's day/night colour.
  *
- * A report repaints two surfaces. The window drawable is the strip around the
- * page; the WebView's own background is what shows wherever the page is
- * transparent, and MainActivity only seeds that once at launch, so it has to
- * follow the palette as well. Setting a background drawable already invalidates
+ * A report repaints three surfaces. The window drawable is the strip around
+ * the page; the activity content view is the strip exposed by its system-bar
+ * padding; and the WebView's own background is what shows wherever the page is
+ * transparent. MainActivity only seeds those at launch, so they have to follow
+ * the palette as well. Setting a background drawable already invalidates
  * the decor, so the report needs no explicit frame request. Nothing is retried
  * or polled, and the theme's day/night {@code app_surface} covers the very
  * first launch, before any colour has been reported.
@@ -81,6 +83,9 @@ public class WindowSurfacePlugin extends Plugin {
             public void run() {
                 final Window window = activity.getWindow();
                 window.setBackgroundDrawable(new ColorDrawable(color));
+                window.getDecorView().setBackgroundColor(color);
+                final View content = activity.findViewById(android.R.id.content);
+                if (content != null) content.setBackgroundColor(color);
                 final WebView webView = getBridge().getWebView();
                 if (webView != null) webView.setBackgroundColor(color);
                 call.resolve();

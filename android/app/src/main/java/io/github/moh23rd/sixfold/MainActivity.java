@@ -73,6 +73,14 @@ public class MainActivity extends BridgeActivity {
         final Bridge bridge = getBridge();
         final WebView webView = bridge.getWebView();
         webView.setBackgroundColor(webViewSurface);
+        getWindow().getDecorView().setBackgroundColor(webViewSurface);
+
+        // The activity content is padded for the system bars, so its padding is
+        // the strip visible around the page. Give that view the same surface as
+        // the page; without it the strip falls back to a flat platform colour
+        // (black on this API) instead of matching the app.
+        final View content = findViewById(android.R.id.content);
+        if (content != null) content.setBackgroundColor(webViewSurface);
 
         // Android's font-size setting is otherwise invisible to a WebView: it
         // renders CSS pixels at a fixed scale, so a reader who raised the system
