@@ -1,8 +1,11 @@
 # Sixfold 6.0 — Daily Gauntlet + Profile/Stats
 
-**Status:** Release candidate. The Daily Gauntlet, the local profile, the
-badges-page sections and their backup coverage are implemented in 6.0.0 and
-awaiting the final APK test before release. Gauntlet text sharing remains a
+**Status:** Release candidate verified. The Daily Gauntlet, the local profile,
+the badges-page sections and their backup coverage are implemented in 6.0.0.
+The debug APK passed the full API 36 shell assertions locally (Chromium
+133.0.6943), including first paint, palette and system-theme persistence,
+navigation, haptics and rotation. Remaining before publication: merge the
+release branch and deploy the web build. Gauntlet text sharing remains a
 follow-up; the 6.0 release note does not promise it.
 
 **Baseline:** `release/6.0` started at `5dbfd74`. The internal package/cache

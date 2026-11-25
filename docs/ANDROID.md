@@ -11,6 +11,9 @@ Sixfold's Android target is a **direct-install APK for GitHub distribution**.
   APK, so the game works offline.
 - Android's native splash screen, edge-to-edge system bars and back gesture are
   wired through Capacitor and `js/native.js`.
+- It declares no `INTERNET` permission, and Android Auto Backup is off: the
+  shell and its saves stay on the device, and the app's own export/restore is
+  the way to move them.
 
 Capacitor renders the bundled interface in Android's **WebView**. This is an
 installable app, not a browser shortcut or PWA install, but it is not a
@@ -76,7 +79,12 @@ The smoke records the engine it actually got. After the first paint every API
 row prints the WebView's Chromium version from `navigator.userAgent`, so a
 launch-only row carries the evidence for its own exception; if such a row
 reports an engine newer than 60, the run emits a CI warning to turn the full
-assertions back on. The API level says nothing about the WebView — a real API 26
+assertions back on.
+
+The smoke warns when the host has less than 3 GiB available. A starved guest
+still boots, but it can lose the first frame to Android's 5 s input-dispatch
+timeout, which otherwise reads exactly like an app ANR. Stop the Gradle daemon
+(`./gradlew --stop`) before a local emulator run on a small workstation. The API level says nothing about the WebView — a real API 26
 phone updates it through the Play Store — so the version in the log is what the
 decision rests on.
 

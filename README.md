@@ -5,7 +5,16 @@
 Six calm puzzle games in one installable, offline web app. No accounts, no ads,
 no tracking — and the interface runs in twelve languages.
 
-**[Play Sixfold →](https://moh23rd.github.io/Sixfold/)**
+## Get Sixfold
+
+- **Browser** — [moh23rd.github.io/Sixfold](https://moh23rd.github.io/Sixfold/).
+  Installable from the page, and offline after the first visit.
+- **Android** — a direct-install APK from the same tree, with Android's own
+  splash screen, edge-to-edge bars and back gesture. No store account, review
+  or cut. Build and signing notes are in [docs/ANDROID.md](docs/ANDROID.md).
+
+Both routes carry every game and the same local saves, daily challenge,
+streaks, badges and settings.
 
 ## Games
 

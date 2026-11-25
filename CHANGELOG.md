@@ -2,14 +2,55 @@
 
 > Public release label: **v6.0**.
 
-## v6.0 — 24 November 2026
+## v6.0 — 25 November 2026
 
 Internal build: **6.0.0**
 
 6.0 makes the collection the daily habit. An optional Daily Gauntlet runs all
 six daily challenges as one resumable round, a local profile on the badges page
-gives that progress a home, and the appearance and Android shell work makes the
+gives that progress a home, and the appearance and Android shell work make the
 whole set feel settled. No accounts, ads, tracking or server.
+
+### Two ways to play
+
+- **One tree, two deliveries**: the browser build is the release at
+  <https://moh23rd.github.io/Sixfold/>, installable from the page; the Android
+  APK is built from the same files with `npm run native:apk:debug` and by CI's
+  Android job. There is no store account, store review or store cut.
+- **The APK is a real app shell, not a shortcut**: it bundles the whole offline
+  shell, opens through Android's own splash screen, draws edge to edge and hands
+  the back gesture to the page. The browser stays a first-class target; every
+  feature keeps a browser path and native calls sit behind a platform check.
+- **The choice is per device**: a phone can install the PWA from the browser or
+  the APK from the built artifact, and the two share the same save format,
+  twelve languages and daily seeds. Neither route needs an account or a server.
+
+### Launch art
+
+- **The iOS launch tile renders from the 1024px mark**: every 1:1 launch image
+  draws the plate at 34vw, so the old 512px source was upscaled by up to 1.36×
+  on the 1536–2048px iPads. All 36 images now come from
+  `icons/icon-1024.png`, and the generator refuses a size whose tile would need
+  more than the icon.
+- **Android's splash icon is native-sized**: the system draws
+  `windowSplashScreenAnimatedIcon` at 288dp and masks the inner 192dp, so the
+  108dp adaptive layers were upscaled 2.67× on every screen. The launch theme
+  now points at a generated 288dp WebP per density (about 60 KiB in total), and
+  the adaptive-icon guard fails if the theme points back at the launcher icon.
+- **The launch-image epoch moves to 6.0.2**, so an updated tablet cannot keep
+  the soft tile from the previous build.
+- **The browser boot splash gets a 3× mark**: the launch cover drew the 192px
+  header icon at up to 152 CSS px, so 2× and 3× phones upscaled it. A dedicated
+  `icons/mark-456.webp` (about 8 KiB) is rendered from the same master; a
+  same-size PNG would have added about 120 KiB to the offline shell.
+
+### Install recovery
+
+- **Chrome's second-install bug gets a way out**: Chrome 154–156 treats every
+  app on a `github.io` origin as already installed, so a second install silently
+  does nothing. On those builds the hub now shows a one-time notice with an
+  Update Chrome action and a retry, and remembers a dismissal per device. The
+  fix shipped in Chrome 157, so newer browsers never see the notice.
 
 ### Fixes and polish
 
@@ -192,6 +233,11 @@ whole set feel settled. No accounts, ads, tracking or server.
 
 ### Android shell
 
+- **The APK asks Android for nothing it does not use**: every page, dictionary
+  and font is served from the bundle through Capacitor's local asset loader, so
+  the manifest no longer declares `INTERNET`. Android Auto Backup is off too,
+  because it would upload the WebView's local saves to Google Drive; the in-app
+  export/restore stays the only way data leaves the device.
 - **Vibration reaches the motor again**: Android's WebView does not implement the
   Vibration API, so every haptic pattern in the app was a no-op — the toggle
   changed state and the phone stayed still. A small `Haptics` plugin now plays
@@ -380,18 +426,31 @@ whole set feel settled. No accounts, ads, tracking or server.
   footprint report, compare it with the previous successful baseline, warn in
   the final 10% of the 2 MiB budget, and publish the drift table in the job
   summary. A focused test covers the near-ceiling warning and summary output.
-- **Cleaner release metadata**: the 6.0 development build and public 5.0 label
+- **Cleaner release metadata**: the 6.0 development build and public v6.0 label
   are now checked independently by the release-label test.
+- **The dead GitHub link is gone**: the About sheet pointed at the repository's
+  Discussions page, which this repository does not enable, so the link opened a
+  404. The issue form is now the single feedback link, and the release-label
+  test rejects any shipped link to a GitHub surface the project does not use.
 
 ### Release verification
 
-- `npm test`, `npm run test:i18n`, `npm run test:webview-floor`,
-  `npm run test:death-report`, `npm run audit:wordle`,
-  `npm run assets:manifest:check`, `npm run test:cache-budget` and
-  `npm run assets:icons:check` cover the release tree.
+- All **341 Playwright tests pass locally** (26.1 min, one worker): the
+  twelve-locale layouts and axe scans, every game, daily/gauntlet/profile,
+  share and save, cache footprint and budgets, and the shell guards.
+  `npm run test:i18n`, `npm run test:webview-floor`, `npm run test:death-report`,
+  `npm run audit:wordle`, `npm run assets:manifest:check`,
+  `npm run test:cache-budget` and `npm run assets:icons:check` also pass.
 - CI runs the Playwright matrix, the Android APK job and the API 24/26/33/36
-  emulator smoke from the release commit. The APK is built and signed in CI;
-  this workspace has no JDK or Android SDK.
+  emulator smoke from the release commit. The APK is built and signed in CI.
+- The debug APK was built locally against SDK 36 and run through the full shell
+  assertions on an API 36 emulator (Chromium 133.0.6943): first paint, the
+  welcome sheet, the About scrim fallback, palette and system-theme persistence,
+  Merge, haptics and rotation. The same run passes with no `INTERNET`
+  permission and Auto Backup disabled, so the bundled shell really is offline.
+  A first attempt on a host with under 1 GiB free lost the first frame to
+  Android's 5 s input-dispatch timeout; the smoke now warns when memory is that
+  tight, so a starved host is not read as an app ANR.
 - Gauntlet text sharing is deliberately not part of this release; the summary
   and profile are local, and the daily share remains the share path.
 
