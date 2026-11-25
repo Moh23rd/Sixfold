@@ -1323,6 +1323,16 @@ try {
   // open it at the largest system size and fail if any digit is taller or wider
   // than the cell that paints it. This is the check that would catch the cap
   // being raised past the point the board can hold.
+  //
+  // The board is built empty and the puzzle is generated on a 30ms timer, so
+  // waiting for 81 cells alone measured the empty grid — 0px type in a 0px
+  // cell, which passed without checking a digit. Wait for a real puzzle's
+  // clues in laid-out cells, and measure the digit's inked box rather than the
+  // cell's scroll size: a centred glyph overflows both sides but only the right
+  // half reaches scrollWidth, and a line box too tall for a centred grid item
+  // does not grow scrollHeight at all. Nor is the line box the digit: with
+  // line-height 1 it is a full em and ran 1.8px past the cell on the 640dp
+  // emulator while the painted digits sat well inside it.
   const openedSudoku = await evaluate(
     '(() => { const card = document.querySelector(\'.home-game[data-game="sudoku"]\');' +
       " if (!card) return 'the hub has no Sudoku card';" +
@@ -1331,39 +1341,57 @@ try {
   if (openedSudoku) fail(openedSudoku);
   // scrollWidth/scrollHeight round up; a 1px difference is the fractional
   // edge of a 25.9px cell, not a clipped digit. Anything larger fails.
+  // A valid Sudoku has at least 17 clues; every level here deals 24 or more.
+  // Fewer than that is a board that has not installed its puzzle yet.
+  const MIN_CLUES = 17;
   const sudoku = await until(
-    'the Sudoku board at system font scale 2.0',
+    'the Sudoku board at system font scale 2.0 with its puzzle laid out',
     () =>
       evaluate(
         "(() => { const cells = document.querySelectorAll('#sudoku-board .sudoku-cell');" +
           ' if (cells.length !== 81) return null;' +
-          ' const over = []; let worst = 0; let font = 0; let cell = 0;' +
-          ' cells.forEach(function (tile, index) {' +
-          '   const text = tile.textContent.trim();' +
-          '   if (!text) return;' +
-          '   const x = tile.scrollWidth - tile.clientWidth;' +
-          '   const y = tile.scrollHeight - tile.clientHeight;' +
-          '   font = Math.max(font, parseFloat(getComputedStyle(tile).fontSize));' +
+          ' const tiles = [].slice.call(cells);' +
+          ' const filled = tiles.filter(function (tile) { return /^[1-9]$/.test(tile.textContent.trim()); });' +
+          ` if (filled.length < ${MIN_CLUES}) return null;` +
+          ' const box = tiles[0].getBoundingClientRect();' +
+          ' if (box.width < 1 || box.height < 1) return null;' +
+          ' const ctx = document.createElement("canvas").getContext("2d");' +
+          ' if (!ctx) throw new Error("no 2d canvas to measure the digits");' +
+          ' const over = []; let worst = 0; let ink = 0; let font = 0; let cell = 0;' +
+          ' filled.forEach(function (tile) {' +
+          '   const style = getComputedStyle(tile);' +
+          '   const size = parseFloat(style.fontSize);' +
+          '   ctx.font = style.fontStyle + " " + style.fontWeight + " " + style.fontSize + " " + style.fontFamily;' +
+          '   const got = parseFloat((/(\\d+(?:\\.\\d+)?)px/.exec(ctx.font) || [0, "0"])[1]);' +
+          '   if (Math.abs(got - size) > 0.5) throw new Error("the canvas refused the cell font: " + ctx.font);' +
+          '   const measured = ctx.measureText(tile.textContent.trim());' +
+          '   const inkWide = measured.actualBoundingBoxLeft + measured.actualBoundingBoxRight;' +
+          '   const inkTall = measured.actualBoundingBoxAscent + measured.actualBoundingBoxDescent;' +
+          '   const wide = inkWide - tile.clientWidth;' +
+          '   const tall = inkTall - tile.clientHeight;' +
+          '   ink = Math.max(ink, inkTall);' +
+          '   font = Math.max(font, size);' +
           '   cell = Math.max(cell, tile.clientHeight);' +
-          '   worst = Math.max(worst, x, y);' +
-          '   if (x > 1 || y > 1) {' +
-          '     over.push({ index: index, text: text, by: Math.max(x, y) });' +
+          '   worst = Math.max(worst, wide, tall);' +
+          '   if (wide > 1 || tall > 1) {' +
+          "     over.push({ index: Number(tile.dataset.index), text: tile.textContent.trim(), by: Math.max(wide, tall) });" +
           '   }' +
           ' });' +
-          ' return { cells: cells.length, worst: worst, font: font, cell: cell, over: over.slice(0, 6) }; })()'
+          ' return { cells: tiles.length, filled: filled.length, worst: worst, ink: ink, font: font, cell: cell, over: over.slice(0, 6) }; })()'
       ),
     20000,
     250
   );
   if (sudoku.over.length) {
     fail(
-      'at system font scale 2.0 a Sudoku cell overflows its layout box:' +
+      'at system font scale 2.0 a Sudoku digit does not fit the cell that paints it:' +
         sudoku.over.map((cell) => ` cell ${cell.index} "${cell.text}" by ${cell.by}px`).join(',')
     );
   }
   log(
-    `no Sudoku cell overflows at system 2.0 (${sudoku.cells} cells,` +
-      ` ${sudoku.font.toFixed(2)}px type in a ${sudoku.cell}px cell, worst ${sudoku.worst}px)`
+    `no Sudoku digit overflows its cell at system 2.0 (${sudoku.filled} of ${sudoku.cells} cells inked,` +
+      ` ${sudoku.ink.toFixed(2)}px ink of a ${sudoku.font.toFixed(2)}px em in a ${sudoku.cell}px cell,` +
+      ` worst ${sudoku.worst.toFixed(2)}px)`
   );
   await backToHub('after the Sudoku cell check');
 
