@@ -297,13 +297,17 @@ jobs:
           # API 24's system WebView predates async/await. API 26's stock WebView
           # predates the shell's structural CSS (inset, flex gap, min()/max()/
           # clamp(), aspect-ratio). Both prove the APK installs and the activity
-          # reaches its first paint; API 33 and 36 run the full WebView
+          # reaches its first paint; API 33, 34 and 36 run the full WebView
           # assertions.
           - api: 24
             launch_only: true
           - api: 26
             launch_only: true
           - api: 33
+            launch_only: false
+          # 34 is the last release before the platform enforces edge-to-edge;
+          # the strip checks need the full pass to sample the window surface.
+          - api: 34
             launch_only: false
           - api: 36
             launch_only: false

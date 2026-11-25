@@ -53,7 +53,7 @@ The APK does not bundle a browser engine: it renders in whatever Android System
 WebView the device has. Real phones update that component through the Play
 Store, but the API 26 CI image ships a Chromium 60-era WebView, so the shell has
 a compatibility floor that is audited in source. The emulator matrix runs API
-24 and 26 as launch checks, and the full WebView assertions on 33 and 36. The
+24 and 26 as launch checks, and the full WebView assertions on 33, 34 and 36. The
 emulator job stays on `ubuntu-24.04`: on the 26.04 image the software-rendered
 guest is lost mid-assertion (API 33's qemu disappears, and the newer WebViews
 trip Android's 5s input-dispatch ANR while painting their first frame).
@@ -86,7 +86,7 @@ unresolved, so missing tints, spacing and sheet geometry are expected. A
 fallback sheet would have to restate the layout primitives across all seven
 stylesheets, which is a second design rather than a small patch, so the API 26
 emulator entry stays launch-only: it proves the APK installs and reaches first
-paint, while API 33 and 36 run the full assertions. Real API 26 devices update
+paint, while API 33, 34 and 36 run the full assertions. Real API 26 devices update
 WebView through the Play Store and are not limited to the emulator's engine.
 
 The smoke records the engine it actually got. After the first paint every API
@@ -225,7 +225,7 @@ unchanged: there the layer is the only launch screen, and it keeps its hold so
 the progress rail finishes before the lift.
 
 Edge-to-edge needs a device or emulator check, especially around display
-cutouts and gesture navigation. CI covers API 24, 26, 33 and 36; a release
+cutouts and gesture navigation. CI covers API 24, 26, 33, 34 and 36; a release
 visual check should still include a cutout device and gesture navigation.
 
 ### Android 14 and below
@@ -261,10 +261,9 @@ an opaque navigation bar would trade the edge-to-edge look for legible icons on
 two releases that cannot run the full shell anyway. Recorded rather than
 silently changed.
 
-API 33 is the highest pre-35 row that runs the full assertions, so Android 13
-executes the strip checks on the path Android 14 uses; API 34 itself is not in
-the matrix. Adding `- api: 34` next to 33 would execute it directly, at the cost
-of one more emulator job.
+API 34 is in the emulator matrix and runs the full assertions, so Android 14 —
+the last release before the platform enforces edge-to-edge — executes the strip
+checks directly. API 33 covers the same path one release earlier.
 
 ## Checked-in Android project
 
@@ -378,9 +377,9 @@ an equivalent command when npm is available.
 
 After it passes, check that the home screen is visible, the header clears the
 status bar/cutout, the bottom controls clear the gesture bar, and one game can
-be opened and played. CI installs and launches the APK on API 24, 26, 33 and
-36; API 24 and 26 prove the launch, and API 33 and 36 run the full WebView
-assertions. Use a physical cutout device when native layout or system-bar
+be opened and played. CI installs and launches the APK on API 24, 26, 33, 34
+and 36; API 24 and 26 prove the launch, and API 33, 34 and 36 run the full
+WebView assertions. Use a physical cutout device when native layout or system-bar
 behavior changes.
 
 ## CI verification
@@ -396,7 +395,7 @@ The required `check` job waits for both the Playwright matrix and the Android
 APK job, plus the native and emulator jobs, so an APK failure cannot be hidden
 by a green test shard.
 
-The emulator job now runs the installed APK through API **24, 26, 33 and 36**,
+The emulator job now runs the installed APK through API **24, 26, 33, 34 and 36**,
 one matrix entry per level, on `ubuntu-24.04`. The guest uses the `swangle`
 renderer so `screencap` does not crash the host SwiftShader GLES thread. API 24
 proves the APK installs
@@ -404,7 +403,7 @@ and the activity reaches its first paint; its WebView predates async/await, so
 it does not run the WebView assertions. API 26 does the same because its stock
 WebView predates the stylesheets' structural features (`inset`, flex gap,
 `min()`/`max()`/`clamp()`, `aspect-ratio`), so a full run there would assert a
-degraded layout. API 33 and 36 run the full shell checks, including the About
+degraded layout. API 33, 34 and 36 run the full shell checks, including the About
 sheet's first-frame paint trace, the device-side check for the delayed-blur
 regression. Each job downloads the signed APK from the Android job instead of
 rebuilding it, so all API levels install the same artifact.
