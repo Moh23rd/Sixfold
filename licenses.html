@@ -86,8 +86,8 @@
     .bar a:hover { text-decoration: underline; }
     /* The page follows the app's language, so a right-to-left reader gets a
        mirrored back arrow and an "open" arrow that points the same way. */
-    .bar .arrow { display: inline-block; }
-    html[dir="rtl"] .bar .arrow { transform: scaleX(-1); }
+    .arrow { display: inline-block; }
+    html[dir="rtl"] .arrow { transform: scaleX(-1); }
     .kicker {
       margin: 34px 0 4px;
       color: var(--muted);
@@ -267,7 +267,7 @@
       <p class="section-note">The canonical license text distributed with Sixfold.</p>
       <details class="license-text" id="gpl-text">
         <summary>Read the full GNU GPL v3.0 text</summary>
-        <pre dir="ltr">                    GNU GENERAL PUBLIC LICENSE
+        <pre dir="ltr" lang="en">                    GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. &lt;https://fsf.org/&gt;
