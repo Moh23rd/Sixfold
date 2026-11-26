@@ -71,6 +71,8 @@ jobs:
         run: npm run test:webview-floor
       - name: Check shell pin drift
         run: npm run test:shell-pins
+      - name: Prove the pin guard still fails on drift
+        run: npm run test:shell-pins:fixture
       - name: Test the launch death report
         run: npm run test:death-report
       - name: Test the Android attach retry

@@ -202,6 +202,7 @@ changed without a version bump.
 npm run assets:manifest        # regenerate after an intentional shell change
 npm run assets:manifest:check  # verify every recorded byte
 npm run test:shell-pins        # verify every ?v= pin postdates its file
+npm run test:shell-pins:fixture # prove the guard fails on drift, passes on a bump
 ```
 
 The manifest proves the bytes; the pins prove the cache epoch. A `?v=` pin is
