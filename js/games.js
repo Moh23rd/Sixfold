@@ -441,6 +441,11 @@
 
   function setCompactInert(card, screenEl, on) {
     if (on) {
+      // Revealing a card is two calls: the one that shows it and the observer
+      // that follows the hidden change. The second call would find its
+      // siblings already inert, record an empty set, and leave nothing to
+      // release when the card closes again, so keep the first set.
+      if (card._covered && card._covered.length) return;
       const covered = [];
       let node = card;
       while (node && node !== screenEl) {

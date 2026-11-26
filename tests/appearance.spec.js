@@ -842,3 +842,192 @@ test('back dismisses the hidden-game reveal', async ({ page }) => {
   await expect(page.locator('#hidden-reveal')).toBeHidden();
   await expect(page.locator('body')).toHaveAttribute('data-screen', 'wordle');
 });
+
+/* Water Sort, Tic Tac Toe, Minesweeper and Fruit Merge finish in a card that
+   covers the board. Each card is a dialog of its own, so one gesture never
+   dismisses it and leaves the game at the same time: back and Escape close the
+   card, the board behind it leaves the tab order, and the footer's Result chip
+   brings the finished round back once the card is closed. */
+
+// Level 1 is already sorted, which is the state the game saves when the last
+// pour clears it. Restoring it renders the win card the way a real win does.
+const SOLVED_WATER = {
+  level: 0,
+  tubes: [[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [], []],
+  moves: 9,
+  history: [],
+  solved: true
+};
+
+async function finishWaterSort(page) {
+  await page.addInitScript((saved) => {
+    localStorage.setItem('merge-games.water.state.v3', JSON.stringify(saved));
+  }, SOLVED_WATER);
+  await page.goto('/#water');
+  await page.waitForSelector('#water-tubes .water-tube');
+  await expect(page.locator('#water-win')).toBeVisible();
+  await page.evaluate(() => window.MergeAutoNext.cancel());
+}
+
+async function finishTicTacToe(page) {
+  await page.goto('/#ttt');
+  await page.waitForSelector('#ttt-board .ttt-cell');
+  await page.locator('[data-ttt-mode="two"]').click();
+  const cells = page.locator('#ttt-board .ttt-cell');
+  // X takes the top row while O answers in the middle column.
+  for (const index of [0, 1, 4, 2, 8]) {
+    await cells.nth(index).click();
+    await page.waitForTimeout(60);
+  }
+  await expect(page.locator('#ttt-result')).toBeVisible();
+  await page.evaluate(() => window.MergeAutoNext.cancel());
+}
+
+async function finishMinesweeper(page) {
+  await page.goto('/#mines');
+  await page.waitForSelector('#mines-board .mines-cell');
+  const cells = page.locator('#mines-board .mines-cell');
+  const total = await cells.count();
+  // Dig in order until the field ends itself: a mine is hit, or every safe
+  // square is open. Either way the round is over for real, not forced open.
+  for (let index = 0; index < total; index += 1) {
+    const over = await page.evaluate(() => !document.getElementById('mines-result').hidden);
+    if (over) break;
+    await cells.nth(index).click();
+  }
+  await expect(page.locator('#mines-result')).toBeVisible();
+  await page.evaluate(() => window.MergeAutoNext.cancel());
+}
+
+async function finishFruitMerge(page) {
+  // The query flag is the game's own seam for ending a run while a fruit is
+  // still moving; it is the only handle that ends Fruit Merge on demand.
+  await page.goto('/?fruit-loop-test=1#fruit');
+  await page.waitForSelector('#fruit-canvas');
+  await page.evaluate(() => window.__sixfoldFruitTest.finishWithMovingFruit());
+  await expect(page.locator('#fruit-over')).toBeVisible();
+  await page.evaluate(() => window.MergeAutoNext.cancel());
+}
+
+const COMPACT_RESULTS = [
+  {
+    name: 'Water Sort',
+    screen: 'water',
+    card: '#water-win',
+    board: '#water-tubes',
+    chip: '#water .play-result-chip',
+    primary: '#water-next',
+    open: finishWaterSort
+  },
+  {
+    name: 'Tic Tac Toe',
+    screen: 'ttt',
+    card: '#ttt-result',
+    board: '#ttt-board',
+    chip: '#ttt .play-result-chip',
+    primary: '#ttt-again',
+    open: finishTicTacToe
+  },
+  {
+    name: 'Minesweeper',
+    screen: 'mines',
+    card: '#mines-result',
+    board: '#mines-board',
+    chip: '#mines .play-result-chip',
+    primary: '#mines-again',
+    open: finishMinesweeper
+  },
+  {
+    name: 'Fruit Merge',
+    screen: 'fruit',
+    card: '#fruit-over',
+    board: '#fruit-canvas',
+    chip: '#fruit .play-result-chip',
+    primary: '#fruit-again',
+    open: finishFruitMerge
+  }
+];
+
+// The card is never the only inert layer: an ancestor of the board is what
+// keeps a tap or a tab from reaching it.
+function boardCovered(page, selector) {
+  return page.evaluate((sel) => {
+    const board = document.querySelector(sel);
+    return Boolean(board && board.closest('[inert]'));
+  }, selector);
+}
+
+for (const game of COMPACT_RESULTS) {
+  test('back and Escape dismiss the ' + game.name + ' result and the chip brings it back', async ({ page }) => {
+    await game.open(page);
+    const card = page.locator(game.card);
+    await expect(card).toHaveAttribute('role', 'dialog');
+    await expect(card).toHaveAttribute('aria-modal', 'true');
+    expect(await boardCovered(page, game.board), 'the board behind the card is inert').toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect(card, 'Escape closes the card').toBeHidden();
+    await expect(page.locator('body'), 'Escape does not leave the game').toHaveAttribute(
+      'data-screen',
+      game.screen
+    );
+    expect(await boardCovered(page, game.board), 'Escape hands the board back').toBe(false);
+
+    const chip = page.locator(game.chip);
+    await expect(chip, 'the footer keeps the finished round reachable').toBeVisible();
+    await expect(chip).toHaveText(/result/i);
+    await chip.click();
+    await expect(card, 'the chip reopens the round').toBeVisible();
+    await expect(page.locator(game.primary), 'the reopened card takes focus').toBeFocused();
+    expect(await boardCovered(page, game.board), 'the reopened card covers the board again').toBe(true);
+
+    expect(await pressBack(page), 'the reopened card answers back').toBe(true);
+    await expect(card).toBeHidden();
+    await expect(page.locator('body'), 'back does not leave the game').toHaveAttribute(
+      'data-screen',
+      game.screen
+    );
+    expect(await boardCovered(page, game.board), 'back hands the board back').toBe(false);
+    await expect(chip, 'focus returns to the chip that reopened the card').toBeFocused();
+  });
+}
+
+// A finished round starts the next one after a short pause. The clock is a
+// clock, not a timer: opening a sheet over the result freezes the remaining
+// time, and closing it lets the same amount of time run out.
+test('the auto-next clock freezes behind a sheet and resumes after it', async ({ page }) => {
+  await page.addInitScript((saved) => {
+    localStorage.setItem('merge-games.water.state.v3', JSON.stringify(saved));
+  }, SOLVED_WATER);
+  await page.goto('/#water');
+  await page.waitForSelector('#water-tubes .water-tube');
+  await expect(page.locator('#water-win')).toBeVisible();
+  await expect(page.locator('#water-next'), 'the pause is running').toHaveClass(/is-counting/);
+
+  const left = () => page.evaluate(() => Number(
+    getComputedStyle(document.getElementById('water-next')).getPropertyValue('--auto-next-left')
+  ));
+
+  // The result card's scrim owns the pointer while it is up, so the sheet is
+  // raised through the settings button's own click rather than a tap at a point
+  // the scrim would swallow.
+  await page.evaluate(() => document.getElementById('water-settings-open').click());
+  await expect(page.locator('#water-settings')).toBeVisible();
+  const frozen = await left();
+  expect(frozen, 'the pause still has time left when the sheet opens').toBeGreaterThan(0);
+
+  await page.waitForTimeout(900);
+  expect(await left(), 'the clock does not run behind the sheet').toBe(frozen);
+  await expect(page.locator('#water-level'), 'no new round starts behind the sheet').toHaveText('1');
+  await expect(page.locator('#water-win')).toBeVisible();
+
+  await page.locator('#water-settings .sheet-done').click();
+  await expect(page.locator('#water-settings')).toBeHidden();
+  // The remaining time, not a fresh three seconds, is what runs out next.
+  await expect(page.locator('#water-level'), 'the next level starts once the sheet is gone').toHaveText(
+    '2',
+    { timeout: 6000 }
+  );
+  await expect(page.locator('#water-win')).toBeHidden();
+  await expect(page.locator('#water-next')).not.toHaveClass(/is-counting/);
+});

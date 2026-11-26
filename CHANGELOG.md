@@ -17,6 +17,10 @@ and the internal build **6.0.0** until the next release cut.
   pointer while it is up, and the footer keeps a quiet **Result** chip that
   reopens the round. The Sudoku solved card covers the number pad and the tool
   row too, not only the board.
+- **A reopened result card gives the board back**: revealing the card ran the
+  inert pass twice, and the second pass recorded nothing to release, so a round
+  reopened from the **Result** chip left its board and footer inert after it was
+  closed again. The pass now keeps the set the first call collected.
 - **The pause between rounds is a clock**: the three-second auto-next spent its
   time while the app was backgrounded and re-armed every time a finished game
   was re-entered, so a result could vanish before it was read. The countdown now
