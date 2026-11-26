@@ -366,6 +366,43 @@
       };
     })();
   </script>
+  <script>
+    (function () {
+      // The native shell must never paint the page's own launch composition: the
+      // OS splash is the launch screen and this layer is only its same-colour
+      // hand-off. The class is set here, before the body is parsed, because
+      // js/native.js loads at the end of the body — on a cold start the mark,
+      // wordmark and rail were painted for a frame first, which is the old
+      // launch screen flashing before the hand-off.
+      var root = document.documentElement;
+      var shell = false;
+      try {
+        shell = Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+        // The shell serves the bundled app from https://localhost; a browser tab
+        // is a real host (or a dev server over http on 127.0.0.1).
+        if (!shell && location.protocol === 'https:' && location.hostname === 'localhost') shell = true;
+      } catch (err) {}
+      if (!shell) {
+        // A browser tab never replays the launch from this flag, so a return
+        // marked there must not survive into a later launch of the shell.
+        try { sessionStorage.removeItem('sixfold.returning'); } catch (err) {}
+        return;
+      }
+      root.classList.add('is-native');
+
+      // Returning from the legal page reloads this document, because a WebView
+      // keeps no back-forward cache. That is a return, not a launch: skip the
+      // launch layer and the cover's build so the app comes straight back.
+      var returning = false;
+      try {
+        returning = sessionStorage.getItem('sixfold.returning') === '1';
+        if (returning) sessionStorage.removeItem('sixfold.returning');
+      } catch (err) {}
+      if (!returning) return;
+      root.classList.add('app-ready', 'is-returning');
+      window.__sixfoldReturning = true;
+    })();
+  </script>
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.1" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/styles.css?v=5.4.3" />
   <link rel="stylesheet" href="css/games.css?v=5.3.8" />
@@ -1358,6 +1395,7 @@
         <p class="sheet-note" data-fade>Release notes live in <a class="contact-link" href="https://github.com/Moh23rd/Sixfold/releases" target="_blank" rel="noopener" data-fade>GitHub Releases</a>; Android builds are attached there when published.</p>
         <p class="sheet-note" data-fade><a class="contact-link" href="licenses.html" data-fade>Licenses &amp; source</a></p>
         <p class="sheet-note version-note" data-fade>Version 6.0</p>
+        <p class="sheet-note version-note" id="about-build" data-fade hidden></p>
       </section>
     </div>
   </div>
@@ -1515,11 +1553,11 @@
   <script src="js/overscroll.js?v=6.0.3"></script>
   <script src="js/celebrate.js?v=5.0.1"></script>
   <script src="js/sharecard.js?v=5.3.3"></script>
-  <script src="js/theme.js?v=6.0.16"></script>
+  <script src="js/theme.js?v=6.0.17"></script>
   <script src="js/game.js?v=5.3.4"></script>
   <script src="js/install.js?v=5.0.1"></script>
-  <script src="js/sudoku.js?v=5.3.3"></script>
-  <script src="js/games.js?v=5.4.5"></script>
+  <script src="js/sudoku.js?v=5.3.4"></script>
+  <script src="js/games.js?v=5.4.6"></script>
   <script src="js/daily.js?v=5.4.6"></script>
   <script src="js/profile.js?v=1.0.0"></script>
   <script src="js/badges.js?v=1.1.1"></script>
@@ -1537,8 +1575,8 @@
     })();
   </script>
   <script src="i18n/i18n.js?v=6.0.3"></script>
-  <script src="js/native.js?v=5.1.7"></script>
-  <script src="js/wordle-loader.js?v=5.3.2-wordle"></script>
+  <script src="js/native.js?v=5.2.0"></script>
+  <script src="js/wordle-loader.js?v=5.3.3-wordle"></script>
   <script>
     (function () {
       var splash = document.getElementById('boot-splash');
@@ -1561,6 +1599,16 @@
       // Inside the native shell the OS splash is the launch screen. This layer
       // has no composition of its own to hold for, only a same-colour
       // hand-off, and its fade is whatever the stylesheet gives it.
+      var returning = window.__sixfoldReturning === true;
+      // A return from the legal page is not a launch: no hand-off to wait for,
+      // no hold and no six-piece build. The hub is already the screen the reader
+      // left, so it lands at once instead of replaying the launch.
+      if (returning) {
+        gone = true;
+        if (splash.parentNode) splash.parentNode.removeChild(splash);
+        document.documentElement.classList.add('app-ready', 'home-ready');
+        return;
+      }
       var nativeGone = !native;
       if (native) {
         minimum = 0;

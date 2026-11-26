@@ -154,12 +154,21 @@
     return event.defaultPrevented;
   }
 
+  // Leaving the legal page reloads the app document, because a WebView keeps no
+  // back-forward cache. The flag tells the page that this load is a return, not
+  // a launch, so it skips its launch layer and the cover's build instead of
+  // replaying the splash on the way back to the hub.
+  function markReturning() {
+    try { sessionStorage.setItem('sixfold.returning', '1'); } catch (err) {}
+  }
+
   function back() {
     if (pageHandledBack()) return;
     // The legal page is a document of its own, so back returns to the hub
     // through history instead of leaving the app from a page the reader only
     // opened to read.
     if (document.documentElement.hasAttribute('data-page')) {
+      markReturning();
       if (window.history.length > 1) history.back();
       else location.replace('./');
       return;
@@ -181,6 +190,19 @@
     try { ignoreRejection(app.addListener('backButton', back)); } catch (err) {}
   }
 
+  // The legal page's own "Back to Sixfold" link leaves by navigation, not by the
+  // gesture, so it has to mark the return as well or that path still replays the
+  // launch.
+  function wireLegalLink() {
+    if (!document.documentElement.hasAttribute('data-page')) return;
+    document.addEventListener('click', function (event) {
+      var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+      if (!link) return;
+      var href = link.getAttribute('href');
+      if (href === './' || href === 'index.html' || href === '/index.html') markReturning();
+    });
+  }
+
   // Long-press shortcuts start the activity with an action instead of a URL.
   // The page asks for it once, after its own routing has run, and the native
   // side clears it so returning from Recents does not replay the shortcut.
@@ -196,6 +218,23 @@
     // the click handler that opens the game.
     var card = document.querySelector('.home-game[data-game="' + action + '"]');
     if (card) card.click();
+  }
+
+  // The About sheet's version line is the web release label, which every 6.0
+  // build shares. Inside the APK the installed package knows its own versionName
+  // and versionCode, so a bug report can name the build it came from.
+  function showBuildIdentity() {
+    var app = plugins.App;
+    var el = document.getElementById('about-build');
+    if (!app || !app.getInfo || !el) return;
+    var info;
+    try { info = app.getInfo(); } catch (err) { return; }
+    if (!info || typeof info.then !== 'function') return;
+    info.then(function (data) {
+      if (!data || !data.version) return;
+      el.textContent = 'Build ' + data.version + (data.build ? ' · ' + data.build : '');
+      el.hidden = false;
+    }).catch(function () {});
   }
 
   var pageReady = false;
@@ -224,7 +263,9 @@
     hideSplash();
     syncBars();
     consumeLaunchAction();
+    showBuildIdentity();
   });
   window.addEventListener('merge:appearance', syncBars);
   wireBack();
+  wireLegalLink();
 })();

@@ -12,15 +12,27 @@
     // (and always animated) while the app it belongs to was dark or calm.
     (function () {
       var root = document.documentElement;
-      var pref = null;
-      try { pref = localStorage.getItem('merge2048.theme'); } catch (err) {}
-      var dark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      var theme = pref === 'dark' || ((!pref || pref === 'auto') && dark) ? 'dark' : 'light';
-      root.setAttribute('data-theme', theme);
-      var scheme = document.querySelector('meta[name="color-scheme"]');
-      if (scheme) scheme.setAttribute('content', theme);
-      var chrome = document.querySelector('meta[name="theme-color"]');
-      if (chrome) chrome.setAttribute('content', theme === 'dark' ? '#1a1918' : '#f6f1e8');
+
+      // Applied now and again whenever the device switches scheme. The app
+      // follows the system while it is set to System, so a reader who leaves
+      // this page open should not keep the appearance they arrived with.
+      function applyTheme() {
+        var pref = null;
+        try { pref = localStorage.getItem('merge2048.theme'); } catch (err) {}
+        var dark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var theme = pref === 'dark' || ((!pref || pref === 'auto') && dark) ? 'dark' : 'light';
+        root.setAttribute('data-theme', theme);
+        var scheme = document.querySelector('meta[name="color-scheme"]');
+        if (scheme) scheme.setAttribute('content', theme);
+        // A tinted palette paints its own page colour below and owns the chrome
+        // colour from then on; the untinted page takes the theme's pair here.
+        if (!window.__sixfoldLegalTint) {
+          var chrome = document.querySelector('meta[name="theme-color"]');
+          if (chrome) chrome.setAttribute('content', theme === 'dark' ? '#1a1918' : '#f6f1e8');
+        }
+      }
+
+      applyTheme();
 
       // Motion is a page setting in the app (System, Full or Reduced), so the
       // device query alone is not the answer. Full stays the default, matching
@@ -32,6 +44,18 @@
       } catch (err) {}
       var reduce = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
       root.setAttribute('data-motion', motion === 'reduced' || (motion !== 'full' && reduce) ? 'reduced' : 'full');
+
+      var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      if (darkQuery) {
+        var onScheme = function () {
+          applyTheme();
+          // The tint was computed from the previous base colours, so recompute
+          // it from the new ones instead of keeping a light tint on a dark page.
+          if (window.__sixfoldLegalTint) window.__sixfoldLegalTint();
+        };
+        if (darkQuery.addEventListener) darkQuery.addEventListener('change', onScheme);
+        else if (darkQuery.addListener) darkQuery.addListener(onScheme);
+      }
     })();
   </script>
   <title>Licenses — Sixfold</title>
@@ -292,17 +316,29 @@
         return toHex(hsl[0] + shift, hsl[1], hsl[2]);
       }
 
-      var computed = getComputedStyle(document.documentElement);
-      ['--page', '--panel'].forEach(function (name) {
-        var value = computed.getPropertyValue(name).trim();
-        if (!/^#[0-9a-f]{6}$/i.test(value)) return;
-        var next = tint(value);
-        document.documentElement.style.setProperty(name, next);
-        // The status bar follows the page, as it does in the app.
-        if (name !== '--page') return;
-        var chrome = document.querySelector('meta[name="theme-color"]');
-        if (chrome) chrome.setAttribute('content', next);
-      });
+      var root = document.documentElement;
+
+      function applyPalette() {
+        // Inline values are read back as the base on a second pass, so drop them
+        // first: the tint has to start from the stylesheet's own pair.
+        root.style.removeProperty('--page');
+        root.style.removeProperty('--panel');
+        var computed = getComputedStyle(root);
+        ['--page', '--panel'].forEach(function (name) {
+          var value = computed.getPropertyValue(name).trim();
+          if (!/^#[0-9a-f]{6}$/i.test(value)) return;
+          var next = tint(value);
+          root.style.setProperty(name, next);
+          // The status bar follows the page, as it does in the app.
+          if (name !== '--page') return;
+          var chrome = document.querySelector('meta[name="theme-color"]');
+          if (chrome) chrome.setAttribute('content', next);
+        });
+      }
+
+      applyPalette();
+      // The appearance script calls this again when the system scheme flips.
+      window.__sixfoldLegalTint = applyPalette;
     })();
   </script>
 </head>
@@ -1059,6 +1095,6 @@ Public License instead of this License.  But first, please read
   </script>
   <!-- Back has to return to the hub from here, not close the app, and the bar
        icons have to follow this page's appearance. Both are the shell's job. -->
-  <script src="js/native.js?v=5.1.7"></script>
+  <script src="js/native.js?v=5.2.0"></script>
 </body>
 </html>

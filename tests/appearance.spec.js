@@ -763,3 +763,82 @@ test('back dismisses the Wordle result and stays in Wordle', async ({ page }) =>
   await expect(page.locator('#wordle-result')).toBeHidden();
   await expect(page.locator('body')).toHaveAttribute('data-screen', 'wordle');
 });
+
+// A sheet adds one history entry while it is up, so the browser's own back
+// closes the panel instead of leaving the screen it was opened from.
+test('browser back closes the open sheet', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sixfold.welcome.v1', '1'));
+  await page.goto('/?perf=full');
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.locator('#appearance').click();
+  await expect(page.locator('#sheet')).toBeVisible();
+  expect(await page.evaluate(() => history.length), 'the sheet added a history entry').toBeGreaterThan(1);
+
+  await page.evaluate(() => history.back());
+  await expect(page.locator('#sheet')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'hub');
+  expect(new URL(page.url()).pathname, 'the page did not navigate').toBe('/');
+});
+
+// Escape belongs to any sheet, including the per-game settings panels.
+test('Escape closes a game settings sheet', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sixfold.welcome.v1', '1'));
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  await page.locator('#sudoku-settings-open').click();
+  await expect(page.locator('#sudoku-settings')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#sudoku-settings')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'sudoku');
+});
+
+// The solved card is a dialog, not a decoration: the board and the screen's own
+// controls are inert while it is up, and dismissing it hands them back.
+test('a solved card keeps the board behind it inert', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sixfold.welcome.v1', '1'));
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  const solved = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('sixfold.sudoku.state.v1'));
+    state.grid = state.solution.slice();
+    state.solved = true;
+    state.hints = 1;
+    state.elapsed = 252;
+    return state;
+  });
+  await page.addInitScript((state) => {
+    localStorage.setItem('sixfold.sudoku.state.v1', JSON.stringify(state));
+  }, solved);
+  await page.reload();
+  await page.waitForFunction(() => !document.getElementById('sudoku-result').hidden);
+
+  expect(await page.evaluate(() => document.getElementById('sudoku-board').inert), 'board inert').toBe(true);
+  expect(await page.evaluate(() => document.querySelector('#sudoku .play-head').inert), 'header inert').toBe(true);
+
+  expect(await pressBack(page), 'the card answers back').toBe(true);
+  await expect(page.locator('#sudoku-result')).toBeHidden();
+  expect(await page.evaluate(() => document.getElementById('sudoku-board').inert), 'board released').toBe(false);
+});
+
+// The hidden game's reveal is a layer of its own, and back is the same exit as
+// its scrim: skip the intro and open the game rather than leaving the app.
+test('back dismisses the hidden-game reveal', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sixfold.welcome.v1', '1'));
+  await page.goto('/');
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  for (let i = 0; i < 6; i += 1) {
+    await page.evaluate((index) => {
+      const piece = document.querySelectorAll('.home-six-piece')[index];
+      if (piece) piece.click();
+    }, i);
+    await page.waitForTimeout(50);
+  }
+  await expect(page.locator('#hidden-reveal')).toBeVisible();
+
+  expect(await pressBack(page), 'the reveal answers back').toBe(true);
+  await expect(page.locator('#hidden-reveal')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'wordle');
+});

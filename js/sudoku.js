@@ -956,11 +956,31 @@
     }
   }
 
+  // The solved card is a dialog: the board and the screen's own controls leave
+  // the tab order and the pointer while it is up, and the keydown below keeps
+  // Tab inside the card.
+  let resultInert = [];
+  function setResultModal(on) {
+    if (on) {
+      [boardEl, document.querySelector('#sudoku .play-head'), document.querySelector('#sudoku .play-foot')]
+        .forEach(function (el) {
+          if (el && 'inert' in el && !el.inert) {
+            el.inert = true;
+            resultInert.push(el);
+          }
+        });
+      return;
+    }
+    resultInert.forEach(function (el) { el.inert = false; });
+    resultInert = [];
+  }
+
   function showResult() {
     if (!resultEl) return;
     const best = bestFor(difficulty);
     resultEl.hidden = false;
     resultEl.dataset.state = 'won';
+    setResultModal(true);
     if (resultTitle) resultTitle.textContent = 'Solved.';
     if (resultCopy) {
       const daily = dailyKey ? 'Daily Sixfold · ' + prettyDaily(dailyKey) + '. ' : '';
@@ -981,6 +1001,7 @@
       resultEl.hidden = true;
       resultEl.removeAttribute('data-state');
     }
+    setResultModal(false);
   }
 
   // The solved card is modal; back dismisses it rather than leaving the game.
@@ -991,6 +1012,32 @@
     event.preventDefault();
     hideResult();
     try { boardEl.focus({ preventScroll: true }); } catch (err) {}
+  });
+
+  // Escape and Tab belong to the card while it is open, so a keyboard reader
+  // cannot leave the dialog by accident or tab into the board behind it.
+  document.addEventListener('keydown', function (event) {
+    if (!resultEl || resultEl.hidden || document.body.dataset.screen !== 'sudoku') return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      hideResult();
+      try { boardEl.focus({ preventScroll: true }); } catch (err) {}
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusables = Array.prototype.slice.call(resultEl.querySelectorAll('button, [href]'))
+      .filter(function (el) { return !el.hidden && !el.disabled && el.getClientRects().length > 0; });
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || !resultEl.contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || !resultEl.contains(active))) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 
   function renderLevelSheet() {

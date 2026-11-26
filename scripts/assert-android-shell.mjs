@@ -986,22 +986,40 @@ try {
      while the hub still runs under them. A padded content view is exactly the
      flat band above and below the page that read as blank borders, and a page
      that never received the heights would tuck its header under the clock. */
-  const geometry = await until(
+  /* The display size is measured once, not on every poll. `wm size` and
+     `wm density` are two adb round trips, and each was allowed 20s of its own:
+     on a loaded runner one slow shell call could eat the geometry window while
+     the page was fine — the API 36 row timed out that way on run #201 and passed
+     on the rerun with the same APK. The wait below is about the page reporting,
+     so it polls only the page and names what it saw when it gives up. */
+  const metrics = await until('the display size', async () => screenCssSize(), 20000, 500);
+  let lastGeometry = null;
+  const geometryWait = await waitFor(
     'the page to report its edge-to-edge geometry',
     async () => {
-      const metrics = screenCssSize();
-      if (!metrics) return null;
       const seen = await evaluate(
         "(() => { const style = getComputedStyle(document.documentElement);" +
           " return { height: innerHeight, width: innerWidth," +
           " top: parseFloat(style.getPropertyValue('--safe-area-inset-top')) || 0," +
           " bottom: parseFloat(style.getPropertyValue('--safe-area-inset-bottom')) || 0 }; })()"
       );
+      lastGeometry = seen;
       return seen.top > 0 ? { metrics, seen } : null;
     },
-    20000,
-    500
+    30000,
+    400
   );
+  if (!geometryWait.value) {
+    const saw = lastGeometry
+      ? `last seen: innerHeight ${lastGeometry.height}, screen ${metrics.height} CSS px,` +
+        ` --safe-area-inset-top ${lastGeometry.top}, --safe-area-inset-bottom ${lastGeometry.bottom}`
+      : 'the page never answered';
+    fail(
+      'timed out after 30s waiting for the page to report its edge-to-edge geometry' +
+        ` (${saw}${geometryWait.error ? `; ${geometryWait.error.message}` : ''})`
+    );
+  }
+  const geometry = geometryWait.value;
   if (Math.abs(geometry.seen.height - geometry.metrics.height) > 4) {
     fail(
       `the page does not fill the window: innerHeight ${geometry.seen.height},` +

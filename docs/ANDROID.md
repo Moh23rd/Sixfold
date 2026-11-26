@@ -181,6 +181,13 @@ It samples a second of animation frames at the hub and fails if the page height
 moves without a size change, which is the guard against an inset handler
 drifting back into the padded/unpadded loop.
 
+The geometry wait measures the display once and then polls only the page. Each
+poll used to run `wm size` and `wm density` inside a 20 s window, and each adb
+call was allowed 20 s of its own, so one slow shell call could time the check out
+while the page was healthy — the API 36 row failed that way once on a loaded
+runner and passed on the rerun with the same APK. It now waits 30 s, and a
+failure names the insets and the viewport it last saw.
+
 The smoke AVD asks for an on-screen navigation bar (`hw.mainKeys = no` in its
 config): `avdmanager`'s generic profile writes `hw.mainKeys = yes`, and Android
 14 reads that as a phone with hardware keys and draws no navigation bar at all,
@@ -228,6 +235,16 @@ recents transitions are the system's own and ignore it — and the app navigates
 the WebView, so there is no meaningful preview to show. Capacitor's App plugin
 keeps its `OnBackPressedCallback` on the AndroidX dispatcher, so the legacy path
 still delivers `backButton` to `js/native.js`.
+
+The page answers back before the shell acts: `js/native.js` dispatches a
+cancelable `sixfold:back`, and a sheet, a result card or the hidden game's reveal
+dismisses itself and marks the event handled. Back on the legal page returns to
+the hub through history and marks that load as a return, so the app skips its
+launch layer and the cover's build: the WebView reloads the document and would
+otherwise replay the splash. In a browser the same panels answer the browser's
+back through one history entry per open sheet. `index.html` marks the shell on
+`documentElement` in the head, before the body is parsed, so the page's own
+launch composition never paints behind the OS splash.
 
 The WebView is given the surface colour as its background in `MainActivity`.
 Without it the WebView paints white until the page has a background, which read

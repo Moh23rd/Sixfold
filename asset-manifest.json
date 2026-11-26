@@ -2,13 +2,13 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 114300,
-      "sha256": "845188e2944e2194a3014ad6d940778a7904b4daa6b77a8fa792ba1918ec39ae"
+      "bytes": 116744,
+      "sha256": "539f640b9fb6608440db198c002ba349246d22836c4fa92d2748ebec06259402"
     },
     {
       "path": "licenses.html",
-      "bytes": 52372,
-      "sha256": "5360494227f3b41c10ae840563da9e912b0f007703290ac451774f81a7e214a6"
+      "bytes": 53951,
+      "sha256": "c7e1c6cd6e5f97f4433213202d7abd807552167ca9d0ba063b8f07c59a06c6d7"
     },
     {
       "path": "LICENSE",
@@ -22,8 +22,8 @@
     },
     {
       "path": "js/theme.js",
-      "bytes": 38911,
-      "sha256": "524ea59ef437e3c9ef4aaa1e5a1efdf4b2052d690e3061a6ed07b8669c987c54"
+      "bytes": 40695,
+      "sha256": "f8bee6ad1c0ad13435b36892cebf6e8335d8c79cf2f0c33a668bc77e7b01a492"
     },
     {
       "path": "js/game.js",
@@ -92,13 +92,13 @@
     },
     {
       "path": "js/sudoku.js",
-      "bytes": 46404,
-      "sha256": "94cf84ac7b9c4a9ce9c7c72176a3728c45dde9f4f6f3281f723e597223571a0b"
+      "bytes": 48249,
+      "sha256": "310af291ad205ffabfd6c38dc3f393888f39467f6bba2652a870ad3d7af12607"
     },
     {
       "path": "js/games.js",
-      "bytes": 159188,
-      "sha256": "88b4aae8a32f7b378073085950381e8b3d7f0372499c65e60ab32265e9a5a0f8"
+      "bytes": 159512,
+      "sha256": "33fea87d7b8076a9d9cdba2684ed9c6b480941aa3e44bc272ac576af37f14d1d"
     },
     {
       "path": "js/daily.js",
@@ -137,13 +137,13 @@
     },
     {
       "path": "js/native.js",
-      "bytes": 9386,
-      "sha256": "d8bf851f0db03262c6151f1c8a189a3397525050b6c6132a398235e3dc7f0966"
+      "bytes": 11204,
+      "sha256": "acda3908b49be057289692b3addf8b21c7ab9d0955f3eee1a35ba22e61fbe942"
     },
     {
       "path": "js/wordle-loader.js",
       "bytes": 4740,
-      "sha256": "cae37411777d5373958ab3c06e3ccde4145564d34864821f2c16b7f3e9430881"
+      "sha256": "0eff90918423930728115b0e7e3fffdea0406acdded8254636fa315f26af0a6b"
     },
     {
       "path": "js/wordle-words.js",
@@ -157,8 +157,8 @@
     },
     {
       "path": "js/wordle.js",
-      "bytes": 25236,
-      "sha256": "aab509c6f37af4496e641ec590296bd784d641f41413578578bc5d0836c7fce0"
+      "bytes": 27111,
+      "sha256": "940ee08d821c580087c4ba07d6fdd399097aa9f2266e40349cfd15bef058287c"
     },
     {
       "path": "icons/icon-180.png",

@@ -597,6 +597,13 @@
         closeHiddenReveal();
       }
     });
+    // Back during the reveal is the same exit as its scrim: skip the intro and
+    // open the game, instead of closing the app from what is still the hub.
+    document.addEventListener('sixfold:back', function (event) {
+      if (!hiddenRevealOpen) return;
+      event.preventDefault();
+      closeHiddenReveal();
+    });
   }
 
   function openWordle() {

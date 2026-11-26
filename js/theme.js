@@ -530,6 +530,51 @@
   // should dismiss — not the app underneath it.
   let openSheetEl = null;
 
+  /* Back is the only gesture some readers have in a browser, so a sheet adds one
+     history entry while it is up: back closes the panel instead of leaving the
+     screen (or the page). The native shell already asks the page first, and its
+     sixfold:back path goes through closeSheet, which takes that entry with it. */
+  let sheetHistorySheet = null;
+  let sheetHistoryClosing = false;
+
+  function pushSheetHistory(sheet) {
+    if (!sheet || !window.history || !history.pushState) return;
+    try {
+      history.pushState({ sixfoldSheet: sheet.id || 'sheet', game: document.body.dataset.screen || 'hub' }, '');
+      sheetHistorySheet = sheet;
+    } catch (err) {
+      /* history restricted: the sheet still closes from its own controls */
+    }
+  }
+
+  function popSheetHistory(sheet) {
+    if (sheetHistorySheet !== sheet) return;
+    sheetHistorySheet = null;
+    // A close from the sheet's own controls has to take its entry with it, or
+    // the next back would only undo an invisible step.
+    sheetHistoryClosing = true;
+    try { history.back(); } catch (err) { sheetHistoryClosing = false; }
+  }
+
+  window.addEventListener('popstate', function (event) {
+    if (sheetHistoryClosing) {
+      sheetHistoryClosing = false;
+      event.stopImmediatePropagation();
+      return;
+    }
+    // Forward into an entry a sheet pushed: the panel stays up.
+    if (event.state && event.state.sixfoldSheet) {
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (!sheetHistorySheet) return;
+    const sheet = sheetHistorySheet;
+    sheetHistorySheet = null;
+    // This entry is the sheet's, not a route: games.js must not read it as one.
+    event.stopImmediatePropagation();
+    closeSheet(sheet);
+  });
+
   function openSheet(sheet, opener) {
     if (!sheet) return;
     const pendingClose = sheetCloseTimers.get(sheet);
@@ -555,6 +600,7 @@
       sheet._inertBackground = background;
     }
     document.documentElement.classList.add('sheet-open');
+    pushSheetHistory(sheet);
     const doneBtn = sheet.querySelector('.sheet-done');
     if (doneBtn) {
       doneBtn.focus();
@@ -602,6 +648,7 @@
 
   function closeSheet(sheet) {
     if (!sheet || sheet.hidden || sheet.classList.contains('is-closing')) return;
+    popSheetHistory(sheet);
     if (openSheetEl === sheet) openSheetEl = null;
     // The sheet's own leave animation owns the next 320ms. A colour fade
     // raised by a theme tap a moment ago would replace it, so end it here.

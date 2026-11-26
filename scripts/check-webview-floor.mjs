@@ -105,6 +105,14 @@ const ALLOWED = new Map([
   ],
   ['js/theme.js:inert', "guarded by `'inert' in background`; the property is a no-op where it is missing"],
   [
+    'js/sudoku.js:inert',
+    "only elements that pass `'inert' in el` are stored, so the release writes touch the same guarded set"
+  ],
+  [
+    'js/wordle.js:inert',
+    "only elements that pass `'inert' in el` are stored, so the release writes touch the same guarded set"
+  ],
+  [
     'js/wordle.js:Intl.Segmenter',
     'guarded by the `Intl.Segmenter` check; the fallback splits the word by code point'
   ],

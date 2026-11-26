@@ -33,6 +33,26 @@ and the internal build **6.0.0** until the next release cut.
 - **Back records the welcome guide**: the gesture closed the one-time guide
   without writing the flag only the Skip button set, so a fresh install saw the
   guide again on the next launch. Back now closes it the way the button does.
+- **Leaving the legal page is a return, not a launch**: the shell reloads the
+  app document when the licenses page goes back (a WebView keeps no
+  back-forward cache), and that reload replayed the splash and the hub's
+  six-piece build. The legal page marks the return, the app skips its launch
+  layer for it, and the shell marks itself before the body is parsed so the
+  page's own launch composition never paints behind the OS splash.
+- **Sheets and result cards answer the browser's back**: a sheet adds one
+  history entry, so back closes the panel instead of leaving the screen. The
+  Sudoku solved card and the Wordle result card now make the board and the
+  screen's own controls inert, keep Tab inside the card, and dismiss on Escape;
+  Escape also closes a per-game settings sheet, and back skips the hidden game's
+  reveal instead of leaving the app.
+- **The legal page follows a live theme change**: it re-resolves the saved
+  appearance, re-tints its palette and updates the chrome colour when the device
+  switches scheme, instead of keeping the appearance it opened with.
+- **The emulator's geometry check measures the display once**: it ran `wm size`
+  and `wm density` on every poll inside a 20 s window, so one slow adb call could
+  time it out while the page was fine — the API 36 row failed that way once and
+  passed on the rerun with the same APK. It measures once, polls only the page
+  for 30 s, and names the insets it last saw when it gives up.
 - **The share card keeps its i**: the bundled font's `liga` feature maps
   `fi`/`ffi`/`ffl` onto composites built on `dotlessi`, so at display sizes the
   hub headline and the share card both read "No fller." and "Works ofline". The

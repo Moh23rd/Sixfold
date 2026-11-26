@@ -198,3 +198,17 @@ test('the Merge board carries no blur band', async ({ page }) => {
   await expect(page.locator('.progressive-blur--top')).toBeHidden();
   await expect(page.locator('.progressive-blur--bottom')).toBeHidden();
 });
+
+// The page follows the device while the app is set to System, so a scheme
+// change under an open legal page has to repaint it, not wait for a reload.
+test('the legal page follows a live scheme change', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.addInitScript(() => localStorage.removeItem('merge2048.theme'));
+  await page.goto('/licenses.html');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--page').trim())).toBe('#1a1918');
+  expect(await page.evaluate(() => document.querySelector('meta[name="theme-color"]').getAttribute('content'))).toBe('#1a1918');
+});
