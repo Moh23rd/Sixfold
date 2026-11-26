@@ -2,6 +2,55 @@
 
 > Public release label: **v6.0**.
 
+## Unreleased — after v6.0
+
+Fixes and checks committed after the 6.0 build. The public label stays **v6.0**
+and the internal build **6.0.0** until the next release cut.
+
+### Fixes and polish
+
+- **The offline cache keeps its install manifest**: the worker pruned the cached
+  `manifest.webmanifest` on every activation, because it compared the URL's
+  version with the theme script's pin while `index.html` stamps the manifest
+  with the build epoch. It compares against the epoch the cache name already
+  carries, so an installed app can still read its manifest offline.
+- **The legal page mirrors every arrow**: the action button's arrow sits outside
+  `.bar`, so the right-to-left rule missed it. The canonical GPL text stays
+  English whatever the page language, and the page now says so, so a screen
+  reader stops reading it with the page's phonetics.
+- **English skips the translation observer**: a translation is a no-op in `en`,
+  so the observer is no longer installed there and an English page walks no
+  nodes on every mutation.
+
+### Checks
+
+- **Every shell pin site is checked**: the guard compared one pin per path, so a
+  second copy of the same URL in another file was never verified. Each site is
+  now checked and the message names the URL it read.
+- **The pin guard has a test that proves it still fails**: a throwaway
+  repository pins one path from both `sw.js` and `index.html`, requires the
+  clean tree to pass, edits the file without a bump and requires the failure to
+  name both pin sites, then bumps the pins and requires a pass again. Stubbing
+  the ancestry check to always succeed fails the test.
+- **The Android smoke checks both system bars in both appearances**: the run
+  compared only the top strip and only in the appearance it started in, so a
+  black bottom strip or a surface stuck on one theme could pass. Both edges are
+  sampled inside the bar in light and dark, and the window, content and WebView
+  surfaces are painted through one helper.
+- **The full smoke runs on API 34**: Android 14 is the last release before the
+  platform enforces edge-to-edge, so the strip checks run where that behaviour
+  is defined. The launch-only rows now say which engine they measure
+  (Chromium 69) and only warn once an engine could render the shell's newest
+  structural CSS.
+- **The smoke AVD gets an on-screen navigation bar**: `avdmanager`'s generic
+  profile writes `hw.mainKeys=yes`, which Android 14 reads as a phone with
+  hardware keys and draws no bar at all, so the sampled bottom strip was page
+  content. The AVD is now rewritten to `hw.mainKeys=no`.
+- **The Sudoku text-scale check measures a real digit**: it waited for 81
+  cells, but the board is built empty and the puzzle arrives on a timer, so it
+  measured 0px type in a 0px cell and could never fail. It now waits for a
+  valid clue count and compares the digit's inked box to its cell.
+
 ## v6.0 — 25 November 2026
 
 Internal build: **6.0.0**
