@@ -1096,5 +1096,15 @@ Public License instead of this License.  But first, please read
   <!-- Back has to return to the hub from here, not close the app, and the bar
        icons have to follow this page's appearance. Both are the shell's job. -->
   <script src="js/native.js?v=5.2.0"></script>
+  <script>
+    // Leaving this page for the hub is a return, not a launch: the app reads
+    // this flag before it paints and comes back without its splash and its
+    // entrances. A back-forward restore needs no flag because the hub is
+    // restored as it was; this covers a return that reloads the document.
+    window.addEventListener('pagehide', function (event) {
+      if (event.persisted) return;
+      try { sessionStorage.setItem('sixfold.returning', '1'); } catch (err) {}
+    });
+  </script>
 </body>
 </html>

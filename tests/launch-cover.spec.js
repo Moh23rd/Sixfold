@@ -72,3 +72,51 @@ test('the cover builds as the launch layer lifts, never as a static flash', asyn
     'the first piece is already building at the hand-off'
   ).toBeGreaterThan(0.5);
 });
+
+// The legal page is a document of its own. Leaving it for the hub used to be a
+// fresh launch on the web: the splash and the hub's entrances replayed over a
+// collection that was already built. The return is now a cut on both paths.
+test('returning from the legal page does not replay the launch', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+
+  await page.goto('/licenses.html');
+  await Promise.all([
+    page.waitForURL((url) => !url.pathname.endsWith('licenses.html')),
+    page.getByRole('link', { name: /Back to Sixfold/i }).click()
+  ]);
+  await page.waitForFunction(() => !document.getElementById('boot-splash'));
+  const linked = await page.evaluate(() => {
+    const running = [];
+    document.querySelectorAll('.home-six-piece, .home-grid .home-game').forEach((el) => {
+      el.getAnimations().forEach((animation) => {
+        if (animation.playState === 'running') running.push(animation.animationName);
+      });
+    });
+    return {
+      splash: Boolean(document.getElementById('boot-splash')),
+      settled: document.documentElement.classList.contains('hub-settled'),
+      running: running
+    };
+  });
+  expect(linked.splash, 'the launch layer is not built on the way back').toBe(false);
+  expect(linked.settled, 'the hub comes back already settled').toBe(true);
+  expect(linked.running, 'no launch entrance runs on the way back').toEqual([]);
+
+  // A back navigation that reloads the hub takes the same path.
+  await page.goto('/licenses.html');
+  await page.goBack();
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.waitForFunction(() => !document.getElementById('boot-splash'));
+  const backed = await page.evaluate(() => {
+    const running = [];
+    document.querySelectorAll('.home-six-piece, .home-grid .home-game').forEach((el) => {
+      el.getAnimations().forEach((animation) => {
+        if (animation.playState === 'running') running.push(animation.animationName);
+      });
+    });
+    return { splash: Boolean(document.getElementById('boot-splash')), running: running };
+  });
+  expect(backed.splash, 'back is not a launch either').toBe(false);
+  expect(backed.running, 'back does not replay the entrance').toEqual([]);
+});

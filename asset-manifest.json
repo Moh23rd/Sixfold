@@ -2,13 +2,13 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 116725,
-      "sha256": "317717fd70e9c47763827a138386944db886d7858c96b7e355076204d269ef93"
+      "bytes": 116895,
+      "sha256": "1c449a10ab17e79f2aac66d7e6a359a487c7215db37bbea5d2a60c8103e70ad9"
     },
     {
       "path": "licenses.html",
-      "bytes": 53951,
-      "sha256": "3514fb6a45f36255f0ae9e1e296c3eb457564139c2973cff45add57f50b9390e"
+      "bytes": 54458,
+      "sha256": "02bde974d6f74eff4eaf68b4b7c247dddc898c5f59c62bf1ebb2c8b556d7dc58"
     },
     {
       "path": "LICENSE",
@@ -62,8 +62,8 @@
     },
     {
       "path": "css/home.css",
-      "bytes": 32571,
-      "sha256": "7c15bbc2e4b0bedfffd45e34022e86a607f96017c2a7d1a769a82d3d4020d157"
+      "bytes": 33007,
+      "sha256": "4f5c545d39dc989ae78fbae1672599446c66f12b3a9f92326f7f720de4a4800d"
     },
     {
       "path": "css/polish.css",

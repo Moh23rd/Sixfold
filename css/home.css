@@ -1042,7 +1042,13 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
    leftover height is shared above and below the CTAs, so a short locale does
    not leave the single-line promise row stranded far under the buttons. */
 @media (max-width: 719px) {
-  .home-hero { margin-top: clamp(24px, 4.8vh, 48px); }
+  /* The masthead is a label, not a section. The release note used to be the
+     only thing between it and the hero, so once the note was dismissed the
+     hero sat a full section gap below the wordmark and the header read as a
+     hole above the fold. The hero's gap is now the tight one; the note adds
+     its own room below itself, so a fresh visit keeps the same rhythm. */
+  .home-hero { margin-top: clamp(18px, 3vh, 30px); }
+  .whats-new { margin-bottom: clamp(12px, 2vh, 18px); }
   .home-body {
     display: flex;
     flex-direction: column;
