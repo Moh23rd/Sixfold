@@ -764,6 +764,9 @@
   document.addEventListener('keydown', function (e) {
     if (overlayEl.hidden) return;
     if (e.key === 'Escape') {
+      // A sheet opened over the result owns the gesture; one Escape must not
+      // close both the panel and the card underneath it.
+      if (e.defaultPrevented || document.documentElement.classList.contains('sheet-open')) return;
       e.preventDefault();
       hideOverlay();
       return;
@@ -1341,7 +1344,7 @@
             }
           }
         }
-        const face = new FontFace(family, 'url("fonts/google-sans-flex.woff2?v=5.0.1")', {
+        const face = new FontFace(family, 'url("fonts/google-sans-flex.woff2?v=5.0.2")', {
           weight: '100 1000',
           display: 'swap'
         });

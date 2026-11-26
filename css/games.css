@@ -2088,8 +2088,10 @@ html[data-motion="reduced"] .play-tool { transition: none; }
    ===================================================================== */
 
 /* The appearance sheet is shared by every game, so it has to sit above the
-   fixed play screens (z-index 31) rather than behind them. */
-.sheet { z-index: 60; }
+   fixed play screens (z-index 31) rather than behind them — and above the
+   share toast (70), the daily finish note (75) and the update banner (120),
+   which used to float over an open panel. */
+.sheet { z-index: 130; }
 
 .play-screen {
   height: 100dvh;

@@ -956,23 +956,31 @@
     }
   }
 
-  // The solved card is a dialog: the board and the screen's own controls leave
-  // the tab order and the pointer while it is up, and the keydown below keeps
-  // Tab inside the card.
+  // The solved card is a dialog: everything else on the screen leaves the tab
+  // order and the pointer while it is up — the pad and the tool row too, not
+  // only the board — and the keydown below keeps Tab inside the card.
   let resultInert = [];
   function setResultModal(on) {
-    if (on) {
-      [boardEl, document.querySelector('#sudoku .play-head'), document.querySelector('#sudoku .play-foot')]
-        .forEach(function (el) {
-          if (el && 'inert' in el && !el.inert) {
-            el.inert = true;
-            resultInert.push(el);
-          }
-        });
+    if (!on) {
+      resultInert.forEach(function (el) { el.inert = false; });
+      resultInert = [];
       return;
     }
-    resultInert.forEach(function (el) { el.inert = false; });
-    resultInert = [];
+    if (!resultEl) return;
+    // Walk from the card to the screen and cover every sibling on the way, so a
+    // control added beside the board later is covered without being listed.
+    const screenEl = document.getElementById('sudoku') || document.body;
+    let node = resultEl;
+    while (node && node !== screenEl) {
+      const parent = node.parentElement;
+      if (!parent) break;
+      Array.prototype.forEach.call(parent.children, function (sibling) {
+        if (sibling === node || !('inert' in sibling) || sibling.inert) return;
+        sibling.inert = true;
+        resultInert.push(sibling);
+      });
+      node = parent;
+    }
   }
 
   function showResult() {
@@ -1019,6 +1027,9 @@
   document.addEventListener('keydown', function (event) {
     if (!resultEl || resultEl.hidden || document.body.dataset.screen !== 'sudoku') return;
     if (event.key === 'Escape') {
+      // A sheet opened over the result owns the gesture; one Escape must not
+      // close both the panel and the card underneath it.
+      if (event.defaultPrevented || document.documentElement.classList.contains('sheet-open')) return;
       event.preventDefault();
       hideResult();
       try { boardEl.focus({ preventScroll: true }); } catch (err) {}

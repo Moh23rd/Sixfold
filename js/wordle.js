@@ -616,6 +616,9 @@
   document.addEventListener('keydown', function (event) {
     if (resultEl.hidden || document.body.dataset.screen !== 'wordle') return;
     if (event.key === 'Escape') {
+      // A sheet opened over the result owns the gesture; one Escape must not
+      // close both the panel and the card underneath it.
+      if (event.defaultPrevented || document.documentElement.classList.contains('sheet-open')) return;
       event.preventDefault();
       hideResult();
       try { (imeInput || boardEl).focus({ preventScroll: true }); } catch (err) {}

@@ -15,14 +15,14 @@
   <meta property="og:title" content="Sixfold — Six games. No filler." />
   <meta property="og:description" content="Six games. No filler. An offline pocket arcade: Merge, Sudoku, Tic Tac Toe, Minesweeper, Water Sort and Fruit Merge. No accounts, no ads." />
   <meta property="og:url" content="https://moh23rd.github.io/Sixfold/" />
-  <meta property="og:image" content="https://moh23rd.github.io/Sixfold/og-image.png?v=6.0.1" />
+  <meta property="og:image" content="https://moh23rd.github.io/Sixfold/og-image.png?v=6.0.2" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Sixfold — six games, no filler. A pocket arcade of six offline puzzles." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Sixfold — Six games. No filler." />
   <meta name="twitter:description" content="Six games. No filler. An offline pocket arcade: Merge, Sudoku, Tic Tac Toe, Minesweeper, Water Sort and Fruit Merge. No accounts, no ads." />
-  <meta name="twitter:image" content="https://moh23rd.github.io/Sixfold/og-image.png?v=6.0.1" />
+  <meta name="twitter:image" content="https://moh23rd.github.io/Sixfold/og-image.png?v=6.0.2" />
   <meta name="theme-color" content="#f6f1e8" />
   <meta name="color-scheme" content="light" />
   <meta name="format-detection" content="telephone=no" />
@@ -399,15 +399,15 @@
         if (returning) sessionStorage.removeItem('sixfold.returning');
       } catch (err) {}
       if (!returning) return;
-      root.classList.add('app-ready', 'is-returning');
+      root.classList.add('app-ready');
       window.__sixfoldReturning = true;
     })();
   </script>
-  <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.1" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=5.4.3" />
-  <link rel="stylesheet" href="css/games.css?v=5.3.8" />
+  <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="css/styles.css?v=5.4.4" />
+  <link rel="stylesheet" href="css/games.css?v=5.3.9" />
   <link rel="stylesheet" href="css/home.css?v=4.1.10" />
-  <link rel="stylesheet" href="css/polish.css?v=4.0.4-w22" />
+  <link rel="stylesheet" href="css/polish.css?v=4.0.4-w23" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.5" />
   <link rel="stylesheet" href="css/v5.css?v=5.6.3" />
   <link rel="stylesheet" href="css/progressive-blur.css?v=1.4.1" />
@@ -888,8 +888,8 @@
         </div>
         <div class="play-feedback">
           <p class="play-status" id="water-status" role="status" aria-live="polite">Tap a tube, then tap where to pour.</p>
-          <div class="play-win" id="water-win" hidden>
-            <p><strong>Level clear.</strong> Every colour has its own tube.</p>
+          <div class="play-win" id="water-win" role="dialog" aria-modal="true" aria-labelledby="water-result-title" hidden>
+            <p><strong id="water-result-title">Level clear.</strong> Every colour has its own tube.</p>
             <button class="play-btn play-btn--solid" id="water-next" type="button" data-fade>Next level</button>
             <button class="result-share result-share--labeled" id="water-share" type="button" aria-label="Save image" title="Save image" data-fade><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
           </div>
@@ -1022,10 +1022,10 @@
             <span class="fruit-hint">Drag to aim</span>
           </div>
           <canvas id="fruit-canvas" width="720" height="860" tabindex="0" role="application" aria-label="Fruit Merge board"></canvas>
-          <div class="fruit-over" id="fruit-over" hidden>
+          <div class="fruit-over" id="fruit-over" role="dialog" aria-modal="true" aria-labelledby="fruit-over-title" hidden>
             <div class="fruit-over-card">
               <p class="game-tag" data-fade>Run over</p>
-              <h2>Fruit reached the top.</h2>
+              <h2 id="fruit-over-title">Fruit reached the top.</h2>
               <p><strong id="fruit-final-score">0</strong> points · best <span id="fruit-final-best">0</span></p>
               <div class="fruit-over-actions">
                 <button class="play-btn play-btn--solid" id="fruit-again" type="button" data-fade>Try again</button>
@@ -1084,7 +1084,7 @@
         </div>
         <div class="play-feedback">
           <p class="play-status" id="ttt-status" role="status" aria-live="polite">Your move. You are X.</p>
-          <div class="play-win" id="ttt-result" hidden>
+          <div class="play-win" id="ttt-result" role="dialog" aria-modal="true" aria-labelledby="ttt-result-title" hidden>
             <p><strong id="ttt-result-title">You win.</strong> <span id="ttt-result-copy">Three in a row.</span></p>
             <button class="play-btn play-btn--solid" id="ttt-again" type="button" data-fade>New round</button>
             <button class="result-share result-share--labeled" id="ttt-share" type="button" aria-label="Save image" title="Save image" data-fade><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
@@ -1144,7 +1144,7 @@
         </div>
         <div class="play-feedback">
           <p class="play-status" id="mines-status" role="status" aria-live="polite">Tap a square to begin. Long-press to flag.</p>
-          <div class="play-win" id="mines-result" hidden>
+          <div class="play-win" id="mines-result" role="dialog" aria-modal="true" aria-labelledby="mines-result-title" hidden>
             <p><strong id="mines-result-title">Field cleared.</strong> <span id="mines-result-copy">Every safe square is open.</span></p>
             <button class="play-btn play-btn--solid" id="mines-again" type="button" data-fade>New board</button>
             <button class="result-share result-share--labeled" id="mines-share" type="button" aria-label="Save image" title="Save image" data-fade><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
@@ -1553,11 +1553,11 @@
   <script src="js/overscroll.js?v=6.0.3"></script>
   <script src="js/celebrate.js?v=5.0.1"></script>
   <script src="js/sharecard.js?v=5.3.3"></script>
-  <script src="js/theme.js?v=6.0.17"></script>
-  <script src="js/game.js?v=5.3.4"></script>
+  <script src="js/theme.js?v=6.0.18"></script>
+  <script src="js/game.js?v=5.3.5"></script>
   <script src="js/install.js?v=5.0.1"></script>
-  <script src="js/sudoku.js?v=5.3.4"></script>
-  <script src="js/games.js?v=5.4.6"></script>
+  <script src="js/sudoku.js?v=5.3.5"></script>
+  <script src="js/games.js?v=5.4.7"></script>
   <script src="js/daily.js?v=5.4.6"></script>
   <script src="js/profile.js?v=1.0.0"></script>
   <script src="js/badges.js?v=1.1.1"></script>
@@ -1576,7 +1576,7 @@
   </script>
   <script src="i18n/i18n.js?v=6.0.3"></script>
   <script src="js/native.js?v=5.2.0"></script>
-  <script src="js/wordle-loader.js?v=5.3.3-wordle"></script>
+  <script src="js/wordle-loader.js?v=5.3.4-wordle"></script>
   <script>
     (function () {
       var splash = document.getElementById('boot-splash');

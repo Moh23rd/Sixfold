@@ -50,7 +50,7 @@ WOFF2 table ordering can change the final size by a few hundred bytes.
 
 If the bytes change, bump the font version in `css/styles.css`, `index.html`,
 `licenses.html`, `js/game.js` and `FONT_ASSET` in `sw.js`. The current shipped
-URL is `fonts/google-sans-flex.woff2?v=5.0.1`. The font is SIL OFL 1.1; keep
+URL is `fonts/google-sans-flex.woff2?v=5.0.2`. The font is SIL OFL 1.1; keep
 `fonts/OFL.txt` with it.
 
 ## iOS launch images

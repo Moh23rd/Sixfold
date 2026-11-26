@@ -9,6 +9,41 @@ and the internal build **6.0.0** until the next release cut.
 
 ### Fixes and polish
 
+- **The four compact results are dialogs**: Water Sort, Tic Tac Toe,
+  Minesweeper and Fruit Merge finish in a card that covered the board but kept
+  the board tappable behind its scrim, walked out of the game on back, and could
+  not be read again once dismissed. Back and Escape now close the card and keep
+  the game, the board and the rest of the screen leave the tab order and the
+  pointer while it is up, and the footer keeps a quiet **Result** chip that
+  reopens the round. The Sudoku solved card covers the number pad and the tool
+  row too, not only the board.
+- **The pause between rounds is a clock**: the three-second auto-next spent its
+  time while the app was backgrounded and re-armed every time a finished game
+  was re-entered, so a result could vanish before it was read. The countdown now
+  freezes in the background and behind a sheet, never re-arms over a dismissed
+  result, and is drawn as a thin edge under the action instead of an English
+  "Next 3s" label in every language.
+- **A long sheet keeps its Done button**: Look & feel is taller than a phone
+  screen, and its head scrolled away with the copy, leaving the way out at the
+  bottom of the panel. The head now stays on the card's top edge and paints over
+  what slides beneath it.
+- **Sheets sit above the notifications**: the share toast, the daily finish note
+  and the update banner floated over an open panel because their layers were
+  above the sheet's. The sheet is the top surface again.
+- **Returning from the licenses page keeps your place**: the legal page is its
+  own document, so the return is a fresh launch and the hub opened at the top.
+  The hub's scroll position is recorded before the link is followed and restored
+  when the collection builds.
+- **Focus never lands on a closed panel**: erasing data from Look & feel closes
+  that panel first, and closing the warning sheet then sent focus to its hidden
+  Done button. An opener that is no longer on the page now hands focus to the
+  screen's heading instead.
+- **The share card and the licenses page keep their i**: the ligature-free font
+  was rebuilt without a new URL, so browsers and installed apps kept serving the
+  cached copy whose `fi` ligatures drop the i in "filler" and "offline". The font
+  URL is now `?v=5.0.2` everywhere, `og-image.png` was regenerated from the fixed
+  face, and the erase button reports progress with the reader's own label instead
+  of a hard-coded "Erasing…".
 - **The app is edge to edge again**: the activity content was padded by the
   system-bar insets, so the page stopped short of the top and bottom edges and
   the flat window colour read as a blank border above the status bar and below

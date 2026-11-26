@@ -646,6 +646,15 @@
     });
   }
 
+  // The heading of the screen that is up is a sensible place to leave focus
+  // when the element that opened a sheet is no longer on the page.
+  function focusScreenStart() {
+    const screen = document.body.dataset.screen;
+    const host = screen && screen !== 'hub' ? document.getElementById(screen) : hubEl;
+    const title = host && host.querySelector('h1[tabindex="-1"]');
+    if (title && title.getClientRects().length) title.focus({ preventScroll: true });
+  }
+
   function closeSheet(sheet) {
     if (!sheet || sheet.hidden || sheet.classList.contains('is-closing')) return;
     popSheetHistory(sheet);
@@ -660,15 +669,17 @@
     const timer = window.setTimeout(function () {
       sheet.hidden = true;
       sheet.classList.remove('is-open', 'is-closing');
-      sheet.removeAttribute('data-context');
       document.documentElement.classList.remove('sheet-open');
       if (sheet._inertBackground) {
         sheet._inertBackground.inert = false;
         sheet._inertBackground = null;
       }
-      // Send focus back to whatever opened the sheet.
+      // Send focus back to whatever opened the sheet — unless that opener is
+      // inside a panel that has since closed. Erasing data from Look & feel
+      // used to leave focus on its hidden Done button.
       const opener = sheetOpeners.get(sheet);
-      if (opener) opener.focus();
+      if (opener && opener.isConnected && opener.getClientRects().length) opener.focus();
+      else focusScreenStart();
       sheetOpeners.delete(sheet);
       sheetCloseTimers.delete(sheet);
     // Reduced fades the sheet in place for 160ms; keep it mounted long enough
@@ -684,6 +695,17 @@
     // sheet here would show it again on the next launch.
     if (openSheetEl === welcomeSheet) closeWelcome();
     else closeSheet(openSheetEl);
+  });
+
+  /* The legal page is its own document, so a return from it is a fresh
+     launch. Record where the hub was before the link is followed, or the
+     reader comes back to the top of the collection instead of their place. */
+  document.addEventListener('click', function (event) {
+    const link = event.target.closest && event.target.closest('a[href$="licenses.html"]');
+    if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const top = (hubEl && hubEl.scrollTop) ||
+      (document.scrollingElement && document.scrollingElement.scrollTop) || 0;
+    try { sessionStorage.setItem('sixfold.hubScroll', String(top)); } catch (err) {}
   });
 
   const appearanceSheet = document.getElementById('sheet');
@@ -873,7 +895,10 @@
     wipeConfirmBtn.addEventListener('click', function () {
       if (wipeConfirmBtn.disabled) return;
       wipeConfirmBtn.disabled = true;
-      wipeConfirmBtn.textContent = 'Erasing…';
+      wipeConfirmBtn.setAttribute('aria-busy', 'true');
+      // Keep the reader's own label, which the catalog already translated, and
+      // only add the ellipsis: a hard-coded "Erasing…" stayed English here.
+      wipeConfirmBtn.textContent = wipeConfirmBtn.textContent.trim() + '…';
       wipeEverything();
     });
   }
@@ -909,17 +934,10 @@
   }
 
   function activeSheet() {
-    const open = document.querySelector('.sheet.is-open:not(.is-closing)');
-    if (open) return open;
-    if (welcomeSheet && !welcomeSheet.hidden) return welcomeSheet;
-    if (appearanceSheet && !appearanceSheet.hidden) return appearanceSheet;
-    if (sizeSheet && !sizeSheet.hidden) return sizeSheet;
-    if (helpSheet && !helpSheet.hidden) return helpSheet;
-    if (aboutSheet && !aboutSheet.hidden) return aboutSheet;
-    if (sudokuSettingsSheet && !sudokuSettingsSheet.hidden) return sudokuSettingsSheet;
-    if (wipeSheet && !wipeSheet.hidden) return wipeSheet;
-    if (resetSheet && !resetSheet.hidden) return resetSheet;
-    return null;
+    // openSheet always knows which panel is on top, including the per-game
+    // settings sheets an explicit list kept forgetting.
+    if (openSheetEl && !openSheetEl.hidden && !openSheetEl.classList.contains('is-closing')) return openSheetEl;
+    return document.querySelector('.sheet:not([hidden])');
   }
 
   function sheetFocusables(sheet) {

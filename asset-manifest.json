@@ -2,13 +2,13 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 116744,
-      "sha256": "539f640b9fb6608440db198c002ba349246d22836c4fa92d2748ebec06259402"
+      "bytes": 117046,
+      "sha256": "c575b65f6a71b092092d042d775e350fd3f811f1a755f3c685c9095051121e84"
     },
     {
       "path": "licenses.html",
       "bytes": 53951,
-      "sha256": "c7e1c6cd6e5f97f4433213202d7abd807552167ca9d0ba063b8f07c59a06c6d7"
+      "sha256": "3514fb6a45f36255f0ae9e1e296c3eb457564139c2973cff45add57f50b9390e"
     },
     {
       "path": "LICENSE",
@@ -17,18 +17,18 @@
     },
     {
       "path": "css/styles.css",
-      "bytes": 50460,
-      "sha256": "7782769d2e1d5c0ab0ff4f640218c8c6d5f4369a5322b089fc83680586b7439d"
+      "bytes": 50926,
+      "sha256": "f810bfb432a0ad8ace90609dc8f541969449c3a247386b93d27ba50688949be4"
     },
     {
       "path": "js/theme.js",
-      "bytes": 40695,
-      "sha256": "f8bee6ad1c0ad13435b36892cebf6e8335d8c79cf2f0c33a668bc77e7b01a492"
+      "bytes": 41948,
+      "sha256": "276d97de36fd77972fc68217e9201d50d487b6b20090f06bbcb620024043b43d"
     },
     {
       "path": "js/game.js",
-      "bytes": 46786,
-      "sha256": "102c29bd4e0f14772b10c41be964c94f9f608181f6fd4f775b1b3f225e824cd5"
+      "bytes": 47021,
+      "sha256": "6f5f15a4015ab4fb0b2dff87befc605a702a2c5c81c0e0ce9ae23c1f2d0fa62d"
     },
     {
       "path": "js/haptics.js",
@@ -57,8 +57,8 @@
     },
     {
       "path": "css/games.css",
-      "bytes": 108822,
-      "sha256": "d8e325eb8aba8f7f2140fd5482dfed4e914047c6c33343d91174d521b856fe1e"
+      "bytes": 108960,
+      "sha256": "82281cec0e428c93c593220901724f1dea13298813237217f6ad61394cd35af3"
     },
     {
       "path": "css/home.css",
@@ -67,8 +67,8 @@
     },
     {
       "path": "css/polish.css",
-      "bytes": 42743,
-      "sha256": "7577e06824b93b47b25ee209c5c87a05506438e20d1357948bb602611269fdb7"
+      "bytes": 43741,
+      "sha256": "d95ce913db66341ef12f5a35fa36f8c23feaed29be9e1343866d22794a4054f6"
     },
     {
       "path": "css/sudoku.css",
@@ -92,13 +92,13 @@
     },
     {
       "path": "js/sudoku.js",
-      "bytes": 48249,
-      "sha256": "310af291ad205ffabfd6c38dc3f393888f39467f6bba2652a870ad3d7af12607"
+      "bytes": 48907,
+      "sha256": "f15b93509d657e9d6cccc9d79f63b9e13335e16668b32276a743b3c42c24aa04"
     },
     {
       "path": "js/games.js",
-      "bytes": 159512,
-      "sha256": "33fea87d7b8076a9d9cdba2684ed9c6b480941aa3e44bc272ac576af37f14d1d"
+      "bytes": 165751,
+      "sha256": "83b9ae8d513a4f73401fb95f1965747d7620782ca8a417228a208cb69e8b6aef"
     },
     {
       "path": "js/daily.js",
@@ -143,7 +143,7 @@
     {
       "path": "js/wordle-loader.js",
       "bytes": 4740,
-      "sha256": "0eff90918423930728115b0e7e3fffdea0406acdded8254636fa315f26af0a6b"
+      "sha256": "d3f0e56c558df6a395b9e1305bb0bc4d575788c03ace7cba1d4b4f6f32b5961c"
     },
     {
       "path": "js/wordle-words.js",
@@ -157,8 +157,8 @@
     },
     {
       "path": "js/wordle.js",
-      "bytes": 27111,
-      "sha256": "940ee08d821c580087c4ba07d6fdd399097aa9f2266e40349cfd15bef058287c"
+      "bytes": 27350,
+      "sha256": "2e73b3f1e023b561e24e302b1bf03087015ad6d0adc5f51aaf1877578c026af6"
     },
     {
       "path": "icons/icon-180.png",

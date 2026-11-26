@@ -343,10 +343,17 @@
 
   /* Every finished round offers the same short pause before the next one
      starts. Three seconds is enough to read the card, win or loss, without
-     making the arcade feel slow. */
+     making the arcade feel slow. The pause is a clock rather than a countdown
+     that runs regardless: it freezes while the app is in the background or a
+     sheet is open, and it never re-arms over a result the reader has closed.
+     The remaining time is drawn as a progress edge under the button, so the
+     button keeps the label the reader's language already gave it instead of
+     an English "Next 3s". */
   const AUTO_NEXT_DELAY = 3000;
   let autoNextTimer = 0;
   let autoNextButton = null;
+  let autoNextEnd = 0;
+  let autoNextFrozen = 0;
 
   function cancelAutoNext() {
     if (autoNextTimer) {
@@ -354,58 +361,192 @@
       autoNextTimer = 0;
     }
     if (autoNextButton) {
-      if (autoNextButton.dataset.autoNextBase) {
-        autoNextButton.textContent = autoNextButton.dataset.autoNextBase;
-      }
+      autoNextButton.removeEventListener('click', cancelAutoNext);
+      autoNextButton.classList.remove('is-counting');
+      autoNextButton.style.removeProperty('--auto-next-left');
       autoNextButton = null;
     }
+    autoNextFrozen = 0;
   }
 
   function scheduleAutoNext(button, action, delay) {
     cancelAutoNext();
-    if (!button) return;
+    // A hidden card means the result was dismissed (or has not been shown yet),
+    // so re-entering the screen must not start the next round by itself.
+    if (!button || button.closest('[hidden]')) return;
     autoNextButton = button;
-    if (!button.dataset.autoNextBase) {
-      button.dataset.autoNextBase = button.textContent.trim();
-    }
     const screen = document.body.dataset.screen;
     const total = Math.max(800, Number(delay) || AUTO_NEXT_DELAY);
-    const end = Date.now() + total;
+    autoNextEnd = Date.now() + total;
 
     function paint() {
-      const remaining = Math.max(1, Math.ceil((end - Date.now()) / 1000));
-      const label = 'Next ' + remaining + 's';
-      if (button.textContent !== label) button.textContent = label;
+      const left = Math.max(0, Math.min(1, (autoNextEnd - Date.now()) / total));
+      button.style.setProperty('--auto-next-left', left.toFixed(3));
     }
 
     paint();
-    // A manual tap should take over immediately and stop the countdown.
-    button.addEventListener('click', cancelAutoNext, { once: true });
+    button.classList.add('is-counting');
+    // A manual tap takes over immediately and stops the countdown.
+    button.addEventListener('click', cancelAutoNext);
 
     function tick() {
+      autoNextTimer = 0;
       if (!button.isConnected || button.closest('[hidden]') ||
-          document.body.dataset.screen !== screen ||
-          document.documentElement.classList.contains('sheet-open')) {
+          document.body.dataset.screen !== screen) {
         cancelAutoNext();
         return;
       }
-      if (Date.now() >= end) {
+      if (document.hidden || document.documentElement.classList.contains('sheet-open')) {
+        if (!autoNextFrozen) autoNextFrozen = Date.now();
+        autoNextTimer = window.setTimeout(tick, 250);
+        return;
+      }
+      if (autoNextFrozen) {
+        autoNextEnd += Date.now() - autoNextFrozen;
+        autoNextFrozen = 0;
+      }
+      if (Date.now() >= autoNextEnd) {
         const nextAction = action;
         cancelAutoNext();
         nextAction();
         return;
       }
       paint();
-      autoNextTimer = window.setTimeout(tick, 200);
+      autoNextTimer = window.setTimeout(tick, 120);
     }
 
-    autoNextTimer = window.setTimeout(tick, 200);
+    autoNextTimer = window.setTimeout(tick, 120);
   }
 
   window.MergeAutoNext = {
     schedule: scheduleAutoNext,
     cancel: cancelAutoNext
   };
+
+  /* ---------- the four compact result cards ---------- */
+
+  // Water Sort, Tic Tac Toe, Minesweeper and Fruit Merge finish in a card that
+  // covers the board, but the card was paint only: the board stayed tappable
+  // behind its scrim, back walked out of the game, and a dismissed card could
+  // never be read again. Each one is a real dialog now. Back, Escape and the
+  // card's own action close it, everything else on the screen leaves the tab
+  // order while it is up, and its footer keeps a quiet "Result" chip so the
+  // last round stays reachable after the card is closed.
+  const compactResults = [
+    { screen: 'water', card: $('water-win') },
+    { screen: 'ttt', card: $('ttt-result') },
+    { screen: 'mines', card: $('mines-result') },
+    { screen: 'fruit', card: $('fruit-over') }
+  ];
+
+  function setCompactInert(card, screenEl, on) {
+    if (on) {
+      const covered = [];
+      let node = card;
+      while (node && node !== screenEl) {
+        const parent = node.parentElement;
+        if (!parent) break;
+        Array.prototype.forEach.call(parent.children, function (sibling) {
+          if (sibling === node || !('inert' in sibling) || sibling.inert) return;
+          sibling.inert = true;
+          covered.push(sibling);
+        });
+        node = parent;
+      }
+      card._covered = covered;
+      return;
+    }
+    (card._covered || []).forEach(function (el) { el.inert = false; });
+    card._covered = null;
+  }
+
+  function wireCompactResult(entry) {
+    const card = entry.card;
+    const screenEl = document.getElementById(entry.screen);
+    if (!card || !screenEl || !('MutationObserver' in window)) return;
+    const footer = screenEl.querySelector('.play-actions');
+    if (!footer) return;
+    const primary = card.querySelector('.play-btn');
+    let chip = null;
+    let dismissed = false;
+
+    function makeChip() {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'play-btn play-btn--ghost play-result-chip';
+      button.textContent = localize('Result');
+      button.dataset.fade = '';
+      button.hidden = true;
+      button.addEventListener('click', function () {
+        dismissed = false;
+        card.hidden = false;
+        sync();
+        if (primary) primary.focus({ preventScroll: true });
+      });
+      footer.insertBefore(button, footer.firstChild);
+      return button;
+    }
+
+    function sync() {
+      const open = !card.hidden;
+      setCompactInert(card, screenEl, open);
+      if (!chip) chip = makeChip();
+      if (open) dismissed = false;
+      chip.hidden = open || !dismissed;
+      if (!open && dismissed) chip.focus({ preventScroll: true });
+    }
+
+    entry.dismiss = function () {
+      if (card.hidden) return;
+      dismissed = true;
+      card.hidden = true;
+      // Closing the card is the reader's answer: no new round may start under
+      // their hands three seconds later.
+      cancelAutoNext();
+      sync();
+    };
+
+    // A round that starts again replaces the result, so the chip goes with it.
+    screenEl.addEventListener('click', function (event) {
+      if (!dismissed || !event.target.closest) return;
+      if (!event.target.closest('.play-btn') || event.target.closest('.play-result-chip')) return;
+      dismissed = false;
+      sync();
+    });
+
+    new MutationObserver(sync).observe(card, { attributes: true, attributeFilter: ['hidden'] });
+    sync();
+  }
+
+  compactResults.forEach(wireCompactResult);
+
+  function openCompactResult() {
+    const screen = document.body.dataset.screen;
+    for (let i = 0; i < compactResults.length; i += 1) {
+      const entry = compactResults[i];
+      if (entry.screen === screen && entry.card && entry.dismiss && !entry.card.hidden) return entry;
+    }
+    return null;
+  }
+
+  // The compact cards answer back and Escape the way the sheet stack does, so
+  // one gesture never dismisses a card and leaves the game at the same time.
+  document.addEventListener('sixfold:back', function (event) {
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    const entry = openCompactResult();
+    if (!entry) return;
+    event.preventDefault();
+    entry.dismiss();
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    const entry = openCompactResult();
+    if (!entry) return;
+    event.preventDefault();
+    entry.dismiss();
+  });
 
   function reducedMotion() {
     return Boolean(window.SixfoldMotion && window.SixfoldMotion.reduced());
@@ -4200,6 +4341,28 @@
     }
   };
 
+  // The legal page is its own document, so coming back from it is a fresh
+  // launch. theme.js records where the hub was before the link was followed;
+  // put the reader back there once the hub has built its cards.
+  function restoreHubScroll() {
+    let saved = null;
+    try {
+      saved = sessionStorage.getItem('sixfold.hubScroll');
+      if (saved !== null) sessionStorage.removeItem('sixfold.hubScroll');
+    } catch (err) {
+      return;
+    }
+    const top = Number(saved);
+    const hubEl = $('hub');
+    if (!hubEl || !(top > 0)) return;
+    // The scroller has no height to clamp against until the cards are in, so
+    // restore after the build has settled rather than on the next frame.
+    window.requestAnimationFrame(function () {
+      window.setTimeout(function () { hubEl.scrollTop = top; }, 80);
+    });
+  }
+
   installPlayTools();
   initRoute();
+  restoreHubScroll();
 })();

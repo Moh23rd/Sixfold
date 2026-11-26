@@ -6,7 +6,7 @@
    German copy stays in the same face instead of falling back. */
 @font-face {
   font-family: "Google Sans Flex";
-  src: url("../fonts/google-sans-flex.woff2?v=5.0.1") format("woff2");
+  src: url("../fonts/google-sans-flex.woff2?v=5.0.2") format("woff2");
   font-weight: 100 1000;
   font-style: normal;
   font-display: swap;
@@ -911,7 +911,7 @@ html.sheet-open body { overflow: hidden; }
   max-height: calc(100dvh - var(--sa-top) - 16px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 18px 18px calc(var(--sa-bottom) + 20px);
+  padding: 0 18px calc(var(--sa-bottom) + 20px);
   border-radius: 20px 20px 0 0;
   background: var(--sheet-bg);
   color: var(--ink);
@@ -929,6 +929,19 @@ html.sheet-open body { overflow: hidden; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+/* A long panel (Look & feel is taller than a phone viewport) used to scroll its
+   own Done button out of reach. Inside a sheet card the head travels with the
+   top edge and paints over the copy that slides beneath it, so the way out is
+   always visible; the card's own top padding moved into the head with it. */
+.sheet-card > .sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 -18px;
+  padding: 18px 18px 10px;
+  background: var(--sheet-bg);
 }
 
 .sheet-head h2 {

@@ -113,6 +113,10 @@ const ALLOWED = new Map([
     "only elements that pass `'inert' in el` are stored, so the release writes touch the same guarded set"
   ],
   [
+    'js/games.js:inert',
+    "the compact result cards only cover siblings that pass `'inert' in sibling`, and release that same stored set"
+  ],
+  [
     'js/wordle.js:Intl.Segmenter',
     'guarded by the `Intl.Segmenter` check; the fallback splits the word by code point'
   ],
