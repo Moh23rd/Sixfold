@@ -606,7 +606,25 @@
     "An offline pocket arcade.": "Una sala de juegos de bolsillo sin conexión.",
     "No ads. No accounts. Offline.": "Sin anuncios. Sin cuentas. Sin conexión.",
     "X wins": "Gana X",
-    "O wins": "Gana O"
+    "O wins": "Gana O",
+    "Back to Sixfold": "Volver a Sixfold",
+    "Source on GitHub": "Código en GitHub",
+    "Sixfold / legal": "Sixfold / legal",
+    "Licenses": "Licencias",
+    "Sixfold is free software released under the GNU General Public License, version 3. The complete source is available on GitHub.": "Sixfold es software libre publicado bajo la Licencia Pública General de GNU, versión 3. El código completo está disponible en GitHub.",
+    "View source on GitHub": "Ver el código en GitHub",
+    "Wordle dictionary sources": "Fuentes de los diccionarios de Wordle",
+    "Third-party word data and the licenses recorded by the dictionary packs.": "Datos de palabras de terceros y las licencias registradas por los paquetes de diccionarios.",
+    "MIT code; contributed word lists may carry their own terms.": "Código MIT; las listas de palabras aportadas pueden tener sus propios términos.",
+    "Apache-2.0 code; data files are CC BY-SA 4.0.": "Código Apache-2.0; los archivos de datos son CC BY-SA 4.0.",
+    "MIT.": "MIT.",
+    "MIT, Copyright (c) 2022 Hannah Park.": "MIT, Copyright (c) 2022 Hannah Park.",
+    "The dictionaries are filtered to five user-perceived characters. Answer and valid-guess pools are both filtered against the audit policy; valid lists remain larger than the answer pools.": "Los diccionarios se filtran a cinco caracteres percibidos por el usuario. Las listas de respuestas y de jugadas válidas se filtran con la política de auditoría; las listas de jugadas válidas siguen siendo mayores que las de respuestas.",
+    "Repository modifications are GPL-3.0-only, while the source data remains under the licenses above. Reference revisions and checked-in hashes are recorded in the sources file; the original extraction revision is not recoverable from this tree.": "Las modificaciones del repositorio son GPL-3.0-only, mientras que los datos de origen siguen bajo las licencias anteriores. Las revisiones de referencia y los hashes incluidos se registran en el archivo de fuentes; la revisión de extracción original no se puede recuperar de este árbol.",
+    "GNU General Public License v3.0": "Licencia Pública General de GNU v3.0",
+    "The canonical license text distributed with Sixfold.": "El texto canónico de la licencia distribuido con Sixfold.",
+    "Read the full GNU GPL v3.0 text": "Leer el texto completo de la GPL de GNU v3.0",
+    "Source code": "Código fuente",
   };
 
   var PATTERNS = [
@@ -833,6 +851,9 @@
 
   function translateHead() {
     if (locale === 'en') return;
+    // The legal page is its own document with its own title and description;
+    // the hub's marketing copy does not belong in its tab.
+    if (document.documentElement.getAttribute('data-page') === 'legal') return;
     var meta = catalog.meta || {};
     var title = meta.title || catalog.messages['Sixfold — Six games. No filler.'];
     if (title) document.title = title;

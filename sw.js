@@ -11,31 +11,31 @@ const CACHE_PREFIX = 'sixfold-';
 // when the asset URLs themselves do not change. The game code has its own
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
-const ASSET = '5.0.0';
+const ASSET = '5.0.1';
 // Haptics has its own suffix: its patterns change without touching the other
 // shared-baseline scripts, and an installed app must pick the new pulse up.
-const HAPTICS_JS = '5.0.1';
+const HAPTICS_JS = '5.0.2';
 const SHARE_CARD = '5.3.3';
-const STYLE_ASSET = '5.4.1';
+const STYLE_ASSET = '5.4.2';
 const FONT_ASSET = '5.0.0';
-const THEME_JS = '6.0.13';
-const OVERSCROLL_JS = '6.0.2';
-const GAME_CODE = '5.3.2';
+const THEME_JS = '6.0.14';
+const OVERSCROLL_JS = '6.0.3';
+const GAME_CODE = '5.3.3';
 const WORDLE_CODE = '5.3.1-wordle';
-const SUDOKU_GAME_CODE = '5.3.1';
+const SUDOKU_GAME_CODE = '5.3.2';
 const LOCALE_FONT = '5.1.4';
-const GAMES_CSS = '5.3.7';
-const POLISH_CSS = '4.0.4-w21';
-const GAMES_JS = '5.4.4';
-const SUDOKU_CSS = '4.0.4';
-const V5_CSS = '5.6.2';
+const GAMES_CSS = '5.3.8';
+const POLISH_CSS = '4.0.4-w22';
+const GAMES_JS = '5.4.5';
+const SUDOKU_CSS = '4.0.5';
+const V5_CSS = '5.6.3';
 const BLUR_CSS = '1.4.0';
-const HOME_CSS = '4.1.9';
+const HOME_CSS = '4.1.10';
 const DAILY_CODE = '5.4.4';
 const PROFILE_CODE = '1.0.0';
 const BADGES_CODE = '1.1.0';
 const GAUNTLET_CODE = '1.0.3';
-const I18N_CODE = '6.0.0';
+const I18N_CODE = '6.0.1';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.
@@ -99,7 +99,7 @@ const SHELL = [
   './css/sudoku.css?v=' + SUDOKU_CSS,
   './css/v5.css?v=' + V5_CSS,
   './css/progressive-blur.css?v=' + BLUR_CSS,
-  './js/settings.js?v=5.4.0',
+  './js/settings.js?v=5.4.1',
   './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
   './js/daily.js?v=' + DAILY_CODE,
@@ -111,7 +111,7 @@ const SHELL = [
   // active catalog; i18n.js warms that catalog after the worker controls it.
   './i18n/i18n-locale.js?v=' + I18N_CODE,
   './i18n/i18n.js?v=' + I18N_CODE,
-  './js/native.js?v=5.1.5',
+  './js/native.js?v=5.1.6',
   './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the
   // offline shell so unlocking it works with no connection. The active locale

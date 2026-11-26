@@ -13,6 +13,7 @@
     "test:death-report": "node --test scripts/lib/death-report.test.mjs",
     "test:reattach": "node --test scripts/lib/reattach.test.mjs",
     "test:cache-budget": "node scripts/check-cache-budgets.mjs",
+    "test:shell-pins": "node scripts/check-shell-pins.mjs",
     "audit:wordle": "node scripts/audit-wordle-dictionaries.mjs",
     "audit:wordle:strict": "node scripts/audit-wordle-dictionaries.mjs --strict",
     "test:headed": "playwright test --headed",

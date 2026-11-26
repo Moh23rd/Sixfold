@@ -557,7 +557,25 @@
     "Tic Tac Toe": "Tic Tac Toe",
     "Minesweeper": "Démineur",
     "Water Sort": "Water Sort",
-    "Fruit Merge": "Fruit Merge"
+    "Fruit Merge": "Fruit Merge",
+    "Back to Sixfold": "Retour à Sixfold",
+    "Source on GitHub": "Code sur GitHub",
+    "Sixfold / legal": "Sixfold / mentions légales",
+    "Licenses": "Licences",
+    "Sixfold is free software released under the GNU General Public License, version 3. The complete source is available on GitHub.": "Sixfold est un logiciel libre publié sous la licence publique générale GNU, version 3. Le code source complet est disponible sur GitHub.",
+    "View source on GitHub": "Voir le code sur GitHub",
+    "Wordle dictionary sources": "Sources des dictionnaires Wordle",
+    "Third-party word data and the licenses recorded by the dictionary packs.": "Données de mots tierces et licences consignées par les paquets de dictionnaires.",
+    "MIT code; contributed word lists may carry their own terms.": "Code MIT ; les listes de mots contribuées peuvent avoir leurs propres conditions.",
+    "Apache-2.0 code; data files are CC BY-SA 4.0.": "Code Apache-2.0 ; les fichiers de données sont sous CC BY-SA 4.0.",
+    "MIT.": "MIT.",
+    "MIT, Copyright (c) 2022 Hannah Park.": "MIT, Copyright (c) 2022 Hannah Park.",
+    "The dictionaries are filtered to five user-perceived characters. Answer and valid-guess pools are both filtered against the audit policy; valid lists remain larger than the answer pools.": "Les dictionnaires sont filtrés à cinq caractères perçus par l’utilisateur. Les listes de réponses et de propositions valides sont toutes deux filtrées selon la politique d’audit ; les listes valides restent plus grandes que les listes de réponses.",
+    "Repository modifications are GPL-3.0-only, while the source data remains under the licenses above. Reference revisions and checked-in hashes are recorded in the sources file; the original extraction revision is not recoverable from this tree.": "Les modifications du dépôt sont sous GPL-3.0-only, tandis que les données sources restent sous les licences ci-dessus. Les révisions de référence et les empreintes versionnées sont consignées dans le fichier des sources ; la révision d’extraction d’origine n’est pas récupérable depuis cette arborescence.",
+    "GNU General Public License v3.0": "Licence publique générale GNU v3.0",
+    "The canonical license text distributed with Sixfold.": "Le texte canonique de la licence distribué avec Sixfold.",
+    "Read the full GNU GPL v3.0 text": "Lire le texte complet de la GPL GNU v3.0",
+    "Source code": "Code source",
   };
 
   function word(value) {

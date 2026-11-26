@@ -2,13 +2,13 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 114220,
-      "sha256": "a1c6d302ecd7b9afd566d5eb2e8995cdfd6cb3b5b531492d7aab9a6ee9c5f9ef"
+      "bytes": 114221,
+      "sha256": "51ffec25272cb5c32ae810b18585e2c96ea81756a617551e887f55fc07a76737"
     },
     {
       "path": "licenses.html",
-      "bytes": 46390,
-      "sha256": "5686e578174243bf10f3c4f068f9c332a4f72b41e4dcc912282c97b4f3364747"
+      "bytes": 48833,
+      "sha256": "2eae6bc64d4aa70f1badc5cf138f70a75f35160363b59df5e715fc8ef157d86b"
     },
     {
       "path": "LICENSE",
@@ -128,12 +128,12 @@
     {
       "path": "i18n/i18n-locale.js",
       "bytes": 2942,
-      "sha256": "c0f34044e8ac04c1fead28c381ff77566cf23aba3cde428ffea3d2a5f03f5049"
+      "sha256": "3d10c9f75964028eec3cf177aed826e2686d08b7156351032042e1ae3ea461cc"
     },
     {
       "path": "i18n/i18n.js",
-      "bytes": 67385,
-      "sha256": "450003d9fb92daa44f6096e65d852881d97970765c08af4c1c5e6e20d14c7498"
+      "bytes": 70022,
+      "sha256": "73c9b1442179a4ebe7496ad51308f7b349d26cd306c1f0735974bc82b5140200"
     },
     {
       "path": "js/native.js",

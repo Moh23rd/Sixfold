@@ -41,6 +41,10 @@ jobs:
     name: Playwright ${{ matrix.group }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The shell-pin check compares each file's last commit with the commit
+          # that set its ?v= pin, so it needs more than the tip.
+          fetch-depth: 0
       - name: Verify every Playwright spec is assigned
         run: |
           assigned=$(grep -E '^[[:space:]]+files:' .github/workflows/test.yml | sed 's/.*files:[[:space:]]*//' | tr '\n' ' ')
@@ -65,6 +69,8 @@ jobs:
         run: npm run audit:wordle
       - name: Audit the WebView JavaScript floor
         run: npm run test:webview-floor
+      - name: Check shell pin drift
+        run: npm run test:shell-pins
       - name: Test the launch death report
         run: npm run test:death-report
       - name: Test the Android attach retry

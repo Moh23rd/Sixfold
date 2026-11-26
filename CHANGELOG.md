@@ -80,6 +80,11 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **The GPL text is collapsible**: the license page opens on the dictionary
   sources and keeps the full GNU GPL v3.0 text behind a native disclosure, so the
   canonical terms are still in the page without burying everything else.
+- **The legal page follows the app, not only the phone**: `licenses.html` reads
+  the saved theme, the saved motion choice and the app's language catalogs, so
+  it opens dark, calm and translated to match the app it belongs to. Its copy
+  joined all twelve locales, and the page keeps its own title instead of the
+  hub's marketing one.
 
 ### Release polish
 
@@ -101,6 +106,10 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **Game-level accessibility controls**: Minesweeper gains larger mine numbers
   and a hide-timer option, while Water Sort gains colour-blind layer symbols;
   both game sheets also expose the existing high-contrast setting.
+- **Shell pins are checked against history**: a new guard fails when a shell
+  file changes after the commit that last set its `?v=` pin, which is how an
+  installed app could otherwise keep serving old bytes under an unchanged URL.
+  The sixteen pins that had already drifted behind their files were bumped.
 - **Android smoke reports host trouble honestly**: the WebView assertions attach
   to the newest visible shell page when an older activity is still listed, and
   a lost emulator becomes a retryable failure instead of being mistaken for a

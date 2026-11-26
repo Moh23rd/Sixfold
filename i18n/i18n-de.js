@@ -557,7 +557,25 @@
     "Tic Tac Toe": "Tic Tac Toe",
     "Minesweeper": "Minesweeper",
     "Water Sort": "Water Sort",
-    "Fruit Merge": "Fruit Merge"
+    "Fruit Merge": "Fruit Merge",
+    "Back to Sixfold": "Zurück zu Sixfold",
+    "Source on GitHub": "Quellcode auf GitHub",
+    "Sixfold / legal": "Sixfold / Rechtliches",
+    "Licenses": "Lizenzen",
+    "Sixfold is free software released under the GNU General Public License, version 3. The complete source is available on GitHub.": "Sixfold ist freie Software, veröffentlicht unter der GNU General Public License, Version 3. Der vollständige Quellcode ist auf GitHub verfügbar.",
+    "View source on GitHub": "Quellcode auf GitHub ansehen",
+    "Wordle dictionary sources": "Quellen der Wordle-Wörterbücher",
+    "Third-party word data and the licenses recorded by the dictionary packs.": "Wortdaten Dritter und die von den Wörterbuchpaketen erfassten Lizenzen.",
+    "MIT code; contributed word lists may carry their own terms.": "MIT-Code; beigesteuerte Wortlisten können eigene Bedingungen haben.",
+    "Apache-2.0 code; data files are CC BY-SA 4.0.": "Apache-2.0-Code; die Datendateien stehen unter CC BY-SA 4.0.",
+    "MIT.": "MIT.",
+    "MIT, Copyright (c) 2022 Hannah Park.": "MIT, Copyright (c) 2022 Hannah Park.",
+    "The dictionaries are filtered to five user-perceived characters. Answer and valid-guess pools are both filtered against the audit policy; valid lists remain larger than the answer pools.": "Die Wörterbücher sind auf fünf vom Nutzer wahrgenommene Zeichen gefiltert. Antwort- und gültige Ratelisten werden beide nach der Prüfrichtlinie gefiltert; die gültigen Listen bleiben größer als die Antwortlisten.",
+    "Repository modifications are GPL-3.0-only, while the source data remains under the licenses above. Reference revisions and checked-in hashes are recorded in the sources file; the original extraction revision is not recoverable from this tree.": "Änderungen am Repository stehen unter GPL-3.0-only, die Quelldaten bleiben unter den oben genannten Lizenzen. Referenzrevisionen und eingecheckte Prüfsummen sind in der Quelldatei festgehalten; die ursprüngliche Extraktionsrevision lässt sich aus diesem Baum nicht wiederherstellen.",
+    "GNU General Public License v3.0": "GNU General Public License v3.0",
+    "The canonical license text distributed with Sixfold.": "Der mit Sixfold ausgelieferte kanonische Lizenztext.",
+    "Read the full GNU GPL v3.0 text": "Den vollständigen GNU-GPL-v3.0-Text lesen",
+    "Source code": "Quellcode",
   };
 
   function word(value) {

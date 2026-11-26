@@ -1,15 +1,44 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-page="legal">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f6f1e8" />
   <meta name="robots" content="noindex" />
+  <script>
+    // This page is its own document, so it resolves the app's saved appearance
+    // itself. Reading only the OS queries here is what left the legal page light
+    // (and always animated) while the app it belongs to was dark or calm.
+    (function () {
+      var root = document.documentElement;
+      var pref = null;
+      try { pref = localStorage.getItem('merge2048.theme'); } catch (err) {}
+      var dark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      var theme = pref === 'dark' || ((!pref || pref === 'auto') && dark) ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      var scheme = document.querySelector('meta[name="color-scheme"]');
+      if (scheme) scheme.setAttribute('content', theme);
+      var chrome = document.querySelector('meta[name="theme-color"]');
+      if (chrome) chrome.setAttribute('content', theme === 'dark' ? '#1a1918' : '#f6f1e8');
+
+      // Motion is a page setting in the app (System, Full or Reduced), so the
+      // device query alone is not the answer. Full stays the default, matching
+      // the hub's boot script.
+      var motion = 'full';
+      try {
+        var saved = JSON.parse(localStorage.getItem('sixfold.settings.v1') || 'null');
+        if (saved && typeof saved.motion === 'string') motion = saved.motion;
+      } catch (err) {}
+      var reduce = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      root.setAttribute('data-motion', motion === 'reduced' || (motion !== 'full' && reduce) ? 'reduced' : 'full');
+    })();
+  </script>
   <title>Licenses — Sixfold</title>
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.0" as="font" type="font/woff2" crossorigin />
   <style>
     :root {
-      color-scheme: light dark;
+      color-scheme: light;
       --font-ui: "Sixfold Sans", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       --page: #f6f1e8;
       --panel: #fbf7f0;
@@ -20,17 +49,16 @@
       --button: #2f2b26;
       --button-ink: #fff8ed;
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --page: #1a1918;
-        --panel: #24211d;
-        --ink: #f1eae0;
-        --muted: #b9aea2;
-        --line: rgba(241, 234, 224, 0.16);
-        --accent: #f09a70;
-        --button: #f1eae0;
-        --button-ink: #24211d;
-      }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --page: #1a1918;
+      --panel: #24211d;
+      --ink: #f1eae0;
+      --muted: #b9aea2;
+      --line: rgba(241, 234, 224, 0.16);
+      --accent: #f09a70;
+      --button: #f1eae0;
+      --button-ink: #24211d;
     }
     * { box-sizing: border-box; }
     html { background: var(--page); }
@@ -199,22 +227,20 @@
       color: var(--muted);
       font-size: 11px;
     }
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-    }
+    html[data-motion="reduced"] { scroll-behavior: auto; }
   </style>
 </head>
 <body>
   <header class="bar">
-    <a href="./">← Sixfold</a>
-    <a href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener">Source on GitHub ↗</a>
+    <a href="./"><span aria-hidden="true">←</span> <span>Back to Sixfold</span></a>
+    <a href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener"><span>Source on GitHub</span> <span aria-hidden="true">↗</span></a>
   </header>
   <main>
     <p class="kicker">Sixfold / legal</p>
     <h1>Licenses</h1>
     <p class="lede">Sixfold is free software released under the GNU General Public License, version 3. The complete source is available on GitHub.</p>
     <div class="actions">
-      <a class="primary" href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener">View source on GitHub ↗</a>
+      <a class="primary" href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener"><span>View source on GitHub</span> <span aria-hidden="true">↗</span></a>
       <a href="LICENSE">LICENSE</a>
     </div>
 
@@ -222,12 +248,14 @@
       <h2 id="dictionary-title">Wordle dictionary sources</h2>
       <p class="section-note">Third-party word data and the licenses recorded by the dictionary packs.</p>
       <ul>
-        <li><a href="https://github.com/Hugo0/wordle" target="_blank" rel="noopener">Wordle Global</a> — MIT code; contributed word lists may carry their own terms.</li>
-        <li><a href="https://github.com/rspeer/wordfreq" target="_blank" rel="noopener">wordfreq</a> — Apache-2.0 code; data files are CC BY-SA 4.0.</li>
-        <li><a href="https://github.com/sen-ltd/wordle-jp" target="_blank" rel="noopener">Wordle JP</a> — MIT.</li>
-        <li><a href="https://github.com/Omkar-Shetkar/wordle-kannada" target="_blank" rel="noopener">Wordle Kannada</a> — MIT, Copyright (c) 2022 Hannah Park.</li>
+        <li><a href="https://github.com/Hugo0/wordle" target="_blank" rel="noopener">Wordle Global</a> — <span>MIT code; contributed word lists may carry their own terms.</span></li>
+        <li><a href="https://github.com/rspeer/wordfreq" target="_blank" rel="noopener">wordfreq</a> — <span>Apache-2.0 code; data files are CC BY-SA 4.0.</span></li>
+        <li><a href="https://github.com/sen-ltd/wordle-jp" target="_blank" rel="noopener">Wordle JP</a> — <span>MIT.</span></li>
+        <li><a href="https://github.com/Omkar-Shetkar/wordle-kannada" target="_blank" rel="noopener">Wordle Kannada</a> — <span>MIT, Copyright (c) 2022 Hannah Park.</span></li>
       </ul>
-      <p>The dictionaries are filtered to five user-perceived characters. Answer and valid-guess pools are both filtered against <code>scripts/wordle-audit-policy.json</code>; valid lists remain larger than the answer pools. Repository modifications are GPL-3.0-only, while the source data remains under the licenses above. Reference revisions and checked-in hashes are recorded in <code>docs/WORDLE-SOURCES.json</code>; the original extraction revision is not recoverable from this tree.</p>
+      <p>The dictionaries are filtered to five user-perceived characters. Answer and valid-guess pools are both filtered against the audit policy; valid lists remain larger than the answer pools.</p>
+      <p>Repository modifications are GPL-3.0-only, while the source data remains under the licenses above. Reference revisions and checked-in hashes are recorded in the sources file; the original extraction revision is not recoverable from this tree.</p>
+      <p class="section-note"><code>scripts/wordle-audit-policy.json</code> · <code>docs/WORDLE-SOURCES.json</code></p>
     </section>
 
     <section aria-labelledby="gpl-title">
@@ -915,7 +943,7 @@ Public License instead of this License.  But first, please read
 
   </main>
   <footer>
-    <span>Sixfold · GPL-3.0-only</span>
+    <span data-i18n-skip>Sixfold · GPL-3.0-only</span>
     <span><a href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener">Source code</a></span>
   </footer>
 
@@ -926,6 +954,18 @@ Public License instead of this License.  But first, please read
     <span></span><span></span><span></span>
   </div>
 
+  <script src="i18n/i18n-locale.js?v=6.0.1"></script>
+  <script>
+    // The same catalog loader the hub uses: only the reader's language is
+    // fetched, and i18n.js translates this page's copy in place.
+    (function () {
+      var locale = window.SixfoldLocale.detect();
+      window.SixfoldLocale.assets(locale).forEach(function (file) {
+        document.write('<script src="' + file + '?v=' + window.SixfoldLocale.VERSION + '"><\/script>');
+      });
+    })();
+  </script>
+  <script src="i18n/i18n.js?v=6.0.1"></script>
   <script>
     // Load the bundled Google Sans Flex face directly; the standalone legal page
     // does not use the app's stylesheet font-loading/recovery path.

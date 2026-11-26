@@ -138,6 +138,31 @@ test('the legal page blurs its edges and keeps the GPL collapsible', async ({ pa
   await expect(details.locator('pre')).toContainText('GNU GENERAL PUBLIC LICENSE');
 });
 
+// The legal page is a separate document, so it resolves the app's saved
+// settings itself. Reading only the OS queries left it light and animated
+// while the app it belongs to was dark and calm.
+test('the legal page follows the saved theme, motion and language', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('merge2048.theme', 'dark');
+    localStorage.setItem('sixfold.settings.v1', JSON.stringify({ motion: 'reduced' }));
+    localStorage.setItem('sixfold.locale.v1', 'ar');
+    localStorage.setItem('sixfold.locale.explicit.v1', '1');
+  });
+  // The device says light and full motion; the saved settings still win.
+  await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'no-preference' });
+  await page.goto('/licenses.html');
+
+  const html = page.locator('html');
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  await expect(html).toHaveAttribute('data-motion', 'reduced');
+  await expect(html).toHaveAttribute('lang', 'ar');
+  await expect(html).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('h1')).toHaveText('التراخيص');
+  await expect(page.locator('.bar a').first()).toContainText('العودة إلى Sixfold');
+  // The canonical terms stay in English inside their disclosure.
+  await expect(page.locator('#gpl-text pre')).toContainText('GNU GENERAL PUBLIC LICENSE');
+});
+
 // Merge is a play screen too, including its full-bleed desktop grid.
 test('the Merge board carries no blur band', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
