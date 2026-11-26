@@ -38,40 +38,13 @@ html[data-theme="dark"] {
 }
 
 .hub-brand {
-  gap: 9px;
   min-width: 0;
-}
-
-.hub-mark {
-  display: block;
-  width: 32px;
-  height: 32px;
-  flex: none;
-  border-radius: 22.3%;
-}
-
-.hub-brand-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
 }
 
 .hub-word {
   font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.2em;
-}
-
-.hub-tagline {
-  color: var(--muted);
-  font-family: var(--font-ui);
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .hub-actions {
@@ -505,13 +478,15 @@ html[data-motion="full"] .home-game.is-picked { animation: cardPicked 430ms cubi
   text-transform: uppercase;
 }
 
-/* home-build is set at app-ready only when the launch resolves to Full. It
-   stays through the launch so the replay on returning to the hub works, and a
-   switch to Reduced drops it: choosing Full later must not replay a build the
-   player already saw (and a Reduced launch must stay still). */
-html.home-build .home-six-piece { animation-name: sixBuild; }
+/* home-build is set at app-ready only when the launch resolves to Full, and
+   hub-settled is set the first time the reader leaves the collection. Together
+   they make the build a launch moment: the hub is display:none behind a game,
+   and without the second guard the browser would restart this animation every
+   time the collection came back. A switch to Reduced still drops home-build,
+   so choosing Full later does not replay a build the player already saw. */
+html.home-build:not(.hub-settled) .home-six-piece { animation-name: sixBuild; }
 
-html.home-build .home-six-caption {
+html.home-build:not(.hub-settled) .home-six-caption {
   animation: sixCaptionIn 360ms var(--ease-out) 340ms both;
 }
 
@@ -1084,7 +1059,6 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 }
 
 @media (max-width: 480px) {
-  .hub-tagline { display: none; }
 }
 
 @media (max-width: 480px) and (orientation: portrait) {
@@ -1109,7 +1083,6 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   }
 
   .hub-word { font-size: 11px; letter-spacing: 0.16em; }
-  .hub-mark { width: 29px; height: 29px; }
   .hub-actions { gap: 5px; }
   .hub-share { width: 36px; height: 36px; }
   .hub-focus { width: 36px; height: 36px; }
@@ -1160,7 +1133,6 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 }
 
 @media (max-width: 340px) {
-  .hub-brand-copy { gap: 2px; }
   .hub-look { padding: 0 8px; }
   .home-hero { grid-template-columns: minmax(0, 1fr) 84px; }
   .home-cta { gap: 7px; font-size: 8.5px; padding: 0 9px; }

@@ -9,18 +9,45 @@ and the internal build **6.0.0** until the next release cut.
 
 ### Fixes and polish
 
+- **The hub is not relaunched on every return**: leaving the collection and
+  coming back replayed the card stagger, the six-piece cover build and the
+  shell lift. The hub is hidden behind a game, and a browser restarts a CSS
+  animation when that element is shown again, so the entrance belongs to the
+  launch only: the classes that own it are switched off the first time the
+  reader leaves the collection. Returning is a cut back to the state they left.
+- **A game screen arrives once**: each play screen is display:none behind the
+  others, so re-entering one replayed its shell lift (and the word game's own
+  arrival). The first visit is the launch moment; a screen left once comes
+  back as a cut.
+- **The masthead is the wordmark alone**: the hub's brand row showed the app
+  icon beside the Sixfold word; the icon is gone and the word stands on its
+  own.
+- **Look & feel stretches like the hub on Android**: the sheet scrolls inside
+  its own fixed card, so it never reached the platform's edge effect. The
+  stretch module now drives the sheet card as its own surface — same pull
+  curve, same 3.2% ceiling, same spring — with its own state, so a drag in the
+  panel never moves the hub behind it.
 - **The four compact results are dialogs**: Water Sort, Tic Tac Toe,
   Minesweeper and Fruit Merge finish in a card that covered the board but kept
   the board tappable behind its scrim, walked out of the game on back, and could
   not be read again once dismissed. Back and Escape now close the card and keep
-  the game, the board and the rest of the screen leave the tab order and the
-  pointer while it is up, and the footer keeps a quiet **Result** chip that
+  the game, the board and the status line leave the tab order and the pointer
+  while it is up, and the footer keeps a quiet **Result** chip that
   reopens the round. The Sudoku solved card covers the number pad and the tool
   row too, not only the board.
 - **A reopened result card gives the board back**: revealing the card ran the
   inert pass twice, and the second pass recorded nothing to release, so a round
   reopened from the **Result** chip left its board and footer inert after it was
   closed again. The pass now keeps the set the first call collected.
+- **A result celebration no longer makes the frame dead**: the win veil is
+  paint only (a box-shadow), but the dialog pass that made the board inert also
+  marked the header, the footer and everything else up to the screen root, so
+  the settings control and the footer could not be tapped for the whole
+  three-second pause. Only the content the card covers — the board and the
+  status line — leaves the pointer and tab order now. The header and footer
+  stay live, Fruit Merge's full-screen overlay lets taps outside its card
+  through, and the four cards are plain dialogs instead of modal ones. The
+  pause itself is still three seconds.
 - **The pause between rounds is a clock**: the three-second auto-next spent its
   time while the app was backgrounded and re-armed every time a finished game
   was re-entered, so a result could vanish before it was read. The countdown now

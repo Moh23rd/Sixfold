@@ -48,14 +48,6 @@ body[data-screen="mines"] .app {
 .hub-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-}
-
-.hub-mark {
-  width: 28px;
-  height: 28px;
-  display: block;
-  border-radius: 22.3%;
 }
 
 .hub-word {
@@ -1141,6 +1133,10 @@ html[data-motion="reduced"] .water-pour-layer { display: none; }
   background: color-mix(in srgb, var(--page) 72%, transparent);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
+  /* A veil, not a wall: on phones this layer goes full-screen, and a tap on
+     the header or the footer must still reach the control under the dimmer.
+     Only the card itself takes the pointer. */
+  pointer-events: none;
 }
 
 .fruit-over-card {
@@ -1150,6 +1146,7 @@ html[data-motion="reduced"] .water-pour-layer { display: none; }
   background: var(--card);
   box-shadow: var(--card-shadow);
   text-align: center;
+  pointer-events: auto;
 }
 
 .fruit-over-card h2 {
@@ -4233,7 +4230,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   to { opacity: 1; transform: none; }
 }
 
-.play-screen:not([hidden]) .play-shell {
+.play-screen:not([hidden]):not(.shell-settled) .play-shell {
   animation: sixfoldShellIn 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 

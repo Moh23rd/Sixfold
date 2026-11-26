@@ -917,6 +917,8 @@ const COMPACT_RESULTS = [
     board: '#water-tubes',
     chip: '#water .play-result-chip',
     primary: '#water-next',
+    settings: '#water-settings-open',
+    sheet: '#water-settings',
     open: finishWaterSort
   },
   {
@@ -935,6 +937,8 @@ const COMPACT_RESULTS = [
     board: '#mines-board',
     chip: '#mines .play-result-chip',
     primary: '#mines-again',
+    settings: '#mines-settings-open',
+    sheet: '#mines-settings',
     open: finishMinesweeper
   },
   {
@@ -944,6 +948,8 @@ const COMPACT_RESULTS = [
     board: '#fruit-canvas',
     chip: '#fruit .play-result-chip',
     primary: '#fruit-again',
+    settings: '#fruit-settings-open',
+    sheet: '#fruit-settings',
     open: finishFruitMerge
   }
 ];
@@ -957,13 +963,39 @@ function boardCovered(page, selector) {
   }, selector);
 }
 
+// The frame around the board is not part of the celebration. Its settings
+// control and the footer have to stay usable while the result is up, or the
+// reader has to wait out the clock to reach them.
+function framePartInert(page, game, part) {
+  return page.evaluate(([screen, selector]) => {
+    const host = document.getElementById(screen);
+    const el = host && host.querySelector(selector);
+    return Boolean(el && el.closest('[inert]'));
+  }, [game.screen, part]);
+}
+
 for (const game of COMPACT_RESULTS) {
   test('back and Escape dismiss the ' + game.name + ' result and the chip brings it back', async ({ page }) => {
     await game.open(page);
     const card = page.locator(game.card);
     await expect(card).toHaveAttribute('role', 'dialog');
-    await expect(card).toHaveAttribute('aria-modal', 'true');
+    // A panel over the board, not a wall around the frame: the header and
+    // footer stay available, so the card is not a modal dialog.
+    await expect(card).not.toHaveAttribute('aria-modal', 'true');
     expect(await boardCovered(page, game.board), 'the board behind the card is inert').toBe(true);
+    expect(await framePartInert(page, game, '.play-head'), 'the header stays live').toBe(false);
+    expect(await framePartInert(page, game, '.play-foot'), 'the footer stays live').toBe(false);
+
+    if (game.settings) {
+      // A real tap at the header's settings control, with a deadline. The
+      // celebration used to hold the frame inert for the whole pause, so this
+      // click waited out the clock and the sheet could never open.
+      await page.locator(game.settings).click({ timeout: 2000 });
+      await expect(page.locator(game.sheet)).toBeVisible();
+      await page.locator(game.sheet + ' .sheet-done').click({ timeout: 2000 });
+      await expect(page.locator(game.sheet)).toBeHidden();
+      await expect(card, 'the result survives a sheet raised over it').toBeVisible();
+    }
 
     await page.keyboard.press('Escape');
     await expect(card, 'Escape closes the card').toBeHidden();
@@ -1008,10 +1040,9 @@ test('the auto-next clock freezes behind a sheet and resumes after it', async ({
     getComputedStyle(document.getElementById('water-next')).getPropertyValue('--auto-next-left')
   ));
 
-  // The result card's scrim owns the pointer while it is up, so the sheet is
-  // raised through the settings button's own click rather than a tap at a point
-  // the scrim would swallow.
-  await page.evaluate(() => document.getElementById('water-settings-open').click());
+  // A real tap reaches the header's settings control while the result is up;
+  // the dimmer is paint only and the frame never leaves the pointer.
+  await page.locator('#water-settings-open').click({ timeout: 2000 });
   await expect(page.locator('#water-settings')).toBeVisible();
   const frozen = await left();
   expect(frozen, 'the pause still has time left when the sheet opens').toBeGreaterThan(0);
@@ -1030,4 +1061,106 @@ test('the auto-next clock freezes behind a sheet and resumes after it', async ({
   );
   await expect(page.locator('#water-win')).toBeHidden();
   await expect(page.locator('#water-next')).not.toHaveClass(/is-counting/);
+});
+
+/* The hub's entrance is a launch moment. The hub is display:none while a game
+   is up, and a browser restarts a CSS animation when its element is shown
+   again, so the cover build and the card stagger used to replay on every
+   return. Only the first view of the collection should animate. */
+test('returning from a game does not replay the hub entrance', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.waitForFunction(() => !document.getElementById('boot-splash'));
+  // Let the launch entrance finish, so anything running later is a replay.
+  await page.waitForTimeout(1200);
+
+  // The masthead is the Sixfold word alone; the icon and tagline are gone.
+  await expect(page.locator('#hub .hub-mark')).toHaveCount(0);
+  await expect(page.locator('#hub .hub-tagline')).toHaveCount(0);
+  await expect(page.locator('#hub .hub-word')).toHaveText('Sixfold');
+
+  await page.locator('.home-game[data-game="ttt"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'ttt');
+
+  const state = await page.evaluate(() => new Promise((resolve) => {
+    let frames = 0;
+    const sample = () => {
+      frames += 1;
+      if (document.body.dataset.screen !== 'hub' && frames < 240) {
+        requestAnimationFrame(sample);
+        return;
+      }
+      const hub = document.getElementById('hub');
+      // An entrance is a CSS animation; the pointer resting on the card the
+      // reader tapped can leave a hover transition running, which is not one.
+      const running = (nodes) => nodes.filter((node) =>
+        node.getAnimations().some((animation) =>
+          animation.playState === 'running' && Boolean(animation.animationName)
+        )
+      ).length;
+      resolve({
+        screen: document.body.dataset.screen,
+        returning: hub.classList.contains('is-returning'),
+        shellAnimation: getComputedStyle(hub.querySelector('.hub-shell')).animationName,
+        runningPieces: running(Array.from(hub.querySelectorAll('.home-six-piece'))),
+        runningCards: running(Array.from(hub.querySelectorAll('.home-game')))
+      });
+    };
+    document.querySelector('#ttt .games-home').click();
+    requestAnimationFrame(sample);
+  }));
+
+  expect(state.screen).toBe('hub');
+  expect(state.returning, 'the hub return lift is gone').toBe(false);
+  expect(state.shellAnimation).toBe('none');
+  expect(state.runningPieces, 'the cover does not rebuild').toBe(0);
+  expect(state.runningCards, 'the cards do not stagger again').toBe(0);
+});
+
+/* Like the hub, a play screen arrives once. The screens are display:none
+   behind each other, so a browser restarts their shell animation on every
+   re-entry; the first visit is the launch moment, and a return is a cut. */
+test('a game screen keeps its shell entrance to the first visit', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.waitForFunction(() => !document.getElementById('boot-splash'));
+
+  const shell = () => page.evaluate(() => {
+    const el = document.querySelector('#water .play-shell');
+    return {
+      settled: document.getElementById('water').classList.contains('shell-settled'),
+      running: el.getAnimations().some((animation) =>
+        animation.playState === 'running' && Boolean(animation.animationName)
+      )
+    };
+  });
+
+  await page.locator('.home-game[data-game="water"]').click();
+  const first = await shell();
+  expect(first.settled, 'the first visit is not settled yet').toBe(false);
+  expect(first.running, 'the first visit plays the shell lift').toBe(true);
+
+  await page.locator('#water .games-home').click();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'hub');
+
+  await page.locator('.home-game[data-game="water"]').click();
+  const again = await shell();
+  expect(again.settled, 'the screen is marked as it is left').toBe(true);
+  expect(again.running, 'a re-entry is a cut, not a second entrance').toBe(false);
+
+  // The word game has its own arrival on top of the shared shell lift, so its
+  // selector is checked directly rather than through the six-tap reveal.
+  const wordle = await page.evaluate(() => {
+    const screen = document.getElementById('wordle');
+    const shellEl = screen.querySelector('.wordle-shell');
+    screen.hidden = false;
+    const first = getComputedStyle(shellEl).animationName;
+    screen.classList.add('shell-settled');
+    const settled = getComputedStyle(shellEl).animationName;
+    screen.classList.remove('shell-settled');
+    screen.hidden = true;
+    return { first, settled };
+  });
+  expect(wordle.first, 'the first visit still gets the word game arrival').toBe('wordleArrive');
+  expect(wordle.settled, 'a settled word game arrives as a cut').toBe('none');
 });

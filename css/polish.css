@@ -117,7 +117,10 @@ html[data-motion="full"] .tile { transition: transform 170ms cubic-bezier(0.22, 
   to { opacity: 1; transform: none; }
 }
 
-.play-screen:not([hidden]) .play-shell {
+/* A screen arrives once. The screens are display:none behind each other, so
+   the browser would restart this lift on every re-entry; shell-settled is set
+   when the reader leaves a screen, and its return is then a cut. */
+.play-screen:not([hidden]):not(.shell-settled) .play-shell {
   animation: sixfoldShellIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -972,7 +975,10 @@ html[data-motion="reduced"] .play-feedback .play-win.has-win::before {
 
 /* 40ms steps instead of 50: the last card used to start at 390ms and land
      at 910ms, which read as the hub still loading. */
-html[data-motion="full"].home-ready .home-grid .home-game {
+/* The cards arrive with the launch. hub-settled is set the first time the
+   reader leaves the collection, so a return from a game is a cut back to a
+   hub that is already built instead of a second entrance. */
+html[data-motion="full"].home-ready:not(.hub-settled) .home-grid .home-game {
     animation: homeCardIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
@@ -988,23 +994,16 @@ html[data-motion="full"].home-ready .home-grid .home-game:nth-child(5) { animati
 
 html[data-motion="full"].home-ready .home-grid .home-game:nth-child(6) { animation-delay: 240ms; }
 
-.hub.is-returning .hub-shell {
-  animation: hubReturn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* Arriving in a game is a change of place rather than a cut, and the shell
-   rise carries it (sixfoldShellIn in games.css). The screen root must stay
-   opaque: it covers the merge board, so fading it let another game show
-   through for a fifth of a second on every card and every die. */
-
-@keyframes hubReturn {
-  from { opacity: 0.55; transform: translateY(10px) scale(0.994); }
-  to { opacity: 1; transform: none; }
-}
+/* Returning to the hub is a cut, not a second launch: the collection keeps
+   the state it had and does not replay its entrance. Arriving in a game is a
+   change of place rather than a cut, and the shell rise carries that
+   (sixfoldShellIn in games.css). The screen root must stay opaque: it covers
+   the merge board, so fading it let another game show through for a fifth of
+   a second on every card and every die. */
 
 /* The hidden game gets a more theatrical arrival than the public cards: a
    brief blur-and-lift before the board settles, still under 600ms. */
-#wordle:not([hidden]) .wordle-shell {
+#wordle:not([hidden]):not(.shell-settled) .wordle-shell {
   animation: wordleArrive 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1297,7 +1296,6 @@ html.hidden-reveal-open body {
 }
 
 html[data-motion="reduced"].home-ready .home-grid .home-game,
-html[data-motion="reduced"] .hub.is-returning .hub-shell,
 html[data-motion="reduced"] #wordle:not([hidden]) .wordle-shell,
 html[data-motion="reduced"] .wordle-result.is-revealed,
 html[data-motion="reduced"] .wordle-result.is-revealed .wordle-result-card,
@@ -1400,7 +1398,7 @@ html.perf-lite .sudoku-paused {
   background: color-mix(in srgb, var(--page) 96%, transparent);
 }
 
-html.perf-lite #wordle:not([hidden]) .wordle-shell { animation-name: wordleArriveLite; }
+html.perf-lite #wordle:not([hidden]):not(.shell-settled) .wordle-shell { animation-name: wordleArriveLite; }
 
 @keyframes wordleArriveLite {
   from { opacity: 0; transform: translateY(8px); }

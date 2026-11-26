@@ -429,9 +429,11 @@
   // covers the board, but the card was paint only: the board stayed tappable
   // behind its scrim, back walked out of the game, and a dismissed card could
   // never be read again. Each one is a real dialog now. Back, Escape and the
-  // card's own action close it, everything else on the screen leaves the tab
-  // order while it is up, and its footer keeps a quiet "Result" chip so the
-  // last round stays reachable after the card is closed.
+  // card's own action close it, the board and status behind it leave the tab
+  // order and the pointer while it is up, and its footer keeps a quiet
+  // "Result" chip so the last round stays reachable after the card is closed.
+  // The header and footer stay live: the celebration covers the board, not the
+  // frame, and the reader can open settings or leave without waiting it out.
   const compactResults = [
     { screen: 'water', card: $('water-win') },
     { screen: 'ttt', card: $('ttt-result') },
@@ -446,9 +448,17 @@
       // siblings already inert, record an empty set, and leave nothing to
       // release when the card closes again, so keep the first set.
       if (card._covered && card._covered.length) return;
+      // The celebration's dimmer is paint only (a box-shadow), so what really
+      // swallowed a tap was this pass. Walking to the screen root also made the
+      // header's settings control and the footer inert, which left the frame
+      // dead for the whole pause: the reader could not stop the clock or open
+      // settings. Only the content the card covers leaves the pointer and tab
+      // order. The frame stays usable, and a sheet raised over the result
+      // already freezes the clock.
+      const boundary = card.closest('.play-main') || screenEl;
       const covered = [];
       let node = card;
-      while (node && node !== screenEl) {
+      while (node && node !== boundary) {
         const parent = node.parentElement;
         if (!parent) break;
         Array.prototype.forEach.call(parent.children, function (sibling) {
@@ -586,12 +596,25 @@
     else app.setAttribute('aria-hidden', 'true');
     body.dataset.screen = screen;
 
+    // The hub's entrance belongs to the launch, not to every return. Once the
+    // reader leaves the collection, the classes that own the entrance are
+    // switched off, so coming back from a game does not replay the cover build
+    // or the card stagger (the hub is display:none behind a game, and a CSS
+    // animation restarts whenever that element is shown again).
+    if (previous === 'hub' && screen !== 'hub') {
+      document.documentElement.classList.add('hub-settled');
+    }
+    // A play screen arrives once too. The screens are display:none behind each
+    // other, so a browser restarts each shell animation on every re-entry;
+    // marking the screen as it is left keeps the first visit the only launch
+    // moment.
+    if (previous && previous !== 'hub' && screens[previous]) {
+      screens[previous].classList.add('shell-settled');
+    }
     if (screen === 'hub' && previous && previous !== 'hub') {
-      hub.classList.remove('is-returning');
-      void hub.offsetWidth;
-      hub.classList.add('is-returning');
-      window.setTimeout(function () { hub.classList.remove('is-returning'); }, 520);
-      window.setTimeout(replaySixBuild, 160);
+      // The hidden game's sequence starts fresh after a visit elsewhere, but
+      // without the build animation that used to run here.
+      resetSixProgress();
     }
 
     if (isMerge) {
@@ -1017,19 +1040,14 @@
     piece.addEventListener('touchcancel', function () { sixTouch = null; }, { passive: true });
   });
 
-  function replaySixBuild() {
-    if (!document.documentElement.classList.contains('home-ready')) return;
-    if (window.SixfoldMotion && window.SixfoldMotion.reduced()) return;
-    const cover = document.querySelector('.home-six');
-    if (!cover) return;
+  /* The cover build is a launch animation. Returning to the hub only resets
+     the hidden game's sequence; it never replays the build. */
+  function resetSixProgress() {
     sixStep = 0;
     sixLocked = false;
     sixLastTapIndex = -1;
     clearSixPress();
     if (sixGrid) sixGrid.classList.remove('is-unlocking');
-    sixPieces.forEach(function (piece) { piece.style.animation = 'none'; });
-    void cover.offsetWidth;
-    sixPieces.forEach(function (piece) { piece.style.animation = ''; });
   }
 
   /* A small pointer tilt on the cover gives desktop mice the same sense of

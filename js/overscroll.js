@@ -34,6 +34,11 @@
    the platform read as a rubber band; growing the page by anything close to the
    finger's travel turns it into a zoom of the whole screen.
 
+   Two surfaces get the effect, because both are fixed shells that scroll
+   internally and so never reach the platform's own edge effect: the hub, and
+   the Look & feel sheet. Each gets its own instance with its own pull state,
+   so a drag inside the sheet never moves the hub behind it.
+
    iOS keeps its native rubber band: this file does nothing there. */
 
 (function () {
@@ -69,36 +74,12 @@
   const SLOP = 6;            // px of travel before a drag is claimed
   const FLING_MIN = 0.35;    // px/ms
 
-  let hub = null;
-  let height = 1;
-  let dir = 0;               // 1 = pulled at the top, -1 = pulled at the bottom
-  let pull = 0;              // EdgeEffect's mPullDistance: viewport fractions
-  let frame = 0;
-  let tracking = false;
-  let startY = 0;
-  let startTop = 0;
-  let lastY = 0;
-  let lastAt = 0;
-  let speed = 0;             // px/ms, finger or momentum
   let allowed = !(window.SixfoldMotion && window.SixfoldMotion.reduced());
-  let lastTop = null;
-  let lastScrollAt = 0;
+  const surfaces = [];
 
   const now = function () {
     return window.performance && performance.now ? performance.now() : Date.now();
   };
-
-  function atTop() {
-    return hub.scrollTop <= 0;
-  }
-
-  function atBottom() {
-    return hub.scrollTop + hub.clientHeight >= hub.scrollHeight - 1;
-  }
-
-  function measure() {
-    height = Math.max(1, hub.clientHeight || window.innerHeight);
-  }
 
   /* The pull saturates the way the platform's does: every extra pixel of drag
      buys less stretch than the last, and the total never leaves STRETCH_MAX. */
@@ -107,223 +88,293 @@
     return Math.min(STRETCH_MAX, STRETCH_INTENSITY * (u + 1 - Math.exp(-u * STRETCH_EXP_RATE)));
   }
 
-  function paint() {
-    if (!hub) return;
-    if (!dir || pull <= 0) {
-      hub.style.transform = '';
-      hub.style.transformOrigin = '';
-      hub.style.willChange = '';
-      return;
+  /* One scroll container and its own edge effect. `frameTransform` is for a
+     surface whose stylesheet animates `transform` (the sheet card rises with a
+     transition): the spring writes the transform every frame, so the surface's
+     own transition has to step aside while a stretch is on screen. */
+  function createStretch(el, options) {
+    const opts = options || {};
+    let height = 1;
+    let dir = 0;               // 1 = pulled at the top, -1 = pulled at the bottom
+    let pull = 0;              // EdgeEffect's mPullDistance: viewport fractions
+    let frame = 0;
+    let tracking = false;
+    let startY = 0;
+    let startTop = 0;
+    let lastY = 0;
+    let lastAt = 0;
+    let speed = 0;             // px/ms, finger or momentum
+    let lastTop = null;
+    let lastScrollAt = 0;
+
+    function atTop() {
+      return el.scrollTop <= 0;
     }
-    // Magnify about the pulled edge — no translation, so the edge never leaves
-    // the viewport and no gap can open above the page. The content between the
-    // edges is stretched and the far edge is pushed out of view.
-    const scale = 1 + stretchOf(pull);
-    hub.style.transformOrigin = dir > 0 ? '50% 0%' : '50% 100%';
-    hub.style.willChange = 'transform';
-    hub.style.transform = 'scale3d(1,' + scale.toFixed(5) + ',1)';
-  }
 
-  function cancel() {
-    if (!frame) return;
-    window.cancelAnimationFrame(frame);
-    frame = 0;
-  }
+    function atBottom() {
+      return el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+    }
 
-  function rest() {
-    cancel();
-    pull = 0;
-    dir = 0;
-    paint();
-  }
+    function measure() {
+      height = Math.max(1, el.clientHeight || window.innerHeight);
+    }
 
-  /* The settle. Integrated on the frame clock with fixed sub-steps so a long
-     frame cannot make the spring explode; stopping it is just a cancelled
-     frame, and the pull stays where the last painted frame left it, which is
-     what lets a touch catch the animation mid-flight. */
-  function settle(from, velocity) {
-    cancel();
-    let x = Math.max(0, from);
-    let v = velocity || 0;
-    let last = now();
+    function paint() {
+      // Magnify about the pulled edge — no translation, so the edge never leaves
+      // the viewport and no gap can open above the page. The content between the
+      // edges is stretched and the far edge is pushed out of view.
+      const scale = 1 + stretchOf(pull);
+      if (opts.frameTransform) el.style.transition = 'none';
+      el.style.transformOrigin = dir > 0 ? '50% 0%' : '50% 100%';
+      el.style.willChange = 'transform';
+      el.style.transform = 'scale3d(1,' + scale.toFixed(5) + ',1)';
+    }
 
-    function step(at) {
-      let dt = Math.min(64, at - last) / 1000;
-      last = at;
-      while (dt > 0) {
-        const slice = Math.min(dt, 1 / 240);
-        const accel = -STIFFNESS * x - DAMPING * v;
-        v += accel * slice;
-        x += v * slice;
-        dt -= slice;
+    function cancel() {
+      if (!frame) return;
+      window.cancelAnimationFrame(frame);
+      frame = 0;
+    }
+
+    function rest() {
+      const wasPulled = dir !== 0 || pull > 0;
+      cancel();
+      pull = 0;
+      dir = 0;
+      // Keep the sheet's entrance transition out of the release: the spring has
+      // already animated the transform to flat, and a transition would replay
+      // that last stretch a second time.
+      if (wasPulled && opts.frameTransform) el.style.transition = 'none';
+      el.style.transform = '';
+      el.style.transformOrigin = '';
+      el.style.willChange = '';
+      if (wasPulled && opts.frameTransform) {
+        window.requestAnimationFrame(function () {
+          if (!pull && !dir) el.style.removeProperty('transition');
+        });
       }
-      if (x <= 0 && v <= 0) {
-        rest();
-        return;
+    }
+
+    /* The settle. Integrated on the frame clock with fixed sub-steps so a long
+       frame cannot make the spring explode; stopping it is just a cancelled
+       frame, and the pull stays where the last painted frame left it, which is
+       what lets a touch catch the animation mid-flight. */
+    function settle(from, velocity) {
+      cancel();
+      let x = Math.max(0, from);
+      let v = velocity || 0;
+      let last = now();
+
+      function step(at) {
+        let dt = Math.min(64, at - last) / 1000;
+        last = at;
+        while (dt > 0) {
+          const slice = Math.min(dt, 1 / 240);
+          const accel = -STIFFNESS * x - DAMPING * v;
+          v += accel * slice;
+          x += v * slice;
+          dt -= slice;
+        }
+        if (x <= 0 && v <= 0) {
+          rest();
+          return;
+        }
+        if (Math.abs(x) <= SETTLE_PULL && Math.abs(v) <= SETTLE_SPEED) {
+          rest();
+          return;
+        }
+        pull = Math.max(0, Math.min(MAX_FRACTION, x));
+        paint();
+        frame = window.requestAnimationFrame(step);
       }
-      if (Math.abs(x) <= SETTLE_PULL && Math.abs(v) <= SETTLE_SPEED) {
-        rest();
-        return;
-      }
-      pull = Math.max(0, Math.min(MAX_FRACTION, x));
-      paint();
+
       frame = window.requestAnimationFrame(step);
     }
 
-    frame = window.requestAnimationFrame(step);
-  }
-
-  function onStart(event) {
-    if (!allowed || !hub || event.touches.length !== 1) {
-      if (tracking) rest();
-      return;
-    }
-    const touch = event.touches[0];
-    // Rule 2: a touch during the settle catches it. The pull is left exactly
-    // where the frame on screen put it and the gesture continues from there.
-    cancel();
-    if (pull > 0) {
-      // Offset the origin of the gesture so the finger resumes the stretch at
-      // the pull it was already showing instead of jumping back to flat.
-      startY = touch.clientY - dir * pull * height;
-    } else {
-      startY = touch.clientY;
-      dir = 0;
-    }
-    startTop = hub.scrollTop;
-    lastY = touch.clientY;
-    lastAt = event.timeStamp || 0;
-    speed = 0;
-    tracking = true;
-  }
-
-  function onMove(event) {
-    if (!allowed || !tracking || event.touches.length !== 1) return;
-    const touch = event.touches[0];
-    const dy = touch.clientY - startY;
-
-    if (!dir) {
-      if (Math.abs(dy) < SLOP) return;
-      if (dy > 0 && atTop()) dir = 1;
-      else if (dy < 0 && atBottom()) dir = -1;
-      else return; // the list can still move: this is a scroll, not a stretch
-    }
-
-    // Travel past what the scroller could use. The scrollTop term means a
-    // swipe that starts halfway down only starts pulling once the list has
-    // actually reached the edge.
-    const over = dir > 0 ? dy - startTop + hub.scrollTop : -dy + startTop - hub.scrollTop;
-
-    if (over <= 0) {
+    function onStart(event) {
+      if (!allowed || event.touches.length !== 1) {
+        if (tracking) rest();
+        return;
+      }
+      // The sheet is hidden between opens, so its height is only known once it
+      // is on screen. Measure per gesture rather than trusting an attach-time
+      // box that was 0.
+      measure();
+      const touch = event.touches[0];
+      // Rule 2: a touch during the settle catches it. The pull is left exactly
+      // where the frame on screen put it and the gesture continues from there.
+      cancel();
       if (pull > 0) {
-        // Rule 3: the finger came back past the edge, so the stretch is spent.
-        // Hand the rest of the gesture to the browser and let the list scroll.
-        rest();
-        tracking = false;
+        // Offset the origin of the gesture so the finger resumes the stretch at
+        // the pull it was already showing instead of jumping back to flat.
+        startY = touch.clientY - dir * pull * height;
       } else {
-        // Still inside the scrollable range: keep watching for the edge.
+        startY = touch.clientY;
         dir = 0;
       }
-      return;
-    }
-
-    if (event.cancelable) event.preventDefault();
-
-    const stamp = event.timeStamp || 0;
-    if (stamp > lastAt) {
-      speed = (touch.clientY - lastY) / (stamp - lastAt);
-      lastAt = stamp;
+      startTop = el.scrollTop;
       lastY = touch.clientY;
+      lastAt = event.timeStamp || 0;
+      speed = 0;
+      tracking = true;
     }
 
-    // Rule 1: the pull is a fraction of the viewport and it is clamped.
-    pull = Math.min(MAX_FRACTION, over / height);
-    paint();
-  }
+    function onMove(event) {
+      if (!allowed || !tracking || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const dy = touch.clientY - startY;
 
-  function onEnd() {
-    if (!tracking) return;
-    tracking = false;
-    if (!dir) return;
-    if (pull > 0) {
-      // A released drag hands the speed it was still carrying *into* the
-      // stretch to the spring, in EdgeEffect's units (viewport fractions per
-      // second). It is capped: a hard flick would otherwise throw the pull far
-      // past what the finger ever showed. Dragging back towards the edge hands
-      // nothing over — the spring takes it from where the finger left it.
-      const into = Math.max(0, Math.min(1.2, (speed * 1000) / height));
-      settle(pull, into);
-    } else {
-      rest();
+      if (!dir) {
+        if (Math.abs(dy) < SLOP) return;
+        if (dy > 0 && atTop()) dir = 1;
+        else if (dy < 0 && atBottom()) dir = -1;
+        else return; // the list can still move: this is a scroll, not a stretch
+      }
+
+      // Travel past what the scroller could use. The scrollTop term means a
+      // swipe that starts halfway down only starts pulling once the list has
+      // actually reached the edge.
+      const over = dir > 0 ? dy - startTop + el.scrollTop : -dy + startTop - el.scrollTop;
+
+      if (over <= 0) {
+        if (pull > 0) {
+          // Rule 3: the finger came back past the edge, so the stretch is spent.
+          // Hand the rest of the gesture to the browser and let the list scroll.
+          rest();
+          tracking = false;
+        } else {
+          // Still inside the scrollable range: keep watching for the edge.
+          dir = 0;
+        }
+        return;
+      }
+
+      if (event.cancelable) event.preventDefault();
+
+      const stamp = event.timeStamp || 0;
+      if (stamp > lastAt) {
+        speed = (touch.clientY - lastY) / (stamp - lastAt);
+        lastAt = stamp;
+        lastY = touch.clientY;
+      }
+
+      // Rule 1: the pull is a fraction of the viewport and it is clamped.
+      pull = Math.min(MAX_FRACTION, over / height);
+      paint();
     }
-  }
 
-  /* A fling that reaches the edge with momentum still in it is absorbed: the
-     platform feeds the velocity into the spring scaled by 13, which shows a
-     short stretch that decays instead of stopping dead on the boundary. */
-  function absorb(direction, momentum) {
-    if (!allowed || !hub || tracking || frame) return;
-    if (direction > 0 ? !atTop() : !atBottom()) return;
-    measure();
-    dir = direction;
-    pull = Math.min(MAX_FRACTION, Math.min(0.35, momentum * 0.18));
-    settle(pull, Math.min(1.5, (momentum * 1000 * ABSORB) / height));
-  }
+    function onEnd() {
+      if (!tracking) return;
+      tracking = false;
+      if (!dir) return;
+      if (pull > 0) {
+        // A released drag hands the speed it was still carrying *into* the
+        // stretch to the spring, in EdgeEffect's units (viewport fractions per
+        // second). It is capped: a hard flick would otherwise throw the pull far
+        // past what the finger ever showed. Dragging back towards the edge hands
+        // nothing over — the spring takes it from where the finger left it.
+        const into = Math.max(0, Math.min(1.2, (speed * 1000) / height));
+        settle(pull, into);
+      } else {
+        rest();
+      }
+    }
 
-  function onScroll() {
-    if (!allowed || !hub) return;
-    const at = now();
-    const top = hub.scrollTop;
-    if (lastTop === null) {
+    /* A fling that reaches the edge with momentum still in it is absorbed: the
+       platform feeds the velocity into the spring scaled by 13, which shows a
+       short stretch that decays instead of stopping dead on the boundary. */
+    function absorb(direction, momentum) {
+      if (!allowed || tracking || frame) return;
+      if (direction > 0 ? !atTop() : !atBottom()) return;
+      measure();
+      dir = direction;
+      pull = Math.min(MAX_FRACTION, Math.min(0.35, momentum * 0.18));
+      settle(pull, Math.min(1.5, (momentum * 1000 * ABSORB) / height));
+    }
+
+    function onScroll() {
+      if (!allowed) return;
+      const at = now();
+      const top = el.scrollTop;
+      if (lastTop === null) {
+        lastTop = top;
+        lastScrollAt = at;
+        return;
+      }
+      const dt = Math.max(1, at - lastScrollAt);
+      const momentum = (top - lastTop) / dt; // px/ms
+      const max = el.scrollHeight - el.clientHeight;
+
+      if (top <= 0 && lastTop > 0 && momentum < -FLING_MIN) absorb(1, -momentum);
+      else if (max > 0 && top >= max && lastTop < max && momentum > FLING_MIN) absorb(-1, momentum);
+
       lastTop = top;
       lastScrollAt = at;
-      return;
     }
-    const dt = Math.max(1, at - lastScrollAt);
-    const momentum = (top - lastTop) / dt; // px/ms
-    const max = hub.scrollHeight - hub.clientHeight;
 
-    if (top <= 0 && lastTop > 0 && momentum < -FLING_MIN) absorb(1, -momentum);
-    else if (max > 0 && top >= max && lastTop < max && momentum > FLING_MIN) absorb(-1, momentum);
+    function attach() {
+      measure();
+      el.addEventListener('touchstart', onStart, { passive: true });
+      el.addEventListener('touchmove', onMove, { passive: false });
+      el.addEventListener('touchend', onEnd, { passive: true });
+      el.addEventListener('touchcancel', onEnd, { passive: true });
+      el.addEventListener('scroll', onScroll, { passive: true });
+    }
 
-    lastTop = top;
-    lastScrollAt = at;
-  }
-
-  function attach() {
-    hub = document.getElementById('hub');
-    if (!hub) return;
-    measure();
-    if (allowed) root.classList.add('has-stretch');
-    hub.addEventListener('touchstart', onStart, { passive: true });
-    hub.addEventListener('touchmove', onMove, { passive: false });
-    hub.addEventListener('touchend', onEnd, { passive: true });
-    hub.addEventListener('touchcancel', onEnd, { passive: true });
-    hub.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', function () {
+    function resize() {
       measure();
       if (tracking || frame) return;
       rest();
-    });
+    }
+
+    return { attach: attach, rest: rest, resize: resize };
   }
 
   // The stretch is part of the motion system, so it follows the page's answer
   // rather than the raw media query: a player who chose Full keeps the stretch
   // on a device that asks for reduced motion, and switching the setting applies
   // without a reload. The settings module announces every change.
-  const syncMotion = function () {
+  function syncMotion() {
     allowed = !(window.SixfoldMotion && window.SixfoldMotion.reduced());
     if (!allowed) {
-      rest();
+      surfaces.forEach(function (surface) { surface.rest(); });
       root.classList.remove('has-stretch');
-    } else if (hub) {
+    } else if (surfaces.length) {
       root.classList.add('has-stretch');
     }
-  };
+  }
   window.addEventListener('sixfold:settings', syncMotion);
   if (motion) {
     if (motion.addEventListener) motion.addEventListener('change', syncMotion);
     else if (motion.addListener) motion.addListener(syncMotion);
+  }
+
+  function attach() {
+    const hub = document.getElementById('hub');
+    if (hub) surfaces.push(createStretch(hub));
+
+    // Look & feel is a fixed sheet that scrolls its own card, so it needs the
+    // same edge effect as the hub. Only that card is a surface: the scrim and
+    // the other sheets keep the platform's own behaviour.
+    const sheet = document.getElementById('sheet');
+    const sheetCard = sheet && sheet.querySelector('.sheet-card');
+    if (sheetCard) {
+      const card = createStretch(sheetCard, { frameTransform: true });
+      surfaces.push(card);
+      // Closing the panel mid-settle must not leave a transform behind for the
+      // next open, whose rise starts from the stylesheet's own value.
+      if ('MutationObserver' in window) {
+        new MutationObserver(function () {
+          if (sheet.hidden || sheet.classList.contains('is-closing')) card.rest();
+        }).observe(sheet, { attributes: true, attributeFilter: ['hidden', 'class'] });
+      }
+    }
+
+    if (allowed && surfaces.length) root.classList.add('has-stretch');
+    surfaces.forEach(function (surface) { surface.attach(); });
+    window.addEventListener('resize', function () {
+      surfaces.forEach(function (surface) { surface.resize(); });
+    });
   }
 
   if (document.readyState === 'loading') {
