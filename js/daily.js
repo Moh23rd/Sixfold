@@ -612,14 +612,11 @@
   // keep the canonical public page.
   const CANONICAL = 'https://moh23rd.github.io/Sixfold/';
   function shareBase() {
-    try {
-      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return CANONICAL;
-      const host = location.hostname;
-      if (/^https?:$/.test(location.protocol) && host && host !== 'localhost' && host !== '127.0.0.1') {
-        return location.origin + location.pathname;
-      }
-    } catch (err) {}
-    return CANONICAL;
+    const native = Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    const host = location.hostname;
+    const local = !host || host === 'localhost' || host === '127.0.0.1';
+    if (native || local || !/^https?:$/.test(location.protocol)) return CANONICAL;
+    return location.origin + location.pathname;
   }
 
   function shareData(dateKey) {

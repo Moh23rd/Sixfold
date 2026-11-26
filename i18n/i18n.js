@@ -988,19 +988,20 @@
     translateHead();
     translateTree(document.body);
     bindLanguage();
-    if ('MutationObserver' in window) {
+    // English needs no translation, so the observer is not installed at all.
+    // Otherwise, re-walking the body on every mutation made each status line and
+    // timer tick re-read the document; the nodes that changed are collected and
+    // translated once per frame instead, and one removed in the meantime is
+    // skipped because it is no longer connected.
+    if (locale !== 'en' && 'MutationObserver' in window) {
       var pending = false;
       var queue = [];
-      // Re-walking the whole body on every mutation made each status line and
-      // timer tick re-read the entire document. Only the nodes that actually
-      // changed need a lookup, so collect those and translate them once per
-      // frame; a node that was removed in the meantime is simply skipped.
       var observer = new MutationObserver(function (records) {
         for (var i = 0; i < records.length; i += 1) {
           var record = records[i];
           if (record.type === 'childList') {
             for (var j = 0; j < record.addedNodes.length; j += 1) queue.push(record.addedNodes[j]);
-          } else if (record.target) {
+          } else {
             queue.push(record.target);
           }
         }
@@ -1008,10 +1009,9 @@
         pending = true;
         window.requestAnimationFrame(function () {
           pending = false;
-          var nodes = queue.splice(0, queue.length);
+          var nodes = queue.splice(0);
           for (var index = 0; index < nodes.length; index += 1) {
-            var node = nodes[index];
-            if (node && node.isConnected !== false) translateNode(node);
+            if (nodes[index].isConnected) translateNode(nodes[index]);
           }
         });
       });

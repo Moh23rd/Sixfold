@@ -3,12 +3,12 @@
     {
       "path": "index.html",
       "bytes": 114221,
-      "sha256": "816b96884ec500507dd9d58d6d966994f27a238883dd65b58a833a1d9ce4b4a3"
+      "sha256": "207df1269a53c16340cd63f706a835f7c45ca750bd3fe5923c7a03ac8ab81c08"
     },
     {
       "path": "licenses.html",
       "bytes": 49140,
-      "sha256": "e47c7904f185bdde27deb71655f001f878902edc46e510ebfb93350f52ac31f1"
+      "sha256": "f7ec95b8043e19fc54f03b6d58065a363dadf913424370d02bb2701269f26da7"
     },
     {
       "path": "LICENSE",
@@ -102,8 +102,8 @@
     },
     {
       "path": "js/daily.js",
-      "bytes": 25454,
-      "sha256": "528611e72e8e23f383f0f3aab27c2db5139edc6a8ae0f8fdc7ee0fee79953cc6"
+      "bytes": 25438,
+      "sha256": "8b4c5a60e16c994136435b4ffcb0ce1ff384752c8f3ab9f0e9f9382e37290150"
     },
     {
       "path": "js/profile.js",
@@ -128,12 +128,12 @@
     {
       "path": "i18n/i18n-locale.js",
       "bytes": 2942,
-      "sha256": "bccf3ac5cabc5896614ad280384a7761e9fd0e097a7ed83002888889fde02b1b"
+      "sha256": "91747c821050f2e71c23e0b3a9fb6f46146b41a3490081148180547dd8ef86a0"
     },
     {
       "path": "i18n/i18n.js",
-      "bytes": 70911,
-      "sha256": "ec9bbcd8ee6cc2979e8a8b1ae1ebbe9ca562b5f129bf7b301f2fdfc301dd5754"
+      "bytes": 70917,
+      "sha256": "274d0d995cb90d1e72fa516121c756ce0c2260a79e31780a0e8a13f359c04d0d"
     },
     {
       "path": "js/native.js",

@@ -2,17 +2,13 @@
 /*
  * Shell pin drift.
  *
- * Every shell URL carries a ?v= pin, and that pin is the cache key: the worker
- * caches './js/theme.js?v=6.0.13' and an installed app keeps serving the copy
- * under that URL until the pin changes. Editing a file without bumping its pin
- * therefore publishes new bytes under an old key, and every reader keeps the
- * old copy until something else forces a refresh. Nothing in the app fails
- * visibly, which is exactly why this needs a guard.
+ * Every shell URL carries a ?v= pin, and that pin is the cache key: an installed
+ * app keeps serving './js/theme.js?v=6.0.13' until the pin changes, so a file
+ * edited without a bump ships new bytes under an old URL and every reader keeps
+ * the old copy. Nothing fails visibly, which is why this needs a guard.
  *
- * The comparison is git history, not the version numbers themselves: for each
- * pinned file, the commit that last changed the file must be the pin's commit
- * or an ancestor of it. A pin can only be read from a committed line, so an
- * uncommitted edit to a shell file or its pin is reported as well.
+ * The comparison is git history, not the version numbers: the commit that last
+ * changed a file must be the commit that set its pin, or one of its ancestors.
  *
  *   node scripts/check-shell-pins.mjs
  */
@@ -44,12 +40,11 @@ function read(file) {
 
 /* ---------- where the pins live ---------- */
 
-// The worker keeps its versions in constants at column zero ('./js/daily.js?v='
-// + DAILY_CODE) or as a literal ('./js/settings.js?v=5.4.0'). Both forms have to
-// resolve to a line a blame can point at.
+// The worker keeps its versions either in a constant at column zero ('./js/
+// daily.js?v=' + DAILY_CODE) or as a literal ('./js/settings.js?v=5.4.0'). Both
+// forms resolve to one line a blame can point at.
 function workerPins() {
-  const source = read(WORKER);
-  const lines = source.split('\n');
+  const lines = read(WORKER).split('\n');
   const constants = new Map();
   lines.forEach((line, index) => {
     const match = line.match(/^const ([A-Z0-9_]+) = '[^']*';/);
@@ -64,7 +59,7 @@ function workerPins() {
   const pins = [];
   for (let index = start; index < end; index += 1) {
     // './js/theme.js?v=' + THEME_JS keeps the constant outside the literal, so
-    // the entry itself only carries the path and the ?v= marker.
+    // the entry itself carries only the path and the ?v= marker.
     const entry = lines[index].match(/^\s*'(\.\/[^']*)'(?:\s*\+\s*([A-Z0-9_]+))?/);
     if (!entry) continue;
     const query = entry[1].indexOf('?v=');
@@ -85,18 +80,14 @@ function workerPins() {
 }
 
 // The pages pin their own scripts, styles, fonts and install art as attribute
-// values or, in the boot scripts, inside a string ('...webmanifest'). Reading
-// the line is enough: it is the blame target either way.
+// values or, in the boot scripts, inside a string. The line is the blame target
+// either way.
 function pagePins(file) {
   const pins = [];
   read(file).split('\n').forEach((line, index) => {
-    const seen = new Set();
-    for (const match of line.matchAll(/([\w./:-]+)\?v=([\w.-]+)/g)) {
-      const url = match[1];
-      const path = url.replace(/^https?:\/\/[^/]+\/(?:Sixfold\/)?/, '').replace(/^\.?\//, '');
-      if (seen.has(path)) continue;
-      seen.add(path);
-      pins.push({ path, label: url + ' in ' + file, file, line: index + 1 });
+    for (const match of line.matchAll(/([\w./:-]+)\?v=[\w.-]+/g)) {
+      const path = match[1].replace(/^https?:\/\/[^/]+\/(?:Sixfold\/)?/, '').replace(/^\.?\//, '');
+      pins.push({ path, label: match[0] + ' in ' + file, file, line: index + 1 });
     }
   });
   return pins;
@@ -120,28 +111,19 @@ function blame(file) {
   return rows;
 }
 
-// The last commit that changed the file, ignoring a local edit: the tree state
-// is not a commit and cannot be pinned to one yet.
+// The last commit that changed the file. A local edit is not a commit and
+// cannot be compared with a pin yet, so it comes back empty.
 function lastCommit(file) {
   return tryGit(['log', '-1', '--format=%H', '--', file]);
 }
 
 function isAncestor(older, newer) {
-  if (!older || !newer) return false;
-  if (older === newer) return true;
   try {
-    execFileSync('git', ['merge-base', '--is-ancestor', older, newer], {
-      cwd: root,
-      stdio: 'ignore'
-    });
+    execFileSync('git', ['merge-base', '--is-ancestor', older, newer], { cwd: root, stdio: 'ignore' });
     return true;
   } catch (err) {
     return false;
   }
-}
-
-function short(sha) {
-  return sha ? sha.slice(0, 7) : 'unknown';
 }
 
 function main() {
@@ -156,7 +138,7 @@ function main() {
     return;
   }
 
-  const pins = [...workerPins(), ...PAGES.flatMap(pagePins)];
+  const pins = [...workerPins(), ...PAGES.flatMap((page) => pagePins(page))];
   if (pins.length === 0) throw new Error('no ?v= pins found in the shell');
 
   const problems = [];
@@ -165,8 +147,11 @@ function main() {
   const history = new Map();
 
   for (const pin of pins) {
-    if (checked.has(pin.path)) continue;
-    checked.add(pin.path);
+    // The same path can be pinned by the worker and by a page, and both pins
+    // have to move with it, so every pin site is checked once.
+    const site = pin.file + ':' + pin.line + ':' + pin.path;
+    if (checked.has(site)) continue;
+    checked.add(site);
 
     if (!existsSync(join(root, pin.path))) {
       problems.push(pin.label + ' pins ' + pin.path + ', which the source tree does not have');
@@ -178,20 +163,16 @@ function main() {
 
     const pinned = blames.get(pin.file).get(pin.line);
     const changed = history.get(pin.path);
-    // A pin with a local edit blames to the all-zero commit: it has no history
-    // yet, so it cannot be compared with the file until both are committed.
+    // A locally edited pin blames to the all-zero commit, and a locally edited
+    // file has no last commit: neither can be compared until both are committed.
     if (!pinned || /^0+$/.test(pinned)) {
       problems.push(pin.label + ' has uncommitted changes, so it cannot pin ' + pin.path);
-      continue;
-    }
-    if (!changed) {
+    } else if (!changed) {
       problems.push(pin.path + ' is not committed yet, so its pin cannot be compared');
-      continue;
-    }
-    if (!isAncestor(changed, pinned)) {
+    } else if (!isAncestor(changed, pinned)) {
       problems.push(
-        pin.path + ' changed in ' + short(changed) + ', after its pin (' + pin.label +
-        ') was last set in ' + short(pinned) + '. Bump the pin.'
+        pin.path + ' changed in ' + changed.slice(0, 7) + ', after its pin (' + pin.label +
+        ') was last set in ' + pinned.slice(0, 7) + '. Bump the pin.'
       );
     }
   }
@@ -203,7 +184,7 @@ function main() {
     return;
   }
 
-  console.log('[shell pins] ' + checked.size + ' pinned shell files agree with the commit that set each pin.');
+  console.log('[shell pins] ' + checked.size + ' pins agree with the commit that set each one.');
 }
 
 try {

@@ -31,11 +31,11 @@ const SUDOKU_CSS = '4.0.5';
 const V5_CSS = '5.6.3';
 const BLUR_CSS = '1.4.0';
 const HOME_CSS = '4.1.10';
-const DAILY_CODE = '5.4.5';
+const DAILY_CODE = '5.4.6';
 const PROFILE_CODE = '1.0.0';
 const BADGES_CODE = '1.1.1';
 const GAUNTLET_CODE = '1.0.3';
-const I18N_CODE = '6.0.2';
+const I18N_CODE = '6.0.3';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.
@@ -169,9 +169,10 @@ function isCurrentDynamic(url) {
   if (kind === 'catalog') return version === I18N_CODE;
   if (kind === 'wordle') return version === WORDLE_CODE;
   if (kind === 'font') return version === LOCALE_FONT;
-  // The install manifest URL carries the build epoch — index.html appends the
-  // package version — so it is never the theme script's pin. Matching the wrong
-  // epoch here dropped the manifest from the offline cache on every activation.
+  // The install manifest carries the release stamp the cache name already
+  // holds, not a per-file pin: index.html appends the package version. Comparing
+  // it with the theme script's pin never matched, so every activation pruned the
+  // cached manifest.
   if (kind === 'manifest') return version === VERSION.slice('sixfold-'.length);
   return false;
 }
