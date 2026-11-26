@@ -82,10 +82,17 @@
   // fire a tick on every touch, which read as a rattle rather than feedback;
   // vibration now belongs only to moves made inside a game.
 
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'hidden') cancel();
-  });
-  window.addEventListener('pagehide', cancel);
+  // Leaving the page does not cancel the motor, deliberately. Cancelling is a
+  // bridge call, and Capacitor answers a plugin call through WebView's message
+  // listener: a reply that arrives after the document has been replaced is
+  // delivered to a native peer the WebView has already released. On Android 13
+  // with WebView 109 that is a SIGSEGV in the app process — the CI tombstone
+  // for the legal-page return is a posted WebView runnable calling a released
+  // JNI peer, and the last bridge traffic before it was this cancel firing from
+  // `visibilitychange` and `pagehide` while `licenses.html` was loading. The
+  // longest pattern here is under 150ms, so a pulse still running when the page
+  // goes away is over before the next screen settles, and the switch below still
+  // stops it on the spot when the reader turns haptics off.
 
   window.MergeHaptics = {
     supported: supported,

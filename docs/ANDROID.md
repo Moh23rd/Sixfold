@@ -115,6 +115,22 @@ disabled translation on every page, now replaced by `[\s\S]`. The CSS floor
 remains a static audit, because those declarations are dropped rather than
 throwing; the API 26 row does not assert the modern design.
 
+One WebView 109 defect is worked around rather than lived with, and the rule it
+leaves behind is simple: **no bridge call while a document is unloading**. When a
+plugin call is still in flight as the page is replaced, Capacitor answers it
+through `JavaScriptReplyProxy.postMessage`, and that reply can reach a native
+peer the WebView has already released. On the API 33 image
+(`109.0.5414.123`) the result is a process-killing `SIGSEGV` in the WebView's own
+main-thread runnable, not in the app: the CI tombstone reads
+`Java_J_N_MayS5i9E+9` in `libmonochrome_64.so` ← `QO.run` ← `Looper.loop`, with
+no app frame anywhere on the stack. The last bridge traffic before that crash
+was the hub's two `Haptics.cancel` calls, issued from `visibilitychange` and
+`pagehide` while `licenses.html` loaded; the legal page's own script had not made
+a single call yet. `js/haptics.js` therefore stops the motor on the switch that
+turns haptics off, not on the way out, where the longest pattern (under 150 ms)
+is over before the next screen settles. Nothing else in the shell calls a plugin
+from `pagehide`, `visibilitychange` or `unload`.
+
 ## Edge-to-edge and safe areas
 
 `MainActivity` draws the WebView behind transparent status and navigation bars,

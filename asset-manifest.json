@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 116895,
-      "sha256": "1c449a10ab17e79f2aac66d7e6a359a487c7215db37bbea5d2a60c8103e70ad9"
+      "bytes": 116896,
+      "sha256": "b19a0f4025208d09888046ffd332ad323b93c576101af64efb540a555ddd2a9c"
     },
     {
       "path": "licenses.html",
@@ -32,8 +32,8 @@
     },
     {
       "path": "js/haptics.js",
-      "bytes": 4349,
-      "sha256": "2d253d577a63b07815bed23bc81c82d5a0c4bece47ec3a90f2e0501e170eccd1"
+      "bytes": 5034,
+      "sha256": "7a9debe428453e76f0f839d8addffed79846f0e64fc8220d8255d19cb3d87837"
     },
     {
       "path": "js/overscroll.js",
