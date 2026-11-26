@@ -21,7 +21,10 @@
         and the dark appearance, and follows a palette tap — the strip read as
         black borders on a phone when it kept the launch resource;
      8. the page surface itself repaints on that tap — the composited scroller
-        used to keep the previous appearance's raster.
+        used to keep the previous appearance's raster;
+     9. leaving the legal page for the hub, through the page's own link and
+        through Android's system back, lands settled: no launch layer is built
+        again and no hub entrance replays over the screen the reader left.
 
    Run it with an emulator attached and the debug APK already built. */
 
@@ -429,10 +432,31 @@ function describeAppearance(state) {
 function attach(url) {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(url.replace('://localhost', '://127.0.0.1'));
-    socket.addEventListener('open', () => resolve(socket), { once: true });
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      if (error) {
+        try { socket.close(); } catch (ignored) {}
+        reject(error);
+      } else {
+        resolve(socket);
+      }
+    };
+    socket.addEventListener('open', () => finish(null), { once: true });
     socket.addEventListener(
       'error',
-      () => reject(new Error('could not attach to the WebView devtools socket')),
+      () => finish(new Error('could not attach to the WebView devtools socket')),
+      { once: true }
+    );
+    // A target replaced while the page is starting can close its socket without
+    // ever firing `error`. Left unhandled, that promise never settles: Node then
+    // empties its event loop with a top-level await outstanding and exits 13
+    // with no reason attached. Treat the close as a failed attach so the retry
+    // and host-loss paths above can see it.
+    socket.addEventListener(
+      'close',
+      () => finish(new Error('the WebView devtools socket closed before it attached')),
       { once: true }
     );
   });
@@ -784,6 +808,111 @@ async function assertNoReplay(where) {
   log(`the consumed shortcut did not replay ${where}`);
 }
 
+/* The legal page is a document of its own, so every way back to the hub loads
+   index.html again. Without the return marker that load replays the launch
+   layer, the boot walker and the hub's entrances over a collection the player
+   has already seen — and the hub itself looks right afterwards, so nothing else
+   in this smoke would notice. Both ways back are asserted: the page's own link,
+   and Android's system back, which the shell forwards to the page as a history
+   step rather than leaving the app from a page that was only opened to read. */
+async function legalPageOpen() {
+  return evaluate(
+    "(() => { const back = document.querySelector('header.bar a[href=\"./\"]');" +
+      " return Boolean(back) && /licenses\\.html$/.test(location.pathname); })()"
+  );
+}
+
+async function openAboutForLegal() {
+  const opened = await evaluate(
+    "(() => { const sheet = document.getElementById('about');" +
+      " const button = document.getElementById('hub-about');" +
+      " if (!button) return 'the hub has no about button';" +
+      " if (!sheet || sheet.hidden) button.click(); return ''; })()"
+  );
+  if (opened) fail(opened);
+  await until(
+    "the About sheet's legal link",
+    async () => {
+      const laidOut = await evaluate(
+        "(() => { const link = document.querySelector('#about a[href=\"licenses.html\"]');" +
+          ' if (!link) return null;' +
+          ' return link.getBoundingClientRect().width > 0 ? true : null; })()'
+      );
+      return laidOut || null;
+    },
+    20000,
+    200
+  );
+}
+
+/* What the page says about itself after a return: whether the launch layer was
+   built, whether the hub came back settled, and whether any hub entrance is
+   still running. The selector list is the one the page-level launch-cover test
+   watches, so the two surfaces judge the same animations. */
+function returnState() {
+  return evaluate(
+    '(() => { const root = document.documentElement;' +
+      ' const running = [];' +
+      " [].slice.call(document.querySelectorAll('.home-six-piece, .home-grid .home-game')).forEach(function (el) {" +
+      '   el.getAnimations().forEach(function (animation) {' +
+      "     if (animation.playState === 'running') running.push(animation.animationName);" +
+      '   });' +
+      ' });' +
+      ' return { path: location.pathname,' +
+      "   splash: Boolean(document.getElementById('boot-splash'))," +
+      "   ready: root.classList.contains('home-ready')," +
+      "   settled: root.classList.contains('hub-settled')," +
+      "   screen: document.body ? document.body.dataset.screen : ''," +
+      "   hub: Boolean(document.getElementById('hub'))," +
+      '   running: running }; })()'
+  );
+}
+
+async function assertLegalReturn(kind) {
+  const via = kind === 'back' ? 'system back' : 'the page link';
+  await openAboutForLegal();
+  const clicked = await evaluate(
+    "(() => { const link = document.querySelector('#about a[href=\"licenses.html\"]');" +
+      " if (!link) return 'the About sheet has no legal link'; link.click(); return ''; })()"
+  );
+  if (clicked) fail(clicked);
+  await until('the legal page to load', async () => ((await legalPageOpen()) ? true : null), 30000, 250);
+  log(`opened the legal page from About (${via})`);
+
+  if (kind === 'back') {
+    // The system button, not a script: the shell's back listener is the path a
+    // player on a phone actually takes.
+    await adbRetry(['shell', 'input', 'keyevent', 'KEYCODE_BACK'], 'pressing the system back button');
+  } else {
+    const back = await evaluate(
+      "(() => { const link = document.querySelector('header.bar a[href=\"./\"]');" +
+        " if (!link) return 'the legal page has no back link'; link.click(); return ''; })()"
+    );
+    if (back) fail(back);
+  }
+
+  const state = await until(
+    `the hub to return from the legal page (${via})`,
+    async () => {
+      const seen = await returnState();
+      const home = seen.path === '/' || /(^|\/)index\.html$/.test(seen.path);
+      return home && seen.hub && seen.ready ? seen : null;
+    },
+    40000,
+    250
+  );
+
+  if (state.splash) fail(`the launch layer was rebuilt on the return from the legal page (${via})`);
+  if (!state.settled) {
+    fail(`the hub came back from the legal page without hub-settled (${via}); the return replayed the launch`);
+  }
+  if (state.screen !== 'hub') fail(`the return from the legal page landed on ${state.screen}, not the hub (${via})`);
+  if (state.running.length) {
+    fail(`the launch entrances replayed on the return from the legal page (${via}): ${state.running.join(', ')}`);
+  }
+  log(`the return from the legal page landed settled (${via}), with no launch layer and no entrance running`);
+}
+
 /* What the hub looks like at the current system text size: the heading's
    rendered size, any horizontal page overflow, and any hub control or text
    block that has run outside the viewport. */
@@ -851,6 +980,25 @@ async function devtoolsTargets() {
   if (pages.length > 1) log(`${pages.length} WebView page targets are open`);
   return pages.length ? pages : null;
 }
+
+/* Node's exit status 13 is "the event loop drained with a top-level await still
+   pending". It carries no reason, and to the shell it is indistinguishable from
+   a harness crash. Every wait above is bounded and every app assertion exits 1
+   with a named reason, so reaching this handler means a promise that can never
+   settle: the devtools socket of a WebView whose renderer or emulator went
+   away. Report it as the host loss the shell already reboots on, so a dead
+   socket is retried instead of failing a row that never reached an assertion.
+   `asserted` is set when the checks have actually finished, which leaves a
+   normal exit alone. */
+let asserted = false;
+process.on('beforeExit', () => {
+  if (asserted) return;
+  console.error(
+    '::error::the smoke ran out of work with a wait still outstanding;' +
+      ' the emulator or its WebView went away'
+  );
+  process.exit(EMULATOR_GONE);
+});
 
 let forwarded = false;
 let rotationSetting = null;
@@ -1539,6 +1687,12 @@ try {
   log(`a cold shortcut started the Daily Gauntlet on ${gauntlet.game} (round ${gauntlet.index + 1}/6)`);
   await backToHub('after the Daily Gauntlet shortcut');
 
+  // Both returns from the legal page. This runs late, after the palette, text
+  // and shortcut checks, because each return loads the app document again; the
+  // rotation below is the only step left and it re-reads the page's own colour.
+  await assertLegalReturn('link');
+  await assertLegalReturn('back');
+
   // The rotation is the last step. Returning to portrait is the same
   // configuration pass in reverse, but this emulator's SwiftShader render
   // thread segfaults on the return (a host crash, not an app crash), and the
@@ -1564,6 +1718,7 @@ try {
   log('the strip stayed on the page colour through the rotation');
 
   if (currentSession) currentSession.socket.close();
+  asserted = true;
   log('the Android shell starts, renders and exposes its native plugins');
 } catch (error) {
   if (error instanceof EmulatorLost) {

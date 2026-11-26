@@ -446,8 +446,13 @@ stylesheets need newer ones (`inset`, flex gap, `min()`/`max()`/`clamp()`,
 `aspect-ratio`, `dvh`, `color-mix()`), so a full run there would assert a
 degraded layout. API 33, 34 and 36 run the full shell checks, including the About
 sheet's first-frame paint trace, the device-side check for the delayed-blur
-regression. Each job downloads the signed APK from the Android job instead of
-rebuilding it, so all API levels install the same artifact.
+regression, and the return from the legal page through both its own
+"Back to Sixfold" link and Android's system back button. The legal page is a
+document of its own, so each return loads the app again; the check fails unless
+that load lands the hub settled, with no launch layer in the DOM and no hub
+entrance still running, which is the same animation set the page-level
+`launch-cover` test watches. Each job downloads the signed APK from the Android
+job instead of rebuilding it, so all API levels install the same artifact.
 
 A cold-starting WebView can be torn down and recreated by the system after the
 activity has started, which closes its DevTools socket before any page answers.
@@ -460,6 +465,16 @@ missing pid is fatal, and the page still has to reach `home-ready` within the
 launch's own deadline, so a slow or dead first paint cannot pass as a WebView
 restart. Assertion failures after the launch proof are never retried, and the
 emulator-lost path (exit 3) still reboots the guest as before.
+
+Exit 13 is the same host loss seen from the harness: Node exits with it when its
+event loop drains while a top-level await is still pending, which here means the
+WebView's DevTools socket went away with the renderer or emulator behind it. The
+smoke maps 13 onto the lost-emulator path, so that row reboots and retries
+instead of failing a run that never reached an assertion. The assertion also
+closes the hole at its source: an attach whose socket closes before it opens is
+rejected instead of leaving a promise pending, and any wait still outstanding
+when the process runs out of work is reported and exits with the lost-emulator
+status rather than the bare 13.
 
 The launcher resources themselves remain audited in source (the static icon
 snapshots, adaptive-icon guard, and no-locale-mipmap check), because a launcher

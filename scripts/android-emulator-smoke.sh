@@ -12,7 +12,11 @@
 # assertion is left holding the last frame the compositor painted — which after
 # a rotation is the theme's cream window background, not the app's page colour.
 # The assertion reports that case with exit status 3 instead of a colour
-# mismatch, and this script restarts the emulator and runs it again.
+# mismatch, and this script restarts the emulator and runs it again. Exit 13 is
+# the other face of the same loss: Node exits with it when its event loop drains
+# while a top-level await is still pending, which in this harness is the
+# devtools socket of a WebView that went away. It is retried as a lost
+# emulator, never reported as an app failure.
 #
 # Environment: ANDROID_SDK_ROOT or ANDROID_HOME must point at an SDK with
 # cmdline-tools, platform-tools and build-tools. API_LEVEL and AVD_NAME are
@@ -230,6 +234,16 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     export PATH="$SDK/platform-tools:$PATH"
     status=0
     node scripts/assert-android-shell.mjs || status=$?
+    # Exit 13 is Node's own "the event loop drained with a top-level await
+    # pending". The assertion bounds every wait and reports an app failure as
+    # exit 1 with a named reason, so 13 means a promise that can never settle:
+    # the WebView devtools socket of a renderer (or emulator) that went away.
+    # That is the same host loss as exit 3, so it has to reboot and retry
+    # instead of failing a row that never reached an assertion.
+    if [ "$status" -eq 13 ]; then
+      note "the assertion lost its WebView socket (status 13); treating the emulator as gone"
+      status=3
+    fi
     # The assertion treats a live page's failure as the app's, but a WebView
     # that stops answering because qemu went away looks the same from Node.
     # Ask the device itself; a gone emulator is the retryable case.
@@ -249,10 +263,11 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     exit 0
   fi
 
-  # Exit 3 is the assertion saying the emulator stopped answering; a boot that
-  # never completed is the same class of loss. Both are worth another boot.
-  # A colour mismatch (exit 1) on a live emulator is a real failure and is not
-  # retried, so a regression cannot be hidden by a second attempt.
+  # Exit 3 is the assertion saying the emulator stopped answering (and exit 13
+  # has already been mapped onto it above); a boot that never completed is the
+  # same class of loss. Both are worth another boot. A colour mismatch (exit 1)
+  # on a live emulator is a real failure and is not retried, so a regression
+  # cannot be hidden by a second attempt.
   if { [ -z "$booted" ] || [ "$status" -eq 3 ]; } && [ "$attempt" -lt "$ATTEMPTS" ]; then
     note "attempt $attempt lost the emulator (status $status); restarting it"
     stop_emulator
