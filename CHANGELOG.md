@@ -23,8 +23,20 @@ and the internal build **6.0.0** until the next release cut.
 - **Back closes a sheet instead of the app**: the hardware back gesture only
   knew about the URL hash, so a sheet over the hub (Look & feel, About) left the
   app from a panel the reader had opened on top of it. The page answers a
-  cancelable `sixfold:back` event first, and back on the legal page returns to
-  the hub through history.
+  cancelable `sixfold:back` event first, and back on the legal page returns to the
+  hub through history.
+- **Back closes a finished round too**: Merge's result card, the Sudoku solved
+  card and the Wordle result card are modals of their own, but back walked out of
+  the game to the hub and left the card mounted, so returning to that game showed
+  the old result. Each one now dismisses on the same event while a sheet opened
+  over it still takes precedence.
+- **Back records the welcome guide**: the gesture closed the one-time guide
+  without writing the flag only the Skip button set, so a fresh install saw the
+  guide again on the next launch. Back now closes it the way the button does.
+- **The share card keeps its i**: the bundled font's `liga` feature maps
+  `fi`/`ffi`/`ffl` onto composites built on `dotlessi`, so at display sizes the
+  hub headline and the share card both read "No fller." and "Works ofline". The
+  font build no longer keeps `liga`, in the page and in the canvas card alike.
 - **CI stops warning about Node 20**: `actions/download-artifact` was pinned at
   v4 and printed the deprecation warning on every emulator row. It now follows
   `upload-artifact` on v8.

@@ -673,3 +673,93 @@ test('back closes the open sheet and leaves the hub on the next press', async ({
   });
   expect(unhandled, 'the hub has nothing left to close').toBe(false);
 });
+
+function pressBack(page) {
+  return page.evaluate(() => {
+    const event = new CustomEvent('sixfold:back', { cancelable: true });
+    document.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+}
+
+// A finished round is a modal of its own. Back has to dismiss it rather than
+// walk out of the game, the same way it closes a sheet; each game owns its
+// card, so each one answers the same event.
+test('back dismisses the Merge result card and stays in Merge', async ({ page }) => {
+  await page.addInitScript((saved) => {
+    localStorage.setItem('sixfold.welcome.v1', '1');
+    localStorage.setItem('merge2048.save', JSON.stringify(saved));
+  }, SAVED_GAME_OVER);
+
+  await page.goto('/?perf=full');
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.locator('.home-game[data-game="merge"]').click();
+  await expect(page.locator('#overlay')).toBeVisible();
+
+  expect(await pressBack(page), 'the result card answers back').toBe(true);
+  await expect(page.locator('#overlay')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'merge');
+});
+
+test('back dismisses the Sudoku result and stays in Sudoku', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sixfold.welcome.v1', '1'));
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  const solved = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('sixfold.sudoku.state.v1'));
+    state.grid = state.solution.slice();
+    state.solved = true;
+    state.hints = 1;
+    state.elapsed = 252;
+    return state;
+  });
+  await page.addInitScript((state) => {
+    localStorage.setItem('sixfold.sudoku.state.v1', JSON.stringify(state));
+  }, solved);
+  await page.reload();
+  await page.waitForFunction(() => !document.getElementById('sudoku-result').hidden);
+
+  expect(await pressBack(page), 'the solved card answers back').toBe(true);
+  await expect(page.locator('#sudoku-result')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'sudoku');
+});
+
+test('back dismisses the Wordle result and stays in Wordle', async ({ page }) => {
+  test.setTimeout(60000);
+  await page.addInitScript(() => {
+    localStorage.setItem('sixfold.welcome.v1', '1');
+    localStorage.setItem('sixfold.locale.v1', 'en');
+  });
+  await page.goto('/');
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  // The seventh game stays hidden behind the six-piece mark on the hub.
+  for (let i = 0; i < 6; i += 1) {
+    await page.evaluate((index) => {
+      const piece = document.querySelectorAll('.home-six-piece')[index];
+      if (piece) piece.click();
+    }, i);
+    await page.waitForTimeout(50);
+  }
+  await page.waitForTimeout(400);
+  if (await page.locator('#hidden-reveal').isVisible()) {
+    await page.evaluate(() => document.querySelector('#hidden-reveal-skip').click());
+  }
+  await page.waitForSelector('body[data-screen="wordle"]');
+  await page.waitForSelector('#wordle-board .wordle-tile');
+
+  const answer = await page.evaluate(() => {
+    const game = JSON.parse(localStorage.getItem('sixfold.wordle.game.v1'));
+    return game.answer;
+  });
+  for (const character of answer) {
+    await page.locator('#wordle-keyboard [data-key="' + character + '"]').click();
+  }
+  await page.locator('#wordle-keyboard [data-key="Enter"]').click();
+  await expect(page.locator('#wordle-result')).toBeVisible();
+
+  expect(await pressBack(page), 'the result card answers back').toBe(true);
+  await expect(page.locator('#wordle-result')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'wordle');
+});

@@ -3,12 +3,12 @@
     {
       "path": "index.html",
       "bytes": 114300,
-      "sha256": "9cc345c91d1910a36188a476e2f177c0788fc66cd0a83f05c0cafe46187604ef"
+      "sha256": "845188e2944e2194a3014ad6d940778a7904b4daa6b77a8fa792ba1918ec39ae"
     },
     {
       "path": "licenses.html",
       "bytes": 52372,
-      "sha256": "516b3bb6ed30caad9cb174795c1ffc6befc01e8ba4b91e6da603266e7e9d5c54"
+      "sha256": "5360494227f3b41c10ae840563da9e912b0f007703290ac451774f81a7e214a6"
     },
     {
       "path": "LICENSE",
@@ -18,17 +18,17 @@
     {
       "path": "css/styles.css",
       "bytes": 50460,
-      "sha256": "48c4b5d52c0914a2cb1be22e0348fa3f2a3e9a1a7ec2a28245e8549c3fd724ad"
+      "sha256": "7782769d2e1d5c0ab0ff4f640218c8c6d5f4369a5322b089fc83680586b7439d"
     },
     {
       "path": "js/theme.js",
-      "bytes": 38715,
-      "sha256": "f318d52158132f02de5efb83be95b9f0d330d461e749da0980599fc1f43000df"
+      "bytes": 38911,
+      "sha256": "524ea59ef437e3c9ef4aaa1e5a1efdf4b2052d690e3061a6ed07b8669c987c54"
     },
     {
       "path": "js/game.js",
-      "bytes": 46371,
-      "sha256": "5d7575aaecb35af8f4e332a8da8747e4f99be14787989fb6fdeee8fa369e9f2e"
+      "bytes": 46786,
+      "sha256": "102c29bd4e0f14772b10c41be964c94f9f608181f6fd4f775b1b3f225e824cd5"
     },
     {
       "path": "js/haptics.js",
@@ -92,8 +92,8 @@
     },
     {
       "path": "js/sudoku.js",
-      "bytes": 45924,
-      "sha256": "66fb903e13db96fe8686b585228c9a0b982b1489ff4a87a80aa3a0016e8ef2ce"
+      "bytes": 46404,
+      "sha256": "94cf84ac7b9c4a9ce9c7c72176a3728c45dde9f4f6f3281f723e597223571a0b"
     },
     {
       "path": "js/games.js",
@@ -143,7 +143,7 @@
     {
       "path": "js/wordle-loader.js",
       "bytes": 4740,
-      "sha256": "de7b24d8180e8542e7723446f966beadc15c44abc278a8a538ef2ef76f9e18d6"
+      "sha256": "cae37411777d5373958ab3c06e3ccde4145564d34864821f2c16b7f3e9430881"
     },
     {
       "path": "js/wordle-words.js",
@@ -157,8 +157,8 @@
     },
     {
       "path": "js/wordle.js",
-      "bytes": 24742,
-      "sha256": "c0bb1fe77decc78957c0dfbadc9a78d2f5b98d379765b37cbf049148102af4f0"
+      "bytes": 25236,
+      "sha256": "aab509c6f37af4496e641ec590296bd784d641f41413578578bc5d0836c7fce0"
     },
     {
       "path": "icons/icon-180.png",
@@ -177,8 +177,8 @@
     },
     {
       "path": "fonts/google-sans-flex.woff2",
-      "bytes": 141004,
-      "sha256": "2305dcc02dc8b181abc648608faa2b3f851778d50c1c0f3aadb86a4307c2bf7a"
+      "bytes": 137516,
+      "sha256": "dfcaf1471fe74a208b835426b71525fe601f619f44fd781c18f348c64cdfb00e"
     }
   ]
 }

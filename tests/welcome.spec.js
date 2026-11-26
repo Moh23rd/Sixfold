@@ -36,6 +36,28 @@ test('a fresh install is welcomed once', async ({ page }) => {
   await expect(page.locator('#welcome')).toBeHidden();
 });
 
+// The hardware back gesture closes the guide, so it has to record the same
+// thing the Skip button does; otherwise the guide is back on the next launch.
+test('back records the guide as seen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await boot(page);
+  const welcome = page.locator('#welcome');
+  await expect(welcome).toBeVisible();
+
+  const handled = await page.evaluate(() => {
+    const event = new CustomEvent('sixfold:back', { cancelable: true });
+    document.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  expect(handled, 'the guide answers back').toBe(true);
+  await expect(welcome).toBeHidden();
+  expect(await page.evaluate(() => localStorage.getItem('sixfold.welcome.v1'))).toBe('1');
+
+  await page.reload();
+  await expect(page.locator('#boot-splash')).toBeHidden();
+  await expect(page.locator('#welcome')).toBeHidden();
+});
+
 test('the guide can be replayed from Look & feel', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await boot(page, { seen: true });

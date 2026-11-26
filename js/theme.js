@@ -633,7 +633,10 @@
   document.addEventListener('sixfold:back', function (event) {
     if (!openSheetEl) return;
     event.preventDefault();
-    closeSheet(openSheetEl);
+    // The guide records that it was seen inside closeWelcome; closing the raw
+    // sheet here would show it again on the next launch.
+    if (openSheetEl === welcomeSheet) closeWelcome();
+    else closeSheet(openSheetEl);
   });
 
   const appearanceSheet = document.getElementById('sheet');

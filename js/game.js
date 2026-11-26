@@ -752,6 +752,15 @@
     });
   }
 
+  // The result card is modal, so the back gesture dismisses it instead of
+  // leaving the game. A sheet opened over it still takes precedence.
+  document.addEventListener('sixfold:back', function (event) {
+    if (overlayEl.hidden || document.body.dataset.screen !== 'merge') return;
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    event.preventDefault();
+    hideOverlay();
+  });
+
   document.addEventListener('keydown', function (e) {
     if (overlayEl.hidden) return;
     if (e.key === 'Escape') {
@@ -1332,7 +1341,7 @@
             }
           }
         }
-        const face = new FontFace(family, 'url("fonts/google-sans-flex.woff2?v=5.0.0")', {
+        const face = new FontFace(family, 'url("fonts/google-sans-flex.woff2?v=5.0.1")', {
           weight: '100 1000',
           display: 'swap'
         });

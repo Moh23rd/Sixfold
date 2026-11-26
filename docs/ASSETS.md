@@ -34,21 +34,23 @@ The script:
 1. Downloads the source at the pinned commit, unless `--source FILE` is given.
 2. Reads the 321-codepoint coverage from the font being replaced, so the new
    file cannot add or lose a character by accident.
-3. Subsets first, keeping the same four layout features (`calt`, `liga`,
-   `locl`, `kern`).
+3. Subsets first, keeping `calt`, `locl` and `kern`. `liga` is left out: its
+   `fi`/`ffi`/`ffl` ligatures are composites built on `dotlessi`, so at display
+   sizes the i loses its stem and the hub headline and the share card both read
+   "No fller." Without the feature the plain f + i keeps its dot in the page and
+   in the canvas card alike.
 4. Pins `ROND=100`, `GRAD=0`, `slnt=0` and `wdth=100`, while keeping the
    `opsz` 6–144 and `wght` 1–1000 axes variable.
-5. Writes a WOFF2 of about 138 KB.
+5. Writes a WOFF2 of about 134 KB.
 
 Subsetting the already-instanced font trips a GDEF VarStore reference to a
 dropped glyph in current fontTools, so the script intentionally subsets before
-instancing. The result has the same 399 glyphs, 321 codepoints and features as
-the checked-in file; WOFF2 table ordering can change the final size by a few
-hundred bytes.
+instancing. The result keeps the same 321 codepoints as the checked-in file;
+WOFF2 table ordering can change the final size by a few hundred bytes.
 
 If the bytes change, bump the font version in `css/styles.css`, `index.html`,
 `licenses.html`, `js/game.js` and `FONT_ASSET` in `sw.js`. The current shipped
-URL is `fonts/google-sans-flex.woff2?v=5.0.0`. The font is SIL OFL 1.1; keep
+URL is `fonts/google-sans-flex.woff2?v=5.0.1`. The font is SIL OFL 1.1; keep
 `fonts/OFL.txt` with it.
 
 ## iOS launch images

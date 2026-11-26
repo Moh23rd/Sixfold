@@ -6,7 +6,7 @@
    German copy stays in the same face instead of falling back. */
 @font-face {
   font-family: "Google Sans Flex";
-  src: url("../fonts/google-sans-flex.woff2?v=5.0.0") format("woff2");
+  src: url("../fonts/google-sans-flex.woff2?v=5.0.1") format("woff2");
   font-weight: 100 1000;
   font-style: normal;
   font-display: swap;

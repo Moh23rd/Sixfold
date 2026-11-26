@@ -983,6 +983,16 @@
     }
   }
 
+  // The solved card is modal; back dismisses it rather than leaving the game.
+  // A sheet opened over it still takes precedence.
+  document.addEventListener('sixfold:back', function (event) {
+    if (!resultEl || resultEl.hidden || document.body.dataset.screen !== 'sudoku') return;
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    event.preventDefault();
+    hideResult();
+    try { boardEl.focus({ preventScroll: true }); } catch (err) {}
+  });
+
   function renderLevelSheet() {
     if (!levelGrid) return;
     levelGrid.innerHTML = '';

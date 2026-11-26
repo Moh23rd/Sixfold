@@ -580,6 +580,16 @@
     resultEl.removeAttribute('data-state');
   }
 
+  // The result card is modal; back dismisses it rather than leaving the game.
+  // A sheet opened over it still takes precedence.
+  document.addEventListener('sixfold:back', function (event) {
+    if (!resultEl || resultEl.hidden || document.body.dataset.screen !== 'wordle') return;
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    event.preventDefault();
+    hideResult();
+    try { (imeInput || boardEl).focus({ preventScroll: true }); } catch (err) {}
+  });
+
   function newGame() {
     window.clearTimeout(revealTimer);
     window.clearTimeout(messageTimer);

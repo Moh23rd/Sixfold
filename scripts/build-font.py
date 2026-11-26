@@ -77,14 +77,18 @@ def main() -> int:
 
         # Subset before instancing. Subsetting the instanced font trips a
         # GDEF VarStore reference to a dropped glyph ('uni2002') in current
-        # fontTools; the subset-first order produces the same 399-glyph,
-        # four-feature font. Keep the same four layout features as the shipped
-        # file so a rebuild does not pull in fractions or numerators.
+        # fontTools; the subset-first order produces the same glyph set.
+        #
+        # `liga` is deliberately left out. Its fi/ffi/ffl ligatures are
+        # composites built on `dotlessi`, so at display sizes "filler" and
+        # "offline" lose the i's stem and the hub headline and the share card
+        # both read "No fller." Without the feature the plain f + i survives,
+        # dot and all, and the card is drawn with the same shaping as the page.
         options = Options()
         options.flavor = "woff2"
         options.notdef_outline = True
         options.recalc_bounds = True
-        options.layout_features = ["calt", "liga", "locl", "kern"]
+        options.layout_features = ["calt", "locl", "kern"]
         subsetter = Subsetter(options=options)
         subsetter.populate(unicodes=codepoints)
         subsetter.subset(font)
