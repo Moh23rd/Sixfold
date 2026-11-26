@@ -80,6 +80,17 @@ whole set feel settled. No accounts, ads, tracking or server.
 - **The GPL text is collapsible**: the license page opens on the dictionary
   sources and keeps the full GNU GPL v3.0 text behind a native disclosure, so the
   canonical terms are still in the page without burying everything else.
+- **Translations only re-read what changed**: the locale observer used to walk
+  the whole document on every mutation, so each timer tick and status line
+  re-translated the entire page. It now translates the nodes that actually
+  changed, once per frame.
+- **A shared daily card links where the app is played**: the share text used to
+  hard-code the public page, so a self-hosted build handed out the wrong
+  address. It now uses the page's own origin and keeps the canonical URL only
+  for the native shell and local development.
+- **An abandoned save can no longer hide a photo**: a save session that the page
+  never finished held its pending gallery row indefinitely. Sessions older than
+  five minutes are discarded with their row, so nothing stays pending forever.
 - **The legal page follows the app, not only the phone**: `licenses.html` reads
   the saved theme, the saved motion choice and the app's language catalogs, so
   it opens dark, calm and translated to match the app it belongs to. Its copy

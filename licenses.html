@@ -84,6 +84,10 @@
     }
     .bar a { text-decoration: none; }
     .bar a:hover { text-decoration: underline; }
+    /* The page follows the app's language, so a right-to-left reader gets a
+       mirrored back arrow and an "open" arrow that points the same way. */
+    .bar .arrow { display: inline-block; }
+    html[dir="rtl"] .bar .arrow { transform: scaleX(-1); }
     .kicker {
       margin: 34px 0 4px;
       color: var(--muted);
@@ -232,15 +236,15 @@
 </head>
 <body>
   <header class="bar">
-    <a href="./"><span aria-hidden="true">←</span> <span>Back to Sixfold</span></a>
-    <a href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener"><span>Source on GitHub</span> <span aria-hidden="true">↗</span></a>
+    <a href="./"><span class="arrow" aria-hidden="true">←</span> <span>Back to Sixfold</span></a>
+    <a href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener"><span>Source on GitHub</span> <span class="arrow" aria-hidden="true">↗</span></a>
   </header>
   <main>
     <p class="kicker">Sixfold / legal</p>
     <h1>Licenses</h1>
     <p class="lede">Sixfold is free software released under the GNU General Public License, version 3. The complete source is available on GitHub.</p>
     <div class="actions">
-      <a class="primary" href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener"><span>View source on GitHub</span> <span aria-hidden="true">↗</span></a>
+      <a class="primary" href="https://github.com/Moh23rd/Sixfold" target="_blank" rel="noopener"><span>View source on GitHub</span> <span class="arrow" aria-hidden="true">↗</span></a>
       <a href="LICENSE">LICENSE</a>
     </div>
 
@@ -263,7 +267,7 @@
       <p class="section-note">The canonical license text distributed with Sixfold.</p>
       <details class="license-text" id="gpl-text">
         <summary>Read the full GNU GPL v3.0 text</summary>
-        <pre>                    GNU GENERAL PUBLIC LICENSE
+        <pre dir="ltr">                    GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. &lt;https://fsf.org/&gt;
@@ -954,7 +958,7 @@ Public License instead of this License.  But first, please read
     <span></span><span></span><span></span>
   </div>
 
-  <script src="i18n/i18n-locale.js?v=6.0.1"></script>
+  <script src="i18n/i18n-locale.js?v=6.0.2"></script>
   <script>
     // The same catalog loader the hub uses: only the reader's language is
     // fetched, and i18n.js translates this page's copy in place.
@@ -965,7 +969,7 @@ Public License instead of this License.  But first, please read
       });
     })();
   </script>
-  <script src="i18n/i18n.js?v=6.0.1"></script>
+  <script src="i18n/i18n.js?v=6.0.2"></script>
   <script>
     // Load the bundled Google Sans Flex face directly; the standalone legal page
     // does not use the app's stylesheet font-loading/recovery path.

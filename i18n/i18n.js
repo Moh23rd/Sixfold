@@ -990,12 +990,29 @@
     bindLanguage();
     if ('MutationObserver' in window) {
       var pending = false;
-      var observer = new MutationObserver(function () {
-        if (pending) return;
+      var queue = [];
+      // Re-walking the whole body on every mutation made each status line and
+      // timer tick re-read the entire document. Only the nodes that actually
+      // changed need a lookup, so collect those and translate them once per
+      // frame; a node that was removed in the meantime is simply skipped.
+      var observer = new MutationObserver(function (records) {
+        for (var i = 0; i < records.length; i += 1) {
+          var record = records[i];
+          if (record.type === 'childList') {
+            for (var j = 0; j < record.addedNodes.length; j += 1) queue.push(record.addedNodes[j]);
+          } else if (record.target) {
+            queue.push(record.target);
+          }
+        }
+        if (pending || !queue.length) return;
         pending = true;
         window.requestAnimationFrame(function () {
           pending = false;
-          translateTree(document.body);
+          var nodes = queue.splice(0, queue.length);
+          for (var index = 0; index < nodes.length; index += 1) {
+            var node = nodes[index];
+            if (node && node.isConnected !== false) translateNode(node);
+          }
         });
       });
       observer.observe(document.body, {

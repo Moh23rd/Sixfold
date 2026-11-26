@@ -31,11 +31,11 @@ const SUDOKU_CSS = '4.0.5';
 const V5_CSS = '5.6.3';
 const BLUR_CSS = '1.4.0';
 const HOME_CSS = '4.1.10';
-const DAILY_CODE = '5.4.4';
+const DAILY_CODE = '5.4.5';
 const PROFILE_CODE = '1.0.0';
 const BADGES_CODE = '1.1.0';
 const GAUNTLET_CODE = '1.0.3';
-const I18N_CODE = '6.0.1';
+const I18N_CODE = '6.0.2';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.

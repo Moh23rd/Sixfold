@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,6 +70,21 @@ public class GallerySavePlugin extends Plugin {
 
     private final Map<String, Sink> sinks = new ConcurrentHashMap<>();
 
+    // A card is encoded and written within a few seconds. A session still open
+    // after this long was abandoned by a page that went away mid-save, and its
+    // pending MediaStore row would stay hidden from the gallery forever.
+    private static final long STALE_MS = 5 * 60 * 1000L;
+
+    /** Discard sessions nothing will ever finish, so their rows cannot leak. */
+    private void sweepStale() {
+        long cutoff = System.currentTimeMillis() - STALE_MS;
+        for (String id : new ArrayList<>(sinks.keySet())) {
+            Sink sink = sinks.get(id);
+            if (sink == null || sink.stamp >= cutoff) continue;
+            if (sinks.remove(id, sink)) discard(sink);
+        }
+    }
+
     /* ---------- single call (kept for small payloads and older JS) ---------- */
 
     @PluginMethod
@@ -112,6 +128,7 @@ public class GallerySavePlugin extends Plugin {
             requestPermissionForAlias("storage", call, "beginAfterPermission");
             return;
         }
+        sweepStale();
         try {
             Sink sink = open(call.getString("name", "sixfold-result.png"));
             String id = UUID.randomUUID().toString();

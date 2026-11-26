@@ -606,6 +606,22 @@
     else { sheet.hidden = true; sheet.classList.remove('is-open'); }
   }
 
+  // A shared card should open the app wherever the reader is already playing
+  // it. The native shell serves itself from https://localhost, and a link to a
+  // development address is useless to whoever receives it, so both of those
+  // keep the canonical public page.
+  const CANONICAL = 'https://moh23rd.github.io/Sixfold/';
+  function shareBase() {
+    try {
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return CANONICAL;
+      const host = location.hostname;
+      if (/^https?:$/.test(location.protocol) && host && host !== 'localhost' && host !== '127.0.0.1') {
+        return location.origin + location.pathname;
+      }
+    } catch (err) {}
+    return CANONICAL;
+  }
+
   function shareData(dateKey) {
     const key = isKey(dateKey) ? dateKey : (shownKey || todayKey());
     const game = featuredGame(key);
@@ -620,7 +636,7 @@
       color: gameColor(game),
       index: ORDER.indexOf(game),
       file: 'sixfold-daily-' + key,
-      url: 'https://moh23rd.github.io/Sixfold/?daily=' + key
+      url: shareBase() + '?daily=' + key
     };
   }
 
