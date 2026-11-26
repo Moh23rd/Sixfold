@@ -28,7 +28,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * theme: that is what keeps the splash out of the phone's day/night colour.
  *
  * A report repaints three surfaces. The window drawable is the strip around
- * the page; the activity content view is the strip exposed by its system-bar
+ * the page; the activity content view is the strip exposed by its keyboard
  * padding; and the WebView's own background is what shows wherever the page is
  * transparent. MainActivity only seeds those at launch, so they have to follow
  * the palette as well. Setting a background drawable already invalidates
@@ -49,7 +49,7 @@ public class WindowSurfacePlugin extends Plugin {
 
     /* Paints every surface the page colour has to cover: the window background
        drawable, which is the strip behind the system bars; the activity content,
-       which is the strip its system-bar padding exposes; and the WebView, which
+       which is the strip its keyboard padding exposes; and the WebView, which
        is everything the page leaves transparent. The window drawable already is
        the decor's background — PhoneWindow installs it there — so setting the
        decor colour as well painted the same rows twice. Callers pass a null

@@ -138,7 +138,32 @@
     else if (scheme.addListener) scheme.addListener(repairSurfaceSoon);
   }
 
+  // A sheet or a dialog sits on top of the screen it was opened from, and back
+  // means "close that" long before it means "leave". The page marks the event
+  // handled when it dismisses its own layer, so the shell never has to know
+  // which panel is up.
+  function pageHandledBack() {
+    if (typeof window.CustomEvent !== 'function') return false;
+    var event;
+    try {
+      event = new CustomEvent('sixfold:back', { cancelable: true });
+    } catch (err) {
+      return false;
+    }
+    document.dispatchEvent(event);
+    return event.defaultPrevented;
+  }
+
   function back() {
+    if (pageHandledBack()) return;
+    // The legal page is a document of its own, so back returns to the hub
+    // through history instead of leaving the app from a page the reader only
+    // opened to read.
+    if (document.documentElement.hasAttribute('data-page')) {
+      if (window.history.length > 1) history.back();
+      else location.replace('./');
+      return;
+    }
     if (location.hash && location.hash !== '#hub') {
       if (window.history.length > 1) history.back();
       else location.hash = '#hub';

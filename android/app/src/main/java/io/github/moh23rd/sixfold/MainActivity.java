@@ -32,6 +32,14 @@ public class MainActivity extends BridgeActivity {
     // the board at the accessibility sizes above it.
     private static final float TEXT_ZOOM_MAX = 1.3f;
 
+    // The bar heights the page was last given, in CSS pixels. -1 means nothing
+    // has been reported yet, so the first pass always crosses the bridge.
+    private static final int NO_INSET = -1;
+    private int insetTop = NO_INSET;
+    private int insetRight = NO_INSET;
+    private int insetBottom = NO_INSET;
+    private int insetLeft = NO_INSET;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(GallerySavePlugin.class);
@@ -98,10 +106,20 @@ public class MainActivity extends BridgeActivity {
                 }
                 return super.shouldOverrideUrlLoading(view, request);
             }
+
+            // A new document starts with no custom properties, so the legal page
+            // needs the bar heights again even though the window's own insets
+            // have not moved.
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                pushInsets(true);
+            }
         });
 
         // Draw the WebView behind the system bars. installStableInsets below
-        // pads the activity content for them (SystemBars' handling is off).
+        // leaves the content full-bleed and reports the bar heights to the page
+        // (SystemBars' handling is off).
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(Color.TRANSPARENT);
@@ -112,16 +130,21 @@ public class MainActivity extends BridgeActivity {
         installStableInsets();
     }
 
-    /* The app pads the activity content itself; SystemBars' inset handling is
-       disabled in capacitor.config.json. Padding the DecorView, as that plugin
-       does, is not stable on API 36's edge-to-edge window: the framework
-       clears the DecorView's padding between inset passes, so the page height
-       flipped between padded and unpadded every few frames. The whole page
-       jumped, and an IME keeps dispatching insets, which turned the jump into
-       a flash. The content view keeps the padding it is given, and consuming
-       the insets stops anything below it from adding a second copy. The IME
-       inset is the keyboard's height, so the page shrinks to the visible area
-       and the focused field stays above the keyboard. */
+    /* SystemBars' inset handling is disabled in capacitor.config.json, and the
+       activity content is not padded for the bars: the WebView keeps the whole
+       window and the page paints its own background under the transparent bars,
+       which is what edge-to-edge looks like. A padded content view left a flat
+       band of the window colour above the status bar and below the navigation
+       bar — the page never reached the edges, so the hub and its glass blur
+       stopped short of them.
+
+       Padding the DecorView, as that plugin does, is not stable on API 36's
+       edge-to-edge window either: the framework clears the DecorView's padding
+       between inset passes, so the page height flipped between padded and
+       unpadded every few frames. The whole page jumped, and an IME keeps
+       dispatching insets, which turned the jump into a flash. The content view
+       is only padded for the keyboard, which keeps the focused field above it.
+       Consuming the insets stops anything below it from adding a second copy. */
     private void installStableInsets() {
         final View content = findViewById(android.R.id.content);
         if (content == null) return;
@@ -130,15 +153,50 @@ public class MainActivity extends BridgeActivity {
                 WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             final Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
             final boolean keyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
-            view.setPadding(
-                bars.left,
-                bars.top,
-                bars.right,
-                keyboard ? Math.max(bars.bottom, ime.bottom) : bars.bottom
-            );
+            view.setPadding(0, 0, 0, keyboard ? Math.max(bars.bottom, ime.bottom) : 0);
+            reportInsets(bars.left, bars.top, bars.right, keyboard ? 0 : bars.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
         ViewCompat.requestApplyInsets(content);
+    }
+
+    /* The page keeps its own gutters and its glass bands clear of the bars
+       through --safe-area-inset-*, which the shell's stylesheet resolves from
+       env() and this property. A WebView reports env() as zero, so the heights
+       are handed over here, in CSS pixels, whenever they change. While the
+       keyboard is up the content is padded instead, so the page is told its
+       bottom inset is gone and only one of the two keeps the same clearance. */
+    private void reportInsets(int left, int top, int right, int bottom) {
+        final float density = getResources().getDisplayMetrics().density;
+        final int l = Math.round(left / density);
+        final int t = Math.round(top / density);
+        final int r = Math.round(right / density);
+        final int b = Math.round(bottom / density);
+        if (l == insetLeft && t == insetTop && r == insetRight && b == insetBottom) return;
+        insetLeft = l;
+        insetTop = t;
+        insetRight = r;
+        insetBottom = b;
+        pushInsets(false);
+    }
+
+    /* Sets the four properties on the document's root element. Inline on the
+       page rather than through a plugin call: the values have to be there for
+       the first layout that uses them, and a page navigation starts over. */
+    private void pushInsets(boolean force) {
+        if (insetTop == NO_INSET && !force) return;
+        final Bridge bridge = getBridge();
+        if (bridge == null) return;
+        final WebView webView = bridge.getWebView();
+        if (webView == null) return;
+        final String js = "(function(){var s=document.documentElement&&document.documentElement.style;" +
+            "if(!s)return;" +
+            "s.setProperty('--safe-area-inset-top','" + Math.max(insetTop, 0) + "px');" +
+            "s.setProperty('--safe-area-inset-right','" + Math.max(insetRight, 0) + "px');" +
+            "s.setProperty('--safe-area-inset-bottom','" + Math.max(insetBottom, 0) + "px');" +
+            "s.setProperty('--safe-area-inset-left','" + Math.max(insetLeft, 0) + "px');" +
+            "})();";
+        webView.post(() -> webView.evaluateJavascript(js, null));
     }
 
     @Override

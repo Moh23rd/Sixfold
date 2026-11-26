@@ -525,6 +525,10 @@
   const hubEl = document.getElementById('hub');
   const sheetOpeners = new WeakMap();
   const sheetCloseTimers = new WeakMap();
+  // The sheet that is up, if any. Android's back gesture asks the page first
+  // (js/native.js dispatches sixfold:back), and the panel on top is what it
+  // should dismiss — not the app underneath it.
+  let openSheetEl = null;
 
   function openSheet(sheet, opener) {
     if (!sheet) return;
@@ -534,6 +538,7 @@
       sheetCloseTimers.delete(sheet);
     }
     sheetOpeners.set(sheet, opener || null);
+    openSheetEl = sheet;
     sheet.hidden = false;
     // Commit the display change before the entering styles, so the card rises
     // rather than appearing on the same frame it is revealed.
@@ -597,6 +602,7 @@
 
   function closeSheet(sheet) {
     if (!sheet || sheet.hidden || sheet.classList.contains('is-closing')) return;
+    if (openSheetEl === sheet) openSheetEl = null;
     // The sheet's own leave animation owns the next 320ms. A colour fade
     // raised by a theme tap a moment ago would replace it, so end it here.
     endCrossFade();
@@ -623,6 +629,12 @@
     }, reduced ? 180 : 320);
     sheetCloseTimers.set(sheet, timer);
   }
+
+  document.addEventListener('sixfold:back', function (event) {
+    if (!openSheetEl) return;
+    event.preventDefault();
+    closeSheet(openSheetEl);
+  });
 
   const appearanceSheet = document.getElementById('sheet');
   const appearanceBtn = document.getElementById('appearance');

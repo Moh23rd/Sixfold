@@ -649,3 +649,27 @@ test('a Reduced result card finishes its fade before the overlay is removed', as
   const lastFade = Math.max(...result.fades.map((event) => event.at));
   expect(result.hiddenAt, 'the hide timer does not cut off a fade').toBeGreaterThan(lastFade);
 });
+
+// Android's back gesture asks the page first: js/native.js dispatches a
+// cancelable sixfold:back and leaves the app alone when the page says it
+// handled it. Without that a sheet over the hub closed the whole app.
+test('back closes the open sheet and leaves the hub on the next press', async ({ page }) => {
+  await openLook(page);
+
+  const handled = await page.evaluate(() => {
+    const event = new CustomEvent('sixfold:back', { cancelable: true });
+    document.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  expect(handled, 'the sheet answers back').toBe(true);
+  await expect(page.locator('#sheet')).toBeHidden();
+
+  // With nothing of its own open the page leaves the decision to the shell,
+  // which is what lets back reach the hub's history or minimise the app.
+  const unhandled = await page.evaluate(() => {
+    const event = new CustomEvent('sixfold:back', { cancelable: true });
+    document.dispatchEvent(event);
+    return event.defaultPrevented;
+  });
+  expect(unhandled, 'the hub has nothing left to close').toBe(false);
+});

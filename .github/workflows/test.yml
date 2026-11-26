@@ -335,7 +335,7 @@ jobs:
       # second APK here would spend one build per API level and could diverge
       # from the artifact users actually install.
       - name: Download debug APK
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: sixfold-debug-apk
           path: android/app/build/outputs/apk/debug

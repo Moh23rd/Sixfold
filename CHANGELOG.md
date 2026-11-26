@@ -9,6 +9,25 @@ and the internal build **6.0.0** until the next release cut.
 
 ### Fixes and polish
 
+- **The app is edge to edge again**: the activity content was padded by the
+  system-bar insets, so the page stopped short of the top and bottom edges and
+  the flat window colour read as a blank border above the status bar and below
+  the navigation bar. The content is full-bleed, and the shell hands the bar
+  heights to the page as `--safe-area-inset-*` in CSS pixels on every change and
+  after every page load, so its gutters and glass bands keep clear of the bars
+  while the hub and the boards run under them. Only the keyboard pads it.
+- **The legal page follows the palette**: the page resolved the saved light/dark
+  and motion settings but not the palette, so a reader on Ocean or Berry got the
+  app's surfaces everywhere except the licenses page, which stayed cream. It
+  tints its own page and panel through the same hue shift the app uses.
+- **Back closes a sheet instead of the app**: the hardware back gesture only
+  knew about the URL hash, so a sheet over the hub (Look & feel, About) left the
+  app from a panel the reader had opened on top of it. The page answers a
+  cancelable `sixfold:back` event first, and back on the legal page returns to
+  the hub through history.
+- **CI stops warning about Node 20**: `actions/download-artifact` was pinned at
+  v4 and printed the deprecation warning on every emulator row. It now follows
+  `upload-artifact` on v8.
 - **The offline cache keeps its install manifest**: the worker pruned the cached
   `manifest.webmanifest` on every activation, because it compared the URL's
   version with the theme script's pin while `index.html` stamps the manifest
@@ -32,11 +51,13 @@ and the internal build **6.0.0** until the next release cut.
   clean tree to pass, edits the file without a bump and requires the failure to
   name both pin sites, then bumps the pins and requires a pass again. Stubbing
   the ancestry check to always succeed fails the test.
-- **The Android smoke checks both system bars in both appearances**: the run
-  compared only the top strip and only in the appearance it started in, so a
-  black bottom strip or a surface stuck on one theme could pass. Both edges are
-  sampled inside the bar in light and dark, and the window, content and WebView
-  surfaces are painted through one helper.
+- **The Android smoke proves the page is edge to edge**: it reads the display's
+  size and density and compares them with the page's viewport and its
+  `--safe-area-inset-*` values, so a padded content view or a shell that stopped
+  reporting the heights fails instead of passing quietly. The status-bar band is
+  sampled in the light and the dark appearance — the edge whose flat band read
+  as a black border — and the navigation-bar band is no longer sampled, because
+  the page paints there now and its rows are whatever the scroller has.
 - **The full smoke runs on API 34**: Android 14 is the last release before the
   platform enforces edge-to-edge, so the strip checks run where that behaviour
   is defined. The launch-only rows now say which engine they measure

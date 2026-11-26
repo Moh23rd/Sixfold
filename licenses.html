@@ -65,7 +65,7 @@
     body {
       max-width: 900px;
       margin: 0 auto;
-      padding: 0 22px max(34px, calc(env(safe-area-inset-bottom) + 28px));
+      padding: 0 22px max(34px, calc(max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)) + 28px));
       background: var(--page);
       color: var(--ink);
       font-family: var(--font-ui);
@@ -77,7 +77,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: max(24px, calc(env(safe-area-inset-top) + 24px)) 0 12px;
+      padding: max(24px, calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)) + 24px)) 0 12px;
       border-bottom: 1px solid var(--line);
       font-size: 12px;
       font-weight: 800;
@@ -185,13 +185,13 @@
         left: 0;
         z-index: 40;
         display: block;
-        height: calc(env(safe-area-inset-top, 0px) + 16px);
+        height: calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)) + 16px);
         pointer-events: none;
       }
       .edge-blur--bottom {
         top: auto;
         bottom: 0;
-        height: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        height: calc(max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)) + 8px);
         /* The ramp has to run toward the band's own edge: with the top band's
            direction the deepest blur peaked mid-band and left the navigation
            bar sharp. */
@@ -233,6 +233,78 @@
     }
     html[data-motion="reduced"] { scroll-behavior: auto; }
   </style>
+  <script>
+    // The palette (Warm, Ocean, Forest, Berry, Dusk, Mono) is a setting of its
+    // own, and the app tints its page and panels with it. This page is a
+    // separate document, so it tints its own two surfaces the same way;
+    // otherwise a reader on a tinted palette got the app's colours everywhere
+    // except here, which stayed cream. The maths is the app's (theme.js): shift
+    // the hue, or desaturate for Mono, and keep the brightness curve.
+    (function () {
+      var palette = 'warm';
+      try { palette = localStorage.getItem('merge2048.palette') || 'warm'; } catch (err) {}
+      var shift = { ocean: 196, forest: 104, berry: 296, dusk: 252 }[palette];
+      var mono = palette === 'mono';
+      if (!mono && typeof shift !== 'number') return;
+
+      function toHsl(r, g, b) {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+        var max = Math.max(r, g, b);
+        var min = Math.min(r, g, b);
+        var l = (max + min) / 2;
+        var h = 0;
+        var s = 0;
+        if (max !== min) {
+          var d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+          else if (max === g) h = (b - r) / d + 2;
+          else h = (r - g) / d + 4;
+          h *= 60;
+        }
+        return [h, s, l];
+      }
+
+      function toHex(h, s, l) {
+        h = ((h % 360) + 360) % 360;
+        var c = (1 - Math.abs(2 * l - 1)) * s;
+        var x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+        var m = l - c / 2;
+        var rgb;
+        if (h < 60) rgb = [c, x, 0];
+        else if (h < 120) rgb = [x, c, 0];
+        else if (h < 180) rgb = [0, c, x];
+        else if (h < 240) rgb = [0, x, c];
+        else if (h < 300) rgb = [x, 0, c];
+        else rgb = [c, 0, x];
+        return '#' + rgb.map(function (value) {
+          var n = Math.max(0, Math.min(255, Math.round((value + m) * 255)));
+          return (n < 16 ? '0' : '') + n.toString(16);
+        }).join('');
+      }
+
+      function tint(hex) {
+        var n = parseInt(hex.slice(1), 16);
+        var hsl = toHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+        if (mono) return toHex(hsl[0], 0.04, hsl[2]);
+        return toHex(hsl[0] + shift, hsl[1], hsl[2]);
+      }
+
+      var computed = getComputedStyle(document.documentElement);
+      ['--page', '--panel'].forEach(function (name) {
+        var value = computed.getPropertyValue(name).trim();
+        if (!/^#[0-9a-f]{6}$/i.test(value)) return;
+        var next = tint(value);
+        document.documentElement.style.setProperty(name, next);
+        // The status bar follows the page, as it does in the app.
+        if (name !== '--page') return;
+        var chrome = document.querySelector('meta[name="theme-color"]');
+        if (chrome) chrome.setAttribute('content', next);
+      });
+    })();
+  </script>
 </head>
 <body>
   <header class="bar">
@@ -985,5 +1057,8 @@ Public License instead of this License.  But first, please read
       }).catch(function () {});
     })();
   </script>
+  <!-- Back has to return to the hub from here, not close the app, and the bar
+       icons have to follow this page's appearance. Both are the shell's job. -->
+  <script src="js/native.js?v=5.1.7"></script>
 </body>
 </html>

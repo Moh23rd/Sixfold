@@ -161,6 +161,32 @@ test('the legal page follows the saved theme, motion and language', async ({ pag
   await expect(page.locator('.bar a').first()).toContainText('العودة إلى Sixfold');
   // The canonical terms stay in English inside their disclosure.
   await expect(page.locator('#gpl-text pre')).toContainText('GNU GENERAL PUBLIC LICENSE');
+
+  // The palette is a setting of its own, and the app tints its page and panels
+  // with it. This page is a separate document, so it tints its own copy;
+  // without that a reader on Berry saw the app's surfaces everywhere except
+  // here, which stayed on the neutral page colour.
+  // In the light appearance: the dark page is nearly neutral, so its own hue
+  // shift rounds back to the same hex in either setting.
+  await page.evaluate(() => {
+    localStorage.setItem('merge2048.theme', 'light');
+    localStorage.removeItem('merge2048.palette');
+  });
+  await page.goto('/licenses.html');
+  const neutral = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--page').trim()
+  );
+  await page.evaluate(() => localStorage.setItem('merge2048.palette', 'berry'));
+  await page.goto('/licenses.html');
+  const tinted = await page.evaluate(() => ({
+    page: getComputedStyle(document.documentElement).getPropertyValue('--page').trim(),
+    panel: getComputedStyle(document.documentElement).getPropertyValue('--panel').trim(),
+    chrome: document.querySelector('meta[name="theme-color"]').getAttribute('content')
+  }));
+  expect(tinted.page).not.toBe(neutral);
+  expect(tinted.panel).not.toBe(neutral);
+  // The status bar follows the page, as it does in the app.
+  expect(tinted.chrome).toBe(tinted.page);
 });
 
 // Merge is a play screen too, including its full-bleed desktop grid.

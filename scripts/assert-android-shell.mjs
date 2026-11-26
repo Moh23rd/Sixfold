@@ -14,11 +14,12 @@
      3. a card opens its game, which proves the game screens mount and lay out;
      4. the Haptics plugin is present in the bridge's plugin map;
      5. calling it settles instead of failing as unimplemented;
-     6. both strips behind the system bars carry the page colour in the light
-        and the dark appearance — the window drawable and the padded content
-        view, which is what read as black borders on a phone;
-     7. a palette tap repaints those strips — the surface SystemBars rewrote
-        when the strip went stale;
+     6. the page fills the window and the bar heights reach it as
+        --safe-area-inset-*, i.e. it is edge to edge instead of sitting inside
+        a padded content view, which is what read as blank borders;
+     7. the band behind the status bar carries the page colour in the light
+        and the dark appearance, and follows a palette tap — the strip read as
+        black borders on a phone when it kept the launch resource;
      8. the page surface itself repaints on that tap — the composited scroller
         used to keep the previous appearance's raster.
 
@@ -208,16 +209,17 @@ function decodePng(buffer) {
   return { width, height, bpp, pixels };
 }
 
-/* The dominant colour of the band behind the system bars. That band is the
-   surface the palette report paints: MainActivity pads the activity content by
-   the bar heights, so nothing from the page reaches these rows. Icons and the
-   clock sit in those rows too, so take the mode rather than one pixel, and skip
-   pure black (a rounded corner, a simulated cutout or a letterboxed row).
+/* The dominant colour of the band behind the system bars. The page paints
+   those rows itself now, so this is page background where the layout has any
+   (the status bar sits above the hub's header), and page content anywhere the
+   scroller runs under a bar. Icons and the clock sit in those rows too, so take
+   the mode rather than one pixel, and skip pure black (a rounded corner, a
+   simulated cutout or a letterboxed row).
 
    Stay inside the bar itself. A status bar is about 24dp, a gesture bar 24dp
    and a 3-button bar 48dp; on a 640dp-tall screen that is 1.5-7.5% of the
-   height. The old 3.5%-wide window ran past the bar on a tall screen and
-   sampled page content, which is not the strip this assertion is about. */
+   height. A wider window ran past the bar on a tall screen and sampled page
+   content, which is not the band this assertion is about. */
 function stripColour(png, edge) {
   const from = edge === 'top' ? Math.round(png.height * 0.006) : Math.round(png.height * 0.975);
   const to = edge === 'top' ? Math.round(png.height * 0.038) : Math.round(png.height * 0.994);
@@ -291,16 +293,36 @@ async function readPageSurface() {
   return best === null ? null : `#${best.toString(16).padStart(6, '0')}`;
 }
 
+/* The display size in CSS pixels: `wm size` reports device pixels and `wm
+   density` the density, so a page that fills the window reports size ÷
+   (density / 160). Both answers can carry an override line, which is the one in
+   force, so take the last value in each. */
+function screenCssSize() {
+  const sizeText = adbSafe(['shell', 'wm', 'size']) || '';
+  const densityText = adbSafe(['shell', 'wm', 'density']) || '';
+  const sizes = [...sizeText.matchAll(/(\d+)x(\d+)/g)];
+  const densities = [...densityText.matchAll(/(\d+)/g)];
+  if (!sizes.length || !densities.length) return null;
+  const size = sizes[sizes.length - 1];
+  const scale = Number(densities[densities.length - 1][1]) / 160;
+  if (!(scale > 0)) return null;
+  return {
+    width: Math.round(Number(size[1]) / scale),
+    height: Math.round(Number(size[2]) / scale)
+  };
+}
+
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/* Waits for both strips to show the page colour. A configuration change makes
-   Android rewrite the drawable from the theme's resource, and the shell reports
-   the page colour back over the bridge, so this waits rather than sleeps. Both
-   edges are asserted: the same background paints them, and a phone that read as
-   black borders had one or both wrong. A stale strip never matches and reports
-   what it kept showing. */
+/* Waits for the status-bar band to show the page colour. A configuration change
+   makes Android rewrite the drawable from the theme's resource, and the shell
+   reports the page colour back over the bridge, so this waits rather than
+   sleeps. Only the top edge is judged: the page paints under the navigation bar
+   as well, so its bottom rows are whatever the scroller has there, and the
+   geometry check is what proves the page reaches that edge. A stale band never
+   matches and reports what it kept showing. */
 function stripOnPage(seen, expected) {
-  return Boolean(seen) && seen.top === expected && seen.bottom === expected;
+  return Boolean(seen) && seen.top === expected;
 }
 
 async function awaitStrip(expected, what, timeoutMs = 30000) {
@@ -343,7 +365,7 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
     if (error instanceof EmulatorLost) throw error;
   }
   fail(
-    `${what}: expected both strips on ${expected},` +
+    `${what}: expected the status-bar band on ${expected},` +
       ` got top ${seen && seen.top} bottom ${seen && seen.bottom}` +
       (lastError ? ` (the last read failed: ${lastError.message})` : '')
   );
@@ -958,13 +980,44 @@ try {
     250
   );
 
-  /* Both strips are the surface `WindowSurfacePlugin.applySurface` paints: the
-     window drawable behind the status bar, and the content view's padding above
-     the navigation bar. Assert them in both appearances, not only whichever one
-     this run started in. Light and dark cross the bridge as different colours,
-     so a surface left on the launch resource matches one and fails the other —
-     which is how a phone read as black strips while the emulator showed the app
-     colour. */
+  /* Edge to edge. The activity content is not padded inside the system bars, so
+     the page fills the window and is told the bar heights through
+     --safe-area-inset-*; its own gutters then keep controls clear of the bars
+     while the hub still runs under them. A padded content view is exactly the
+     flat band above and below the page that read as blank borders, and a page
+     that never received the heights would tuck its header under the clock. */
+  const geometry = await until(
+    'the page to report its edge-to-edge geometry',
+    async () => {
+      const metrics = screenCssSize();
+      if (!metrics) return null;
+      const seen = await evaluate(
+        "(() => { const style = getComputedStyle(document.documentElement);" +
+          " return { height: innerHeight, width: innerWidth," +
+          " top: parseFloat(style.getPropertyValue('--safe-area-inset-top')) || 0," +
+          " bottom: parseFloat(style.getPropertyValue('--safe-area-inset-bottom')) || 0 }; })()"
+      );
+      return seen.top > 0 ? { metrics, seen } : null;
+    },
+    20000,
+    500
+  );
+  if (Math.abs(geometry.seen.height - geometry.metrics.height) > 4) {
+    fail(
+      `the page does not fill the window: innerHeight ${geometry.seen.height},` +
+        ` screen ${geometry.metrics.height} CSS px — the content view is padded inside the system bars`
+    );
+  }
+  log(
+    `the page fills the ${geometry.metrics.height}px window and the bars reach it:` +
+      ` --safe-area-inset-top ${geometry.seen.top}, --safe-area-inset-bottom ${geometry.seen.bottom}`
+  );
+
+  /* The status-bar band is the page's own colour in both appearances, not only
+     whichever one this run started in. Light and dark cross the bridge as
+     different colours, so a surface left on the launch resource matches one and
+     fails the other — which is how a phone read as black strips while the
+     emulator showed the app colour. */
   async function stripsFollow(theme) {
     const opener = await evaluate(
       "(() => { const button = document.getElementById('appearance');" +
@@ -988,8 +1041,8 @@ try {
     if (state.theme !== theme) {
       fail(`the appearance sheet did not switch to ${theme}: ${describeAppearance(state)}`);
     }
-    const seen = await awaitStrip(state.page, `the strips in the ${theme} appearance`);
-    log(`both strips are the ${theme} page colour: ${seen.top}`);
+    const seen = await awaitStrip(state.page, `the status-bar band in the ${theme} appearance`);
+    log(`the status-bar band is the ${theme} page colour: ${seen.top}`);
     return state.page;
   }
 
@@ -1002,20 +1055,17 @@ try {
   // after colours, and the rest of the run expects the light appearance.
   await stripsFollow('light');
 
-  // The strips have to agree with the page before a palette tap, and they have
-  // to follow the tap: this is the exact regression where the bar restyle
-  // rewrote the drawable after the report and the strip sat on the colour the
-  // app opened with until a restart.
+  // The band has to agree with the page before a palette tap, and it has to
+  // follow the tap: this is the exact regression where the bar restyle rewrote
+  // the drawable after the report and the band sat on the colour the app opened
+  // with until a restart.
   const before = (
     await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--page').trim()")
   ).toLowerCase();
   if (!/^#[0-9a-f]{6}$/.test(before)) fail(`the page colour is not a hex value: ${before}`);
 
-  // The daily card does not reach the bottom rows: the activity content is
-  // padded by the navigation-bar inset, so that band is the content view's own
-  // background. Both bands are painted by applySurface.
-  await awaitStrip(before, 'the window strips before the palette tap');
-  log(`both window strips are on the page colour: ${before}`);
+  await awaitStrip(before, 'the status-bar band before the palette tap');
+  log(`the status-bar band is on the page colour: ${before}`);
 
   const currentPalette = await evaluate(
     "window.MergeTheme && window.MergeTheme.palette ? window.MergeTheme.palette() : null"
@@ -1100,12 +1150,12 @@ try {
       if (error instanceof EmulatorLost) throw error;
     }
     fail(
-      `the window strip did not follow the ${targetPalette} palette: expected ${after},` +
+      `the status-bar band did not follow the ${targetPalette} palette: expected ${after},` +
         ` got top ${seenStrip && seenStrip.top} bottom ${seenStrip && seenStrip.bottom}` +
         (now ? `; ${describeAppearance(now)}` : '')
     );
   }
-  log(`the window strip followed the ${targetPalette} palette: ${after}`);
+  log(`the status-bar band followed the ${targetPalette} palette: ${after}`);
 
   // The page surface itself, not only the strip: the WebView's composited
   // scrollers used to keep the previous appearance's raster, so the hub stayed
@@ -1176,7 +1226,7 @@ try {
   const lightPage = (
     await evaluate("getComputedStyle(document.documentElement).getPropertyValue('--page').trim()")
   ).toLowerCase();
-  await awaitStrip(lightPage, 'the strip before the configuration changes');
+  await awaitStrip(lightPage, 'the status-bar band before the configuration changes');
 
   if (nightSupported) {
     log('switching the system to dark while the app stays light');
@@ -1189,8 +1239,8 @@ try {
       30000,
       250
     );
-    await awaitStrip(lightPage, 'the strip after the system turned dark');
-    log('the strip stayed on the page colour through the system theme change');
+    await awaitStrip(lightPage, 'the status-bar band after the system turned dark');
+    log('the status-bar band stayed on the page colour through the system theme change');
   } else {
     log('system night mode is not available on this API; skipping that configuration');
   }

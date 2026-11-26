@@ -18,7 +18,7 @@ const HAPTICS_JS = '5.0.2';
 const SHARE_CARD = '5.3.3';
 const STYLE_ASSET = '5.4.2';
 const FONT_ASSET = '5.0.0';
-const THEME_JS = '6.0.14';
+const THEME_JS = '6.0.15';
 const OVERSCROLL_JS = '6.0.3';
 const GAME_CODE = '5.3.3';
 const WORDLE_CODE = '5.3.1-wordle';
@@ -29,7 +29,7 @@ const POLISH_CSS = '4.0.4-w22';
 const GAMES_JS = '5.4.5';
 const SUDOKU_CSS = '4.0.5';
 const V5_CSS = '5.6.3';
-const BLUR_CSS = '1.4.0';
+const BLUR_CSS = '1.4.1';
 const HOME_CSS = '4.1.10';
 const DAILY_CODE = '5.4.6';
 const PROFILE_CODE = '1.0.0';
@@ -111,7 +111,7 @@ const SHELL = [
   // active catalog; i18n.js warms that catalog after the worker controls it.
   './i18n/i18n-locale.js?v=' + I18N_CODE,
   './i18n/i18n.js?v=' + I18N_CODE,
-  './js/native.js?v=5.1.6',
+  './js/native.js?v=5.1.7',
   './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the
   // offline shell so unlocking it works with no connection. The active locale

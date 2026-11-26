@@ -2,13 +2,13 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 114221,
-      "sha256": "207df1269a53c16340cd63f706a835f7c45ca750bd3fe5923c7a03ac8ab81c08"
+      "bytes": 114300,
+      "sha256": "9cc345c91d1910a36188a476e2f177c0788fc66cd0a83f05c0cafe46187604ef"
     },
     {
       "path": "licenses.html",
-      "bytes": 49140,
-      "sha256": "f7ec95b8043e19fc54f03b6d58065a363dadf913424370d02bb2701269f26da7"
+      "bytes": 52372,
+      "sha256": "516b3bb6ed30caad9cb174795c1ffc6befc01e8ba4b91e6da603266e7e9d5c54"
     },
     {
       "path": "LICENSE",
@@ -22,8 +22,8 @@
     },
     {
       "path": "js/theme.js",
-      "bytes": 38250,
-      "sha256": "4bba89dff315a68b3d4e68809558a83e114ed1c8c6b6b9af9087bf9e492e191f"
+      "bytes": 38715,
+      "sha256": "f318d52158132f02de5efb83be95b9f0d330d461e749da0980599fc1f43000df"
     },
     {
       "path": "js/game.js",
@@ -82,8 +82,8 @@
     },
     {
       "path": "css/progressive-blur.css",
-      "bytes": 7528,
-      "sha256": "07d189ae25c2783c978a6f6b41123d3def9dfa7616954bd72653feb50150daee"
+      "bytes": 7593,
+      "sha256": "73d1646c492e384a044f953274b6ff28f87890a722e327d0a3e68479dbd19c9a"
     },
     {
       "path": "js/settings.js",
@@ -137,8 +137,8 @@
     },
     {
       "path": "js/native.js",
-      "bytes": 8435,
-      "sha256": "7fc71b0bb6649021cd0984625a43af2380748216228488c4a8660f47da3d42ad"
+      "bytes": 9386,
+      "sha256": "d8bf851f0db03262c6151f1c8a189a3397525050b6c6132a398235e3dc7f0966"
     },
     {
       "path": "js/wordle-loader.js",

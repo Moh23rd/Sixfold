@@ -13,9 +13,10 @@
    where backdrop-filter is missing or transparency is reduced.
    ========================================================================== */
 
-/* Safe-area tokens. Both channels the shell can use (the WebView's env() and
-   the SystemBars plugin's --safe-area-inset-* properties) resolve once here,
-   so every screen and both blur bands measure the same thing. */
+/* Safe-area tokens. Both channels resolve once here: the WebView's env() on
+   iOS and in a browser, and the --safe-area-inset-* properties MainActivity
+   writes for the Android shell, whose WebView reports env() as zero. Every
+   screen and both blur bands measure the same thing. */
 :root {
   --sa-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
   --sa-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));

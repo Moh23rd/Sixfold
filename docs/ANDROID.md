@@ -117,20 +117,32 @@ throwing; the API 26 row does not assert the modern design.
 
 ## Edge-to-edge and safe areas
 
-`MainActivity` draws the WebView behind transparent status and navigation bars.
+`MainActivity` draws the WebView behind transparent status and navigation bars,
+and the activity content is not padded for them: the page fills the window and
+paints its own background under both bars, which is what edge to edge looks
+like. A padded content view put a flat band of the window colour above the
+status bar and below the navigation bar, so the page never reached the edges and
+its glass bands stopped short of them.
+
 `capacitor.config.json` sets Capacitor's bundled `SystemBars` plugin to
-`insetsHandling: "disable"`; the app pads the activity content itself in
-`MainActivity.installStableInsets()`. Capacitor's native handler pads the
-DecorView, and Android 16's edge-to-edge window clears that padding between
-inset passes: the page height flipped between padded (592px on the smoke AVD)
-and unpadded (640px) every few frames. That was the whole-page jump, and an IME
-keeps dispatching insets, which turned the jump into the flash seen while typing
-in a non-Latin Wordle. The activity content keeps the padding it is given, and
-the listener consumes the insets so nothing below it adds a second copy. The IME
-inset pads the bottom only while the keyboard is visible, so the focused field
-stays above the keyboard. Inside the shell `env(safe-area-inset-*)` is zero
-because the content is already padded; iOS and normal browsers use the `env()`
-values as before.
+`insetsHandling: "disable"`. Leaving that plugin to pad the DecorView is not
+stable on Android 16's edge-to-edge window: the framework clears the DecorView's
+padding between inset passes, so the page height flipped between padded (592px
+on the smoke AVD) and unpadded (640px) every few frames. That was the whole-page
+jump, and an IME keeps dispatching insets, which turned the jump into the flash
+seen while typing in a non-Latin Wordle.
+
+The page still needs the bar heights: it keeps its gutters and both glass bands
+clear of the bars through `--safe-area-inset-*`, which resolves into the single
+`--sa-top` / `--sa-bottom` pair the stylesheets use. A WebView reports
+`env(safe-area-inset-*)` as zero, and `insetsHandling: "disable"` also skips the
+plugin's own injection, so `MainActivity.installStableInsets()` hands the four
+heights to the page itself, in CSS pixels, whenever they change and again after
+every page load (a navigation, such as the legal page, starts from a document
+with no variables at all). The listener consumes the insets so nothing below it
+adds a second copy, and only the keyboard pads the content view, which keeps the
+focused field above the keyboard. iOS and normal browsers keep using the
+`env()` values as before.
 
 `js/native.js` uses `SystemBars.setStyle()` for both system bars, so their icons
 follow Sixfold's light/dark setting. `StatusBar.setBackgroundColor()` is
@@ -147,28 +159,33 @@ matching launch theme. Nothing is retried or polled.
 
 A report paints three things, through one helper
 (`WindowSurfacePlugin.applySurface`): the window background drawable, which is
-the strip behind the system bars; `android.R.id.content`, which is the strip its
-system-bar padding exposes; and the WebView, which is everything the page leaves
-transparent. `PhoneWindow` installs the window drawable as the decor's
+the strip behind the system bars while a system animation runs; `android.R.id.content`,
+which is the strip its keyboard padding exposes; and the WebView, which is
+everything the page leaves transparent. `PhoneWindow` installs the window drawable as the decor's
 background, so setting the decor colour as well painted the same rows twice.
 The activity content has no background of its own, and once it is padded for the
 bars those rows fall back to the platform default — which is where a black
 border comes from.
 
-`scripts/assert-android-shell.mjs` samples the top and bottom strips from a real
-`screencap` and fails unless both carry the page colour, in the light and the
-dark appearance separately. That is the guard for the surface fix: a strip left
-on the launch resource matches one appearance and fails the other, and a black
-strip fails both. It also samples a second of animation frames at the hub and
-fails if the page height moves without a size change, which is the guard against
-an inset handler drifting back into the padded/unpadded loop.
+`scripts/assert-android-shell.mjs` reads the display's own size and density from
+`wm`, asks the page for its viewport and its `--safe-area-inset-*` values, and
+fails unless the page fills the window and both heights arrived. That is the
+guard for the edge-to-edge fix: a padded content view shortens the viewport by
+the bars, and a shell that never reports the heights leaves them zero. It also
+samples the band behind the status bar from a real `screencap` and fails unless
+it carries the page colour, in the light and the dark appearance separately: a
+band left on the launch resource matches one appearance and fails the other, and
+a black band fails both. Only that edge is sampled, because the page now paints
+under the navigation bar too and those rows are whatever the scroller has there.
+It samples a second of animation frames at the hub and fails if the page height
+moves without a size change, which is the guard against an inset handler
+drifting back into the padded/unpadded loop.
 
 The smoke AVD asks for an on-screen navigation bar (`hw.mainKeys = no` in its
 config): `avdmanager`'s generic profile writes `hw.mainKeys = yes`, and Android
 14 reads that as a phone with hardware keys and draws no navigation bar at all,
-so the bottom sample read the page's own card instead of the strip the padding
-exposes. The API 36 image ignores the flag, which is why only the API 34 row
-caught it.
+so the bottom inset the geometry check requires was zero. The API 36 image
+ignores the flag, which is why only the API 34 row caught it.
 
 Styling the bars has a side effect that the surface has to work around:
 `SystemBars.setStyle()` sets the decor background to the theme's `windowBackground`
