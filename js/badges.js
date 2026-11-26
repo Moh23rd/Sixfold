@@ -12,7 +12,6 @@
   const bestEl = document.getElementById('badges-best');
   const titleEl = document.getElementById('badges-title');
   const kickerEl = page.querySelector('.badges-kicker');
-  const gridLabel = document.getElementById('badges-grid');
   const scoreEl = page.querySelector('.badges-score');
   const gamesList = document.getElementById('profile-games');
   const gauntletEl = document.getElementById('profile-gauntlet');
@@ -156,7 +155,7 @@
     if (earnedEl) earnedEl.textContent = number(earned);
     if (totalEl) totalEl.textContent = '/ ' + number(badges.length);
     if (bestEl) bestEl.textContent = tr('Best') + ' ' + number(summary.best) + ' ' + tr('day streak');
-    if (gridLabel) gridLabel.setAttribute('aria-label', tr('Badges'));
+    if (grid) grid.setAttribute('aria-label', tr('Badges'));
     if (scoreEl) scoreEl.setAttribute('aria-label', number(earned) + ' / ' + number(badges.length) + ' ' + tr('Badges'));
 
     grid.innerHTML = '';

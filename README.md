@@ -49,6 +49,7 @@ npm run test:death-report # Android launch death report, from recorded buffers
 npm run test:reattach    # Android attach retry, without an emulator
 npm run assets:icons:check # static launcher art and its pixel snapshots
 npm run assets:manifest:check # shell content hashes
+npm run test:shell-pins   # a shell file may not change without its ?v= pin
 npm run test:cache-budget # shell bytes by asset class
 ```
 

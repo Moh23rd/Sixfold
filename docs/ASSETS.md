@@ -201,7 +201,14 @@ changed without a version bump.
 ```sh
 npm run assets:manifest        # regenerate after an intentional shell change
 npm run assets:manifest:check  # verify every recorded byte
+npm run test:shell-pins        # verify every ?v= pin is newer than its file
 ```
+
+The manifest proves the bytes; the pins prove the cache epoch. A `?v=` pin is
+the URL the worker caches, so a file edited without a bump ships new bytes under
+an old key and an installed app keeps the old copy. `test:shell-pins` compares
+each shell file's last commit with the commit that last set its pin, which needs
+full history (`fetch-depth: 0` in CI).
 
 ## Cache budgets
 

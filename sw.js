@@ -33,7 +33,7 @@ const BLUR_CSS = '1.4.0';
 const HOME_CSS = '4.1.10';
 const DAILY_CODE = '5.4.5';
 const PROFILE_CODE = '1.0.0';
-const BADGES_CODE = '1.1.0';
+const BADGES_CODE = '1.1.1';
 const GAUNTLET_CODE = '1.0.3';
 const I18N_CODE = '6.0.2';
 
@@ -169,7 +169,10 @@ function isCurrentDynamic(url) {
   if (kind === 'catalog') return version === I18N_CODE;
   if (kind === 'wordle') return version === WORDLE_CODE;
   if (kind === 'font') return version === LOCALE_FONT;
-  if (kind === 'manifest') return version === THEME_JS;
+  // The install manifest URL carries the build epoch — index.html appends the
+  // package version — so it is never the theme script's pin. Matching the wrong
+  // epoch here dropped the manifest from the offline cache on every activation.
+  if (kind === 'manifest') return version === VERSION.slice('sixfold-'.length);
   return false;
 }
 

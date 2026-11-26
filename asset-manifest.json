@@ -3,7 +3,7 @@
     {
       "path": "index.html",
       "bytes": 114221,
-      "sha256": "707767236dc133c32a2f9c3126e74ad0582067f7737af2cf4ad26b104a233ed3"
+      "sha256": "816b96884ec500507dd9d58d6d966994f27a238883dd65b58a833a1d9ce4b4a3"
     },
     {
       "path": "licenses.html",
@@ -112,8 +112,8 @@
     },
     {
       "path": "js/badges.js",
-      "bytes": 8266,
-      "sha256": "822160bd0e919e13e65ab5ad0a946fccaacd5e58d52cc5aeec700a8dcca81689"
+      "bytes": 8196,
+      "sha256": "95332c2d618de24fec02f8a1b4984053aa86295a9552d9dba8a86bf7936a7b47"
     },
     {
       "path": "js/gauntlet.js",
