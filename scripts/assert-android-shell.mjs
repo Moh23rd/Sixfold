@@ -859,6 +859,7 @@ function returnState() {
       '   });' +
       ' });' +
       ' return { path: location.pathname,' +
+      '   returning: window.__sixfoldReturning === true,' +
       "   splash: Boolean(document.getElementById('boot-splash'))," +
       "   ready: root.classList.contains('home-ready')," +
       "   settled: root.classList.contains('hub-settled')," +
@@ -876,7 +877,11 @@ async function assertLegalReturn(kind) {
       " if (!link) return 'the About sheet has no legal link'; link.click(); return ''; })()"
   );
   if (clicked) fail(clicked);
-  await until('the legal page to load', async () => ((await legalPageOpen()) ? true : null), 30000, 250);
+  // Same reason as the return below: stay off the page while the document is
+  // being replaced. WebView 109 crashed the app when a devtools evaluate landed
+  // in that window.
+  await wait(1500);
+  await until('the legal page to load', async () => ((await legalPageOpen()) ? true : null), 30000, 300);
   log(`opened the legal page from About (${via})`);
 
   if (kind === 'back') {
@@ -891,6 +896,14 @@ async function assertLegalReturn(kind) {
     if (back) fail(back);
   }
 
+  // Let the document swap finish before touching the page again. An evaluate
+  // that lands while a page is being replaced crashed the whole app process on
+  // the API 33 row's WebView 109 (SIGSEGV inside the WebView's own UI-thread
+  // task), which is a harness hazard, not something a player can trigger: no
+  // debugger is attached to a released build. The wait removes it and is far
+  // shorter than any failure this check is looking for.
+  await wait(1500);
+
   const state = await until(
     `the hub to return from the legal page (${via})`,
     async () => {
@@ -899,14 +912,32 @@ async function assertLegalReturn(kind) {
       return home && seen.hub && seen.ready ? seen : null;
     },
     40000,
-    250
+    300
   );
 
-  if (state.splash) fail(`the launch layer was rebuilt on the return from the legal page (${via})`);
+  // The head script sets __sixfoldReturning as it reads the marker, before the
+  // body parses, so this is the race-free evidence that the load was treated as
+  // a return at all. The splash is removed later in the parse, so whether the
+  // element is still in the DOM at this instant says nothing.
+  if (state.returning !== true) {
+    fail(`the legal page return was loaded as a launch (${via}); the return marker was not honoured`);
+  }
   if (!state.settled) {
     fail(`the hub came back from the legal page without hub-settled (${via}); the return replayed the launch`);
   }
   if (state.screen !== 'hub') fail(`the return from the legal page landed on ${state.screen}, not the hub (${via})`);
+
+  // The splash has to be cleared as well, not only skipped: a return that sets
+  // the marker and still builds the launch layer would sit over the hub. Give
+  // the parse a bounded window to remove it.
+  const cleared = await waitFor(
+    'the launch layer to be cleared on the return',
+    async () => ((await returnState()).splash ? null : true),
+    10000,
+    200
+  );
+  if (!cleared.value) fail(`the launch layer was rebuilt on the return from the legal page (${via})`);
+
   if (state.running.length) {
     fail(`the launch entrances replayed on the return from the legal page (${via}): ${state.running.join(', ')}`);
   }
