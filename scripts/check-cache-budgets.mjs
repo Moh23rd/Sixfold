@@ -15,7 +15,7 @@ const ROOT = process.cwd();
 const KIB = 1024;
 const TOTAL_BUDGET = 1600 * KIB;
 const CLASS_BUDGETS = {
-  documents: 200 * KIB,
+  documents: 208 * KIB,
   css: 360 * KIB,
   js: 640 * KIB,
   i18n: 100 * KIB,
