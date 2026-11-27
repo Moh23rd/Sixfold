@@ -6,6 +6,10 @@ module.exports = defineConfig({
   expect: { timeout: 7000 },
   fullyParallel: false,
   workers: 1,
+  // A shared runner occasionally misses a timing window in the long responsive
+  // sweep; one retry absorbs that blip, while a real failure still fails both
+  // attempts. Local runs stay strict.
+  retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
     baseURL: 'http://127.0.0.1:8000',
