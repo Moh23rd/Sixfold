@@ -3,6 +3,14 @@
   'use strict';
 
   var M = {
+    "Wallpaper": "Fond d’écran",
+    "Custom": "Personnalisé",
+    "Custom colour": "Couleur personnalisée",
+    "Pick a colour": "Choisir une couleur",
+    "Hex colour": "Couleur hexadécimale",
+    "Apply": "Appliquer",
+    "Enter a hex colour such as #RRGGBB.": "Saisissez une couleur hexadécimale comme #RRGGBB.",
+    "Custom colour applied.": "Couleur personnalisée appliquée.",
     "Motion": "Mouvement",
     "System": "Système",
     "Full": "Complet",

@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 120386,
-      "sha256": "e13defcd2d9713856a3f4e064be651d04f4f5ca5d38b3d46a9c84f6a31fd9cfe"
+      "bytes": 120401,
+      "sha256": "b73050bfffeb427683aae6a26ab46a39ddee3f9a0a9e2ed9c32e13b3c99ad2b1"
     },
     {
       "path": "licenses.html",
@@ -22,8 +22,8 @@
     },
     {
       "path": "js/theme.js",
-      "bytes": 52954,
-      "sha256": "339861ed91c22816a72c5979e4d7e3f45b43e6b515e56d06ff2b45311bca534e"
+      "bytes": 54315,
+      "sha256": "5b8915308b2301647e22419337e250b13f42fd66ccd765bce311bae45ed0f9ed"
     },
     {
       "path": "js/game.js",
@@ -128,12 +128,12 @@
     {
       "path": "i18n/i18n-locale.js",
       "bytes": 2942,
-      "sha256": "80ce6d75a5038d9ef9c3c5c5b742e26cfd6e5da24a9c336fa0e3c91c8f4222fb"
+      "sha256": "5f1dc5844f9ce789df29682ddf9544b8ec40f569b90496d8186bb199c5418e5c"
     },
     {
       "path": "i18n/i18n.js",
-      "bytes": 71035,
-      "sha256": "9fad1c66ddad2eea39d4a29c0a7ed366bf42836d6656312b8c90ee1233d735be"
+      "bytes": 71402,
+      "sha256": "f391b5adce89ca641770a5df4c16ad3743d9db316dd3ea3df5bb0853c0ea8f74"
     },
     {
       "path": "js/native.js",

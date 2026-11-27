@@ -8,6 +8,14 @@
     "ogDescription": "ست ألعاب. بلا حشو. نقرة واحدة للعب. يبقى تقدمك على هذا الجهاز."
   },
   "messages": {
+    "Wallpaper": "خلفية الشاشة",
+    "Custom": "مخصص",
+    "Custom colour": "لون مخصص",
+    "Pick a colour": "اختر لونًا",
+    "Hex colour": "لون سداسي عشري",
+    "Apply": "تطبيق",
+    "Enter a hex colour such as #RRGGBB.": "أدخل لونًا سداسيًا عشريًا مثل ‎#RRGGBB.",
+    "Custom colour applied.": "تم تطبيق اللون المخصص.",
     "Motion": "الحركة",
     "System": "النظام",
     "Full": "كامل",

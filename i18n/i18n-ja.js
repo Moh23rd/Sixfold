@@ -8,6 +8,14 @@
     "ogDescription": "6つのゲーム。手抜きなし。 ワンタップでプレイ。進行状況はこの端末に保存されます。"
   },
   "messages": {
+    "Wallpaper": "壁紙",
+    "Custom": "カスタム",
+    "Custom colour": "カスタムカラー",
+    "Pick a colour": "色を選択",
+    "Hex colour": "16進カラー",
+    "Apply": "適用",
+    "Enter a hex colour such as #RRGGBB.": "#RRGGBB のような16進カラーを入力してください。",
+    "Custom colour applied.": "カスタムカラーを適用しました。",
     "Motion": "モーション",
     "System": "システム",
     "Full": "フル",

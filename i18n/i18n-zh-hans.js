@@ -8,6 +8,14 @@
     "ogDescription": "六款游戏。无凑数内容。 一键开始。进度保留在此设备。"
   },
   "messages": {
+    "Wallpaper": "壁纸",
+    "Custom": "自定义",
+    "Custom colour": "自定义颜色",
+    "Pick a colour": "选择颜色",
+    "Hex colour": "十六进制颜色",
+    "Apply": "应用",
+    "Enter a hex colour such as #RRGGBB.": "输入十六进制颜色，例如 #RRGGBB。",
+    "Custom colour applied.": "已应用自定义颜色。",
     "Motion": "动效",
     "System": "跟随系统",
     "Full": "完整",

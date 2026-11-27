@@ -8,6 +8,14 @@
     "ogDescription": "छह खेल. कोई भराव नहीं. एक टैप में खेलें। आपकी प्रगति इसी डिवाइस पर रहती है।"
   },
   "messages": {
+    "Wallpaper": "वॉलपेपर",
+    "Custom": "कस्टम",
+    "Custom colour": "कस्टम रंग",
+    "Pick a colour": "रंग चुनें",
+    "Hex colour": "हेक्स रंग",
+    "Apply": "लागू करें",
+    "Enter a hex colour such as #RRGGBB.": "#RRGGBB जैसा हेक्स रंग दर्ज करें।",
+    "Custom colour applied.": "कस्टम रंग लागू किया गया।",
     "Motion": "गति",
     "System": "सिस्टम",
     "Full": "पूर्ण",

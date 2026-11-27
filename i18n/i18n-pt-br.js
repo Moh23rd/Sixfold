@@ -8,6 +8,14 @@
     "ogDescription": "Seis jogos. Sem enrolação. Um toque para jogar. Seu progresso fica neste dispositivo."
   },
   "messages": {
+    "Wallpaper": "Papel de parede",
+    "Custom": "Personalizada",
+    "Custom colour": "Cor personalizada",
+    "Pick a colour": "Escolher uma cor",
+    "Hex colour": "Cor hexadecimal",
+    "Apply": "Aplicar",
+    "Enter a hex colour such as #RRGGBB.": "Digite uma cor hexadecimal como #RRGGBB.",
+    "Custom colour applied.": "Cor personalizada aplicada.",
     "Motion": "Movimento",
     "System": "Sistema",
     "Full": "Completo",

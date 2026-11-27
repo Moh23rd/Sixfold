@@ -8,6 +8,14 @@
     "ogDescription": "六款遊戲。絕不湊數。 輕點一下就能玩。進度只留在這部裝置上。"
   },
   "messages": {
+    "Wallpaper": "桌布",
+    "Custom": "自訂",
+    "Custom colour": "自訂顏色",
+    "Pick a colour": "選擇顏色",
+    "Hex colour": "十六進位顏色",
+    "Apply": "套用",
+    "Enter a hex colour such as #RRGGBB.": "輸入十六進位顏色，例如 #RRGGBB。",
+    "Custom colour applied.": "已套用自訂顏色。",
     "Motion": "動效",
     "System": "跟隨系統",
     "Full": "完整",

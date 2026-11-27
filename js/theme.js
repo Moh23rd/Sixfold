@@ -94,6 +94,12 @@
     return Boolean(persist) || root.classList.contains('home-ready');
   }
 
+  // Copy set from code goes through the same catalog as the document pass,
+  // so a panel opened after a language change is not left in English.
+  function tr(value) {
+    return window.SixfoldI18n ? window.SixfoldI18n.t(value) : value;
+  }
+
   /* ---------- colour helpers ---------- */
 
   function rgbToHsl(r, g, b) {
@@ -478,7 +484,7 @@
     }
   }
 
-  function applyPalette(id, persist) {
+  function applyPalette(id, persist, instant) {
     const palette = allPalettes().filter(function (p) { return p.id === id; })[0] || PALETTES[0];
     // Opt-in only: the caller stack names the frame that moved the palette,
     // but building it on every boot is not worth a release log line.
@@ -495,7 +501,7 @@
       }
     }
     state.palette = palette.id;
-    if (switchIsVisible(persist)) crossFade();
+    if (!instant && switchIsVisible(persist)) crossFade();
 
     for (let i = 0; i < WARM.length; i++) {
       root.style.setProperty('--t' + (2 << i), recolor(WARM[i], palette));
@@ -573,20 +579,38 @@
   // Reads the phone's wallpaper colours and rebuilds the wallpaper palette.
   // Returns false where no shell can answer, so the caller keeps the cached
   // seed instead of leaving the reader on a dead swatch.
+  // A read already crossing the bridge is reused by the next resume instead of
+  // stacked: a phone that repaints its wallpaper on every lock and unlock would
+  // otherwise queue one round trip per flick, each one a chance to repaint.
+  let wallpaperRead = null;
+
   function readWallpaper(persist) {
     const plugin = wallpaperPlugin();
     if (!plugin) return false;
+    if (wallpaperRead) return true;
     let pending;
     try { pending = plugin.colors(); } catch (err) { return false; }
     if (!pending || typeof pending.then !== 'function') return false;
+    wallpaperRead = pending;
     pending.then(function (result) {
+      wallpaperRead = null;
       const seed = normalizeHex(result && (result.primary || result.secondary || result.tertiary));
       if (!seed) return;
+      const current = dynamicPalette('wallpaper');
+      // The common resume: the same wallpaper the last paint already used.
+      // Rebuilding the ramp here used to repaint every surface and run a fade
+      // for a colour that had not moved, which is exactly the churn a phone
+      // that changes wallpaper on every lock would make constant.
+      if (state.palette === 'wallpaper' && current && current.seed === seed) return;
       state.wallpaper = seed;
-      setDynamicPalette('wallpaper', 'Wallpaper', seed);
+      setDynamicPalette('wallpaper', tr('Wallpaper'), seed);
       paintSwatchDots(document.querySelector('[data-palette-opt="wallpaper"]'), dynamicPalette('wallpaper'));
-      applyPalette('wallpaper', persist);
+      // A wallpaper that did change arrives without the switch transition: the
+      // reader is looking at a freshly resumed screen, not at a choice, and the
+      // new colours should already be in place by the first frame.
+      applyPalette('wallpaper', persist, !persist);
     }).catch(function () {
+      wallpaperRead = null;
       /* an older shell or a wallpaper with no extracted colours */
     });
     return true;
@@ -608,14 +632,14 @@
     // resolves from the cached seed, so a reader who chose it in the app keeps
     // its colours if the page is opened outside the shell.
     if (wallpaperPlugin()) {
-      const btn = paletteSwatch(dynamicPalette('wallpaper') || seededPalette('wallpaper', 'Wallpaper', state.wallpaper));
+      const btn = paletteSwatch(dynamicPalette('wallpaper') || seededPalette('wallpaper', tr('Wallpaper'), state.wallpaper));
       btn.addEventListener('click', function () {
         if (!readWallpaper(true)) applyPalette('wallpaper', true);
       });
       wrap.appendChild(btn);
     }
 
-    customSwatch = paletteSwatch(dynamicPalette('custom') || seededPalette('custom', 'Custom', state.custom));
+    customSwatch = paletteSwatch(dynamicPalette('custom') || seededPalette('custom', tr('Custom'), state.custom));
     customSwatch.addEventListener('click', function () {
       applyPalette('custom', true);
       const field = document.getElementById('colour-hex');
@@ -650,17 +674,17 @@
       const value = normalizeHex(field.value);
       if (!value) {
         field.setAttribute('aria-invalid', 'true');
-        if (hint) hint.textContent = 'Use a hex colour such as #E85F3B.';
+        if (hint) hint.textContent = tr('Enter a hex colour such as #RRGGBB.');
         return;
       }
       field.removeAttribute('aria-invalid');
       field.value = value.toUpperCase();
       state.custom = value;
-      setDynamicPalette('custom', 'Custom', value);
+      setDynamicPalette('custom', tr('Custom'), value);
       paintSwatchDots(customSwatch, dynamicPalette('custom'));
       paint(value);
       applyPalette('custom', true);
-      if (hint) hint.textContent = 'Custom colour applied.';
+      if (hint) hint.textContent = tr('Custom colour applied.');
     }
 
     field.addEventListener('input', function () {
@@ -1215,8 +1239,8 @@
 
   // Both runtime palettes exist before the first apply, so restoring
   // "wallpaper" or "custom" from storage resolves to real colours.
-  setDynamicPalette('wallpaper', 'Wallpaper', state.wallpaper);
-  setDynamicPalette('custom', 'Custom', state.custom);
+  setDynamicPalette('wallpaper', tr('Wallpaper'), state.wallpaper);
+  setDynamicPalette('custom', tr('Custom'), state.custom);
   buildPalettes();
   wireCustomColour();
   applyTheme(state.theme, false);

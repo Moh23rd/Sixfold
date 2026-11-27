@@ -1202,7 +1202,7 @@ test('an invalid hex is refused without changing the palette', async ({ page }) 
   await page.locator('#colour-hex').fill('#12');
   await page.locator('#colour-apply').click();
 
-  await expect(page.locator('#colour-hint')).toHaveText('Use a hex colour such as #E85F3B.');
+  await expect(page.locator('#colour-hint')).toHaveText('Enter a hex colour such as #RRGGBB.');
   await expect(page.locator('#colour-hex')).toHaveAttribute('aria-invalid', 'true');
   expect(await page.evaluate(() => localStorage.getItem('merge2048.palette'))).toBe(null);
 });
@@ -1240,4 +1240,97 @@ test('a browser without the wallpaper plugin does not offer the swatch', async (
   await openLook(page);
   await expect(page.locator('[data-palette-opt="wallpaper"]')).toHaveCount(0);
   await expect(page.locator('[data-palette-opt="custom"]'), 'custom needs no native part').toHaveCount(1);
+});
+
+// Android repaints the wallpaper on some phones every time the screen locks.
+// A resume therefore reads the colour again, but a colour that has not moved
+// must not rebuild the ramp, repaint the page or run the switch fade.
+test('a resume with the same wallpaper repaints nothing and does not fade', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__wallpaperCalls = 0;
+    localStorage.setItem('merge2048.palette', 'wallpaper');
+    localStorage.setItem('merge2048.palette.wallpaper', '#0a7d57');
+    window.Capacitor = window.Capacitor || {};
+    window.Capacitor.Plugins = window.Capacitor.Plugins || {};
+    window.Capacitor.Plugins.WallpaperColors = {
+      colors: function () {
+        window.__wallpaperCalls += 1;
+        return Promise.resolve({ primary: '#0a7d57' });
+      }
+    };
+  });
+  await openLook(page);
+  await expect.poll(() => page.evaluate(() => window.__wallpaperCalls)).toBe(1);
+  const before = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t8').trim()
+  );
+
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect.poll(() => page.evaluate(() => window.__wallpaperCalls)).toBe(2);
+  await page.waitForTimeout(80);
+
+  const after = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t8').trim()
+  );
+  expect(after, 'the same colour keeps the same ramp').toBe(before);
+  expect(
+    await page.evaluate(() => document.documentElement.classList.contains('is-theme-fading')),
+    'a resume is not a palette switch'
+  ).toBe(false);
+});
+
+test('a changed wallpaper applies on resume without the switch fade', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__wallpaperSeed = '#0a7d57';
+    localStorage.setItem('merge2048.palette', 'wallpaper');
+    localStorage.setItem('merge2048.palette.wallpaper', '#0a7d57');
+    window.Capacitor = window.Capacitor || {};
+    window.Capacitor.Plugins = window.Capacitor.Plugins || {};
+    window.Capacitor.Plugins.WallpaperColors = {
+      colors: function () {
+        return Promise.resolve({ primary: window.__wallpaperSeed });
+      }
+    };
+  });
+  await openLook(page);
+  const before = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t8').trim()
+  );
+
+  await page.evaluate(() => {
+    window.__wallpaperSeed = '#1f5fd0';
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--t8').trim())
+    )
+    .not.toBe(before);
+  expect(
+    await page.evaluate(() => document.documentElement.classList.contains('is-theme-fading')),
+    'the new colour is in place, not fading into place'
+  ).toBe(false);
+});
+
+test('the colour panel is localised at runtime', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('sixfold.locale.v1', 'fr');
+    localStorage.setItem('sixfold.locale.explicit.v1', '1');
+  });
+  await page.goto('/?perf=full');
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.lang === 'fr' && window.SixfoldI18n);
+  await page.locator('#appearance').click();
+  await expect(page.locator('#sheet')).toBeVisible();
+
+  await expect(page.locator('#colour-custom summary strong')).toHaveText('Couleur personnalisée');
+  await expect(page.locator('#colour-apply')).toHaveText('Appliquer');
+  await expect(page.locator('#colour-picker')).toHaveAttribute('aria-label', 'Choisir une couleur');
+  await expect(page.locator('[data-palette-opt="custom"]')).toContainText('Personnalisé');
+
+  await page.locator('#colour-custom summary').click();
+  await page.locator('#colour-hex').fill('#zzz');
+  await page.locator('#colour-apply').click();
+  await expect(page.locator('#colour-hint')).toHaveText('Saisissez une couleur hexadécimale comme #RRGGBB.');
 });

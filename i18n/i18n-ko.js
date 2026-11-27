@@ -8,6 +8,14 @@
     "ogDescription": "6개의 게임. 군더더기 없음. 탭 한 번으로 플레이. 진행 상황은 이 기기에 저장됩니다."
   },
   "messages": {
+    "Wallpaper": "배경화면",
+    "Custom": "사용자 지정",
+    "Custom colour": "사용자 지정 색상",
+    "Pick a colour": "색상 선택",
+    "Hex colour": "16진수 색상",
+    "Apply": "적용",
+    "Enter a hex colour such as #RRGGBB.": "#RRGGBB 같은 16진수 색상을 입력하세요.",
+    "Custom colour applied.": "사용자 지정 색상을 적용했습니다.",
     "Motion": "모션",
     "System": "시스템",
     "Full": "전체",

@@ -3,6 +3,14 @@
   'use strict';
 
   var M = {
+    "Wallpaper": "Hintergrundbild",
+    "Custom": "Eigene",
+    "Custom colour": "Eigene Farbe",
+    "Pick a colour": "Farbe wählen",
+    "Hex colour": "Hex-Farbe",
+    "Apply": "Übernehmen",
+    "Enter a hex colour such as #RRGGBB.": "Gib eine Hex-Farbe wie #RRGGBB ein.",
+    "Custom colour applied.": "Eigene Farbe übernommen.",
     "Motion": "Bewegung",
     "System": "System",
     "Full": "Voll",

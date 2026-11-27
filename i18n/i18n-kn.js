@@ -8,6 +8,14 @@
     "ogDescription": "ಆರು ಆಟಗಳು. ಭರ್ತಿ ಇಲ್ಲ. ಆಫ್‌ಲೈನ್ ಜೇಬಿನ ಆರ್ಕೇಡ್: ಆರು ಒಗಟುಗಳು, ಖಾತೆಗಳಿಲ್ಲ, ಜಾಹೀರಾತುಗಳಿಲ್ಲ."
   },
   "messages": {
+    "Wallpaper": "ವಾಲ್‌ಪೇಪರ್",
+    "Custom": "ಕಸ್ಟಮ್",
+    "Custom colour": "ಕಸ್ಟಮ್ ಬಣ್ಣ",
+    "Pick a colour": "ಬಣ್ಣ ಆಯ್ಕೆಮಾಡಿ",
+    "Hex colour": "ಹೆಕ್ಸ್ ಬಣ್ಣ",
+    "Apply": "ಅನ್ವಯಿಸಿ",
+    "Enter a hex colour such as #RRGGBB.": "#RRGGBB ನಂತಹ ಹೆಕ್ಸ್ ಬಣ್ಣವನ್ನು ನಮೂದಿಸಿ.",
+    "Custom colour applied.": "ಕಸ್ಟಮ್ ಬಣ್ಣ ಅನ್ವಯಿಸಲಾಗಿದೆ.",
     "Motion": "ಚಲನೆ",
     "System": "ಸಿಸ್ಟಂ",
     "Full": "ಪೂರ್ಣ",

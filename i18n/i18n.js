@@ -25,6 +25,14 @@
   var catalog = { messages: {}, patterns: [] };
 
   var ES = {
+    "Wallpaper": "Fondo de pantalla",
+    "Custom": "Personalizado",
+    "Custom colour": "Color personalizado",
+    "Pick a colour": "Elige un color",
+    "Hex colour": "Color hexadecimal",
+    "Apply": "Aplicar",
+    "Enter a hex colour such as #RRGGBB.": "Escribe un color hexadecimal como #RRGGBB.",
+    "Custom colour applied.": "Color personalizado aplicado.",
     "Motion": "Movimiento",
     "System": "Sistema",
     "Full": "Completo",
