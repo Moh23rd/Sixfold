@@ -3,7 +3,7 @@
     {
       "path": "index.html",
       "bytes": 117359,
-      "sha256": "615b923b1d90d5dae8f246253ef7fbb181eb706a6750ab898e312aad7896d181"
+      "sha256": "1c027b27ec2ef7f9b08a3b40590c8bb59e813fcbec7b0a58b8b37d0335b6aafe"
     },
     {
       "path": "licenses.html",
@@ -162,18 +162,18 @@
     },
     {
       "path": "icons/icon-180.png",
-      "bytes": 15678,
-      "sha256": "98c5acbc00c1762c2c0550c9393722e7ed7020473387ef8adaf9470fc239303b"
+      "bytes": 10602,
+      "sha256": "fbd8f672290931cda6204c9a4c7ec13879842cc576b94038917ac8174c15b83c"
     },
     {
       "path": "icons/icon-192.png",
-      "bytes": 25632,
-      "sha256": "0455224d9d7262c7b75459c707e90e830ca3e12892ca90c0a55c4a0203a22af0"
+      "bytes": 16316,
+      "sha256": "2f84a2523054982f9cf55d457c34aa78c8ccfd863afd0b88d7cccee340a29aa1"
     },
     {
       "path": "icons/mark-456.webp",
-      "bytes": 29752,
-      "sha256": "0bcbcc002fa18c32ba492764ccdf2ee69b2fc0ed2215ceb0e8c3ad6e1c843f8c"
+      "bytes": 19056,
+      "sha256": "6d9aac546d3fb5294a2500fa938c595bdc27699491dda59189187af57b4fa643"
     },
     {
       "path": "fonts/google-sans-flex.woff2",

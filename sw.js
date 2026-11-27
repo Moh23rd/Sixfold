@@ -119,11 +119,11 @@ const SHELL = [
   './js/wordle-words.js?v=' + WORDLE_CODE,
   './i18n/wordle-i18n.js?v=' + WORDLE_CODE,
   './js/wordle.js?v=' + WORDLE_CODE,
-  './icons/icon-180.png?v=6.0.2',
-  './icons/icon-192.png?v=6.0.2',
+  './icons/icon-180.png?v=6.0.3',
+  './icons/icon-192.png?v=6.0.3',
   // The boot splash draws the mark at up to 152 CSS px; its own 456px WebP
   // keeps that crisp at 3x for about 8 KiB.
-  './icons/mark-456.webp?v=6.0.2',
+  './icons/mark-456.webp?v=6.0.3',
   // The 512px and 1024px icons are install/manifest art, not shell UI. The
   // manifest fetches them when needed; keeping the large gradient art out of
   // the offline shell leaves room for the sixfold scripts and fonts.

@@ -36,7 +36,7 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const SOURCE = path.join(ROOT, 'assets/icon-source.svg');
-const SIZE = 1024;
+const SIZE = 2048;
 // Sampled from the plate itself, so the generated field and the art's own
 // surface are the same colour. `values/ic_launcher_background.xml` carries it
 // too, and the adaptive-icon guard checks all three agree.

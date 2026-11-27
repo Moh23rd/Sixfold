@@ -77,7 +77,7 @@ wordmark, and the same geometry at every size:
 | Light | background `#f6f1e8`, ink `#3b3833`, rule `#dad6cd` |
 | Dark | background `#1a1918`, ink `#f1eae0`, rule `#42403c` |
 
-The startup links use `?v=6.0.2`. Bump that suffix if the images change.
+The startup links use `?v=6.0.4`. Bump that suffix if the images change.
 `icons/icon-1024.png` is the rounded launcher mark, rendered from
 `assets/icon.png`; the iOS launch images have no separate artwork.
 
@@ -90,11 +90,17 @@ the icon, so a new iPad size cannot silently bring the soft tile back.
 ## Launcher icon
 
 The browser favicon, Apple touch icon and Android launcher all use one static
-mark: a dark plate holding the six merge tiles, a gold tile and a sparkle, with
-a cream ring at the plate's edge. The source is `assets/icon-source.svg`; the
-build renders it, it is not redrawn by hand. There is no per-language icon and
-no `applyIcon` browser path. The web and splash links use `?v=6.0.2`; change
-that suffix when the art changes.
+mark: a dark plate holding the six merge tiles, a gold tile and a sparkle. The
+plate runs to the edge of its own drawing with no border or ring around it, so a
+launcher mask meets the art instead of a frame. The source is
+`assets/icon-source.svg`; the build renders it, it is not redrawn by hand.
+There is no per-language icon and no `applyIcon` browser path. The web and
+splash links use `?v=6.0.3`; change that suffix when the art changes.
+
+The master render is 2048 px (`SIZE` in `scripts/build-app-icon.mjs`), so the
+largest launcher asset a device asks for — 432 px for an xxxhdpi adaptive
+foreground, 1152 px for an xxxhdpi splash — is always a downscale from a much
+larger source rather than an enlargement.
 
 The art draws a black square behind its plate. `scripts/build-app-icon.mjs`
 drops that square (the plate never reaches black, so only the backing is cut)
@@ -102,10 +108,10 @@ and writes five checked-in sources: `assets/icon.png` (the plate as drawn),
 `assets/icon-maskable.png` (plate-coloured field with the art inside the
 maskable safe circle), `assets/icon-adaptive-background.png` (the flat plate
 colour, `#211d18`), `assets/icon-adaptive-foreground.png` (the art scaled to
-0.6 so the ring and tiles sit inside Android's 66dp safe circle) and
+0.6 so the plate and tiles sit inside Android's 66dp safe circle) and
 `assets/icon-adaptive-monochrome.png` (the bright shapes alone, for Android 13+
 themed icons). The maskable and adaptive layers scale the art down because the
-ring runs to the edge of the drawing: at full bleed a circular mask slices it.
+plate runs to the edge of the drawing: at full bleed a circular mask slices it.
 Rebuild the layers and every derived size:
 
 ```sh
@@ -177,11 +183,11 @@ XML back to the full-bleed layers:
 ```
 
 `npm run native:assets:android` now ends with the guard, so a generated icon
-cannot keep the insets. It also verifies the `#3b3833` background resource and
+cannot keep the insets. It also verifies the `#211d18` background resource and
 the default layer sizes, and rejects any locale-qualified `mipmap-*` directory
 so the launcher icon cannot start following the device language again.
 
-The adaptive foreground is the plate's art — ring, tiles, gold square and
+The adaptive foreground is the plate's art — plate, tiles, gold square and
 sparkle — scaled so it fits inside the 66dp safe circle; the plate colour itself
 is the background layer. A full-bleed foreground put the old outer tiles under
 circular launcher masks, which looked like a zoomed icon.
