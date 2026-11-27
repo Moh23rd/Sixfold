@@ -32,9 +32,9 @@ async function open(browser, { locale, entries = {} } = {}) {
   await expect(page.locator('html')).toHaveClass(/home-ready/);
   // The favicon is static; language selection must not rewrite these links.
   await expect(page.locator('link[rel="icon"][sizes="192x192"]'))
-    .toHaveAttribute('href', 'icons/icon-192.png?v=6.0.1');
+    .toHaveAttribute('href', 'icons/icon-192.png?v=6.0.2');
   await expect(page.locator('link[rel="apple-touch-icon"]'))
-    .toHaveAttribute('href', 'icons/icon-180.png?v=6.0.1');
+    .toHaveAttribute('href', 'icons/icon-180.png?v=6.0.2');
   expect(await page.locator('html').getAttribute('data-icon')).toBeNull();
   return { context, page };
 }

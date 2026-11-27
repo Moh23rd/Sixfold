@@ -90,17 +90,23 @@ the icon, so a new iPad size cannot silently bring the soft tile back.
 ## Launcher icon
 
 The browser favicon, Apple touch icon and Android launcher all use one static
-mark: a cream six on a warm ink plate with a coral hard shadow. There is no
-per-language icon and no `applyIcon` browser path. The web and splash links use
-`?v=6.0.1`; change that suffix when the art changes.
+mark: a dark plate holding the six merge tiles, a gold tile and a sparkle, with
+a cream ring at the plate's edge. The source is `assets/icon-source.svg`; the
+build renders it, it is not redrawn by hand. There is no per-language icon and
+no `applyIcon` browser path. The web and splash links use `?v=6.0.2`; change
+that suffix when the art changes.
 
-The mark is rendered by `scripts/build-app-icon.mjs` into five checked-in
-sources: `assets/icon.png` (rounded plate), `assets/icon-maskable.png`
-(full-bleed square), `assets/icon-adaptive-background.png` (the plate without
-the numeral), `assets/icon-adaptive-foreground.png` (the numeral and its
-shadow, sized for Android's safe circle) and
-`assets/icon-adaptive-monochrome.png` (the numeral alone, for Android 13+
-themed icons). Rebuild the layers and every derived size:
+The art draws a black square behind its plate. `scripts/build-app-icon.mjs`
+drops that square (the plate never reaches black, so only the backing is cut)
+and writes five checked-in sources: `assets/icon.png` (the plate as drawn),
+`assets/icon-maskable.png` (plate-coloured field with the art inside the
+maskable safe circle), `assets/icon-adaptive-background.png` (the flat plate
+colour, `#211d18`), `assets/icon-adaptive-foreground.png` (the art scaled to
+0.6 so the ring and tiles sit inside Android's 66dp safe circle) and
+`assets/icon-adaptive-monochrome.png` (the bright shapes alone, for Android 13+
+themed icons). The maskable and adaptive layers scale the art down because the
+ring runs to the edge of the drawing: at full bleed a circular mask slices it.
+Rebuild the layers and every derived size:
 
 ```sh
 python3 -m pip install pillow
@@ -133,8 +139,28 @@ The web boot splash draws the mark at up to 152 CSS px, so it loads
 `icons/mark-456.webp` (456 px, 3× the largest display size) from the same
 `assets/icon.png` master instead of upscaling the 32 px header icon.
 `assets:icons` resizes it to 456 px and encodes WebP at quality 80: about
-8 KiB, where a PNG of the same size would add 120 KiB to the offline shell.
+29 KiB for the gradient artwork, where a PNG of the same size would add well
+over 100 KiB to the offline shell. That is why the icon class of the cache
+budget is 88 KiB.
 `icons/icon-192.png` stays for the header, favicon and the rest of the shell.
+
+## Share card
+
+`og-image.png` is both the link preview and the README banner. It is rendered
+from the launcher art, so it changes whenever the mark does:
+
+```sh
+npm run assets:icon
+npm run assets:icons
+npm run assets:og
+```
+
+`scripts/build-og-image.mjs` draws a 1200×630 card — the icon in a circle of the
+plate colour, the wordmark in Google Sans Flex, the tagline and the six game
+names — which is the size `index.html` declares in `og:image:width` and
+`og:image:height`. Bump the `?v=` on `og:image` and `twitter:image` when the
+card changes. The iOS launch images use `icons/icon-1024.png`, so they follow
+the launcher too (`npm run assets:ios-splash`).
 
 ## Adaptive icon guard
 

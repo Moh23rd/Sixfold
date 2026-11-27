@@ -1,20 +1,33 @@
 #!/usr/bin/env node
-// Render the launcher mark from one canvas description.
+// Render the launcher layers from the checked-in icon artwork.
 //
-// The old mark was a 3x2 tile grid, which read as a generic app switcher and
-// lost its margins on a circular launcher. The replacement is a single cream
-// six on a warm ink plate with a coral hard shadow, so the silhouette survives
-// a squircle, a circle and the adaptive-icon safe zone. The same mark is
-// rendered at two scales: the full icon keeps the numeral bold on a home
-// screen, while the adaptive foreground is fitted smaller inside Android's
-// 66dp safe circle.
+// The art is `assets/icon-source.svg`: a dark plate holding the merge tiles and
+// a sparkle, with a cream ring that runs to the plate's edges. One drawing feeds
+// five layers, because a launcher mask sees a different part of it at every
+// shape:
+//
+//   assets/icon.png                     the art as drawn, rounded plate included
+//   assets/icon-maskable.png            plate-coloured field, art inside the
+//                                       maskable safe circle
+//   assets/icon-adaptive-background.png flat plate colour (`#211d18`)
+//   assets/icon-adaptive-foreground.png art fitted inside the 66dp safe zone
+//   assets/icon-adaptive-monochrome.png the bright shapes alone, for Android's
+//                                       themed icons
+//
+// The ring reaches the edge of the art, so the maskable and adaptive layers
+// scale the whole drawing down instead of letting a circular mask slice it. The
+// plate colour is then the field behind it: the plate's own rounded corners sit
+// on the same colour, so only the ring and the tiles read.
+//
+// The SVG draws a black square behind its plate. That square is dropped here:
+// a launcher masks the icon to its own squircle or circle, and a square left
+// under the mask reads as a second frame inside the plate. Only the plate's own
+// corner is transparent, so iOS, Android and a browser tab all show one shape.
 //
 //   node scripts/build-app-icon.mjs
-//
-// Then rebuild the derived sizes:
 //   python3 scripts/build-static-icons.py --write
 //
-// The source PNGs are checked in, so CI can verify every launcher size without
+// The master PNGs are checked in, so CI verifies every launcher size without
 // running Chromium or Pillow.
 
 import { chromium } from 'playwright';
@@ -22,122 +35,84 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
-const FONT = path.join(ROOT, 'fonts/google-sans-flex.woff2');
+const SOURCE = path.join(ROOT, 'assets/icon-source.svg');
 const SIZE = 1024;
-const FACE = '#f7efe3';
-const SHADOW = '#c2532f';
-const SHADOW_INK = 'rgba(72, 18, 8, 0.32)';
+// Sampled from the plate itself, so the generated field and the art's own
+// surface are the same colour. `values/ic_launcher_background.xml` carries it
+// too, and the adaptive-icon guard checks all three agree.
+const PLATE = '#211d18';
+// Themed icons are tinted by the launcher, so the silhouette is one ink; the
+// alpha channel is the shape.
+const MONO_INK = '#f7efe3';
+// The ring sits at 0.5 of the art's half-width. Android's adaptive mask shows
+// the inner 72dp of 108dp (radius 0.333) and its safe zone is 66dp (0.306), so
+// the art is scaled until the ring and the tiles are inside those circles. The
+// maskable safe circle is 0.4, so that layer can keep the art larger.
+const LAYERS = [
+  { file: 'assets/icon.png', art: 1 },
+  { file: 'assets/icon-maskable.png', art: 0.78, background: PLATE },
+  { file: 'assets/icon-adaptive-background.png', art: 0, background: PLATE },
+  { file: 'assets/icon-adaptive-foreground.png', art: 0.6 },
+  { file: 'assets/icon-adaptive-monochrome.png', art: 0.6, monochrome: true }
+];
 
-const font = fs.readFileSync(FONT).toString('base64');
+const svg = fs.readFileSync(SOURCE).toString('base64');
 
-function canvasPage() {
-  return `<!doctype html>
-<meta charset="utf-8">
-<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
-<canvas id="icon" width="${SIZE}" height="${SIZE}"></canvas>`;
-}
-
-async function loadFont(page) {
-  await page.evaluate(async (data) => {
-    const face = new FontFace('Sixfold', 'url(data:font/woff2;base64,' + data + ')');
-    await face.load();
-    document.fonts.add(face);
-    await document.fonts.ready;
-  }, font);
-}
-
-async function render(page, { rounded, plate, ink, shadow = true, file }) {
-  const dataUrl = await page.evaluate(({ rounded, plate, ink, shadow, size, face, shadowColor, shadowInk }) => {
-    const canvas = document.getElementById('icon');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, size, size);
-
-    if (plate) {
-      ctx.save();
-      ctx.beginPath();
-      if (rounded) ctx.roundRect(0, 0, size, size, 232);
-      else ctx.rect(0, 0, size, size);
-      ctx.clip();
-
-      const base = ctx.createLinearGradient(0, 0, size, size);
-      base.addColorStop(0, '#3b3730');
-      base.addColorStop(0.58, '#2b2823');
-      base.addColorStop(1, '#221f1b');
-      ctx.fillStyle = base;
-      ctx.fillRect(0, 0, size, size);
-
-      // A low coral glow sits behind the mark; it makes the ink plate feel warm
-      // without tinting the cream numeral.
-      const glow = ctx.createRadialGradient(532, 470, 0, 532, 470, 650);
-      glow.addColorStop(0, 'rgba(224, 96, 60, 0.20)');
-      glow.addColorStop(0.64, 'rgba(224, 96, 60, 0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, size, size);
-
-      const highlight = ctx.createRadialGradient(266, 102, 0, 266, 102, 620);
-      highlight.addColorStop(0, 'rgba(255, 248, 238, 0.12)');
-      highlight.addColorStop(0.58, 'rgba(255, 248, 238, 0)');
-      ctx.fillStyle = highlight;
-      ctx.fillRect(0, 0, size, size);
-
-      const vignette = ctx.createLinearGradient(0, 650, 0, size);
-      vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      vignette.addColorStop(1, 'rgba(0, 0, 0, 0.28)');
-      ctx.fillStyle = vignette;
-      ctx.fillRect(0, 650, size, size - 650);
-      ctx.restore();
-
-      ctx.save();
-      ctx.beginPath();
-      if (rounded) ctx.roundRect(1, 1, size - 2, size - 2, 231);
-      else ctx.rect(1, 1, size - 2, size - 2);
-      ctx.strokeStyle = 'rgba(255, 248, 238, 0.08)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    if (ink) {
-      // Measure the ink, not the font's line box: SVG getBBox() returns the
-      // layout box for text, which made the first draft float too small. The
-      // canvas actualBoundingBox values are the glyph's real edges.
-      ctx.font = '700 780px Sixfold';
-      const probe = ctx.measureText('6');
-      const probeInk = probe.actualBoundingBoxAscent + probe.actualBoundingBoxDescent;
-      const fontSize = 780 * ink / probeInk;
-      ctx.font = '700 ' + fontSize + 'px Sixfold';
-
-      const metrics = ctx.measureText('6');
-      const ascent = metrics.actualBoundingBoxAscent;
-      const descent = metrics.actualBoundingBoxDescent;
-      const left = metrics.actualBoundingBoxLeft;
-      const right = metrics.actualBoundingBoxRight;
-      const x = size / 2 + (left - right) / 2;
-      const y = size / 2 + (ascent - descent) / 2;
-      const scale = fontSize / 780;
-
-      ctx.save();
-      if (shadow) {
-        ctx.fillStyle = shadowColor;
-        ctx.fillText('6', x + 16 * scale, y + 20 * scale);
+async function render(page, { art, background, monochrome, file }) {
+  const dataUrl = await page.evaluate(
+    ({ svg, art, background, monochrome, size, ink }) => {
+      const canvas = document.getElementById('icon');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, size, size);
+      if (background) {
+        ctx.fillStyle = background;
+        ctx.fillRect(0, 0, size, size);
       }
-
-      ctx.fillStyle = face;
-      if (shadow) {
-        ctx.shadowColor = shadowInk;
-        ctx.shadowBlur = 22 * scale;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 20 * scale;
+      if (art > 0) {
+        const image = document.getElementById('art');
+        const side = size * art;
+        const at = (size - side) / 2;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(image, at, at, side, side);
+        // Drop the source's black backing. The plate never reaches black
+        // (its darkest surface is #211d18), so only the square outside the
+        // plate is cut; the ramp keeps the plate's antialiased corner soft
+        // instead of leaving a dark fringe.
+        const plate = ctx.getImageData(0, 0, size, size);
+        const bytes = plate.data;
+        for (let i = 0; i < bytes.length; i += 4) {
+          const peak = Math.max(bytes[i], bytes[i + 1], bytes[i + 2]);
+          if (peak >= 16) continue;
+          const keep = peak <= 6 ? 0 : (peak - 6) / 10;
+          bytes[i + 3] = Math.round(bytes[i + 3] * keep);
+        }
+        ctx.putImageData(plate, 0, 0);
       }
-      ctx.fillText('6', x, y);
-      ctx.restore();
-    }
+      if (!monochrome) return canvas.toDataURL('image/png');
 
-    return canvas.toDataURL('image/png');
-  }, { rounded, plate, ink, shadow, size: SIZE, face: FACE, shadowColor: SHADOW, shadowInk: SHADOW_INK });
-
+      // One ink, shaped by the drawing's own alpha and its brightness: the
+      // plate's gradient is dark and the ring, tiles and sparkle are not, so a
+      // luminance cut keeps the mark and drops the surface. The soft edge keeps
+      // the ring from stepping at small sizes.
+      const pixels = ctx.getImageData(0, 0, size, size);
+      const data = pixels.data;
+      const inkRgb = [1, 3, 5].map((at) => parseInt(ink.slice(at, at + 2), 16));
+      for (let i = 0; i < data.length; i += 4) {
+        const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        const lit = Math.min(1, Math.max(0, (luma - 70) / 30));
+        data[i] = inkRgb[0];
+        data[i + 1] = inkRgb[1];
+        data[i + 2] = inkRgb[2];
+        data[i + 3] = Math.round(data[i + 3] * lit);
+      }
+      ctx.putImageData(pixels, 0, 0);
+      return canvas.toDataURL('image/png');
+    },
+    { svg, art, background, monochrome, size: SIZE, ink: MONO_INK }
+  );
   fs.writeFileSync(path.join(ROOT, file), Buffer.from(dataUrl.split(',')[1], 'base64'));
   console.log('[app icon] ' + file);
 }
@@ -145,19 +120,31 @@ async function render(page, { rounded, plate, ink, shadow = true, file }) {
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage({ viewport: { width: SIZE, height: SIZE }, deviceScaleFactor: 1 });
-  await page.setContent(canvasPage(), { waitUntil: 'load' });
-  await loadFont(page);
+  await page.setContent(
+    `<!doctype html>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<canvas id="icon" width="${SIZE}" height="${SIZE}"></canvas>
+<img id="art" alt="" src="data:image/svg+xml;base64,${svg}">`,
+    { waitUntil: 'load' }
+  );
+  await page.evaluate(() => {
+    const image = document.getElementById('art');
+    return image.complete && image.naturalWidth
+      ? null
+      : new Promise((resolve, reject) => {
+          image.addEventListener('load', resolve, { once: true });
+          image.addEventListener('error', () => reject(new Error('the icon artwork did not load')), {
+            once: true
+          });
+        });
+  });
 
-  // The monochrome layer is the numeral alone: Android tints its alpha, so a
-  // two-tone shadow would merge into one blob on a themed launcher.
   const monochromeOnly = process.argv.includes('--monochrome-only');
-  if (!monochromeOnly) {
-    await render(page, { rounded: true, plate: true, ink: 570, file: 'assets/icon.png' });
-    await render(page, { rounded: false, plate: true, ink: 570, file: 'assets/icon-maskable.png' });
-    await render(page, { rounded: false, plate: true, ink: 0, file: 'assets/icon-adaptive-background.png' });
-    await render(page, { rounded: false, plate: false, ink: 470, file: 'assets/icon-adaptive-foreground.png' });
+  for (const layer of LAYERS) {
+    if (monochromeOnly && !layer.monochrome) continue;
+    await render(page, layer);
   }
-  await render(page, { rounded: false, plate: false, ink: 470, shadow: false, file: 'assets/icon-adaptive-monochrome.png' });
 } finally {
   await browser.close();
 }

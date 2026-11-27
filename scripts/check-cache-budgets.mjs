@@ -19,7 +19,11 @@ const CLASS_BUDGETS = {
   css: 360 * KIB,
   js: 640 * KIB,
   i18n: 100 * KIB,
-  icons: 56 * KIB,
+  // 88 KiB: the launcher mark is gradient artwork (a lit plate with six tiles
+  // and a ring), not the flat two-colour numeral it replaced, so the PNG and
+  // WebP sizes roughly doubled. The class is the favicon, the touch icon and
+  // the boot mark; the large install art stays out of the shell.
+  icons: 88 * KIB,
   fonts: 160 * KIB
 };
 

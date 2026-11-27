@@ -79,7 +79,7 @@ ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
 """
 BACKGROUND_XML = """<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#3b3833</color>
+    <color name="ic_launcher_background">#211d18</color>
 </resources>
 """
 

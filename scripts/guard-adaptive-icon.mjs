@@ -86,13 +86,13 @@ for (const relative of XML) {
   }
 }
 
-// The plate is the adaptive background now, and the cream six is the
-// foreground inside the safe zone. The light page cream here made the dark
-// rounded plate float in a ring; the mark's own ink is the surface the numeral
-// is designed against.
+// The plate colour is the adaptive background, and the artwork sits on it in the
+// foreground. The generated field, `assets/icon-adaptive-background.png`, and
+// this resource must all be the colour sampled from the art; otherwise the
+// rounded plate shows as a second surface inside the launcher mask.
 const colors = path.join(RES, 'values/ic_launcher_background.xml');
-if (!fs.existsSync(colors) || !/#3b3833/i.test(fs.readFileSync(colors, 'utf8'))) {
-  fail('values/ic_launcher_background.xml must be #3b3833');
+if (!fs.existsSync(colors) || !/#211d18/i.test(fs.readFileSync(colors, 'utf8'))) {
+  fail('values/ic_launcher_background.xml must be #211d18');
 }
 
 for (const [density, legacy, foreground] of DENSITIES) {
