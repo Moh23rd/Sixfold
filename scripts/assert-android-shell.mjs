@@ -33,6 +33,7 @@ import { inflateSync } from 'node:zlib';
 
 import { anrTraceLines, describeDeath, parseDeathReport } from './lib/death-report.mjs';
 import { attachToLiveLaunch } from './lib/reattach.mjs';
+import { classifyRemoval } from './lib/app-removal.mjs';
 
 const PACKAGE = 'io.github.moh23rd.sixfold';
 const ACTIVITY = `${PACKAGE}/.MainActivity`;
@@ -65,6 +66,20 @@ function fail(message) {
    exit code; nothing here should report an app defect for it. */
 const EMULATOR_GONE = 3;
 class EmulatorLost extends Error {}
+
+/* The platform took the app off the screen: it killed the process (a provider
+   the app depends on died, or the low-memory killer) and removed its task, so
+   the launcher is what the compositor is showing. Pixels of another window say
+   nothing about the app's paint, and reporting that as a stale page surface
+   sends a reader after a UI bug that is not there. The smoke repeats the
+   assertion once for this; a crash or an ANR is never retried. */
+const APP_REMOVED = 4;
+class AppRemoved extends Error {
+  constructor(message, evidence = {}) {
+    super(message);
+    this.evidence = evidence;
+  }
+}
 
 function answerShell(timeout = 8000) {
   try {
@@ -251,6 +266,7 @@ function stripColour(png, edge) {
 
 async function readStrip() {
   if (!(await deviceLive())) throw new EmulatorLost('reading the window strip: the emulator stopped answering');
+  await requireAppOnScreen('reading the window strip');
   const started = Date.now();
   const png = decodePng(adbBuffer(['exec-out', 'screencap', '-p']));
   const took = Date.now() - started;
@@ -268,6 +284,7 @@ async function readStrip() {
    colour while every control already shows the new one. */
 async function readPageSurface() {
   if (!(await deviceLive())) throw new EmulatorLost('reading the page surface: the emulator stopped answering');
+  await requireAppOnScreen('reading the page surface');
   const started = Date.now();
   const png = decodePng(adbBuffer(['exec-out', 'screencap', '-p']));
   const took = Date.now() - started;
@@ -338,6 +355,9 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
       lastError = null;
     } catch (error) {
       lastError = error;
+      // The app is not on screen: no frame below can be evidence about it, and
+      // waiting out the deadline would only report the launcher's pixels.
+      if (error instanceof AppRemoved) throw error;
       if (error instanceof EmulatorLost) {
         // Give a genuine adb reconnect a chance, then stop: without a guest
         // there is no paint to sample, and the last frame it produced is not
@@ -364,6 +384,7 @@ async function awaitStrip(expected, what, timeoutMs = 30000) {
     seen = final;
     lastError = null;
   } catch (error) {
+    if (error instanceof AppRemoved) throw error;
     lastError = error;
     if (error instanceof EmulatorLost) throw error;
   }
@@ -534,6 +555,42 @@ function adbSafe(args) {
   } catch (error) {
     return '';
   }
+}
+
+/* Whether the app's own window is what the screen shows. Read from the
+   platform, not the WebView: after the process is killed its devtools socket is
+   gone, while a pixel sample would carry on reading the launcher underneath. */
+function appOnScreen() {
+  const pid = appPid();
+  if (!pid) return { on: false, why: 'its process is gone' };
+  const activities = adbSafe(['shell', 'dumpsys', 'activity', 'activities']);
+  if (!/(?:mResumedActivity|topResumedActivity)[^\n]*io\.github\.moh23rd\.sixfold/.test(activities)) {
+    return { on: false, why: 'it is not the resumed activity' };
+  }
+  return { on: true, pid };
+}
+
+/* The platform's account of why the app is no longer on screen. The reading of
+   those buffers lives in scripts/lib/app-removal.mjs so its fixtures can hold
+   the retry decision to the records a real removal left behind; only a platform
+   kill (a dying provider, memory pressure) may be repeated, never a crash. */
+function removalEvidence() {
+  return classifyRemoval({
+    crashText: adbSafe(['logcat', '-d', '-b', 'crash'], 30000),
+    eventsText: adbSafe(['logcat', '-d', '-b', 'events'], 30000),
+    mainText: adbSafe(['logcat', '-d', '-t', '4000']),
+    packageName: PACKAGE
+  });
+}
+
+let appConfirmed = false;
+
+/* A pixel sample is evidence only while the app is the window on screen. The
+   launch samples nothing before home-ready, so the guard starts there. */
+async function requireAppOnScreen(what) {
+  if (!appConfirmed) return;
+  const state = appOnScreen();
+  if (!state.on) throw new AppRemoved(`the app left the screen while ${what} (${state.why})`, removalEvidence());
 }
 
 /* Why the process disappeared. A launch that dies before it paints leaves
@@ -1046,6 +1103,9 @@ try {
   // The process and the WebView target are the real evidence, and both are
   // asserted before any check runs.
   await startAndProveLaunch();
+  // From here a pixel is only evidence about the app while its window is the
+  // one on screen; every later sample asks the platform first.
+  appConfirmed = true;
   const engineVersion = await reportWebViewEngine();
 
   // The API 24 and 26 system images ship a Chromium 69 WebView, older than the
@@ -1788,6 +1848,21 @@ try {
   asserted = true;
   log('the Android shell starts, renders and exposes its native plugins');
 } catch (error) {
+  if (error instanceof AppRemoved) {
+    const evidence = error.evidence || {};
+    console.error(`::error::${error.message}`);
+    if (evidence.line) console.error(`::error::the platform's record: ${evidence.line}`);
+    if (evidence.crashed) {
+      console.error('::error::this was a crash or an ANR in the app, so it is not retried');
+      process.exit(1);
+    }
+    if (!evidence.external) {
+      console.error('::error::no platform kill explains it, so it is reported as an app failure');
+      process.exit(1);
+    }
+    console.error('::error::the platform removed the app, which is not its own failure; the smoke will repeat this boot');
+    process.exit(APP_REMOVED);
+  }
   if (error instanceof EmulatorLost) {
     console.error(`::error::${error.message}`);
     console.error('::error::the emulator went away before the app could repaint; the smoke will restart it');

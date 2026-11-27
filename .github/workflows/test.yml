@@ -81,6 +81,8 @@ jobs:
         run: npm run test:death-report
       - name: Test the Android attach retry
         run: npm run test:reattach
+      - name: Test the app-removal report
+        run: npm run test:app-removal
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test ${{ matrix.files }}
       - name: Record an approved cache-footprint baseline

@@ -502,6 +502,18 @@ launch's own deadline, so a slow or dead first paint cannot pass as a WebView
 restart. Assertion failures after the launch proof are never retried, and the
 emulator-lost path (exit 3) still reboots the guest as before.
 
+A pixel sample is only evidence about the app while its own window is on
+screen. The platform can remove a foreground app when a provider it holds a
+connection to dies under it (the API 34 image did this with the GMS fonts
+provider) or under memory pressure; the compositor then shows the launcher, and
+its wallpaper is not the app's page colour. The assertion checks the pid and the
+resumed activity before every sample and reports that case as exit 4 with the
+platform's own kill record, instead of calling it a stale surface after the
+30-second poll. The smoke repeats the assertion once on the same boot for exit
+4 only: the repeat installs, launches and exercises every check again. A crash,
+an ANR, an app-requested kill or an unexplained disappearance exits 1 and is
+never repeated, and a genuinely stale page surface still fails its poll.
+
 Exit 13 is the same host loss seen from the harness: Node exits with it when its
 event loop drains while a top-level await is still pending, which here means the
 WebView's DevTools socket went away with the renderer or emulator behind it. The

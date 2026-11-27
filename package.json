@@ -12,6 +12,7 @@
     "test:webview-floor": "node scripts/check-webview-floor.mjs",
     "test:death-report": "node --test scripts/lib/death-report.test.mjs",
     "test:reattach": "node --test scripts/lib/reattach.test.mjs",
+    "test:app-removal": "node --test scripts/lib/app-removal.test.mjs",
     "test:cache-budget": "node scripts/check-cache-budgets.mjs",
     "test:shell-pins": "node scripts/check-shell-pins.mjs",
     "test:shell-pins:fixture": "node --test scripts/lib/shell-pins.test.mjs",

@@ -16,7 +16,12 @@
 # the other face of the same loss: Node exits with it when its event loop drains
 # while a top-level await is still pending, which in this harness is the
 # devtools socket of a WebView that went away. It is retried as a lost
-# emulator, never reported as an app failure.
+# emulator, never reported as an app failure. Exit 4 is the platform removing
+# the app from the screen while it was being sampled (a provider it depends on
+# died under it, or the low-memory killer): the frame on screen was the
+# launcher, so it cannot judge the app's paint. That repeats the assertion once
+# on the same boot; a crash, an ANR or a colour mismatch is exit 1 and is never
+# retried, so a real repaint regression cannot pass on a second attempt.
 #
 # Environment: ANDROID_SDK_ROOT or ANDROID_HOME must point at an SDK with
 # cmdline-tools, platform-tools and build-tools. API_LEVEL and AVD_NAME are
@@ -234,6 +239,16 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     export PATH="$SDK/platform-tools:$PATH"
     status=0
     node scripts/assert-android-shell.mjs || status=$?
+    # The platform can remove a foreground app when a provider it connects to
+    # dies (the API 34 image did this with the GMS fonts provider) or under
+    # memory pressure. The assertion reports that as status 4 because the pixels
+    # it sampled belonged to the launcher. Repeat the assertion on this boot:
+    # it installs, launches and exercises every check again, so a stale surface
+    # or an app crash still fails, and only a platform removal can pass here.
+    if [ "$status" -eq 4 ]; then
+      note "the platform removed the app mid-check (status 4); repeating the assertion on this boot"
+      node scripts/assert-android-shell.mjs || status=$?
+    fi
     # Exit 13 is Node's own "the event loop drained with a top-level await
     # pending". The assertion bounds every wait and reports an app failure as
     # exit 1 with a named reason, so 13 means a promise that can never settle:
