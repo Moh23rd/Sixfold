@@ -315,16 +315,36 @@ jobs:
           # WebView assertions.
           - api: 24
             launch_only: true
+            image_tag: google_apis
           - api: 26
             launch_only: true
+            image_tag: google_apis
+          # 33 stays on google_apis: its AOSP image ships Chromium 101, and the
+          # full pass fails the Sudoku cell check there (a digit painted 2px
+          # wider than the cell at system scale 2.0). Real API 33 phones update
+          # WebView through the Play Store, so the older AOSP engine is not the
+          # engine to assert against.
           - api: 33
             launch_only: false
+            image_tag: google_apis
           # 34 is the last release before the platform enforces edge-to-edge;
           # the strip checks need the full pass to sample the window surface.
+          # 34 and 36 run the AOSP `default` image: without Play services there
+          # is no GMS fonts provider to die under the app and kill it, which is
+          # the provider-removal flake the exit-4 branch exists for. Their full
+          # assertions pass on this image (verified locally). The synthetic
+          # self-test still drives the retry every run, and the GMS records stay
+          # pinned by scripts/lib/app-removal.test.mjs. The API 34 row also
+          # carries the retry self-test: the wrapper removes the app for the
+          # assertion that first samples pixels, so this row's green result
+          # comes from the exit-4 repeat and the branch runs on every build.
           - api: 34
             launch_only: false
+            image_tag: default
+            retry_self_test: true
           - api: 36
             launch_only: false
+            image_tag: default
     steps:
       - uses: actions/checkout@v7
       - name: Set up Node
@@ -359,7 +379,7 @@ jobs:
           path: |
             /usr/local/lib/android/sdk/emulator
             /usr/local/lib/android/sdk/system-images
-          key: emulator-api${{ matrix.api }}-google_apis-x86_64-v1
+          key: emulator-api${{ matrix.api }}-${{ matrix.image_tag || 'google_apis' }}-x86_64-v2
       # Plain SDK tooling rather than an emulator action: the boot, the install
       # and the assertions are the same commands a workstation runs, so a
       # failure here can be reproduced instead of guessed at.
@@ -369,6 +389,8 @@ jobs:
           AVD_NAME: sixfold-smoke-${{ matrix.api }}
           FAILURE_DIR: emulator-failure-${{ matrix.api }}
           SMOKE_LAUNCH_ONLY: ${{ matrix.launch_only && '1' || '0' }}
+          SMOKE_RETRY_SELF_TEST: ${{ matrix.retry_self_test && '1' || '0' }}
+          SMOKE_IMAGE_TAG: ${{ matrix.image_tag || 'google_apis' }}
         run: bash scripts/android-emulator-smoke.sh
       - name: Keep a failed launch's logcat and screen
         if: failure()

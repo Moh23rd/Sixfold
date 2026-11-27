@@ -490,6 +490,21 @@ entrance still running, which is the same animation set the page-level
 `launch-cover` test watches. Each job downloads the signed APK from the Android
 job instead of rebuilding it, so all API levels install the same artifact.
 
+The rows do not all boot the same image. API 34 and 36 run the AOSP `default`
+image, which has no Play services: the GMS fonts provider that used to die
+under the app and take it off the screen does not exist there, so that flake
+is gone at its source rather than only retried. API 33 stays on `google_apis`:
+its AOSP image ships Chromium 101, which paints one Sudoku digit 2px past its
+cell at system scale 2.0, and real API 33 phones update WebView through the
+Play Store, so the older engine would assert a layout no current device has.
+The API 24 and 26 launch-only rows also stay on `google_apis`. Dropping Play
+services on two rows trades away the Play-certified environment — GMS
+processes, Google's WebView build, the downloadable-fonts provider and the
+Play Store update path — for reliability. The app declares no `INTERNET`
+permission and uses no Play services, and the GMS kill records themselves stay
+pinned by `scripts/lib/app-removal.test.mjs`, so the retry classifier keeps
+being tested against the record that started this.
+
 A cold-starting WebView can be torn down and recreated by the system after the
 activity has started, which closes its DevTools socket before any page answers.
 The smoke retries only that attach: a new attempt starts only while a 20-second
@@ -519,8 +534,16 @@ provider to die: it hands the smoke an adb wrapper that removes the app for the
 process that takes the first pixel sample, then checks that the assertion
 classified the removal, that the smoke repeated it exactly once, and that the
 repeat passed. It also prints what the repeat cost (install and whole check),
-which is the number to weigh against resuming mid-suite instead. A crash,
-an ANR, an app-requested kill or an unexplained disappearance exits 1 and is
+which is the number to weigh against resuming mid-suite instead.
+
+The API 34 row runs that wrapper on every build, on its own boot, through
+`SMOKE_RETRY_SELF_TEST=1`: the row's green result comes from the exit-4 repeat,
+so the branch cannot rot between real provider kills. The wrapper lives in
+`scripts/lib/emulator-retry-selftest.sh` and the same verification decides both
+that row and the workstation script; a row that passes without taking the
+branch fails with an annotation naming which part was missing. Reusing the
+row's boot costs one repeated assertion (about 50 s) and no second emulator. A
+crash, an ANR, an app-requested kill or an unexplained disappearance exits 1 and is
 never repeated, and a genuinely stale page surface still fails its poll.
 
 Exit 13 is the same host loss seen from the harness: Node exits with it when its

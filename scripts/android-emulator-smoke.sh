@@ -28,7 +28,19 @@
 # optional; FAILURE_DIR is where the logcat and a screenshot go on failure.
 # SMOKE_ADB replaces the adb binary the assertion and this script call.
 # SMOKE_ATTEMPTS bounds the boot+assert attempts on an emulator that dies.
+# SMOKE_RETRY_SELF_TEST=1 arms the wrapper from
+# scripts/lib/emulator-retry-selftest.sh, so the first assertion is removed
+# from the screen and must be repeated successfully; CI runs it on the API 34
+# row, on that row's own boot, and the row fails if the branch was not taken.
+# SMOKE_IMAGE_TAG picks the system image variant. The default is the AOSP
+# `default` image (no Play services), which is what the full-suite CI rows run;
+# `google_apis` is still used where the newer Google WebView is the engine a
+# real device would have (see the matrix in .github/workflows/test.yml).
 set -euo pipefail
+
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=lib/emulator-retry-selftest.sh
+. "$HERE/lib/emulator-retry-selftest.sh"
 
 SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
 if [ -z "$SDK" ]; then
@@ -38,7 +50,8 @@ fi
 
 API="${API_LEVEL:-34}"
 AVD="${AVD_NAME:-sixfold-smoke}"
-IMAGE="system-images;android-$API;google_apis;x86_64"
+IMAGE_TAG="${SMOKE_IMAGE_TAG:-default}"
+IMAGE="system-images;android-$API;$IMAGE_TAG;x86_64"
 # SMOKE_ADB lets a self-test hand in a wrapper around adb (see
 # scripts/test-emulator-retry.sh); CI leaves it unset.
 ADB="${SMOKE_ADB:-$SDK/platform-tools/adb}"
@@ -70,6 +83,18 @@ adb_run() { timeout 20 "$ADB" "$@" || true; }
 [ -x "$AVDMANAGER" ] || die "avdmanager is missing (install cmdline-tools)"
 [ -f "$APK" ] || die "$APK has not been built (run npm run native:apk:debug)"
 
+# The self-test answers the assertion's own adb calls, so it owns SMOKE_ADB.
+# Prepare it before the boot: the wrapper has to be in place for the first
+# pixel sample of the first assertion.
+RETRY_WORK=""
+if [ "${SMOKE_RETRY_SELF_TEST:-0}" = 1 ]; then
+  [ -z "${SMOKE_ADB:-}" ] \
+    || die "SMOKE_RETRY_SELF_TEST writes its own adb wrapper; do not also set SMOKE_ADB"
+  RETRY_WORK="$OUT/retry-selftest"
+  retry_selftest_prepare "$RETRY_WORK" "$SDK/platform-tools/adb"
+  ADB="${SMOKE_ADB:?}"
+fi
+
 # The guest and the assertions together want roughly 3 GiB. A host that is
 # already tight boots, then loses the first frame to Android's 5 s
 # input-dispatch timeout, which reads exactly like an app ANR. Warn before the
@@ -83,7 +108,7 @@ if [ ! -x "$EMULATOR" ]; then
   note "installing the emulator"
   "$SDKMANAGER" "emulator" >/dev/null || die "could not install the emulator"
 fi
-if [ ! -d "$SDK/system-images/android-$API/google_apis/x86_64" ]; then
+if [ ! -d "$SDK/system-images/android-$API/$IMAGE_TAG/x86_64" ]; then
   note "installing $IMAGE"
   yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
   "$SDKMANAGER" "$IMAGE" >/dev/null || die "could not install $IMAGE"
@@ -102,6 +127,15 @@ if [ ! -d "$ANDROID_AVD_HOME/$AVD.avd" ]; then
 fi
 [ -f "$ANDROID_AVD_HOME/$AVD.ini" ] \
   || die "the $AVD virtual device is not in $ANDROID_AVD_HOME, where the emulator looks"
+
+# The AVD remembers the image it was created from. A workstation that already
+# has a smoke AVD for another tag would otherwise keep booting the old image
+# while the log claims the new one; a hosted runner starts without an AVD, so
+# this only catches a stale local one.
+AVD_IMAGE=$(sed -n 's/^image\.sysdir\.1=//p' "$ANDROID_AVD_HOME/$AVD.avd/config.ini" 2>/dev/null || true)
+if [ -n "$AVD_IMAGE" ] && [[ "$AVD_IMAGE" != *"/$IMAGE_TAG/"* ]]; then
+  die "the $AVD virtual device boots $AVD_IMAGE, not $IMAGE_TAG; remove it or choose another AVD_NAME"
+fi
 
 # avdmanager's generic profile writes hw.mainKeys=yes, and Android 14 reads that
 # as a phone with hardware keys and draws no navigation bar at all — the bottom
@@ -162,6 +196,9 @@ trap cleanup EXIT
 boot_emulator() {
   note "starting the emulator (API $API, attempt $attempt/$ATTEMPTS)"
   echo "=== attempt $attempt ===" >> "$LOG"
+  # Every attempt starts with no removal on record, so verification judges the
+  # attempt that decides the row instead of a boot that was lost mid-retry.
+  if [ -n "$RETRY_WORK" ]; then retry_selftest_reset "$RETRY_WORK"; fi
   # EMULATOR_GPU exists because the renderer is host-dependent: emulator 37's
   # SwiftShader GLES path segfaults in its RenderThread when `screencap` reads
   # the composited window, while ANGLE over SwiftShader Vulkan survives the same
@@ -250,6 +287,9 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     # or an app crash still fails, and only a platform removal can pass here.
     if [ "$status" -eq 4 ]; then
       note "the platform removed the app mid-check (status 4); repeating the assertion on this boot"
+      # The self-test's verification reads this marker as the proof that the
+      # branch under test ran, rather than inferring it from the install count.
+      if [ -n "$RETRY_WORK" ]; then : > "$RETRY_WORK/state/retry-taken"; fi
       # The repeat decides the row: a passing second run must leave status at 0,
       # and a second removal or a real failure must still fail the row.
       status=0
@@ -280,6 +320,15 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
   fi
 
   if [ "$status" -eq 0 ]; then
+    # The retry self-test is a property of this whole attempt: the removal was
+    # armed, the assertion classified it as exit 4, and the repeat passed. A
+    # green row that skipped the branch is the failure this catches.
+    if [ -n "$RETRY_WORK" ]; then
+      if ! retry_selftest_verify "$RETRY_WORK" 0; then
+        exit 1
+      fi
+      retry_selftest_report "$RETRY_WORK"
+    fi
     note "the emulator smoke passed on attempt $attempt"
     exit 0
   fi
