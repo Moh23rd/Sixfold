@@ -118,19 +118,36 @@ retry_selftest_verify() {
   fi
 }
 
+# _retry_selftest_secs <milliseconds>
+_retry_selftest_secs() {
+  awk -v ms="$1" 'BEGIN { printf "%.1f", ms / 1000 }'
+}
+
 # retry_selftest_report <work-dir>
-#   Prints what the detected removal and the repeat cost.
+#   Prints what the detected removal and the repeat cost, and on CI also posts
+#   it as a notice: annotations stay readable through the checks API when the
+#   step log is not, so a green row still shows the branch ran and what it cost.
 retry_selftest_report() {
   local state=$1/state
   local finished armed removed second_install second_done
+  local detected install_cost check_cost
   finished=$(date +%s%3N)
   armed=$(awk '/^kill-armed / {print $2}' "$state/calls.log" | tail -1)
   removed=$(awk '/^fake-pidof / {print $2}' "$state/calls.log" | tail -1)
   second_install=$(awk '/^install-start / {print $2}' "$state/calls.log" | tail -1)
   second_done=$(awk '/^install-done / {print $2}' "$state/calls.log" | tail -1)
+  detected=$((removed - armed))
+  install_cost=$((second_done - second_install))
+  check_cost=$((finished - second_done))
   printf 'the first sample armed the removal; the next question about the app got %s %sms later\n' \
-    "'gone'" "$((removed - armed))"
+    "'gone'" "$detected"
   printf 'the repeat spent %sms on the install and %sms on the whole check\n' \
-    "$((second_done - second_install))" "$((finished - second_done))"
+    "$install_cost" "$check_cost"
   printf 'PASS: exit 4 was classified from the platform%s record and the smoke repeated the assertion once, passing\n' "'s"
+  if [ "${GITHUB_ACTIONS:-}" = true ]; then
+    printf '::notice title=Retry self-test (exit 4)::the platform removal was detected %ss after the first pixel sample; the repeat cost %ss to install and %ss to check, and passed\n' \
+      "$(_retry_selftest_secs "$detected")" \
+      "$(_retry_selftest_secs "$install_cost")" \
+      "$(_retry_selftest_secs "$check_cost")"
+  fi
 }

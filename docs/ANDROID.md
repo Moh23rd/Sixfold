@@ -541,7 +541,9 @@ The API 34 row runs that wrapper on every build, on its own boot, through
 so the branch cannot rot between real provider kills. The wrapper lives in
 `scripts/lib/emulator-retry-selftest.sh` and the same verification decides both
 that row and the workstation script; a row that passes without taking the
-branch fails with an annotation naming which part was missing. Reusing the
+branch fails with an annotation naming which part was missing, and a passing
+row posts a notice with the detection delay and the repeat's install and check
+cost. Reusing the
 row's boot costs one repeated assertion (about 50 s) and no second emulator. A
 crash, an ANR, an app-requested kill or an unexplained disappearance exits 1 and is
 never repeated, and a genuinely stale page surface still fails its poll.

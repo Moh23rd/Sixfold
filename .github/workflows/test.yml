@@ -372,14 +372,18 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       # A cold run downloads the emulator and a 1.2 GB system image, which is
       # most of this job's wall clock. The script only installs what is missing,
-      # so caching those two directories is enough to skip the download.
+      # so caching those two directories is enough to skip the download. The
+      # key keeps the `-v1` suffix of the cache the rows used before the image
+      # tag split it, so the google_apis rows restore what they already stored;
+      # only the AOSP rows pay one cold download. Bump the suffix if the cached
+      # paths or the SDK's install layout change.
       - name: Cache the emulator and its system image
         uses: actions/cache@v5
         with:
           path: |
             /usr/local/lib/android/sdk/emulator
             /usr/local/lib/android/sdk/system-images
-          key: emulator-api${{ matrix.api }}-${{ matrix.image_tag || 'google_apis' }}-x86_64-v2
+          key: emulator-api${{ matrix.api }}-${{ matrix.image_tag || 'google_apis' }}-x86_64-v1
       # Plain SDK tooling rather than an emulator action: the boot, the install
       # and the assertions are the same commands a workstation runs, so a
       # failure here can be reproduced instead of guessed at.
