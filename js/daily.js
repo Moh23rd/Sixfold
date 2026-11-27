@@ -58,9 +58,47 @@
     };
   }
 
+  function dayIndex(key) {
+    const d = dateFromKey(key);
+    if (!d) return 0;
+    return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  }
+
+  // A day-seeded pick, but a permutation per six-day block rather than six
+  // independent modulo rolls. The old salt could land on the same game three
+  // days running (and often did), which reads as a broken rotation even though
+  // the hash is stable. Within a block every game appears once; a block whose
+  // first game repeats the previous block's last one is rotated by one.
+  const featuredOrders = {};
+  function featuredOrder(block) {
+    if (featuredOrders[block]) return featuredOrders[block];
+    const order = ORDER.slice();
+    const random = seededRandom('sixfold-daily-feature|' + block);
+    for (let i = order.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(random() * (i + 1));
+      const swap = order[i];
+      order[i] = order[j];
+      order[j] = swap;
+    }
+    featuredOrders[block] = order;
+    return order;
+  }
+
   function featuredGame(key) {
     const safe = isKey(key) ? key : todayKey();
-    return ORDER[seedValue('sixfold-daily-feature|' + safe) % ORDER.length];
+    const day = dayIndex(safe);
+    const block = Math.floor(day / ORDER.length);
+    const position = ((day % ORDER.length) + ORDER.length) % ORDER.length;
+    const order = featuredOrder(block).slice();
+    if (position === 0) {
+      const previous = featuredOrder(block - 1);
+      if (order[0] === previous[previous.length - 1]) {
+        const swap = order[0];
+        order[0] = order[1];
+        order[1] = swap;
+      }
+    }
+    return order[position];
   }
 
   function dateFromKey(key) {

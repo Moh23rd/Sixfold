@@ -174,6 +174,18 @@
     try { dismissed = localStorage.getItem(KEY); } catch (err) {}
     if (dismissed === version) return;
     panel.hidden = false;
+    const details = panel.querySelector('.whats-new-details');
+    if (details) {
+      // The list has its own stagger. Keying it only to [open] let the first
+      // opening animate and every later open appear as a plain cut; the class
+      // is re-armed on each toggle so the note keeps its little reveal.
+      details.addEventListener('toggle', function () {
+        details.classList.remove('is-opening');
+        if (!details.open) return;
+        void details.offsetWidth;
+        details.classList.add('is-opening');
+      });
+    }
     const close = $('whats-new-close');
     if (close) close.addEventListener('click', function () {
       // Record the dismissal first: a reader who taps and immediately leaves
@@ -198,12 +210,22 @@
       ghost.style.width = rect.width + 'px';
       ghost.style.height = rect.height + 'px';
       ghost.style.zIndex = '40';
+      ghost.style.willChange = 'opacity, transform';
       document.body.appendChild(ghost);
       panel.hidden = true;
       window.requestAnimationFrame(function () {
         window.requestAnimationFrame(function () { ghost.classList.add('is-leaving'); });
       });
-      window.setTimeout(function () { ghost.remove(); }, 320);
+      // The ghost is the only thing still holding the note's pixels. Remove
+      // it on its own transition instead of on a timer that can outlive the
+      // animation, with a fallback for a browser that never fires the event.
+      const removeGhost = function () {
+        ghost.remove();
+      };
+      ghost.addEventListener('transitionend', function (event) {
+        if (event.target === ghost && event.propertyName === 'opacity') removeGhost();
+      });
+      window.setTimeout(removeGhost, 360);
     });
   })();
 

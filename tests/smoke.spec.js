@@ -69,20 +69,24 @@ test('Daily Sixfold picks a date-seeded featured game', async ({ page }) => {
 
   const info = await page.evaluate(() => {
     const picks = [];
-    for (let day = 1; day <= 12; day += 1) {
+    for (let day = 1; day <= 18; day += 1) {
       const date = new Date(2026, 0, day);
       const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
       picks.push(window.SixfoldDaily.featuredGame(key));
     }
     const current = window.SixfoldDaily.featuredGame(window.SixfoldDaily.todayKey());
     return {
+      picks: picks,
       varied: new Set(picks).size,
       current: current,
       buttonGame: document.getElementById('daily-featured').dataset.game,
       buttonText: document.getElementById('daily-featured-label').textContent
     };
   });
-  expect(info.varied, 'the seeded featured game should vary by day').toBeGreaterThan(1);
+  expect(info.varied, 'the seeded featured game should use the whole collection').toBe(6);
+  for (let index = 1; index < info.picks.length; index += 1) {
+    expect(info.picks[index], 'the same game must not run two days in a row').not.toBe(info.picks[index - 1]);
+  }
   expect(info.buttonGame).toBe(info.current);
   expect(info.buttonText).not.toBe('Play daily Sudoku');
 

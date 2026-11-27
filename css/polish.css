@@ -54,8 +54,14 @@ html[data-motion="full"] .home-game {
 
 html[data-motion="full"] .home-game:hover { transform: translateY(-5px); }
 
+/* The hover lift is more specific than the base :active rule, so without this
+   a pressed card stayed lifted and never answered the finger. Keep the press
+   later in the cascade and slightly compress the inner stage for depth. */
+html[data-motion="full"] .home-game:active { transform: translateY(0); }
+
 html[data-motion="full"] .home-game-stage { transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1); }
 html[data-motion="full"] .home-game:hover .home-game-stage { transform: scale(1.015); }
+html[data-motion="full"] .home-game:active .home-game-stage { transform: scale(0.985); }
 
 html[data-motion="full"] .home-cta,
 html[data-motion="full"] .home-surprise,
@@ -104,10 +110,11 @@ html[data-motion="full"] .result-share:hover { transform: translateY(-1px); }
 html[data-motion="full"] .tile { transition: transform 170ms cubic-bezier(0.22, 1, 0.36, 1); }
 }
 
-/* A screen settles in with a little more travel on a large display, while the
-   board itself stays perfectly still once it has arrived. */
+/* A screen settles in with a short opacity hand-off. It used to travel 12px
+   and scale from 99.2%, so the top of the page visibly shrank and jumped at
+   the moment the hub was hidden. The board stays perfectly still. */
 @keyframes sixfoldShellIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.992); }
+  from { opacity: 0; }
   to { opacity: 1; transform: none; }
 }
 
@@ -980,7 +987,11 @@ html[data-motion="reduced"] .play-feedback .play-win.has-win::before {
    reader leaves the collection, so a return from a game is a cut back to a
    hub that is already built instead of a second entrance. */
 html[data-motion="full"].home-ready:not(.hub-settled) .home-grid .home-game {
-    animation: homeCardIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    /* Backwards, not both: the entrance may hold its first frame through the
+       stagger delay, but once it lands the card must hand its transform back
+       to :hover and :active. `both` kept the final `transform: none` winning
+       forever, which is what made the six cards feel dead under a finger. */
+    animation: homeCardIn 380ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
 
 html[data-motion="full"].home-ready .home-grid .home-game:nth-child(1) { animation-delay: 40ms; }
@@ -1011,8 +1022,8 @@ html[data-motion="full"].home-ready .home-grid .home-game:nth-child(6) { animati
 /* A lift and fade only: the old blur filtered the whole screen every frame,
    which is exactly the paint work the WebView cannot afford. */
 @keyframes wordleArrive {
-  from { opacity: 0; transform: translateY(10px) scale(0.99); }
-  68% { opacity: 1; transform: translateY(-1px) scale(1.002); }
+  from { opacity: 0; transform: translateY(5px); }
+  68% { opacity: 1; transform: translateY(-1px); }
   to { opacity: 1; transform: none; }
 }
 

@@ -8,6 +8,7 @@
   // wallpaper's own colour is cached so a restart shows the right palette
   // before the native plugin has answered.
   const WALLPAPER_KEY = 'merge2048.palette.wallpaper';
+  const WALLPAPER_COLORS_KEY = 'merge2048.palette.wallpaper.colors';
   const CUSTOM_KEY = 'merge2048.palette.custom';
 
   // The hand-tuned "Warm" ramp, one colour per tile for 2 … 2048.
@@ -16,21 +17,28 @@
     '#e7c364', '#e3b94a', '#dcab30', '#cf9822', '#b9801a'
   ];
 
+  // Red is a hand-tuned ramp rather than a hue-shifted Warm ramp: the deepest
+  // Warm tiles are gold, and shifting them by a few degrees left them orange.
+  const RED = [
+    '#f8e9e5', '#f4d3cc', '#f0b0a4', '#ec8c7c', '#e86b5b', '#e24b46',
+    '#d6383a', '#c42b32', '#ab222b', '#8f1a23', '#70131b'
+  ];
+
   // The seven accent colours the collection games use for tubes, fruit, marks
   // and mine numbers. They follow the selected palette just like the tiles.
   const GAME_ACCENTS = [
     '#e85f3b', '#e3a92f', '#8bbd54', '#39a9a1', '#5b8fd5', '#9a6bb5', '#d96b8a'
   ];
 
-  // Other palettes are the warm colours hue-shifted (or, for Mono, desaturated),
-  // so they keep the same brightness curve and stay equally readable.
+  // Other palettes are the warm colours hue-shifted, so they keep the same
+  // brightness curve and stay equally readable. Red uses its own ramp.
   const PALETTES = [
     { id: 'warm', label: 'Warm' },
     { id: 'ocean', label: 'Ocean', shift: 196 },
     { id: 'forest', label: 'Forest', shift: 104 },
     { id: 'berry', label: 'Berry', shift: 296 },
     { id: 'dusk', label: 'Dusk', shift: 252 },
-    { id: 'mono', label: 'Mono', mono: true }
+    { id: 'red', label: 'Red', ramp: RED, shift: -14, satScale: 1.04 }
   ];
 
   // Page chrome colours that pick up the palette, page background included.
@@ -38,16 +46,24 @@
 
   const root = document.documentElement;
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
-  const state = { theme: 'auto', palette: 'warm', wallpaper: '#e85f3b', custom: '#e85f3b' };
+  const state = { theme: 'auto', palette: 'warm', wallpaper: '#e85f3b', custom: '#e85f3b', wallpaperColors: [] };
 
   try {
     const savedTheme = localStorage.getItem(THEME_KEY);
     if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') state.theme = savedTheme;
     const savedPalette = localStorage.getItem(PALETTE_KEY);
-    if (PALETTES.some(function (p) { return p.id === savedPalette; }) ||
+    // Mono was retired in 6.0 in favour of Red. A reader who had chosen it
+    // should land on the new red ramp rather than silently back on Warm.
+    if (savedPalette === 'mono') {
+      state.palette = 'red';
+      localStorage.setItem(PALETTE_KEY, 'red');
+    } else if (PALETTES.some(function (p) { return p.id === savedPalette; }) ||
       savedPalette === 'wallpaper' || savedPalette === 'custom') state.palette = savedPalette;
     const savedWallpaper = normalizeHex(localStorage.getItem(WALLPAPER_KEY));
     if (savedWallpaper) state.wallpaper = savedWallpaper;
+    const savedWallpaperColors = JSON.parse(localStorage.getItem(WALLPAPER_COLORS_KEY) || 'null');
+    state.wallpaperColors = normalizeColours(savedWallpaperColors);
+    if (!state.wallpaperColors.length && savedWallpaper) state.wallpaperColors = [savedWallpaper];
     const savedCustom = normalizeHex(localStorage.getItem(CUSTOM_KEY));
     if (savedCustom) state.custom = savedCustom;
   } catch (err) {
@@ -164,6 +180,20 @@
     return '#' + raw;
   }
 
+  // The wallpaper reader returns primary, secondary and tertiary. Keep them
+  // deduplicated and ordered, and never more than the three Android supplies:
+  // the ramp uses them as anchor colours, so a repeated anchor would waste a
+  // third of the board's range.
+  function normalizeColours(value) {
+    const source = Array.isArray(value) ? value : [value];
+    const seen = {};
+    return source.map(normalizeHex).filter(function (hex) {
+      if (!hex || seen[hex]) return false;
+      seen[hex] = true;
+      return true;
+    }).slice(0, 3);
+  }
+
   // A palette built from one real colour: the warm ramp keeps its brightness
   // curve and takes the seed's hue. Saturation and lightness follow the seed
   // only part of the way — a wallpaper that is almost white still has to leave
@@ -185,9 +215,50 @@
     };
   }
 
+  // A wallpaper palette is more than one hue. Android gives the primary,
+  // secondary and tertiary colours it extracted from the image, so split the
+  // eleven Warm positions between those anchors instead of throwing two of
+  // them away. Lightness still comes from the hand-tuned ramp: a dark wallpaper
+  // must not make the board unreadable, and a pale one must not erase the
+  // numbers.
+  function wallpaperPalette(id, label, seed, colours) {
+    const anchors = normalizeColours(colours);
+    if (!anchors.length) anchors.push(normalizeHex(seed) || '#e85f3b');
+    const base = seededPalette(id, label, anchors[0]);
+    const anchorHsl = anchors.map(function (hex) {
+      const n = parseInt(hex.slice(1), 16);
+      return rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    });
+    function anchored(sourceHex, index, strength) {
+      const n = parseInt(sourceHex.slice(1), 16);
+      const source = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+      const anchor = anchorHsl[index % anchorHsl.length];
+      const saturation = Math.max(0.12, Math.min(0.92, source[1] * (1 - strength) + anchor[1] * strength));
+      const lightness = Math.max(0.08, Math.min(0.96, source[2] + (anchor[2] - 0.5) * strength * 0.16));
+      return hslToHex(anchor[0], saturation, lightness);
+    }
+    base.anchors = anchors;
+    base.colors = anchors;
+    base.ramp = WARM.map(function (hex, index) {
+      const anchorIndex = Math.min(anchors.length - 1, Math.floor(index * anchors.length / WARM.length));
+      return anchored(hex, anchorIndex, 0.78);
+    });
+    base.accents = GAME_ACCENTS.map(function (hex, index) {
+      return anchored(hex, index, 0.72);
+    });
+    base.inkLow = hslToHex(anchorHsl[0][0], 0.14, 0.38);
+    return base;
+  }
+
   function setDynamicPalette(id, label, seed) {
     const palette = seededPalette(id, label, seed);
     dynamicPalettes = dynamicPalettes.filter(function (p) { return p.id !== id; }).concat([palette]);
+    return palette;
+  }
+
+  function setWallpaperPalette(seed, colours) {
+    const palette = wallpaperPalette('wallpaper', tr('Wallpaper'), seed, colours);
+    dynamicPalettes = dynamicPalettes.filter(function (p) { return p.id !== 'wallpaper'; }).concat([palette]);
     return palette;
   }
 
@@ -200,18 +271,41 @@
     const value = String(hex).trim();
     const match = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(value);
     if (!match) return hex;
-    if (!palette.mono && !palette.shift && !palette.satScale && !palette.lightShift) return value;
+    if (!palette.ramp && !palette.shift && !palette.satScale && !palette.lightShift) return value;
 
     const alpha = match[2] ? match[2].toLowerCase() : '';
     const n = parseInt(match[1], 16);
     const hsl = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
-    if (palette.mono) return hslToHex(hsl[0], 0.04, hsl[2]) + alpha;
+    if (palette.ramp) {
+      const warmIndex = WARM.indexOf(match[1].toLowerCase());
+      if (warmIndex !== -1) return palette.ramp[warmIndex] + alpha;
+      const accentIndex = GAME_ACCENTS.indexOf(match[1].toLowerCase());
+      if (accentIndex !== -1 && palette.accents) return palette.accents[accentIndex] + alpha;
+    }
     const hue = hsl[0] + (palette.shift || 0);
     const saturation = Math.max(0, Math.min(1, hsl[1] * (palette.satScale || 1)));
     // The clamp keeps a seed at either end from pushing the page's own light
     // or dark base past pure white or black, where a tint would vanish.
     const lightness = Math.max(0.06, Math.min(0.96, hsl[2] + (palette.lightShift || 0)));
     return hslToHex(hue, saturation, lightness) + alpha;
+  }
+
+  // Page surfaces take the wallpaper's colour at a much lower saturation than
+  // the board. The board can be vivid; a full-strength wall colour behind every
+  // panel would make the app look like a different theme and hurt contrast.
+  function tintSurface(hex, palette) {
+    if (!palette.anchors) return recolor(hex, palette);
+    const value = String(hex).trim();
+    const match = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(value);
+    if (!match) return hex;
+    const alpha = match[2] ? match[2].toLowerCase() : '';
+    const n = parseInt(match[1], 16);
+    const source = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    const a = parseInt(palette.anchors[0].slice(1), 16);
+    const anchor = rgbToHsl((a >> 16) & 255, (a >> 8) & 255, a & 255);
+    const saturation = Math.max(0, Math.min(0.4, anchor[1] * 0.34 + source[1] * 0.16));
+    const lightness = Math.max(0.06, Math.min(0.96, source[2] + (anchor[2] - 0.5) * 0.08));
+    return hslToHex(anchor[0], saturation, lightness) + alpha;
   }
 
   /* ---------- page tint ---------- */
@@ -221,7 +315,7 @@
       root.style.removeProperty(name);
     });
     const palette = activePalette();
-    if (!palette.mono && !palette.shift) return;
+    if (!palette.ramp && !palette.anchors && !palette.shift) return;
 
     const computed = getComputedStyle(root);
     const bases = PAGE_VARS.map(function (name) {
@@ -229,7 +323,7 @@
     });
     bases.forEach(function (pair) {
       if (!/^#[0-9a-f]{6,8}$/i.test(pair[1])) return;
-      root.style.setProperty(pair[0], recolor(pair[1], palette));
+      root.style.setProperty(pair[0], tintSurface(pair[1], palette));
     });
   }
 
@@ -256,7 +350,7 @@
   // read, so a swatch still repaints the bar in the same task.
   function chromeColour() {
     return pageHex(getComputedStyle(root).getPropertyValue('--page'))
-      || recolor(root.dataset.theme === 'dark' ? PAGE_BASE.dark : PAGE_BASE.light, activePalette());
+      || tintSurface(root.dataset.theme === 'dark' ? PAGE_BASE.dark : PAGE_BASE.light, activePalette());
   }
 
   // The window surface behind the WebView is only seen at the edges while a
@@ -504,21 +598,28 @@
     if (!instant && switchIsVisible(persist)) crossFade();
 
     for (let i = 0; i < WARM.length; i++) {
-      root.style.setProperty('--t' + (2 << i), recolor(WARM[i], palette));
+      root.style.setProperty('--t' + (2 << i), palette.ramp ? palette.ramp[i] : recolor(WARM[i], palette));
     }
     // Shared accents for the other five games (see games.css/games.js).
     for (let i = 0; i < GAME_ACCENTS.length; i++) {
-      root.style.setProperty('--g' + (i + 1), recolor(GAME_ACCENTS[i], palette));
+      root.style.setProperty(
+        '--g' + (i + 1),
+        palette.accents ? palette.accents[i] : recolor(GAME_ACCENTS[i], palette)
+      );
     }
     root.style.setProperty(
       '--ink-tile-low',
-      palette.mono ? hslToHex(0, 0, 0.46) : palette.shift ? hslToHex(34 + palette.shift, 0.11, 0.46) : '#857a6b'
+      palette.inkLow || (palette.ramp ? hslToHex(0, 0.16, 0.38) :
+        palette.shift ? hslToHex(34 + palette.shift, 0.11, 0.46) : '#857a6b')
     );
 
     if (persist) {
       try {
         localStorage.setItem(PALETTE_KEY, palette.id);
-        if (palette.id === 'wallpaper') localStorage.setItem(WALLPAPER_KEY, palette.seed);
+        if (palette.id === 'wallpaper') {
+          localStorage.setItem(WALLPAPER_KEY, palette.seed);
+          if (palette.colors) localStorage.setItem(WALLPAPER_COLORS_KEY, JSON.stringify(palette.colors));
+        }
         if (palette.id === 'custom') localStorage.setItem(CUSTOM_KEY, palette.seed);
       } catch (err) {}
     }
@@ -594,16 +695,19 @@
     wallpaperRead = pending;
     pending.then(function (result) {
       wallpaperRead = null;
-      const seed = normalizeHex(result && (result.primary || result.secondary || result.tertiary));
+      const colors = normalizeColours(result && [result.primary, result.secondary, result.tertiary]);
+      const seed = colors[0];
       if (!seed) return;
       const current = dynamicPalette('wallpaper');
       // The common resume: the same wallpaper the last paint already used.
       // Rebuilding the ramp here used to repaint every surface and run a fade
       // for a colour that had not moved, which is exactly the churn a phone
       // that changes wallpaper on every lock would make constant.
-      if (state.palette === 'wallpaper' && current && current.seed === seed) return;
+      if (state.palette === 'wallpaper' && current && current.colors &&
+        current.colors.join('|') === colors.join('|')) return;
       state.wallpaper = seed;
-      setDynamicPalette('wallpaper', tr('Wallpaper'), seed);
+      state.wallpaperColors = colors;
+      setWallpaperPalette(seed, colors);
       paintSwatchDots(document.querySelector('[data-palette-opt="wallpaper"]'), dynamicPalette('wallpaper'));
       // A wallpaper that did change arrives without the switch transition: the
       // reader is looking at a freshly resumed screen, not at a choice, and the
@@ -1238,7 +1342,7 @@
 
   // Both runtime palettes exist before the first apply, so restoring
   // "wallpaper" or "custom" from storage resolves to real colours.
-  setDynamicPalette('wallpaper', tr('Wallpaper'), state.wallpaper);
+  setWallpaperPalette(state.wallpaper, state.wallpaperColors);
   setDynamicPalette('custom', tr('Custom'), state.custom);
   buildPalettes();
   wireCustomColour();

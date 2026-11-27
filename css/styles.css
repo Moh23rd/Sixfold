@@ -942,6 +942,10 @@ html.sheet-open body { overflow: hidden; }
   margin: 0 -18px;
   padding: 12px 18px 9px;
   background: var(--sheet-bg);
+  /* The head travels with the top edge. A square head painted over the card's
+     rounded top looked like the corners had gone flat as soon as the sheet
+     scrolled to a colour control. */
+  border-radius: 12px 12px 0 0;
 }
 
 .sheet-card > .sheet-head::after {
@@ -1490,7 +1494,6 @@ html[data-motion="full"].app-ready .footer {
 
 /* Promote the card only while it is actually travelling; a sheet sitting
    closed in the DOM must not hold a compositor layer. */
-.sheet.is-open .sheet-card,
 .sheet.is-closing .sheet-card {
   will-change: transform;
 }

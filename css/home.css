@@ -228,12 +228,17 @@ html[data-theme="dark"] {
   font-size: clamp(40px, 12.5vw, 76px);
   font-weight: 700;
   letter-spacing: -0.067em;
-  line-height: 0.86;
+  /* The two lines are deliberately tight, but 0.86 put the next line's box on
+     top of the descender of the g in “Games”. A little breathing room keeps
+     the display treatment without clipping a letter. */
+  line-height: 0.94;
   text-transform: none;
   text-wrap: balance;
 }
 
 .home-hero h1 > span { display: block; }
+
+.home-hero h1 > span:first-child { padding-bottom: 0.035em; }
 
 .home-hero h1 .home-title-mark {
   display: table;

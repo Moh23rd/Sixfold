@@ -1303,6 +1303,71 @@ test('a browser without the wallpaper plugin does not offer the swatch', async (
   await expect(page.locator('[data-palette-opt="custom"]'), 'custom needs no native part').toHaveCount(1);
 });
 
+test('the wallpaper ramp uses all three colours Android extracts', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.Capacitor = window.Capacitor || {};
+    window.Capacitor.Plugins = window.Capacitor.Plugins || {};
+    window.Capacitor.Plugins.WallpaperColors = {
+      colors: () => Promise.resolve({ primary: '#0a7d57', secondary: '#b23a48', tertiary: '#d8a12b' })
+    };
+  });
+  await openLook(page);
+  await page.locator('[data-palette-opt="wallpaper"]').click();
+
+  const painted = await page.evaluate(() => ({
+    g1: getComputedStyle(document.documentElement).getPropertyValue('--g1').trim(),
+    g2: getComputedStyle(document.documentElement).getPropertyValue('--g2').trim(),
+    g3: getComputedStyle(document.documentElement).getPropertyValue('--g3').trim(),
+    cached: JSON.parse(localStorage.getItem('merge2048.palette.wallpaper.colors'))
+  }));
+  expect(painted.cached).toEqual(['#0a7d57', '#b23a48', '#d8a12b']);
+  expect(painted.g1, 'the first game follows the primary').not.toBe(painted.g2);
+  expect(painted.g2, 'the second game follows the secondary').not.toBe(painted.g3);
+});
+
+test('Red replaces the retired Mono palette', async ({ page }) => {
+  await openLook(page);
+  await expect(page.locator('[data-palette-opt="mono"]')).toHaveCount(0);
+  const red = page.locator('[data-palette-opt="red"]');
+  await expect(red).toHaveCount(1);
+  const before = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--t64').trim());
+  await red.click();
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-theme-fading'));
+  const after = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--t64').trim());
+  expect(after, 'the board takes the red ramp').not.toBe(before);
+  expect(await page.evaluate(() => localStorage.getItem('merge2048.palette'))).toBe('red');
+});
+
+test('a saved Mono choice migrates to Red', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('merge2048.palette', 'mono'));
+  await page.goto('/?perf=full');
+  await page.waitForSelector('#daily');
+  await expect(page.locator('[data-palette-opt="red"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => localStorage.getItem('merge2048.palette'))).toBe('red');
+  expect(await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t64').trim()
+  )).toMatch(/^#[0-9a-f]{6}$/);
+});
+
+test('the look sheet keeps its rounded top after a colour change', async ({ page }) => {
+  await openLook(page);
+  await page.locator('[data-palette-opt="red"]').click();
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-theme-fading'));
+  await page.waitForTimeout(300);
+  const corners = await page.evaluate(() => {
+    const card = document.querySelector('#sheet .sheet-card');
+    const head = card.querySelector('.sheet-head');
+    return {
+      card: getComputedStyle(card).borderTopLeftRadius,
+      head: getComputedStyle(head).borderTopLeftRadius,
+      cardWillChange: getComputedStyle(card).willChange
+    };
+  });
+  expect(corners.card).toBe('12px');
+  expect(corners.head, 'the sticky head does not paint square corners over the card').toBe('12px');
+  expect(corners.cardWillChange, 'the open sheet does not hold a compositor layer').not.toBe('transform');
+});
+
 // Android repaints the wallpaper on some phones every time the screen locks.
 // A resume therefore reads the colour again, but a colour that has not moved
 // must not rebuild the ramp, repaint the page or run the switch fade.
@@ -1442,4 +1507,35 @@ test('a settled six-piece presses every time without replaying the build', async
     expect(hold, 'press ' + (press + 1) + ' lasts its whole transform').toBeGreaterThanOrEqual(150);
     await expect(piece).not.toHaveClass(/is-six-hit/);
   }
+});
+
+test('a settled home tile keeps its hover and press motion', async ({ page }) => {
+  await page.goto('/?perf=full');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.waitForFunction(
+    () => document.documentElement.classList.contains('six-settled'),
+    null,
+    { timeout: 8000 }
+  );
+
+  const card = page.locator('.home-game').first();
+  await card.scrollIntoViewIfNeeded();
+  const box = await card.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForTimeout(420);
+  const hovered = await card.evaluate((element) => ({
+    transform: getComputedStyle(element).transform,
+    fill: getComputedStyle(element).animationFillMode
+  }));
+  // The entrance may only hold its start frame. `both`/`forwards` would keep
+  // the final transform winning over the pointer styles for the life of the
+  // card, which is the bug that made these tiles feel inert.
+  expect(hovered.fill).toBe('backwards');
+  expect(hovered.transform).not.toBe('none');
+
+  await page.mouse.down();
+  await page.waitForTimeout(80);
+  const pressed = await card.evaluate((element) => getComputedStyle(element).transform);
+  expect(pressed, 'pressing a settled tile moves it').not.toBe(hovered.transform);
+  await page.mouse.up();
 });

@@ -73,10 +73,14 @@ release guards. Existing saves, daily history and backups upgrade in place.
 ### Appearance that follows the phone
 
 - **Colour from the phone**: Look & feel offers a wallpaper palette on Android
-  (the shell reports the wallpaper's primary colour and the board ramp follows
-  it) and a custom colour card with a picker, a hex field and a live preview.
-  Both persist per device, follow the interface language, and the six fixed
-  palette names are translated in all twelve catalogues.
+  (the shell reports the wallpaper's primary, secondary and tertiary anchors;
+  the board ramp follows all three, the page keeps a low-saturation tint of the
+  primary, and the game accents use the secondary and tertiary) and a custom
+  colour card with a picker, a hex field and a live preview. Both persist per
+  device, follow the interface language, and the fixed palette names are
+  translated in all twelve catalogues.
+- **Red replaces Mono**: the retired monochrome swatch is now a hand-tuned red
+  ramp, and a saved Mono choice migrates to Red instead of falling back to Warm.
 - **A calmer switch**: light, dark and palette changes fade colour only, over
   170 ms, with the page background joining the fade; shadows, transforms and
   opacity no longer re-raster every card on the way. Haptics send amplitudes so
@@ -114,6 +118,35 @@ release guards. Existing saves, daily history and backups upgrade in place.
   the tutorial strips, the per-game tool cluster, the Water Sort glasses, the
   Fruit Merge next-fruit dot, the Sudoku settings button and the board frames of
   three games. The badges page is not yet in that sweep.
+
+### The 6.0 polish pass
+
+- **The collection answers the finger again**: the hub cards' launch animation
+  used `animation-fill-mode: both`, whose final transform kept winning over
+  `:hover` and `:active` forever. The fill is now `backwards`, and the desktop
+  hover lift has an explicit pressed state, so a settled tile keeps its lift,
+  press and stage motion without replaying the entrance.
+- **What's New leaves under its own momentum**: dismissal keeps the card's last
+  frame as a fixed ghost and fades it out on the compositor while the page
+  reflows underneath. The list stagger is re-armed on every disclosure, so the
+  little word-and-row reveal is not a first-open-only effect.
+- **The look sheet keeps its corners**: the sticky sheet head carries the same
+  top radius as the card, and an open sheet no longer holds a permanent
+  compositor promotion, so changing colour cannot flatten the top corners.
+- **Daily Sixfold is a real rotation**: the featured game uses a seeded six-day
+  permutation with a boundary guard, so every game appears once per block and
+  the same game never runs two days in a row. The Daily Gauntlet keeps its own
+  order.
+- **Game screens arrive without a jump**: the shared shell entrance is now
+  opacity-only instead of a scale-and-translate that made the header shrink
+  into place; the Wordle arrival likewise no longer scales its title.
+- **The hub headline keeps its descender**: “Six Games” gets a little more line
+  box and bottom padding, so the g is not cut by “No Filler” at the tight
+  display leading. This was not an intentional crop.
+- **The licence page follows the chosen colour**: the standalone page resolves
+  Warm, Ocean, Forest, Berry, Dusk, Red, Custom and Wallpaper from the same
+  saved state, tints its page, panel and theme-color together, and repaints on
+  a live scheme change.
 
 ### The Android app
 

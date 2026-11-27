@@ -187,6 +187,33 @@ test('the legal page follows the saved theme, motion and language', async ({ pag
   expect(tinted.panel).not.toBe(neutral);
   // The status bar follows the page, as it does in the app.
   expect(tinted.chrome).toBe(tinted.page);
+
+  // Custom and wallpaper are the two appearances that are chosen rather than
+  // picked from the fixed ramps; the standalone page has to resolve both.
+  await page.evaluate(() => {
+    localStorage.setItem('merge2048.palette', 'custom');
+    localStorage.setItem('merge2048.palette.custom', '#3366cc');
+  });
+  await page.reload();
+  const custom = await page.evaluate(() => ({
+    page: getComputedStyle(document.documentElement).getPropertyValue('--page').trim(),
+    chrome: document.querySelector('meta[name="theme-color"]').getAttribute('content')
+  }));
+  expect(custom.page).not.toBe(neutral);
+  expect(custom.chrome).toBe(custom.page);
+
+  await page.evaluate(() => {
+    localStorage.setItem('merge2048.palette', 'wallpaper');
+    localStorage.setItem('merge2048.palette.wallpaper', '#0a7d57');
+    localStorage.setItem('merge2048.palette.wallpaper.colors', JSON.stringify(['#0a7d57', '#b23a48']));
+  });
+  await page.reload();
+  const wallpaper = await page.evaluate(() => ({
+    page: getComputedStyle(document.documentElement).getPropertyValue('--page').trim(),
+    chrome: document.querySelector('meta[name="theme-color"]').getAttribute('content')
+  }));
+  expect(wallpaper.page).not.toBe(custom.page);
+  expect(wallpaper.chrome).toBe(wallpaper.page);
 });
 
 // Merge is a play screen too, including its full-bleed desktop grid.

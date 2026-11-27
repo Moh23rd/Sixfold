@@ -118,3 +118,31 @@ test('dismissing the card fades a ghost instead of animating layout', async ({ p
   await expect(page.locator('.whats-new-ghost')).toHaveCount(0, { timeout: 1500 });
   await expect.poll(() => page.evaluate(() => localStorage.getItem('sixfold.whats-new.dismissed'))).not.toBeNull();
 });
+
+test('the list reveal replays after the note is closed and opened again', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.removeItem('sixfold.whats-new.dismissed');
+  });
+  await page.goto('/');
+  const panel = page.locator('#whats-new');
+  const details = panel.locator('.whats-new-details');
+  await expect(panel).toBeVisible();
+
+  const revealRunning = () => page.evaluate(() => {
+    const item = document.querySelector('.whats-new-details.is-opening .whats-new-list li');
+    return Boolean(item && item.getAnimations().some((animation) =>
+      animation.playState === 'running' && animation.animationName === 'whats-new-item'
+    ));
+  });
+
+  await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  await expect.poll(revealRunning, { message: 'the first opening staggers the list' }).toBe(true);
+
+  await details.locator('summary').click();
+  await expect(details).not.toHaveAttribute('open', '');
+  await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  await expect.poll(revealRunning, { message: 'the second opening staggers the list again' }).toBe(true);
+});

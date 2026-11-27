@@ -15,8 +15,8 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * cannot read, but the platform exposes the same source Monet derives from:
  * WallpaperManager.getWallpaperColors() returns the primary, secondary and
  * tertiary colours Android picked out of the wallpaper. The page builds its
- * board ramp from the primary, so the app follows the wallpaper the way the
- * rest of the phone does.
+ * board ramp from all three anchors, so the app follows the wallpaper the way
+ * the rest of the phone does.
  *
  * No permission is needed for the system wallpaper's colours. Releases before
  * Android 8.1 have no such API and report unsupported, which is what leaves the
