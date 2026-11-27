@@ -3,7 +3,7 @@
     {
       "path": "index.html",
       "bytes": 116896,
-      "sha256": "468894d87e4c2f1fbaf66d122c9d96d4b58d74bd456865802af0d393e849c1f9"
+      "sha256": "d898b32ee797e604d48a0d3a4e5eaa5fec91211165f6e1c9f78255d321c91c93"
     },
     {
       "path": "licenses.html",
@@ -47,8 +47,8 @@
     },
     {
       "path": "js/sharecard.js",
-      "bytes": 21380,
-      "sha256": "603a27652caad31b180072613497e210790406dc01139201205db3c37831da82"
+      "bytes": 22788,
+      "sha256": "38e2c846c3c2d4710ba737ec2a42bf6947117c2fdc7cec314b5738d336219313"
     },
     {
       "path": "js/install.js",

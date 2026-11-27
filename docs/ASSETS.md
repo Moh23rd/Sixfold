@@ -181,9 +181,9 @@ cannot keep the insets. It also verifies the `#3b3833` background resource and
 the default layer sizes, and rejects any locale-qualified `mipmap-*` directory
 so the launcher icon cannot start following the device language again.
 
-The adaptive foreground is the cream six and its coral shadow, scaled so the
-numeral's ink fits inside the 66dp safe circle; the ink plate and its glow are
-the background layer. A full-bleed foreground put the old outer tiles under
+The adaptive foreground is the plate's art — ring, tiles, gold square and
+sparkle — scaled so it fits inside the 66dp safe circle; the plate colour itself
+is the background layer. A full-bleed foreground put the old outer tiles under
 circular launcher masks, which looked like a zoomed icon.
 
 ```sh
