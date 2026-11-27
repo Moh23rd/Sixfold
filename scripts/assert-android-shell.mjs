@@ -413,6 +413,9 @@ async function waitFor(what, probe, timeoutMs = 60000, everyMs = 400) {
       // refused devtools socket only counts as loss if the guest itself has
       // stopped answering, so a slow WebView still fails as a timeout.
       if (error instanceof EmulatorLost) throw error;
+      // A removal is a decision with evidence attached, not a slow page: do not
+      // sit out the rest of the window before reporting it.
+      if (error instanceof AppRemoved) throw error;
       if (/device offline|no devices\/emulators found|device not found|connection reset|protocol fault|closed|fetch failed|ECONNREFUSED|ETIMEDOUT/i.test(error.message)) {
         if (!(await deviceLive())) throw new EmulatorLost(`${what}: the emulator stopped answering`);
       }
@@ -666,6 +669,14 @@ async function launchApp(action = '') {
     for (const line of report) log(line);
     const trace = await anrTraceReport();
     for (const line of trace) log(line);
+    // A process killed by a dying provider can be gone before the first pidof:
+    // report that as the platform's removal, not as a launch that never started.
+    if (!appPid()) {
+      const evidence = removalEvidence();
+      if (evidence.external && !evidence.crashed) {
+        throw new AppRemoved('the app was removed before its process could be seen', evidence);
+      }
+    }
     fail(`the app process did not start: ${describeDeath(report, trace)}`);
   }
   const pid = launched.value;
@@ -682,10 +693,33 @@ async function launchApp(action = '') {
   return pid;
 }
 
+async function processIsGone() {
+  if (appPid()) return false;
+  // One empty pidof can be an adb hiccup; two 300ms apart on a live device is
+  // the process being gone.
+  await wait(300);
+  return !appPid();
+}
+
 async function connectToWebView() {
   // The reattach path is called from a probe that must be able to time out, so
   // a missing target throws instead of ending the process.
-  const found = await waitFor('the WebView devtools target', devtoolsTargets, 45000);
+  const found = await waitFor(
+    'the WebView devtools target',
+    async () => {
+      // Asked before the listing: once the process is gone the forward's socket
+      // is gone too, and the listing throws instead of returning nothing. A
+      // killed launch never produces a target, and waiting out the rest of the
+      // 45 seconds pushes the platform's kill record out of the log tail the
+      // failure is classified from (the API 33 row did exactly that). Stop as
+      // soon as the process is gone, while the record is still fresh.
+      if (await processIsGone()) {
+        throw new AppRemoved('the app process went away while the WebView was attaching', removalEvidence());
+      }
+      return devtoolsTargets();
+    },
+    45000
+  );
   if (!found.value) {
     const live = await deviceLive();
     throw new Error(
