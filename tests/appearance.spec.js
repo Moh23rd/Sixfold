@@ -403,8 +403,31 @@ test('every surface that repaints between appearances opts into the fade', async
     const page = await context.newPage();
     await page.goto('/?perf=full' + screen.hash);
     await page.waitForSelector(screen.ready);
-    await page.waitForTimeout(250);
+    // The boot splash leaves the DOM once the app is ready; sampling before it
+    // does would pair its nodes with the screen's own in the other appearance.
+    await page.waitForFunction(() => {
+      const splash = document.querySelector('#boot-splash');
+      return !splash || splash.hidden || getComputedStyle(splash).display === 'none';
+    });
+    await page.evaluate(() => (document.fonts ? document.fonts.ready.then(() => undefined) : undefined));
     const rows = await page.evaluate(() => {
+      // Pair nodes by where they sit in the tree, not by their order in a flat
+      // list: a late-lazy element would otherwise shift every later index.
+      function pathOf(el) {
+        const parts = [];
+        let node = el;
+        while (node && node !== document.body && node.nodeType === 1) {
+          let index = 0;
+          let sibling = node.previousElementSibling;
+          while (sibling) {
+            if (sibling.tagName === node.tagName) index += 1;
+            sibling = sibling.previousElementSibling;
+          }
+          parts.unshift(node.tagName.toLowerCase() + ':' + index);
+          node = node.parentElement;
+        }
+        return parts.join('>');
+      }
       const visible = Array.from(document.querySelectorAll('body *')).filter((el) => {
         const rect = el.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && !el.closest('[hidden]');
@@ -413,6 +436,7 @@ test('every surface that repaints between appearances opts into the fade', async
         const style = getComputedStyle(el);
         const cls = String(el.getAttribute('class') || '');
         return {
+          path: pathOf(el),
           cls: el.tagName.toLowerCase() + (cls ? '.' + cls.trim().split(/\s+/).join('.') : ''),
           paint: style.backgroundColor + '|' + style.backgroundImage,
           // The marker has to be on the surface itself: an ancestor's opt-in
@@ -429,11 +453,15 @@ test('every surface that repaints between appearances opts into the fade', async
   for (const screen of screens) {
     const light = await painted('light', screen);
     const dark = await painted('dark', screen);
-    const count = Math.min(light.length, dark.length);
-    for (let i = 0; i < count; i += 1) {
-      if (light[i].paint === dark[i].paint) continue;
-      if (light[i].opted || dark[i].opted) continue;
-      misses.push(screen.name + ': ' + light[i].cls);
+    const lightByPath = new Map(light.map((row) => [row.path, row]));
+    for (const row of dark) {
+      const other = lightByPath.get(row.path);
+      // A node only one appearance has mounted is a timing or state difference,
+      // not a surface that repaints when the theme changes.
+      if (!other) continue;
+      if (other.paint === row.paint) continue;
+      if (other.opted || row.opted) continue;
+      misses.push(screen.name + ': ' + row.cls);
     }
   }
 
