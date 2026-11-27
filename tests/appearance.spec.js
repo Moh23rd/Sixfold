@@ -343,7 +343,7 @@ test('Motion defaults to Full and System follows the device', async ({ page }) =
   await page.locator('[data-motion-opt="system"]').click();
   expect((await read()).motion).toBe('reduced');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  expect((await read()).motion).toBe('full');
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.motion)).toBe('full');
 });
 
 /* The pointer tilt used to be wired only when the page loaded in Full, so a
