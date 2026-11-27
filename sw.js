@@ -16,17 +16,17 @@ const ASSET = '5.0.1';
 // shared-baseline scripts, and an installed app must pick the new pulse up.
 const HAPTICS_JS = '6.0.19';
 const SHARE_CARD = '5.3.5';
-const STYLE_ASSET = '5.4.4';
+const STYLE_ASSET = '5.4.5';
 const FONT_ASSET = '5.0.2';
-const THEME_JS = '6.0.18';
-const OVERSCROLL_JS = '6.0.4';
+const THEME_JS = '6.0.19';
+const OVERSCROLL_JS = '6.0.5';
 const GAME_CODE = '5.3.5';
 const WORDLE_CODE = '5.3.4-wordle';
 const SUDOKU_GAME_CODE = '5.3.5';
 const LOCALE_FONT = '5.1.4';
 const GAMES_CSS = '5.3.12';
-const POLISH_CSS = '4.0.6-w23';
-const GAMES_JS = '5.5.2';
+const POLISH_CSS = '4.0.7-w23';
+const GAMES_JS = '5.5.3';
 const SUDOKU_CSS = '4.0.5';
 const V5_CSS = '5.6.3';
 const BLUR_CSS = '1.4.1';
@@ -35,7 +35,7 @@ const DAILY_CODE = '5.4.6';
 const PROFILE_CODE = '1.0.0';
 const BADGES_CODE = '1.1.1';
 const GAUNTLET_CODE = '1.0.3';
-const I18N_CODE = '6.0.3';
+const I18N_CODE = '6.0.4';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.
@@ -111,7 +111,7 @@ const SHELL = [
   // active catalog; i18n.js warms that catalog after the worker controls it.
   './i18n/i18n-locale.js?v=' + I18N_CODE,
   './i18n/i18n.js?v=' + I18N_CODE,
-  './js/native.js?v=5.2.0',
+  './js/native.js?v=5.2.1',
   './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the
   // offline shell so unlocking it works with no connection. The active locale

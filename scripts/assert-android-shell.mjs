@@ -1464,14 +1464,16 @@ try {
     await settleDevice('switching the system to dark');
     await adbRetry(['shell', 'cmd', 'uimode', 'night', 'yes'], 'switching the system to dark');
     await settleDevice('switching the system to dark');
-    await until(
-      'the system to report night mode',
-      () => evaluate("matchMedia('(prefers-color-scheme: dark)').matches"),
-      30000,
-      250
-    );
+    // Android 12+ takes an explicit appearance as the app's own night mode, so
+    // Light keeps the WebView light even when the phone turns dark — the same
+    // mode that resolves the launch splash before the page runs. Wait past the
+    // system change and prove the app held its surface instead of following it.
+    await wait(1500);
+    if (await evaluate("matchMedia('(prefers-color-scheme: dark)').matches")) {
+      fail('the app followed the system into dark while its own appearance was Light');
+    }
     await awaitStrip(lightPage, 'the status-bar band after the system turned dark');
-    log('the status-bar band stayed on the page colour through the system theme change');
+    log('the system turned dark and the app kept its own light appearance on the page colour');
   } else {
     log('system night mode is not available on this API; skipping that configuration');
   }
