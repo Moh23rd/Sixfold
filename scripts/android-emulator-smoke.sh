@@ -26,6 +26,7 @@
 # Environment: ANDROID_SDK_ROOT or ANDROID_HOME must point at an SDK with
 # cmdline-tools, platform-tools and build-tools. API_LEVEL and AVD_NAME are
 # optional; FAILURE_DIR is where the logcat and a screenshot go on failure.
+# SMOKE_ADB replaces the adb binary the assertion and this script call.
 # SMOKE_ATTEMPTS bounds the boot+assert attempts on an emulator that dies.
 set -euo pipefail
 
@@ -38,7 +39,9 @@ fi
 API="${API_LEVEL:-34}"
 AVD="${AVD_NAME:-sixfold-smoke}"
 IMAGE="system-images;android-$API;google_apis;x86_64"
-ADB="$SDK/platform-tools/adb"
+# SMOKE_ADB lets a self-test hand in a wrapper around adb (see
+# scripts/test-emulator-retry.sh); CI leaves it unset.
+ADB="${SMOKE_ADB:-$SDK/platform-tools/adb}"
 EMULATOR="$SDK/emulator/emulator"
 # SDK layouts differ: some put the tools in cmdline-tools/latest/bin, others in
 # a versioned directory that is only on PATH. Accept either.
@@ -247,6 +250,9 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     # or an app crash still fails, and only a platform removal can pass here.
     if [ "$status" -eq 4 ]; then
       note "the platform removed the app mid-check (status 4); repeating the assertion on this boot"
+      # The repeat decides the row: a passing second run must leave status at 0,
+      # and a second removal or a real failure must still fail the row.
+      status=0
       node scripts/assert-android-shell.mjs || status=$?
     fi
     # Exit 13 is Node's own "the event loop drained with a top-level await
