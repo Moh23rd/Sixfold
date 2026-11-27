@@ -1,5 +1,17 @@
 #!/bin/sh
 # A stale pin, manifest, translation or native shell fails CI after the push.
-# This runs the same guards before the push leaves the machine.
+# This runs the same guards before the push leaves the machine. It calls node
+# directly so a shell without npm on PATH (a GUI git client, a minimal login
+# shell) still gets the checks instead of a blocked push; CI repeats them.
 set -e
-npm run --silent preflight
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-push: node is not on PATH; skipping the preflight (CI will run it)." >&2
+  exit 0
+fi
+
+node scripts/check-i18n.mjs
+node scripts/check-webview-floor.mjs
+node scripts/asset-manifest.mjs --check
+node scripts/check-shell-pins.mjs
+node scripts/check-native-pins.mjs
