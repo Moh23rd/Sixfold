@@ -126,10 +126,11 @@ release guards. Existing saves, daily history and backups upgrade in place.
   `:hover` and `:active` forever. The fill is now `backwards`, and the desktop
   hover lift has an explicit pressed state, so a settled tile keeps its lift,
   press and stage motion without replaying the entrance.
-- **What's New leaves under its own momentum**: dismissal keeps the card's last
-  frame as a fixed ghost and fades it out on the compositor while the page
-  reflows underneath. The list stagger is re-armed on every disclosure, so the
-  little word-and-row reveal is not a first-open-only effect.
+- **What's New leaves under its own momentum**: dismissal fades and lifts the
+  real card in place, then releases the content below with a short transform
+  glide as the card leaves the flow. Nothing detaches over the hero or animates
+  height, and the list stagger is re-armed on every disclosure, so the little
+  word-and-row reveal is not a first-open-only effect.
 - **The look sheet keeps its corners**: the sticky sheet head carries the same
   top radius as the card, and an open sheet no longer holds a permanent
   compositor promotion, so changing colour cannot flatten the top corners.

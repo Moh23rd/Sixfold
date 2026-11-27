@@ -65,7 +65,7 @@ test.describe('What’s New 6.0', () => {
   }
 });
 
-test('dismissing the card fades a ghost instead of animating layout', async ({ page }) => {
+test('dismissing the card fades it in place before hiding it', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.removeItem('sixfold.whats-new.dismissed');
@@ -78,44 +78,46 @@ test('dismissing the card fades a ghost instead of animating layout', async ({ p
   await panel.scrollIntoViewIfNeeded();
   const before = await panel.evaluate((element) => {
     const rect = element.getBoundingClientRect();
-    return { height: rect.height };
+    return { height: rect.height, top: rect.top };
   });
   expect(before.height).toBeGreaterThan(20);
 
-  // Read the ghost as it is inserted. A Playwright click round-trip can outlast
-  // the ghost's short life, which made this measurement a race.
-  await page.evaluate(() => {
-    window.__ghostBox = null;
-    const observer = new MutationObserver(() => {
-      const element = document.querySelector('.whats-new-ghost');
-      if (!element || window.__ghostBox) return;
-      const rect = element.getBoundingClientRect();
-      const style = getComputedStyle(element);
-      window.__ghostBox = {
-        position: style.position,
-        transition: style.transitionProperty,
-        height: rect.height,
-        top: rect.top
-      };
-      observer.disconnect();
-    });
-    observer.observe(document.body, { childList: true });
+  // Tap and sample in the same task: the 200 ms exit is shorter than a loaded
+  // protocol round-trip, which would make this measurement a race.
+  const during = await page.evaluate(() => {
+    document.getElementById('whats-new-close').click();
+    const element = document.getElementById('whats-new');
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      leaving: element.classList.contains('is-leaving'),
+      hidden: element.hidden,
+      height: rect.height,
+      top: rect.top,
+      transition: style.transitionProperty
+    };
   });
-  await page.locator('#whats-new-close').click();
-  await expect(panel).toBeHidden();
+  expect(during.leaving, 'the card enters its exit state').toBe(true);
+  expect(during.hidden, 'the card stays mounted while it fades').toBe(false);
+  expect(during.top, 'the card does not detach from its place').toBeCloseTo(before.top, 0);
+  expect(during.height, 'the card does not animate its height').toBeCloseTo(before.height, 0);
+  expect(during.transition).toContain('opacity');
+  expect(during.transition).toContain('transform');
+  expect(during.transition).not.toContain('height');
+  expect(during.transition).not.toContain('margin');
+  await expect(page.locator('.whats-new-ghost')).toHaveCount(0);
 
-  // The page reflowed at once, and a fixed copy keeps the card's old place
-  // while it fades: nothing animates height, margin or padding.
-  const ghostBox = await page.evaluate(() => window.__ghostBox);
-  expect(ghostBox, 'the dismissal inserted a ghost').not.toBeNull();
-  expect(ghostBox.position).toBe('fixed');
-  expect(ghostBox.transition).not.toContain('height');
-  expect(ghostBox.transition).not.toContain('margin');
-  expect(ghostBox.transition).toContain('opacity');
-  expect(ghostBox.transition).toContain('transform');
-  expect(ghostBox.height).toBeCloseTo(before.height, 0);
-
-  await expect(page.locator('.whats-new-ghost')).toHaveCount(0, { timeout: 1500 });
+  await page.waitForTimeout(80);
+  expect(await panel.evaluate((element) => Number(getComputedStyle(element).opacity))).toBeLessThan(1);
+  await expect(panel).toBeHidden({ timeout: 1500 });
+  await expect.poll(() => page.evaluate(() => {
+    const hero = document.querySelector('.home-hero');
+    return {
+      transform: getComputedStyle(hero).transform,
+      inlineTransform: hero.style.transform,
+      inlineWillChange: hero.style.willChange
+    };
+  })).toEqual({ transform: 'none', inlineTransform: '', inlineWillChange: '' });
   await expect.poll(() => page.evaluate(() => localStorage.getItem('sixfold.whats-new.dismissed'))).not.toBeNull();
 });
 

@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 120245,
-      "sha256": "0d6c59e033eeadb18187be6e8a41af6055f8e296a153532a611a5c9d88dfa7b9"
+      "bytes": 120246,
+      "sha256": "046b9c7927ea24e29c53ccbf3e7f70d44df32e70c2c55d8cbaa166ab2e596602"
     },
     {
       "path": "licenses.html",
@@ -57,8 +57,8 @@
     },
     {
       "path": "css/games.css",
-      "bytes": 113111,
-      "sha256": "10f6a9076271c6b6f99e44131dfe776c32639009a31b5996b7df9c49701eaed9"
+      "bytes": 112168,
+      "sha256": "7eb7735f6e71a57f4a07a75e64a320be45093a0c5235c0033a6fc0dc7392e706"
     },
     {
       "path": "css/home.css",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 174081,
-      "sha256": "9f8b8ae7f6edd1e27b4b13b8c9011c9e133109af4ef8d8da35eca243eba68411"
+      "bytes": 175138,
+      "sha256": "ed4be1c80e955b4468d167bcbb2b3c61c8a96b1211ff0f74f42ada15b7c01213"
     },
     {
       "path": "js/daily.js",

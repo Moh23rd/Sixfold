@@ -195,37 +195,64 @@
         panel.hidden = true;
         return;
       }
-      // Keep the exit on the compositor: the card leaves the flow immediately
-      // and a fixed ghost fades out where it stood, so the page reflows under
-      // a surface that is still visible instead of jumping.
-      const rect = panel.getBoundingClientRect();
-      const ghost = panel.cloneNode(true);
-      ghost.classList.add('whats-new-ghost');
-      ghost.removeAttribute('id');
-      ghost.setAttribute('aria-hidden', 'true');
-      ghost.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
-      ghost.style.position = 'fixed';
-      ghost.style.left = rect.left + 'px';
-      ghost.style.top = rect.top + 'px';
-      ghost.style.width = rect.width + 'px';
-      ghost.style.height = rect.height + 'px';
-      ghost.style.zIndex = '40';
-      ghost.style.willChange = 'opacity, transform';
-      document.body.appendChild(ghost);
-      panel.hidden = true;
-      window.requestAnimationFrame(function () {
-        window.requestAnimationFrame(function () { ghost.classList.add('is-leaving'); });
-      });
-      // The ghost is the only thing still holding the note's pixels. Remove
-      // it on its own transition instead of on a timer that can outlive the
-      // animation, with a fallback for a browser that never fires the event.
-      const removeGhost = function () {
-        ghost.remove();
+      // Fade and lift the card in place, then take it out of the flow. The old
+      // fixed ghost let the hub reflow underneath a translucent copy, so the
+      // hero title showed through the card while it left. Keeping the real card
+      // in the flow during the 200 ms exit avoids that collision and keeps the
+      // whole dismissal on opacity and transform.
+      panel.style.willChange = 'opacity, transform';
+      void panel.offsetWidth;
+      panel.classList.add('is-leaving');
+      panel.setAttribute('aria-hidden', 'true');
+      let closed = false;
+      let following = [];
+      const finish = function () {
+        if (closed) return;
+        closed = true;
+        // Measure the space the card occupies before hiding it. The layout
+        // collapses by this amount; the siblings below are first offset by the
+        // same amount with a transform and then released, so the collapse is a
+        // compositor glide instead of an instant jump. The card is already
+        // faded out, so nothing overlaps while the content moves.
+        let node = panel.nextElementSibling;
+        while (node) {
+          following.push(node);
+          node = node.nextElementSibling;
+        }
+        const first = following[0];
+        const before = first ? first.getBoundingClientRect().top : 0;
+        panel.hidden = true;
+        panel.classList.remove('is-leaving');
+        panel.removeAttribute('aria-hidden');
+        panel.style.willChange = '';
+        if (!first || reducedMotion()) return;
+        const shift = before - first.getBoundingClientRect().top;
+        if (!(shift > 0)) return;
+        following.forEach(function (el) {
+          el.style.transition = 'none';
+          el.style.transform = 'translateY(' + shift + 'px)';
+          el.style.willChange = 'transform';
+        });
+        // Commit the from-position before starting the release transition.
+        void first.offsetHeight;
+        window.requestAnimationFrame(function () {
+          following.forEach(function (el) {
+            el.style.transition = 'transform 180ms cubic-bezier(0.4, 0, 1, 1)';
+            el.style.transform = 'translateY(0)';
+          });
+        });
+        window.setTimeout(function () {
+          following.forEach(function (el) {
+            el.style.transition = '';
+            el.style.transform = '';
+            el.style.willChange = '';
+          });
+        }, 220);
       };
-      ghost.addEventListener('transitionend', function (event) {
-        if (event.target === ghost && event.propertyName === 'opacity') removeGhost();
+      panel.addEventListener('transitionend', function (event) {
+        if (event.target === panel && event.propertyName === 'opacity') finish();
       });
-      window.setTimeout(removeGhost, 360);
+      window.setTimeout(finish, 280);
     });
   })();
 
