@@ -3,7 +3,7 @@
     {
       "path": "index.html",
       "bytes": 120401,
-      "sha256": "b73050bfffeb427683aae6a26ab46a39ddee3f9a0a9e2ed9c32e13b3c99ad2b1"
+      "sha256": "c5067e0a72b549be45932897fd34b0596f477715150a48545deaf8e7eb365377"
     },
     {
       "path": "licenses.html",
@@ -77,8 +77,8 @@
     },
     {
       "path": "css/v5.css",
-      "bytes": 69384,
-      "sha256": "46575f5217b7ced863aaa8359253e1548cf29a09cb26607f67a41755eb34d714"
+      "bytes": 69639,
+      "sha256": "cc3d5cec432b4018cccb67a3b9a9712747158d8159513019cf7d8391e77cc105"
     },
     {
       "path": "css/progressive-blur.css",

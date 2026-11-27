@@ -2319,6 +2319,11 @@ html.is-theme-fading .sheet-backdrop {
 
 .colour-custom[open] .colour-custom-chevron { transform: rotate(90deg); }
 
+/* A closed disclosure still laid its contents out, which both clipped the
+   hidden Apply button and kept a grid the reader could not see. */
+.colour-custom:not([open]) > .colour-custom-body,
+.colour-custom:not([open]) > .colour-hint { display: none; }
+
 .colour-custom-body {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;
