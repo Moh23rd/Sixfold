@@ -513,7 +513,13 @@ platform's own kill record, instead of calling it a stale surface after the
 the process is gone when the launch proof fails, a recorded platform kill is
 exit 4 rather than a missing devtools target. The smoke repeats the assertion
 once on the same boot for exit
-4 only: the repeat installs, launches and exercises every check again. A crash,
+4 only: the repeat installs, launches and exercises every check again.
+`scripts/test-emulator-retry.sh` drives that branch without waiting for a
+provider to die: it hands the smoke an adb wrapper that removes the app for the
+process that takes the first pixel sample, then checks that the assertion
+classified the removal, that the smoke repeated it exactly once, and that the
+repeat passed. It also prints what the repeat cost (install and whole check),
+which is the number to weigh against resuming mid-suite instead. A crash,
 an ANR, an app-requested kill or an unexplained disappearance exits 1 and is
 never repeated, and a genuinely stale page surface still fails its poll.
 

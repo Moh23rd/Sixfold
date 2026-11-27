@@ -35,6 +35,9 @@ import { anrTraceLines, describeDeath, parseDeathReport } from './lib/death-repo
 import { attachToLiveLaunch } from './lib/reattach.mjs';
 import { classifyRemoval } from './lib/app-removal.mjs';
 
+// The smoke can point this at a wrapper (scripts/test-emulator-retry.sh does)
+// so the assertion and its adb calls are the same code in a self-test as in CI.
+const ADB = process.env.SMOKE_ADB || 'adb';
 const PACKAGE = 'io.github.moh23rd.sixfold';
 const ACTIVITY = `${PACKAGE}/.MainActivity`;
 const APK = 'android/app/build/outputs/apk/debug/app-debug.apk';
@@ -83,7 +86,7 @@ class AppRemoved extends Error {
 
 function answerShell(timeout = 8000) {
   try {
-    execFileSync('adb', ['shell', 'echo', 'ok'], { encoding: 'utf8', stdio: 'pipe', timeout });
+    execFileSync(ADB, ['shell', 'echo', 'ok'], { encoding: 'utf8', stdio: 'pipe', timeout });
     return true;
   } catch (error) {
     return false;
@@ -103,7 +106,7 @@ function adb(args, timeout = 120000) {
     // Bounded: a wedged adb server otherwise hangs the job with no output.
     // The whole events ring is larger than exec's 1 MB default, and an ENOBUFS
     // would hide the records a death report is looking for.
-    return execFileSync('adb', args, { encoding: 'utf8', stdio: 'pipe', timeout, maxBuffer: 16 * 1024 * 1024 }).trim();
+    return execFileSync(ADB, args, { encoding: 'utf8', stdio: 'pipe', timeout, maxBuffer: 16 * 1024 * 1024 }).trim();
   } catch (error) {
     const detail = (error.stderr || error.message || '').toString().trim();
     throw new Error(`adb ${args.join(' ')} failed: ${detail}`);
@@ -113,7 +116,7 @@ function adb(args, timeout = 120000) {
 function adbBuffer(args, timeout = 120000) {
   try {
     // A screenshot is a megabyte or two, well past the default 1 MB buffer.
-    return execFileSync('adb', args, { stdio: 'pipe', timeout, maxBuffer: 64 * 1024 * 1024 });
+    return execFileSync(ADB, args, { stdio: 'pipe', timeout, maxBuffer: 64 * 1024 * 1024 });
   } catch (error) {
     const detail = (error.stderr || error.message || '').toString().trim();
     throw new Error(`adb ${args.join(' ')} failed: ${detail}`);
@@ -129,7 +132,7 @@ const TRANSIENT_ADB = /device offline|no devices\/emulators found|device not fou
 
 function adbState() {
   try {
-    return execFileSync('adb', ['get-state'], { encoding: 'utf8', stdio: 'pipe', timeout: 10000 }).trim();
+    return execFileSync(ADB, ['get-state'], { encoding: 'utf8', stdio: 'pipe', timeout: 10000 }).trim();
   } catch (error) {
     return ((error.stdout || '') + ' ' + (error.stderr || '')).trim();
   }
