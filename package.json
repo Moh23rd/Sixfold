@@ -45,18 +45,18 @@
     "smoke:apk": "bash scripts/smoke-apk.sh"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.14.0",
+    "@axe-core/playwright": "^4.14.1",
     "@capacitor/assets": "^4.0.0",
-    "@capacitor/cli": "^8.6.2",
+    "@capacitor/cli": "^8.6.3",
     "@playwright/test": "^1.65.1",
     "acorn": "^8.19.0"
   },
   "dependencies": {
-    "@capacitor/android": "^8.6.2",
+    "@capacitor/android": "^8.6.3",
     "@capacitor/app": "^8.1.2",
-    "@capacitor/core": "^8.6.2",
-    "@capacitor/filesystem": "^8.1.5",
-    "@capacitor/ios": "^8.6.2",
+    "@capacitor/core": "^8.6.3",
+    "@capacitor/filesystem": "^8.1.6",
+    "@capacitor/ios": "^8.6.3",
     "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4"

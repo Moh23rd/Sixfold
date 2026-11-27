@@ -2,6 +2,8 @@
 
 ![Sixfold — six games. No filler.](og-image.png)
 
+**v6.0** · the Daily Gauntlet, a local profile and a native Android shell.
+
 Six calm puzzle games in one installable, offline web app. No accounts, no ads,
 no tracking — and the interface runs in twelve languages.
 
@@ -13,8 +15,8 @@ no tracking — and the interface runs in twelve languages.
   splash screen, edge-to-edge bars and back gesture. No store account, review
   or cut. Build and signing notes are in [docs/ANDROID.md](docs/ANDROID.md).
 
-Both routes carry every game and the same local saves, daily challenge,
-streaks, badges and settings.
+Both routes carry every game and the same local saves, daily challenge, Daily
+Gauntlet, streaks, badges, profile, appearance and settings.
 
 ## Games
 
@@ -26,7 +28,8 @@ streaks, badges and settings.
 - **Fruit Merge** — a Suika-style drop-and-merge board with eleven fruits.
 
 Every game saves its board, score and progress on the device. The daily challenge,
-streaks, badges and Wordle (the hidden seventh game) all work offline too.
+Daily Gauntlet, profile, streaks, badges and Wordle (the hidden seventh game)
+all work offline too.
 
 ## Run it locally
 

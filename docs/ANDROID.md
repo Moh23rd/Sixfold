@@ -692,7 +692,7 @@ sizes like the other two.
 
 ## Current workspace status
 
-The Android project was generated and synced with Capacitor 8.6.2, and the
+The Android project was generated and synced with Capacitor 8.6.3, and the
 launcher/splash resources were generated. The debug APK has since been built
 and run locally on an API 36 emulator, including the full shell assertions;
 the local JDK and Android SDK live in `/tmp/jdk21` and `~/Android/Sdk`. GitHub

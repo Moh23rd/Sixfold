@@ -31,8 +31,38 @@ async function openLook(page) {
   await expect(page.locator('#sheet')).toBeVisible();
 }
 
+function readAppearance() {
+  const html = getComputedStyle(document.documentElement);
+  const sheet = getComputedStyle(document.getElementById('sheet'));
+  const card = getComputedStyle(document.querySelector('.home-game'));
+  const tab = getComputedStyle(document.querySelector('#theme-seg button'));
+  return {
+    fading: document.documentElement.classList.contains('is-theme-fading'),
+    hubPromotion: getComputedStyle(document.getElementById('hub')).willChange,
+    sheetPromotion: getComputedStyle(document.querySelector('.sheet-card')).willChange,
+    theme: document.documentElement.dataset.theme,
+    page: html.getPropertyValue('--page').trim(),
+    tile: html.getPropertyValue('--t8').trim(),
+    cardBackground: card.backgroundColor,
+    cardProperties: card.transitionProperty,
+    cardDuration: card.transitionDuration,
+    tabProperties: tab.transitionProperty,
+    sheetProperties: sheet.transitionProperty,
+    sheetDuration: sheet.transitionDuration
+  };
+}
+
 function appearance(page) {
-  return page.evaluate(() => {
+  return page.evaluate(readAppearance);
+}
+
+// Read the switch in the same task as the click. The fade is shorter than a
+// protocol round-trip on a loaded runner, so clicking first and sampling later
+// can miss the flag and the transition it owns; that is a test race, not a
+// product state.
+function switchAndRead(page, selector) {
+  return page.evaluate((selector) => {
+    document.querySelector(selector).click();
     const html = getComputedStyle(document.documentElement);
     const sheet = getComputedStyle(document.getElementById('sheet'));
     const card = getComputedStyle(document.querySelector('.home-game'));
@@ -51,15 +81,14 @@ function appearance(page) {
       sheetProperties: sheet.transitionProperty,
       sheetDuration: sheet.transitionDuration
     };
-  });
+  }, selector);
 }
 
 test('a theme switch fades the surfaces and then lets them rest', async ({ page }) => {
   await openLook(page);
   const before = await appearance(page);
 
-  await page.locator('[data-theme-opt="dark"]').click();
-  const during = await appearance(page);
+  const during = await switchAndRead(page, '[data-theme-opt="dark"]');
 
   expect(during.fading, 'the switch raises the cross-fade flag').toBe(true);
   expect(during.theme).toBe('dark');
@@ -95,8 +124,7 @@ test('a surface is halfway between the themes a moment after the tap', async ({ 
 test('the fade leaves closed surfaces and their motion alone', async ({ page }) => {
   await openLook(page);
   const before = await appearance(page);
-  await page.locator('[data-theme-opt="dark"]').click();
-  const during = await appearance(page);
+  const during = await switchAndRead(page, '[data-theme-opt="dark"]');
 
   // The sheet's root keeps its own leave transition, because the fade never
   // names it. The card inside it is a surface and does fade.
@@ -115,8 +143,7 @@ test('a palette switch fades the tiles with the page', async ({ page }) => {
   await openLook(page);
   const warm = await appearance(page);
 
-  await page.locator('[data-palette-opt="ocean"]').click();
-  const during = await appearance(page);
+  const during = await switchAndRead(page, '[data-palette-opt="ocean"]');
 
   expect(during.fading).toBe(true);
   expect(during.cardDuration).toBe('0.16s');
@@ -144,8 +171,7 @@ test('the native shell fades with its page surfaces promoted', async ({ page }) 
 
   const before = await appearance(page);
   expect(before.hubPromotion, 'no promotion is held before the switch').not.toBe('opacity');
-  await page.locator('[data-theme-opt="dark"]').click();
-  const during = await appearance(page);
+  const during = await switchAndRead(page, '[data-theme-opt="dark"]');
   expect(during.theme).toBe('dark');
   expect(during.fading, 'the native shell keeps the cross-fade').toBe(true);
   expect(during.hubPromotion, 'the hub is promoted for the switch').toBe('opacity');
@@ -362,13 +388,17 @@ test('a second switch inside the fade re-arms one flag and clears it', async ({ 
 
   // Both taps in one task: a switch that lands while the first fade is still
   // running must not leave a timer behind.
-  await page.evaluate(() => {
+  const during = await page.evaluate(() => {
     document.querySelector('[data-theme-opt="dark"]').click();
     document.querySelector('[data-theme-opt="light"]').click();
+    return {
+      theme: document.documentElement.dataset.theme,
+      fading: document.documentElement.classList.contains('is-theme-fading')
+    };
   });
 
-  expect((await appearance(page)).theme).toBe('light');
-  expect((await appearance(page)).fading).toBe(true);
+  expect(during.theme).toBe('light');
+  expect(during.fading).toBe(true);
 
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-theme-fading'));
   const rest = await appearance(page);
@@ -382,6 +412,9 @@ test('a second switch inside the fade re-arms one flag and clears it', async ({ 
    and has no [data-fade] on it (or above it) is a surface that would cut
    instead of fades. */
 test('every surface that repaints between appearances opts into the fade', async ({ browser }) => {
+  // Fourteen cold contexts (seven screens in two appearances) on a shared
+  // software-rendered runner need more than the default 30 s.
+  test.slow();
   const screens = [
     { name: 'hub', hash: '', ready: '#daily' },
     { name: 'merge', hash: '#merge', ready: '#grid .cell' },
@@ -470,8 +503,7 @@ test('every surface that repaints between appearances opts into the fade', async
 
 test('closing the sheet hands the motion back to the sheet', async ({ page }) => {
   await openLook(page);
-  await page.locator('[data-theme-opt="dark"]').click();
-  expect((await appearance(page)).fading).toBe(true);
+  expect((await switchAndRead(page, '[data-theme-opt="dark"]')).fading).toBe(true);
 
   await page.locator('#sheet-done').click();
   const closing = await page.evaluate(() => ({
