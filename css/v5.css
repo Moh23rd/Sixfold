@@ -2073,13 +2073,6 @@ html[data-motion="full"].is-theme-fading [data-fade]:not(body):not(.hub):not(.pl
    recomputed for every frame of a colour fade — the most expensive thing on
    screen and the least visible while the colours move. It keeps its dim for
    the switch and takes the blur back when the fade ends. */
-/* First launch: the guide is the first screen, so the collection waits behind
-   it instead of painting and then being covered. */
-html.is-welcome-pending #hub {
-  opacity: 0;
-  pointer-events: none;
-}
-
 html.is-theme-fading .sheet-backdrop {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

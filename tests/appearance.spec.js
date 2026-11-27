@@ -1382,6 +1382,21 @@ test('a settled six-piece presses every time without replaying the build', async
   );
   const piece = page.locator('.home-six-piece').first();
   for (let press = 0; press < 2; press += 1) {
+    // Time the hold in the page: a Playwright click round-trip is long enough
+    // to swallow the last part of a 160ms press. The press must own its whole
+    // transform, not snap back partway through it.
+    await piece.evaluate((el) => {
+      window.__sixPress = { added: 0, removed: 0 };
+      const observer = new MutationObserver(() => {
+        const on = el.classList.contains('is-six-hit');
+        if (on && !window.__sixPress.added) window.__sixPress.added = performance.now();
+        if (!on && window.__sixPress.added && !window.__sixPress.removed) {
+          window.__sixPress.removed = performance.now();
+          observer.disconnect();
+        }
+      });
+      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+    });
     await piece.click();
     await expect(piece, 'press ' + (press + 1) + ' shows its press state').toHaveClass(/is-six-hit/);
     const state = await piece.evaluate((el) => ({
@@ -1390,7 +1405,9 @@ test('a settled six-piece presses every time without replaying the build', async
     }));
     expect(state.animation, 'a press never restarts the launch build').toBe('none');
     expect(state.transform).not.toBe('none');
-    await page.waitForTimeout(220);
+    await page.waitForFunction(() => window.__sixPress.removed > 0);
+    const hold = await page.evaluate(() => window.__sixPress.removed - window.__sixPress.added);
+    expect(hold, 'press ' + (press + 1) + ' lasts its whole transform').toBeGreaterThanOrEqual(150);
     await expect(piece).not.toHaveClass(/is-six-hit/);
   }
 });

@@ -1045,19 +1045,9 @@
     try { localStorage.setItem(WELCOME_KEY, '1'); } catch (err) {}
   }
 
-  // A first launch must not paint the collection behind the guide: the hub is
-  // held back until the welcome is on screen, so the note is the first thing
-  // the reader sees rather than something that arrives over the hub.
-  if (welcomeSheet && !welcomeSeen()) document.documentElement.classList.add('is-welcome-pending');
-
-  function revealHub() {
-    document.documentElement.classList.remove('is-welcome-pending');
-  }
-
   function closeWelcome() {
     if (!welcomeSheet || welcomeSheet.hidden) return;
     markWelcomeSeen();
-    revealHub();
     closeSheet(welcomeSheet);
     // Hand the reader to the collection rather than leaving focus on a dialog
     // that no longer exists.

@@ -203,7 +203,7 @@
       window.requestAnimationFrame(function () {
         window.requestAnimationFrame(function () { ghost.classList.add('is-leaving'); });
       });
-      window.setTimeout(function () { ghost.remove(); }, 240);
+      window.setTimeout(function () { ghost.remove(); }, 320);
     });
   })();
 
@@ -1015,6 +1015,10 @@
   const sixGrid = document.querySelector('.home-six');
   const sixPieces = $$('.home-six-piece');
   const sixHitTimers = new WeakMap();
+  // The press is one transform transition in css/home.css. Releasing the class
+  // before that transition lands was what made a tap end mid-press and snap
+  // back; hold it for the full duration so the tile finishes settling first.
+  const SIX_PRESS_MS = 160;
   let sixStep = 0;
   let sixTouch = null;
   let sixTouchHandled = null;
@@ -1037,7 +1041,7 @@
     sixHitTimers.set(piece, window.setTimeout(function () {
       piece.classList.remove('is-six-hit');
       sixHitTimers.delete(piece);
-    }, 150));
+    }, SIX_PRESS_MS));
   }
   function commitSixTap(index) {
     if (sixLocked) return;
@@ -1069,22 +1073,42 @@
       }, calmMotion() ? 80 : 320);
     }
   }
-  // The build animation holds its final transform until it is removed, which
-  // is what stopped a finished tile from showing a press. Mark the cover as
-  // settled when its own animation ends, and on a fallback for a page whose
-  // motion is reduced (no animation runs, but the class still has to land).
+  // The build animation used to hold its final transform until the class was
+  // removed, which is what stopped a finished tile from showing a press. Mark
+  // the cover as settled after the last piece finishes building and the launch
+  // layer has handed the hub over. Settling on the first piece's animationend
+  // cut the rest of the stagger short, and the reduced-motion fallback used to
+  // poll for home-ready; one observer does the waiting now.
+  let sixBuildsLeft = sixPieces.length;
+  let sixReadyWait = null;
   function settleSixCover() {
     const html = document.documentElement;
-    // The launch hand-off samples the running build at home-ready; settling
-    // before that would zero the stagger it is meant to leave untouched.
+    if (html.classList.contains('six-settled')) return;
     if (!html.classList.contains('home-ready')) {
-      window.setTimeout(settleSixCover, 120);
+      if (sixReadyWait) return;
+      if (!('MutationObserver' in window)) {
+        sixReadyWait = window.setTimeout(function () {
+          sixReadyWait = null;
+          settleSixCover();
+        }, 240);
+        return;
+      }
+      sixReadyWait = new MutationObserver(function () {
+        if (!document.documentElement.classList.contains('home-ready')) return;
+        sixReadyWait.disconnect();
+        sixReadyWait = null;
+        settleSixCover();
+      });
+      sixReadyWait.observe(html, { attributes: true, attributeFilter: ['class'] });
       return;
     }
+    // A launch with no build to wait for (Reduced motion, or a return from
+    // another document) settles as soon as the hub is up.
+    if (calmMotion() || !html.classList.contains('home-build')) sixBuildsLeft = 0;
+    if (sixBuildsLeft > 0) return;
     html.classList.add('six-settled');
   }
-  if (calmMotion()) settleSixCover();
-  else window.setTimeout(settleSixCover, 1600);
+  settleSixCover();
 
   sixPieces.forEach(function (piece, index) {
     piece.addEventListener('click', function () {
@@ -1096,6 +1120,7 @@
     });
     piece.addEventListener('animationend', function (event) {
       if (event.animationName !== 'sixBuild') return;
+      sixBuildsLeft = Math.max(0, sixBuildsLeft - 1);
       settleSixCover();
     });
     // Safari can suppress the synthetic click on animated tiles. Handle the

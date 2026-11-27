@@ -93,26 +93,27 @@ for (const locale of ['ar', 'ja']) {
   });
 }
 
-// First paint is the guide, not the collection. The hub is held behind the
-// pending class until the sheet is open; otherwise a fresh install showed the
-// hub for a moment and then covered it.
-test('a fresh install never paints the hub before the guide', async ({ page }) => {
+// The guide opens over the hub, not over a game screen. Fading the hub out
+// used to take its page-coloured background with it, leaving the mounted Merge
+// board as the first thing a new install saw.
+test('a fresh install keeps the hub behind the guide, never a game', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await boot(page);
-  await expect(page.locator('#welcome')).toBeVisible();
 
+  const welcome = page.locator('#welcome');
+  await expect(welcome).toBeVisible();
   expect(
-    await page.evaluate(() => document.documentElement.classList.contains('is-welcome-pending')),
-    'the hub is held back while the guide is up'
-  ).toBe(true);
-  expect(await page.evaluate(() => getComputedStyle(document.getElementById('hub')).opacity)).toBe('0');
+    await page.evaluate(() => getComputedStyle(document.getElementById('hub')).opacity),
+    'the hub is painted behind the guide'
+  ).toBe('1');
+  // The guide is the top surface: a tap near the top of the screen reaches its
+  // scrim, not the Merge board mounted under the hub.
+  expect(await page.evaluate(() => {
+    const welcomeSheet = document.getElementById('welcome');
+    return welcomeSheet.contains(document.elementFromPoint(window.innerWidth / 2, 80));
+  })).toBe(true);
 
   await page.locator('#welcome-start').click();
-  await expect(page.locator('#welcome')).toBeHidden();
-  await expect
-    .poll(() => page.evaluate(() => document.documentElement.classList.contains('is-welcome-pending')))
-    .toBe(false);
-  await expect
-    .poll(() => page.evaluate(() => getComputedStyle(document.getElementById('hub')).opacity))
-    .toBe('1');
+  await expect(welcome).toBeHidden();
+  await expect(page.locator('#hub')).toBeVisible();
 });

@@ -3828,25 +3828,6 @@ html[data-motion="reduced"] .coach.coach-in { animation: none; }
 
 .whats-new[hidden] { display: none; }
 
-/* Dismissing must never animate height. The card leaves the flow at once and a
-   fixed-position ghost of it fades where it stood, so the page reflows
-   underneath while the card still looks like it is leaving. */
-.whats-new-ghost {
-  margin: 0;
-  pointer-events: none;
-  opacity: 1;
-  transform: none;
-  transition: opacity 200ms cubic-bezier(0.4, 0, 1, 1), transform 200ms cubic-bezier(0.4, 0, 1, 1);
-  will-change: opacity, transform;
-}
-
-.whats-new-ghost.is-leaving {
-  opacity: 0;
-  transform: translateY(-6px) scale(0.985);
-}
-
-html[data-motion="reduced"] .whats-new-ghost { display: none; }
-
 [dir="rtl"] .whats-new { padding-right: 0; padding-left: 8px; }
 
 .whats-new-details { flex: 1; min-width: 0; }
@@ -4391,6 +4372,30 @@ html[data-motion="reduced"] .victory-layer { display: none; }
 }
 
 html[data-motion="reduced"] .whats-new { transition: none; }
+
+/* Dismissing must never animate height. The card leaves the flow at once and a
+   fixed-position ghost of it fades where it stood, so the page reflows
+   underneath while the card still looks like it is leaving. The ghost keeps
+   the card's colour at full opacity: the live card is a translucent panel over
+   the page, and once the hub reflows the content that moved up would otherwise
+   read through it. The short delay holds it for the frame the page jumps; a
+   fade that starts at once made the dismissal read as a blink. */
+.whats-new-ghost {
+  margin: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--panel) 58%, var(--page));
+  opacity: 1;
+  transform: none;
+  transition: opacity 160ms cubic-bezier(0.4, 0, 1, 1) 60ms, transform 160ms cubic-bezier(0.4, 0, 1, 1) 60ms;
+  will-change: opacity, transform;
+}
+
+.whats-new-ghost.is-leaving {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.985);
+}
+
+html[data-motion="reduced"] .whats-new-ghost { display: none; }
 
 .whats-new-label {
   gap: 8px;
