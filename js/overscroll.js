@@ -34,10 +34,12 @@
    the platform read as a rubber band; growing the page by anything close to the
    finger's travel turns it into a zoom of the whole screen.
 
-   Two surfaces get the effect, because both are fixed shells that scroll
-   internally and so never reach the platform's own edge effect: the hub, and
-   the Look & feel sheet. Each gets its own instance with its own pull state,
-   so a drag inside the sheet never moves the hub behind it.
+   Only the hub gets the effect. It is a fixed shell that scrolls internally
+   and so never reaches the platform's own edge effect. The Look & feel sheet
+   deliberately does not: it is a modal card, and scaling that card while it
+   scrolls made its text pulse and pulled the sticky title away from the panel
+   edge. Android does not stretch a dialog either; a sheet slides, it does not
+   deform.
 
    iOS keeps its native rubber band: this file does nothing there. */
 
@@ -88,12 +90,8 @@
     return Math.min(STRETCH_MAX, STRETCH_INTENSITY * (u + 1 - Math.exp(-u * STRETCH_EXP_RATE)));
   }
 
-  /* One scroll container and its own edge effect. `frameTransform` is for a
-     surface whose stylesheet animates `transform` (the sheet card rises with a
-     transition): the spring writes the transform every frame, so the surface's
-     own transition has to step aside while a stretch is on screen. */
-  function createStretch(el, options) {
-    const opts = options || {};
+  /* One scroll container and its own edge effect. */
+  function createStretch(el) {
     let height = 1;
     let dir = 0;               // 1 = pulled at the top, -1 = pulled at the bottom
     let pull = 0;              // EdgeEffect's mPullDistance: viewport fractions
@@ -124,7 +122,6 @@
       // the viewport and no gap can open above the page. The content between the
       // edges is stretched and the far edge is pushed out of view.
       const scale = 1 + stretchOf(pull);
-      if (opts.frameTransform) el.style.transition = 'none';
       el.style.transformOrigin = dir > 0 ? '50% 0%' : '50% 100%';
       el.style.willChange = 'transform';
       el.style.transform = 'scale3d(1,' + scale.toFixed(5) + ',1)';
@@ -137,22 +134,12 @@
     }
 
     function rest() {
-      const wasPulled = dir !== 0 || pull > 0;
       cancel();
       pull = 0;
       dir = 0;
-      // Keep the sheet's entrance transition out of the release: the spring has
-      // already animated the transform to flat, and a transition would replay
-      // that last stretch a second time.
-      if (wasPulled && opts.frameTransform) el.style.transition = 'none';
       el.style.transform = '';
       el.style.transformOrigin = '';
       el.style.willChange = '';
-      if (wasPulled && opts.frameTransform) {
-        window.requestAnimationFrame(function () {
-          if (!pull && !dir) el.style.removeProperty('transition');
-        });
-      }
     }
 
     /* The settle. Integrated on the frame clock with fixed sub-steps so a long
@@ -353,22 +340,9 @@
     const hub = document.getElementById('hub');
     if (hub) surfaces.push(createStretch(hub));
 
-    // Look & feel is a fixed sheet that scrolls its own card, so it needs the
-    // same edge effect as the hub. Only that card is a surface: the scrim and
-    // the other sheets keep the platform's own behaviour.
-    const sheet = document.getElementById('sheet');
-    const sheetCard = sheet && sheet.querySelector('.sheet-card');
-    if (sheetCard) {
-      const card = createStretch(sheetCard, { frameTransform: true });
-      surfaces.push(card);
-      // Closing the panel mid-settle must not leave a transform behind for the
-      // next open, whose rise starts from the stylesheet's own value.
-      if ('MutationObserver' in window) {
-        new MutationObserver(function () {
-          if (sheet.hidden || sheet.classList.contains('is-closing')) card.rest();
-        }).observe(sheet, { attributes: true, attributeFilter: ['hidden', 'class'] });
-      }
-    }
+    // The sheets are deliberately not surfaces: a modal card slides in and out,
+    // and letting the edge effect scale it made its copy breathe while the
+    // reader scrolled and detached the sticky header from the panel.
 
     if (allowed && surfaces.length) root.classList.add('has-stretch');
     surfaces.forEach(function (surface) { surface.attach(); });

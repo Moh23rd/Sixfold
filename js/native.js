@@ -220,23 +220,6 @@
     if (card) card.click();
   }
 
-  // The About sheet's version line is the web release label, which every 6.0
-  // build shares. Inside the APK the installed package knows its own versionName
-  // and versionCode, so a bug report can name the build it came from.
-  function showBuildIdentity() {
-    var app = plugins.App;
-    var el = document.getElementById('about-build');
-    if (!app || !app.getInfo || !el) return;
-    var info;
-    try { info = app.getInfo(); } catch (err) { return; }
-    if (!info || typeof info.then !== 'function') return;
-    info.then(function (data) {
-      if (!data || !data.version) return;
-      el.textContent = 'Build ' + data.version + (data.build ? ' · ' + data.build : '');
-      el.hidden = false;
-    }).catch(function () {});
-  }
-
   var pageReady = false;
 
   function consumeLaunchAction() {
@@ -263,7 +246,6 @@
     hideSplash();
     syncBars();
     consumeLaunchAction();
-    showBuildIdentity();
   });
   window.addEventListener('merge:appearance', syncBars);
   wireBack();

@@ -375,6 +375,13 @@ html[data-theme="dark"] #wordle {
   letter-spacing: 0.02em;
 }
 
+/* The delete glyph is drawn by the font, not the label size: a backspace at the
+   wide key's 9-11px label size read as a speck next to the letters. */
+.wordle-key[data-key="Backspace"] {
+  font-size: clamp(16px, 2.15dvh, 20px);
+  line-height: 1;
+}
+
 /* Enter closes the letter keyboard now, so it carries the filled purple the
    footer action used to own. */
 .wordle-key.wordle-key--enter {
@@ -1404,3 +1411,112 @@ html.perf-lite #wordle:not([hidden]):not(.shell-settled) .wordle-shell { animati
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
+
+/* ==========================================================================
+   Pointer and touch hygiene
+   --------------------------------------------------------------------------
+   Android's WebView keeps :hover on the element a finger last touched. The
+   hover art here (a lit border, a lighter fill, a 2-5px lift) then stays on a
+   button that is no longer being pressed until something else is tapped, which
+   reads as a selection the reader cannot clear. Hover is decoration, so it is
+   limited to devices that can actually hover; touch keeps :active for feedback.
+   The focus ring is suppressed for touch too, because WebView marks a tapped
+   button :focus-visible; a keyboard still gets the ring.
+   ========================================================================== */
+
+@media (hover: none) {
+  .hub-share:hover,
+  .hub-look:hover {
+    transform: none;
+    border-color: var(--home-rule);
+    background: transparent;
+  }
+
+  .hub-focus:hover {
+    transform: none;
+    border-color: var(--home-rule);
+    background: transparent;
+  }
+
+  .home-cta:hover {
+    transform: none;
+    box-shadow: 0 3px 0 rgba(33, 29, 24, 0.18);
+  }
+
+  .home-surprise:hover {
+    border-color: var(--home-rule);
+    background: transparent;
+  }
+
+  .home-game:hover,
+  html[data-motion="full"] .home-game:hover {
+    transform: none;
+    border-color: var(--home-rule);
+    box-shadow: 0 3px 0 var(--home-hard);
+  }
+
+  .home-game:hover .home-game-stage,
+  .home-game:hover .home-game-arrow,
+  html[dir="rtl"] .home-game:hover .home-game-arrow,
+  .home-game:hover .home-game-play::after {
+    transform: none;
+  }
+
+  html[dir="rtl"] .home-game:hover .home-game-arrow,
+  html[dir="rtl"] .home-game:hover .home-game-play::after {
+    transform: scaleX(-1);
+  }
+
+  html[data-motion="full"] .home-six-piece:hover { transform: none; }
+
+  .hub-link:hover,
+  .play-chip:hover { color: var(--muted); }
+
+  .play-tool:hover { background: transparent; }
+  .result-share:hover { background: var(--ghost-bg); }
+
+  .games-home:hover,
+  .play-chip:hover {
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .play-tool:hover,
+  .result-share:hover,
+  .games-home:hover,
+  html[data-motion="full"] .play-tool:hover,
+  html[data-motion="full"] .games-home:hover,
+  html[data-motion="full"] .result-share:hover { transform: none; }
+
+  .app #new-game:hover,
+  .play-screen .play-btn--solid:hover {
+    background: var(--cart);
+    color: var(--cart-ink);
+  }
+
+  .wordle-key:hover { background: var(--wordle-key); }
+  .wordle-key.wordle-key--enter:hover { background: var(--cart); }
+
+  .settings-summary:hover { background: var(--seg-bg, var(--panel)); }
+  .setting-row:hover { background: var(--seg-bg, var(--panel)); }
+
+  .sudoku-pad-key:hover { background: var(--panel); }
+  .sudoku-tool:hover { background: var(--panel); }
+  .sudoku-tool[aria-pressed="true"]:hover {
+    background: color-mix(in srgb, var(--cart) 18%, var(--panel));
+  }
+
+  .daily-badge:hover { background: color-mix(in srgb, var(--t256) 38%, var(--panel)); }
+  .daily-badge.is-earned:hover { background: color-mix(in srgb, var(--t256) 22%, var(--panel)); }
+}
+
+html[data-input="touch"] button:focus-visible,
+html[data-input="touch"] a:focus-visible,
+html[data-input="touch"] summary:focus-visible,
+html[data-input="touch"] [tabindex]:focus-visible {
+  outline: none !important;
+}
+
+/* The install block belongs to the browser: the APK is already installed, and
+   the app never offers to add itself to the home screen. */
+html.is-native #install-block { display: none !important; }

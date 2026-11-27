@@ -343,8 +343,31 @@
     }
   }
 
+  // The shell's cold-start window is painted by the system from the app theme
+  // before any page runs, so the page's choice has to reach the OS too. The
+  // plugin persists it as the app's per-app night mode (Android 12+); a phone
+  // set to dark then still opens a light app on a light splash, and Auto keeps
+  // following the phone. A browser ignores this.
+  let reportedTheme = null;
+  function syncNativeNightMode(pref) {
+    const native = window.Capacitor && window.Capacitor.Plugins;
+    const plugin = native && native.WindowSurface;
+    if (!plugin || typeof plugin.setTheme !== 'function') return;
+    if (reportedTheme === pref) return;
+    reportedTheme = pref;
+    try {
+      const pending = plugin.setTheme({ preference: pref });
+      if (pending && typeof pending.catch === 'function') {
+        pending.catch(function () { reportedTheme = null; });
+      }
+    } catch (err) {
+      reportedTheme = null;
+    }
+  }
+
   function applyTheme(pref, persist) {
     state.theme = pref;
+    syncNativeNightMode(pref);
     if (switchIsVisible(persist)) crossFade();
     root.dataset.theme = resolvedTheme();
     if (persist) {
@@ -585,6 +608,10 @@
     sheetOpeners.set(sheet, opener || null);
     openSheetEl = sheet;
     sheet.hidden = false;
+    // A panel that was left halfway down opens at its title again: a settings
+    // sheet should always start at the top, not where the last visit stopped.
+    const card = sheet.querySelector('.sheet-card');
+    if (card) card.scrollTop = 0;
     // Commit the display change before the entering styles, so the card rises
     // rather than appearing on the same frame it is revealed.
     void sheet.offsetWidth;
@@ -990,6 +1017,11 @@
   buildPalettes();
   applyTheme(state.theme, false);
   applyPalette(state.palette, false);
+  // The head paints the page colour inline so a hard reload (a return from the
+  // legal page) never flashes white before styles.css arrives. From here the
+  // stylesheet owns that colour: an inline value would survive a theme switch
+  // and leave the document on the old page colour underneath new content.
+  root.style.removeProperty('background-color');
 
   // Display controls on the other game screens use the same theme state and
   // persistence as Merge's footer toggle, without duplicating the theme logic.

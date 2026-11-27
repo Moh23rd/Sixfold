@@ -4367,24 +4367,53 @@
   };
 
   // The legal page is its own document, so coming back from it is a fresh
-  // launch. theme.js records where the hub was before the link was followed;
-  // put the reader back there once the hub has built its cards.
+  // launch. theme.js records where the hub was before the link is followed; the
+  // launch layer waits for this restore before it lifts, so the return never
+  // paints the top of the collection and then snaps down to the saved place.
   function restoreHubScroll() {
-    let saved = null;
+    let top = 0;
+    let pending = false;
     try {
-      saved = sessionStorage.getItem('sixfold.hubScroll');
-      if (saved !== null) sessionStorage.removeItem('sixfold.hubScroll');
+      if (typeof window.__sixfoldHubScroll === 'number' && window.__sixfoldHubScroll > 0) {
+        top = window.__sixfoldHubScroll;
+        pending = true;
+      } else {
+        const saved = sessionStorage.getItem('sixfold.hubScroll');
+        if (saved !== null) {
+          top = Number(saved);
+          pending = true;
+        }
+      }
+      sessionStorage.removeItem('sixfold.hubScroll');
     } catch (err) {
-      return;
+      pending = false;
     }
-    const top = Number(saved);
+    window.__sixfoldHubScroll = 0;
+
     const hubEl = $('hub');
-    if (!hubEl || !(top > 0)) return;
-    // The scroller has no height to clamp against until the cards are in, so
-    // restore after the build has settled rather than on the next frame.
-    window.requestAnimationFrame(function () {
-      window.setTimeout(function () { hubEl.scrollTop = top; }, 80);
-    });
+    let tries = 0;
+
+    function done() {
+      window.__sixfoldHubRestored = true;
+      try {
+        window.dispatchEvent(new Event('sixfold:hub-restored'));
+      } catch (err) {}
+    }
+
+    // The scroller clamps a scroll it cannot reach yet, so apply the position
+    // over the next couple of frames (the cards and their images settle the
+    // height) and report as soon as it sticks.
+    function apply() {
+      if (!hubEl) return done();
+      if (top > 0) hubEl.scrollTop = top;
+      tries += 1;
+      const settled = Math.abs(hubEl.scrollTop - top) <= 1;
+      if (!pending || top <= 0 || settled || tries >= 3) return done();
+      window.requestAnimationFrame(apply);
+    }
+
+    if (!pending) return done();
+    apply();
   }
 
   installPlayTools();

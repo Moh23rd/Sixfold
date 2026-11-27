@@ -910,7 +910,10 @@ html.sheet-open body { overflow: hidden; }
   width: min(100%, 460px);
   max-height: calc(100dvh - var(--sa-top) - 16px);
   overflow-y: auto;
-  overscroll-behavior: contain;
+  /* `none`, not `contain`: the card must not hand the edge gesture to the page
+     behind it, and it must not paint the WebView's own stretch over its copy
+     either. The sheet slides; it does not deform. */
+  overscroll-behavior: none;
   padding: 0 18px calc(var(--sa-bottom) + 20px);
   border-radius: 20px 20px 0 0;
   background: var(--sheet-bg);
@@ -934,14 +937,27 @@ html.sheet-open body { overflow: hidden; }
 /* A long panel (Look & feel is taller than a phone viewport) used to scroll its
    own Done button out of reach. Inside a sheet card the head travels with the
    top edge and paints over the copy that slides beneath it, so the way out is
-   always visible; the card's own top padding moved into the head with it. */
+   always visible; the card's own top padding moved into the head with it. It is
+   kept as slim as a native app bar and fades into the copy below, so it reads
+   as chrome instead of a band covering the settings. */
 .sheet-card > .sheet-head {
   position: sticky;
   top: 0;
   z-index: 2;
   margin: 0 -18px;
-  padding: 18px 18px 10px;
+  padding: 12px 18px 9px;
   background: var(--sheet-bg);
+}
+
+.sheet-card > .sheet-head::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 10px;
+  pointer-events: none;
+  background: linear-gradient(var(--sheet-bg), transparent);
 }
 
 .sheet-head h2 {
@@ -1084,6 +1100,25 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
 
 .contact-link:active { transform: scale(0.98); }
 
+/* A link inside a sentence stays a sentence: the chip's 44px height and its
+   own margins broke the release-notes line into three pieces. */
+.contact-link--inline {
+  display: inline;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font-size: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.contact-link--inline:active { transform: none; }
+
 .contact-link:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--ink) 72%, transparent);
   outline-offset: 2px;
@@ -1205,7 +1240,7 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
   .sheet { align-items: center; }
   .sheet-card {
     border-radius: 20px;
-    max-height: calc(100dvh - var(--sa-top) - 20px);
+    max-height: min(calc(100dvh - var(--sa-top) - 20px), 780px);
   }
 }
 
@@ -1267,6 +1302,10 @@ html[data-motion="reduced"] .sheet-done { transition-duration: 0.01ms; }
 :root {
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Material 3's emphasized pair for a surface that crosses the screen edge:
+     decelerate on the way in, accelerate on the way out. */
+  --ease-emphasized-in: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-emphasized-out: cubic-bezier(0.3, 0, 0.8, 0.15);
   --motion-fast: 140ms;
   --motion-base: 240ms;
   --motion-slow: 380ms;
@@ -1444,22 +1483,25 @@ html[data-motion="full"].app-ready .footer {
   transition: opacity 220ms var(--ease-out);
 }
 
+/* A modal sheet slides: it does not fade, scale or deform. Material's own
+   sheets cross the screen edge and keep their surface opaque, and a cross-fade
+   made the card look like it was dissolving over the page. The transform-only
+   path also means the whole entrance runs on the compositor. */
 .sheet-card {
   animation: none;
-  opacity: 0;
-  transform: translateY(26px) scale(0.985);
-  transition: opacity 240ms var(--ease-out), transform 360ms var(--ease-spring), background-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+  transform: translateY(100%);
+  transition: transform 300ms var(--ease-emphasized-in), background-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+  will-change: transform;
 }
 
 .sheet.is-open .sheet-card {
-  opacity: 1;
   transform: none;
 }
 
 .sheet.is-closing .sheet-card {
-  opacity: 0;
-  transform: translateY(18px) scale(0.99);
-  transition-duration: 220ms;
+  transform: translateY(100%);
+  transition: transform 200ms var(--ease-emphasized-out);
+  will-change: auto;
 }
 
 html[data-motion="reduced"].app-ready .header,
@@ -1530,6 +1572,10 @@ html[data-motion="reduced"] .sheet.is-closing .sheet-card {
     align-items: center;
     padding: clamp(20px, 4vh, 40px) clamp(32px, 5vw, 64px);
   }
+
+  /* A settings dialog on a desktop does not need the full window height: cap it
+     at a comfortable panel so it reads as a dialog, not a second page. */
+  .sheet-card { max-height: min(calc(100dvh - 24px), 780px); }
 
   .app {
     --pad: clamp(12px, 1.15vw, 16px);
@@ -1885,7 +1931,7 @@ html[data-motion="reduced"] .sheet.is-closing .sheet-card {
   .sheet { align-items: center; }
   .sheet-card {
     border-radius: 20px;
-    max-height: calc(100dvh - var(--sa-top) - 20px);
+    max-height: min(calc(100dvh - var(--sa-top) - 20px), 780px);
   }
 }
 

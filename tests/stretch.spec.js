@@ -385,9 +385,10 @@ test('a drag down at the bottom scrolls instead of stretching', async ({ page, c
   await page.waitForTimeout(300);
 });
 
-/* Look & feel is the second surface: a fixed sheet whose card scrolls inside
-   itself, so the platform edge effect never reaches it. It has to take the same
-   magnification, from its own state, without moving the hub behind it. */
+/* Look & feel is deliberately not a stretch surface. It is a modal card: the
+   platform does not deform dialogs, and scaling the card made its copy pulse
+   while the reader scrolled and left the sticky header sitting away from the
+   panel edge. The hub behind it is not a surface of this gesture either. */
 
 function readSheetCard(page) {
   return page.evaluate(() => {
@@ -397,25 +398,21 @@ function readSheetCard(page) {
     const scaleY = matrix ? matrix.m22 : 1;
     return {
       transform: el.style.transform || 'none',
-      origin: el.style.transformOrigin || 'none',
-      offset: matrix ? matrix.m42 : 0,
+      computed: computed,
       scaleY,
-      growth: (scaleY - 1) * el.clientHeight,
-      height: el.clientHeight,
       cardScroll: el.scrollTop,
+      maxScroll: el.scrollHeight - el.clientHeight,
       hub: document.getElementById('hub').style.transform || 'none',
     };
   });
 }
 
-test('the Look & feel sheet takes the same stretch as the hub', async ({ page, context }) => {
+test('the Look & feel sheet never deforms and the hub behind it stays put', async ({ page, context }) => {
   await open(page);
   const cdp = await context.newCDPSession(page);
 
   await page.locator('#appearance').click();
   await expect(page.locator('#sheet .sheet-card')).toBeVisible();
-  // The card has its own rise transition; the stretch takes that transition out
-  // while it runs, so measure once the entrance has landed.
   await page.waitForTimeout(500);
 
   const box = await page.locator('#sheet .sheet-card').boundingBox();
@@ -423,28 +420,39 @@ test('the Look & feel sheet takes the same stretch as the hub', async ({ page, c
   const idle = await readSheetCard(page);
   expect(idle.transform).toBe('none');
 
+  // Pulling past the top edge must not scale the panel.
   await touch(cdp, 'touchStart', start);
   await touch(cdp, 'touchMove', start + 120);
-  await page.waitForTimeout(40);
+  await page.waitForTimeout(60);
   const pulled = await readSheetCard(page);
-
-  // The same platform curve, anchored on the card's own top edge.
-  expect(pulled.origin).toBe('50% 0%');
-  expect(pulled.offset).toBe(0);
-  expect(pulled.scaleY).toBeGreaterThan(1.005);
-  expect(pulled.growth).toBeCloseTo(
-    platformStretch(120 / pulled.height) * pulled.height,
-    0
-  );
-  expect(pulled.cardScroll, 'a stretch never scrolls the panel').toBe(0);
+  expect(pulled.transform).toBe('none');
+  expect(pulled.computed).toBe('none');
+  expect(pulled.scaleY).toBe(1);
+  expect(pulled.cardScroll).toBe(0);
   expect(pulled.hub, 'the hub behind the sheet does not move').toBe('none');
-
   await touch(cdp, 'touchEnd');
-  await expect
-    .poll(async () => (await readSheetCard(page)).transform, { timeout: 2000 })
-    .toBe('none');
+  await page.waitForTimeout(300);
 
-  // The panel still works after the gesture.
+  // The same at the bottom edge, after the panel has been scrolled to its end.
+  await page.evaluate(() => {
+    const card = document.querySelector('#sheet .sheet-card');
+    card.scrollTop = card.scrollHeight;
+  });
+  await page.waitForTimeout(120);
+  const bottom = await page.locator('#sheet .sheet-card').boundingBox();
+  const low = bottom.y + bottom.height - 90;
+  await touch(cdp, 'touchStart', low);
+  await touch(cdp, 'touchMove', low - 120);
+  await page.waitForTimeout(60);
+  const up = await readSheetCard(page);
+  expect(up.transform).toBe('none');
+  expect(up.computed).toBe('none');
+  expect(up.scaleY).toBe(1);
+  expect(up.hub).toBe('none');
+  await touch(cdp, 'touchEnd');
+  await page.waitForTimeout(300);
+
+  // The panel still works after both gestures.
   await page.locator('#sheet-done').click();
   await expect(page.locator('#sheet')).toBeHidden();
 });

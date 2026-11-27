@@ -14,6 +14,7 @@ import android.webkit.WebView;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -59,16 +60,33 @@ public class MainActivity extends BridgeActivity {
         // Picking the launch theme here — before the splash is installed — keeps
         // the splash and its handoff in that appearance instead of the phone's
         // day/night setting. No stored colour leaves the day/night theme in place.
+        // Keep the system's per-app night mode in step with the page's own
+        // choice first: that is what the next cold start's system-painted
+        // splash resolves, before this callback can run. The activity theme
+        // below still handles API < 31 and the very first launch.
+        WindowSurfacePlugin.applyNightMode(this, WindowSurfacePlugin.storedTheme(this));
+
         final int surface = WindowSurfacePlugin.storedColor(this);
         if (surface != 0) {
             setTheme(isDark(surface) ? R.style.AppTheme_NoActionBarLaunch_Dark : R.style.AppTheme_NoActionBarLaunch_Light);
         }
 
+        // Install the platform launch screen here, from the theme chosen above,
+        // and keep the SplashScreen plugin out of the launch (its launch duration
+        // is 0). The plugin draws its own full-screen drawable, and its night
+        // copy is selected by the phone's day/night setting — not by the
+        // appearance the app is actually in — so a light app on a dark phone
+        // opened on a dark splash, then flipped to cream. The platform splash
+        // reads windowSplashScreenBackground from the theme instead, and this
+        // call is also what swaps postSplashScreenTheme in for the running app.
+        SplashScreen.installSplashScreen(this);
+
         super.onCreate(savedInstanceState);
 
-        // installSplashScreen swaps in postSplashScreenTheme during super.onCreate,
-        // so this lands after the handoff and gives every surface the exact palette
-        // colour rather than the flat light/dark one the themes carry. The WebView
+        // installSplashScreen (above) swaps in postSplashScreenTheme during
+        // super.onCreate, so this lands after the handoff and gives every surface
+        // the exact palette colour rather than the flat light/dark one the themes
+        // carry. The WebView
         // needs it too: it paints white until the page has a background of its own,
         // which read as a second, blank splash between the launch screen and the
         // hub. One helper owns all three, so the launch and every later report

@@ -1,10 +1,12 @@
 package io.github.moh23rd.sixfold;
 
 import android.app.Activity;
+import android.app.UiModeManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.view.View;
 import android.webkit.WebView;
 
@@ -41,10 +43,39 @@ public class WindowSurfacePlugin extends Plugin {
 
     private static final String PREFS = "sixfold.appearance";
     private static final String KEY_SURFACE = "surface";
+    private static final String KEY_THEME = "theme";
 
     /** The surface colour the page last reported, or 0 before the first report. */
     static int storedColor(Context context) {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_SURFACE, 0);
+    }
+
+    /** The appearance the page last reported: auto, light or dark. */
+    static String storedTheme(Context context) {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_THEME, "auto");
+    }
+
+    /* The system paints a cold start's first window (the Android 12 splash)
+       from the activity theme before this process exists, so setTheme() in
+       onCreate cannot reach it: a light app on a dark phone still opened on a
+       dark plate. UiModeManager's per-app night mode is persisted by the system
+       and is applied when it resolves the app's resources, starting window
+       included. Auto keeps following the phone.
+
+       Below API 31 the per-app mode does not exist; the onCreate setTheme()
+       still picks the right activity theme there. */
+    static void applyNightMode(Context context, String preference) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+        UiModeManager manager = (UiModeManager) context.getSystemService(Context.UI_MODE_SERVICE);
+        if (manager == null) return;
+        int mode = "dark".equals(preference) ? UiModeManager.MODE_NIGHT_YES
+            : "light".equals(preference) ? UiModeManager.MODE_NIGHT_NO
+            : UiModeManager.MODE_NIGHT_AUTO;
+        try {
+            manager.setApplicationNightMode(mode);
+        } catch (IllegalArgumentException | SecurityException ignored) {
+            // An OEM build without per-app night mode keeps the onCreate theme.
+        }
     }
 
     /* Paints every surface the page colour has to cover: the window background
@@ -59,6 +90,17 @@ public class WindowSurfacePlugin extends Plugin {
         final View content = activity.findViewById(android.R.id.content);
         if (content != null) content.setBackgroundColor(color);
         if (webView != null) webView.setBackgroundColor(color);
+    }
+
+    @PluginMethod
+    public void setTheme(final PluginCall call) {
+        final String preference = call.getString("preference", "auto");
+        final SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (!preference.equals(prefs.getString(KEY_THEME, "auto"))) {
+            prefs.edit().putString(KEY_THEME, preference).apply();
+        }
+        applyNightMode(getContext(), preference);
+        call.resolve();
     }
 
     @PluginMethod

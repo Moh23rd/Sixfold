@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 117359,
-      "sha256": "1c027b27ec2ef7f9b08a3b40590c8bb59e813fcbec7b0a58b8b37d0335b6aafe"
+      "bytes": 119375,
+      "sha256": "82fdecd6fea0f8064f9101c9aceca1231c4edee917f35a42f77ac7ef77e6b595"
     },
     {
       "path": "licenses.html",
@@ -17,13 +17,13 @@
     },
     {
       "path": "css/styles.css",
-      "bytes": 50926,
-      "sha256": "f810bfb432a0ad8ace90609dc8f541969449c3a247386b93d27ba50688949be4"
+      "bytes": 52726,
+      "sha256": "e81d9256d449c897d7a430f81e4e1072b9be91195415ec2df2045f1ffef35259"
     },
     {
       "path": "js/theme.js",
-      "bytes": 41948,
-      "sha256": "276d97de36fd77972fc68217e9201d50d487b6b20090f06bbcb620024043b43d"
+      "bytes": 43525,
+      "sha256": "ed0b82a3b616a2a29d9cd332feca8f3d660a3e69f3f549e5e330f9ef54c0a1c5"
     },
     {
       "path": "js/game.js",
@@ -37,8 +37,8 @@
     },
     {
       "path": "js/overscroll.js",
-      "bytes": 15344,
-      "sha256": "e5760e38090bb734c6fbcdddab487a5acd939ce721a2fe14bbc5613cec1699af"
+      "bytes": 13942,
+      "sha256": "2f8726a8171ffed4d4d46e5763f2427bfba28b7b5d4a3b380a057e66433d44df"
     },
     {
       "path": "js/celebrate.js",
@@ -67,8 +67,8 @@
     },
     {
       "path": "css/polish.css",
-      "bytes": 44099,
-      "sha256": "6a8c30ad03847a21f3671b66dd928fef89f501d0fae360a8235ff612c5f57a32"
+      "bytes": 47897,
+      "sha256": "56674061130cb94d4fb7a49e5167f6de847b7c3a90d8fe077fea977bd317a0db"
     },
     {
       "path": "css/sudoku.css",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 167501,
-      "sha256": "385a386793631f875f14ed478b8b916a8ef2b4e4cdf0d0bb9e6cd8b9538cc47e"
+      "bytes": 168319,
+      "sha256": "ab9c04d20532a0cbd4245842faba94143c6874949b57cabf244e33e3b1d785f3"
     },
     {
       "path": "js/daily.js",
@@ -132,13 +132,13 @@
     },
     {
       "path": "i18n/i18n.js",
-      "bytes": 70917,
-      "sha256": "274d0d995cb90d1e72fa516121c756ce0c2260a79e31780a0e8a13f359c04d0d"
+      "bytes": 71035,
+      "sha256": "9fad1c66ddad2eea39d4a29c0a7ed366bf42836d6656312b8c90ee1233d735be"
     },
     {
       "path": "js/native.js",
-      "bytes": 11204,
-      "sha256": "acda3908b49be057289692b3addf8b21c7ab9d0955f3eee1a35ba22e61fbe942"
+      "bytes": 10436,
+      "sha256": "79aafc224214c4a5ea72210e61972585653ea40229fc9a0986483269ad9ca3e6"
     },
     {
       "path": "js/wordle-loader.js",

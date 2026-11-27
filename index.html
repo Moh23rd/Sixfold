@@ -78,7 +78,11 @@
       document.documentElement.dataset.theme = theme;
       // The launch screen is painted before the stylesheet arrives.
       // The native launch images use the neutral light/dark page colour, so the
-      // first painted frame stays in step even with a tinted palette.
+      // first painted frame stays in step even with a tinted palette. The page
+      // itself carries the same colour inline: a returning load (from Licenses)
+      // has no back-forward cache, and without this the browser paints white
+      // under a dark page until styles.css arrives.
+      document.documentElement.style.backgroundColor = PAGE[theme];
       document.documentElement.style.setProperty('--boot-bg', PAGE[theme]);
       var meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', PAGE[theme]);
@@ -123,6 +127,24 @@
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       document.documentElement.dataset.motion =
         choice === 'full' ? 'full' : choice === 'reduced' || reduce ? 'reduced' : 'full';
+    })();
+  </script>
+  <script>
+    (function () {
+      // Android's WebView latches :hover on the last tapped element and marks a
+      // tapped button :focus-visible. Recording which input is in use lets the
+      // stylesheet keep hover and focus art for mouse and keyboard while touch
+      // gets only the pressed state.
+      var root = document.documentElement;
+      function mark(value) {
+        if (root.dataset.input !== value) root.dataset.input = value;
+      }
+      window.addEventListener('touchstart', function () { mark('touch'); }, { passive: true, capture: true });
+      window.addEventListener('mousedown', function (event) {
+        if (event.sourceCapabilities && event.sourceCapabilities.firesTouchEvents) return;
+        mark('mouse');
+      }, true);
+      window.addEventListener('keydown', function () { mark('key'); }, true);
     })();
   </script>
   <style>
@@ -396,9 +418,16 @@
       if (!returning) return;
       // The hub was already built when the reader left it. Skip its splash and
       // its entrances: hub-settled switches off the card stagger and the
-      // six-piece build, so the return is a cut back to the screen they left.
-      root.classList.add('app-ready', 'home-ready', 'hub-settled');
+      // six-piece build. app-ready is *not* set here: the launch layer stays up
+      // until the hub has been put back at the reader's place, so the return
+      // never shows the top of the page for a frame and then jumps down.
+      root.classList.add('hub-settled');
       window.__sixfoldReturning = true;
+      try {
+        window.__sixfoldHubScroll = Number(sessionStorage.getItem('sixfold.hubScroll') || 0);
+      } catch (err) {
+        window.__sixfoldHubScroll = 0;
+      }
     })();
   </script>
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.2" as="font" type="font/woff2" crossorigin />
@@ -1389,13 +1418,12 @@
       </section>
       <section class="sheet-block">
         <p class="sheet-label" data-fade>About &amp; privacy</p>
-        <p class="sheet-note" data-fade>No accounts, ads or tracking. Your board, best scores and appearance choices stay on this device. Each game has its own reset in its tool row, so clearing one game never touches the others. Your light/dark choice is also remembered in a first-party cookie so an installed app can choose matching launch chrome.</p>
+        <p class="sheet-note" data-fade>No accounts, ads or tracking. Your board, best scores and appearance choices stay on this device. Each game has its own reset in its tool row, so clearing one game never touches the others. Your light/dark choice is remembered on this device, so the launch screen opens in the appearance you were using.</p>
         <p class="sheet-note" data-fade>Questions, bug reports or feedback?<br /><a class="contact-link" href="https://github.com/Moh23rd/Sixfold/issues/new/choose" target="_blank" rel="noopener" data-fade>Report a bug or send feedback</a></p>
         <p class="sheet-note" data-fade>A backup is yours: export it from Look &amp; feel whenever you want a copy.</p>
-        <p class="sheet-note" data-fade>Release notes live in <a class="contact-link" href="https://github.com/Moh23rd/Sixfold/releases" target="_blank" rel="noopener" data-fade>GitHub Releases</a>; Android builds are attached there when published.</p>
+        <p class="sheet-note" data-fade>Release notes live in <a class="contact-link contact-link--inline" href="https://github.com/Moh23rd/Sixfold/releases" target="_blank" rel="noopener">GitHub Releases</a>. <span>Android builds are attached there when published.</span></p>
         <p class="sheet-note" data-fade><a class="contact-link" href="licenses.html" data-fade>Licenses &amp; source</a></p>
         <p class="sheet-note version-note" data-fade>Version 6.0</p>
-        <p class="sheet-note version-note" id="about-build" data-fade hidden></p>
       </section>
     </div>
   </div>
@@ -1605,8 +1633,22 @@
       // left, so it lands at once instead of replaying the launch.
       if (returning) {
         gone = true;
-        if (splash.parentNode) splash.parentNode.removeChild(splash);
-        document.documentElement.classList.add('app-ready', 'home-ready', 'hub-settled');
+        var revealed = false;
+        function revealReturn() {
+          if (revealed) return;
+          revealed = true;
+          if (splash.parentNode) splash.parentNode.removeChild(splash);
+          document.documentElement.classList.add('app-ready', 'home-ready', 'hub-settled');
+        }
+        // games.js restores the hub's scroll position during parsing; reveal
+        // after that has landed instead of on a fixed delay, which used to show
+        // the top of the collection and then snap to the saved place.
+        if (window.__sixfoldHubRestored) {
+          window.requestAnimationFrame(revealReturn);
+        } else {
+          window.addEventListener('sixfold:hub-restored', revealReturn, { once: true });
+          window.setTimeout(revealReturn, 260);
+        }
         return;
       }
       var nativeGone = !native;

@@ -251,9 +251,17 @@ intact — the earlier bug, replacing the splash theme before the splash could
 read its handoff, cannot come back. After `super.onCreate` the window is given
 the exact palette colour.
 
-Android 12 and later paint their own starting window from the manifest theme
-before any app code runs, so that first frame keeps the day/night colour. Every
-frame the app draws does not.
+Android 12 and later paint their own starting window from the app's theme
+before any process code runs, so `setTheme()` in `onCreate` is too late for that
+first frame: it used to keep the phone's day/night colour and open a light app
+on a dark plate. The page therefore reports its appearance to
+`WindowSurfacePlugin.setTheme`, which stores it and calls
+`UiModeManager.setApplicationNightMode` (API 31+). The system persists that
+per-app mode and applies it when it resolves the app's resources, the starting
+window included, so the launch screen opens in the app's own appearance even
+when the phone is set the other way. Auto maps to the system mode and keeps
+following the phone; the `onCreate` fixed launch theme still covers API 24–30
+and the very first launch, before anything has been reported.
 
 Predictive back stays off. The flag only affects the back gesture — the home and
 recents transitions are the system's own and ignore it — and the app navigates in
@@ -274,9 +282,12 @@ launch composition never paints behind the OS splash.
 The WebView is given the surface colour as its background in `MainActivity`.
 Without it the WebView paints white until the page has a background, which read
 as a second, blank splash between the launch screen and the hub. The launch
-splash itself is the system one, dismissed on the page's first painted frame;
-`launchShowDuration` in `capacitor.config.json` is only a safety net for a page
-that never paints, not a delay before the app appears. Its
+splash itself is the system one: `MainActivity` installs it from the
+appearance-matched theme, dismissed on the page's first painted frame.
+`launchShowDuration` in `capacitor.config.json` is `0`, which keeps Capacitor's
+SplashScreen plugin out of the launch entirely — its full-screen drawable has a
+`-night` copy selected by the phone's setting, and that is what used to cover
+the correctly coloured system splash with the wrong one. The theme's
 `windowSplashScreenAnimatedIcon` is `@drawable/splash_icon`, a 288dp drawable
 generated per density (see `docs/ASSETS.md`); the 108dp adaptive icon would be
 upscaled 2.67× on every screen.
