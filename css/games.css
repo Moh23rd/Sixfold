@@ -4347,3 +4347,101 @@ html[data-motion="reduced"] .victory-layer { display: none; }
   .play-screen .water-glass { height: clamp(92px, 24vw, 148px); }
   .play-screen .water-board { padding: 10px 10px 8px; }
 }
+
+/* ---------- what's new, refreshed ---------- */
+
+/* One considered card instead of a bare line: a soft surface, a release dot,
+   check-marked items and a close target that reads as a control. The collapsed
+   state stays a single row, so the collection is never pushed down. */
+.whats-new {
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 58%, transparent);
+  box-shadow: 0 14px 30px -28px rgba(18, 16, 13, 0.75);
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+}
+
+.whats-new.is-leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+html[data-motion="reduced"] .whats-new { transition: none; }
+
+.whats-new-label {
+  gap: 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+}
+
+.whats-new-label::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--t8);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--t8) 18%, transparent);
+}
+
+.whats-new-list {
+  gap: 7px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.whats-new-list li { padding-inline-start: 19px; }
+
+.whats-new-list li::before {
+  content: "";
+  inset-inline-start: 0;
+  top: 0.22em;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--t8) 15%, transparent);
+}
+
+.whats-new-list li::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 0.42em;
+  width: 3px;
+  height: 5.5px;
+  border-right: 1.4px solid var(--t8);
+  border-bottom: 1.4px solid var(--t8);
+  transform: rotate(42deg);
+}
+
+html[data-motion="full"] .whats-new-details[open] .whats-new-list li {
+  animation: whats-new-item 240ms var(--ease-out) both;
+}
+
+html[data-motion="full"] .whats-new-details[open] .whats-new-list li:nth-child(2) { animation-delay: 35ms; }
+html[data-motion="full"] .whats-new-details[open] .whats-new-list li:nth-child(3) { animation-delay: 70ms; }
+html[data-motion="full"] .whats-new-details[open] .whats-new-list li:nth-child(4) { animation-delay: 105ms; }
+html[data-motion="full"] .whats-new-details[open] .whats-new-list li:nth-child(5) { animation-delay: 140ms; }
+
+@keyframes whats-new-item {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+
+.whats-new-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--seg-bg) 80%, transparent);
+  color: var(--muted-strong);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.whats-new-close:hover { color: var(--ink); }

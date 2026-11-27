@@ -5,19 +5,24 @@ const { test, expect } = require('@playwright/test');
 // js/haptics.js, so every assertion is on the waveform handed to the plugin —
 // the boundary the native vibrator sits behind. A test machine has no motor,
 // so the plugin is the last point that can be observed here.
-const TAP = [18];
-const MERGE_LOW = [20];
-const WIN = [11, 30, 12, 30, 14, 30, 22];
-const OVER = [24, 46, 15];
+const TAP = [10];
+const MERGE_LOW = [14];
+const WIN = [10, 34, 13, 36, 16, 40, 24];
+const OVER = [20, 48, 14];
+// Every pulse carries Android's own amplitude scale, so the motor is shaped
+// instead of always running at full strength.
+const WIN_GAIN = [130, 0, 160, 0, 190, 0, 230];
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.__pulses = [];
+    window.__gains = [];
     window.Capacitor = window.Capacitor || {};
     window.Capacitor.Plugins = window.Capacitor.Plugins || {};
     window.Capacitor.Plugins.Haptics = {
       vibrate(options) {
         window.__pulses.push(options && options.pattern);
+        window.__gains.push(options && options.amplitudes);
       },
       cancel() {}
     };
@@ -69,6 +74,7 @@ test('Tic Tac Toe sends a pulse to the plugin on every square', async ({ page })
     await page.waitForTimeout(60);
   }
   expect(await page.evaluate(() => window.__pulses)).toEqual([TAP, TAP, TAP, TAP, TAP, WIN]);
+  expect(await page.evaluate(() => window.__gains[5]), 'the win is shaped').toEqual(WIN_GAIN);
 
   // A full board with no line is the ending that used to arrive silently.
   await page.click('#ttt-again');

@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 119375,
-      "sha256": "6ba45dce1436b01dddd8fa5505cdea2325d6ce07ea74e6a6cddb9e1086997be1"
+      "bytes": 120386,
+      "sha256": "e13defcd2d9713856a3f4e064be651d04f4f5ca5d38b3d46a9c84f6a31fd9cfe"
     },
     {
       "path": "licenses.html",
@@ -22,8 +22,8 @@
     },
     {
       "path": "js/theme.js",
-      "bytes": 43525,
-      "sha256": "ed0b82a3b616a2a29d9cd332feca8f3d660a3e69f3f549e5e330f9ef54c0a1c5"
+      "bytes": 52954,
+      "sha256": "339861ed91c22816a72c5979e4d7e3f45b43e6b515e56d06ff2b45311bca534e"
     },
     {
       "path": "js/game.js",
@@ -32,8 +32,8 @@
     },
     {
       "path": "js/haptics.js",
-      "bytes": 5034,
-      "sha256": "7a9debe428453e76f0f839d8addffed79846f0e64fc8220d8255d19cb3d87837"
+      "bytes": 5839,
+      "sha256": "e0e227dea83625e65f21596ce393e584533e1e3c4ebd8fc0ffd66d2e3728a019"
     },
     {
       "path": "js/overscroll.js",
@@ -57,8 +57,8 @@
     },
     {
       "path": "css/games.css",
-      "bytes": 109129,
-      "sha256": "f73b5138022a1d04e64e4637a3bc68f475b3d316cc18a18ea0a96131eba9699b"
+      "bytes": 111783,
+      "sha256": "5e18208ed47cb60dd18a64d3917be91f0751ee351a59a6d790fa2373696f014a"
     },
     {
       "path": "css/home.css",
@@ -77,8 +77,8 @@
     },
     {
       "path": "css/v5.css",
-      "bytes": 64637,
-      "sha256": "a057480f29fd2d4c4e634475bfebed604c7f29e265b508373679d8528ae5ac57"
+      "bytes": 69384,
+      "sha256": "46575f5217b7ced863aaa8359253e1548cf29a09cb26607f67a41755eb34d714"
     },
     {
       "path": "css/progressive-blur.css",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 168319,
-      "sha256": "ab9c04d20532a0cbd4245842faba94143c6874949b57cabf244e33e3b1d785f3"
+      "bytes": 169720,
+      "sha256": "69522b24eee02a0d4247c2a60b551b1f715d401e85db490fc7fbddb314e22f7a"
     },
     {
       "path": "js/daily.js",

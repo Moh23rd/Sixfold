@@ -47,6 +47,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(WindowSurfacePlugin.class);
         registerPlugin(HapticsPlugin.class);
         registerPlugin(LaunchActionPlugin.class);
+        registerPlugin(WallpaperColorsPlugin.class);
 
         // A shortcut can start the activity before the page exists. Keep the
         // action until the page asks for it; a normal launcher start leaves it

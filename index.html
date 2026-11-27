@@ -432,11 +432,11 @@
   </script>
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/styles.css?v=5.4.5" />
-  <link rel="stylesheet" href="css/games.css?v=5.3.12" />
+  <link rel="stylesheet" href="css/games.css?v=5.3.13" />
   <link rel="stylesheet" href="css/home.css?v=4.1.14" />
   <link rel="stylesheet" href="css/polish.css?v=4.0.7-w23" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.5" />
-  <link rel="stylesheet" href="css/v5.css?v=5.6.3" />
+  <link rel="stylesheet" href="css/v5.css?v=5.6.4" />
   <link rel="stylesheet" href="css/progressive-blur.css?v=1.4.1" />
 </head>
 <body data-screen="hub" data-fade>
@@ -514,7 +514,7 @@
             <li>Fruit Merge plays as fruit or numbered tiles, and the app icon now sits properly inside the launcher shape.</li>
           </ul>
         </details>
-        <button class="whats-new-close" id="whats-new-close" type="button" aria-label="Dismiss what’s new">×</button>
+        <button class="whats-new-close" id="whats-new-close" type="button" aria-label="Dismiss what’s new" data-fade>×</button>
       </aside>
 
       <div class="home-hero" data-fade>
@@ -1304,6 +1304,19 @@
       </div>
       <p class="sheet-label" data-fade>Colours</p>
       <div class="palettes" id="palettes" role="group" aria-label="Colours"></div>
+      <details class="colour-custom" id="colour-custom" data-fade>
+        <summary class="colour-custom-summary" data-fade>
+          <span class="colour-custom-preview" id="colour-custom-preview" aria-hidden="true"></span>
+          <span class="colour-custom-copy"><strong>Custom colour</strong><small id="colour-custom-hex">#E85F3B</small></span>
+          <span class="colour-custom-chevron" aria-hidden="true">›</span>
+        </summary>
+        <div class="colour-custom-body">
+          <input class="colour-picker" id="colour-picker" type="color" value="#e85f3b" aria-label="Pick a colour" data-fade />
+          <input class="colour-hex" id="colour-hex" type="text" value="#E85F3B" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Hex colour" data-fade />
+          <button class="btn colour-apply" id="colour-apply" type="button" data-fade>Apply</button>
+        </div>
+        <p class="colour-hint" id="colour-hint" role="status" aria-live="polite"></p>
+      </details>
       <details class="settings-disclosure" id="accessibility-settings">
         <summary class="settings-summary">
           <span class="setting-copy"><strong>Accessibility</strong><small>Contrast, colour cues and larger text.</small></span>
@@ -1577,15 +1590,15 @@
   </div>
 
   <script src="js/settings.js?v=5.4.1"></script>
-  <script src="js/haptics.js?v=6.0.19"></script>
+  <script src="js/haptics.js?v=6.0.20"></script>
   <script src="js/overscroll.js?v=6.0.5"></script>
   <script src="js/celebrate.js?v=5.0.1"></script>
   <script src="js/sharecard.js?v=5.3.5"></script>
-  <script src="js/theme.js?v=6.0.19"></script>
+  <script src="js/theme.js?v=6.0.20"></script>
   <script src="js/game.js?v=5.3.5"></script>
   <script src="js/install.js?v=5.0.1"></script>
   <script src="js/sudoku.js?v=5.3.5"></script>
-  <script src="js/games.js?v=5.5.3"></script>
+  <script src="js/games.js?v=5.5.4"></script>
   <script src="js/daily.js?v=5.4.6"></script>
   <script src="js/profile.js?v=1.0.0"></script>
   <script src="js/badges.js?v=1.1.1"></script>

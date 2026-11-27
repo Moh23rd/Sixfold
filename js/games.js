@@ -31,6 +31,15 @@
   };
   const cards = $$('[data-game]');
   const backButtons = $$('[data-back]');
+
+  // The entering class is a marker for one animation, not a state the screen
+  // keeps: dropping it on animationend lets the browser release the promoted
+  // layer as soon as the entrance is over.
+  document.addEventListener('animationend', function (event) {
+    if (event.animationName !== 'screen-enter') return;
+    const host = event.target && event.target.closest ? event.target.closest('.play-screen') : null;
+    if (host) host.classList.remove('is-entering');
+  });
   if (!app || !hub || !screens.water || !screens.sudoku || !screens.fruit || !screens.ttt || !screens.mines || !screens.wordle || !screens.badges) return;
 
   function load(key, fallback) {
@@ -167,8 +176,18 @@
     panel.hidden = false;
     const close = $('whats-new-close');
     if (close) close.addEventListener('click', function () {
-      panel.hidden = true;
+      // Record the dismissal first: a reader who taps and immediately leaves
+      // should not see the note again on the next launch.
       try { localStorage.setItem(KEY, version); } catch (err) {}
+      if (reducedMotion()) {
+        panel.hidden = true;
+        return;
+      }
+      panel.classList.add('is-leaving');
+      window.setTimeout(function () {
+        panel.hidden = true;
+        panel.classList.remove('is-leaving');
+      }, 220);
     });
   })();
 
@@ -597,6 +616,19 @@
     if (isMerge) app.removeAttribute('aria-hidden');
     else app.setAttribute('aria-hidden', 'true');
     body.dataset.screen = screen;
+
+    // A game screen rises a few pixels as it fades in, instead of appearing
+    // between two frames. Transform and opacity only, so the entrance runs on
+    // the compositor; the class is dropped on animationend so the screen never
+    // keeps a promoted layer while it is played.
+    const arrived = screen === 'hub' ? null : screens[screen];
+    if (arrived && arrived.classList) {
+      arrived.classList.remove('is-entering');
+      if (!reducedMotion()) {
+        void arrived.offsetWidth;
+        arrived.classList.add('is-entering');
+      }
+    }
 
     // The hub's entrance belongs to the launch, not to every return. Once the
     // reader leaves the collection, the classes that own the entrance are

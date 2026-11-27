@@ -4,6 +4,11 @@
 
   const THEME_KEY = 'merge2048.theme';
   const PALETTE_KEY = 'merge2048.palette';
+  // The seed behind the two colour sources that are not fixed ramps. The
+  // wallpaper's own colour is cached so a restart shows the right palette
+  // before the native plugin has answered.
+  const WALLPAPER_KEY = 'merge2048.palette.wallpaper';
+  const CUSTOM_KEY = 'merge2048.palette.custom';
 
   // The hand-tuned "Warm" ramp, one colour per tile for 2 … 2048.
   const WARM = [
@@ -33,13 +38,18 @@
 
   const root = document.documentElement;
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
-  const state = { theme: 'auto', palette: 'warm' };
+  const state = { theme: 'auto', palette: 'warm', wallpaper: '#e85f3b', custom: '#e85f3b' };
 
   try {
     const savedTheme = localStorage.getItem(THEME_KEY);
     if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') state.theme = savedTheme;
     const savedPalette = localStorage.getItem(PALETTE_KEY);
-    if (PALETTES.some(function (p) { return p.id === savedPalette; })) state.palette = savedPalette;
+    if (PALETTES.some(function (p) { return p.id === savedPalette; }) ||
+      savedPalette === 'wallpaper' || savedPalette === 'custom') state.palette = savedPalette;
+    const savedWallpaper = normalizeHex(localStorage.getItem(WALLPAPER_KEY));
+    if (savedWallpaper) state.wallpaper = savedWallpaper;
+    const savedCustom = normalizeHex(localStorage.getItem(CUSTOM_KEY));
+    if (savedCustom) state.custom = savedCustom;
   } catch (err) {
     /* storage blocked — defaults are fine */
   }
@@ -124,8 +134,59 @@
     }).join('');
   }
 
+  // The fixed ramps plus the two sources built at runtime: the wallpaper's
+  // colour and a hex the reader chose. Keeping them in one list means the
+  // rest of the module (swatches, persistence, the colour read-back for the
+  // browser chrome) never needs a second branch.
+  let dynamicPalettes = [];
+
+  function allPalettes() {
+    return PALETTES.concat(dynamicPalettes);
+  }
+
   function activePalette() {
-    return PALETTES.filter(function (p) { return p.id === state.palette; })[0] || PALETTES[0];
+    const all = allPalettes();
+    return all.filter(function (p) { return p.id === state.palette; })[0] || PALETTES[0];
+  }
+
+  // #rgb or #rrggbb in, a lowercase #rrggbb out, or null.
+  function normalizeHex(value) {
+    const match = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(value || '').trim());
+    if (!match) return null;
+    let raw = match[1].toLowerCase();
+    if (raw.length === 3) raw = raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2];
+    return '#' + raw;
+  }
+
+  // A palette built from one real colour: the warm ramp keeps its brightness
+  // curve and takes the seed's hue. Saturation and lightness follow the seed
+  // only part of the way — a wallpaper that is almost white still has to leave
+  // the board readable, and a neon one must not turn every tile into a lamp.
+  function seededPalette(id, label, seed) {
+    const value = normalizeHex(seed) || '#e85f3b';
+    const n = parseInt(value.slice(1), 16);
+    const hsl = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    return {
+      id: id,
+      label: label,
+      seed: value,
+      // The ramp's middle tile sits near 14°, so starting there puts the seed's
+      // hue where the strongest tile is and keeps the light and deep ends
+      // leaning the way the hand-tuned ramp does.
+      shift: hsl[0] - 14,
+      satScale: Math.max(0.62, Math.min(1.18, 0.58 + hsl[1] * 0.78)),
+      lightShift: Math.max(-0.06, Math.min(0.06, (hsl[2] - 0.5) * 0.16))
+    };
+  }
+
+  function setDynamicPalette(id, label, seed) {
+    const palette = seededPalette(id, label, seed);
+    dynamicPalettes = dynamicPalettes.filter(function (p) { return p.id !== id; }).concat([palette]);
+    return palette;
+  }
+
+  function dynamicPalette(id) {
+    return dynamicPalettes.filter(function (p) { return p.id === id; })[0] || null;
   }
 
   // Recolours #rrggbb or #rrggbbaa for the given palette, keeping alpha.
@@ -133,13 +194,18 @@
     const value = String(hex).trim();
     const match = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(value);
     if (!match) return hex;
-    if (!palette.mono && !palette.shift) return value;
+    if (!palette.mono && !palette.shift && !palette.satScale && !palette.lightShift) return value;
 
     const alpha = match[2] ? match[2].toLowerCase() : '';
     const n = parseInt(match[1], 16);
     const hsl = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
     if (palette.mono) return hslToHex(hsl[0], 0.04, hsl[2]) + alpha;
-    return hslToHex(hsl[0] + palette.shift, hsl[1], hsl[2]) + alpha;
+    const hue = hsl[0] + (palette.shift || 0);
+    const saturation = Math.max(0, Math.min(1, hsl[1] * (palette.satScale || 1)));
+    // The clamp keeps a seed at either end from pushing the page's own light
+    // or dark base past pure white or black, where a tint would vanish.
+    const lightness = Math.max(0.06, Math.min(0.96, hsl[2] + (palette.lightShift || 0)));
+    return hslToHex(hue, saturation, lightness) + alpha;
   }
 
   /* ---------- page tint ---------- */
@@ -413,7 +479,7 @@
   }
 
   function applyPalette(id, persist) {
-    const palette = PALETTES.filter(function (p) { return p.id === id; })[0] || PALETTES[0];
+    const palette = allPalettes().filter(function (p) { return p.id === id; })[0] || PALETTES[0];
     // Opt-in only: the caller stack names the frame that moved the palette,
     // but building it on every boot is not worth a release log line.
     if (window.__sixfoldDebug) {
@@ -444,7 +510,11 @@
     );
 
     if (persist) {
-      try { localStorage.setItem(PALETTE_KEY, palette.id); } catch (err) {}
+      try {
+        localStorage.setItem(PALETTE_KEY, palette.id);
+        if (palette.id === 'wallpaper') localStorage.setItem(WALLPAPER_KEY, palette.seed);
+        if (palette.id === 'custom') localStorage.setItem(CUSTOM_KEY, palette.seed);
+      } catch (err) {}
     }
     syncPaletteButtons();
     syncHubPalette();
@@ -452,40 +522,169 @@
     announceAppearance();
   }
 
+  let customSwatch = null;
+  let customDetails = null;
+
+  function paletteSwatch(palette) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'palette';
+    // Opted in where it is built, so a palette swatch added later has to say
+    // whether it takes part in the appearance cross-fade.
+    btn.dataset.fade = '';
+    btn.dataset.paletteOpt = palette.id;
+    btn.setAttribute('aria-pressed', 'false');
+    // Use the visible palette name. A composed "Warm colours" label stops
+    // matching the visible word once the locale translates them separately.
+    btn.setAttribute('aria-label', palette.label);
+
+    const sw = document.createElement('span');
+    sw.className = 'swatches';
+    [2, 6, 10].forEach(function (i) {
+      const dot = document.createElement('span');
+      dot.style.background = recolor(WARM[i], palette);
+      sw.appendChild(dot);
+    });
+
+    const label = document.createElement('span');
+    label.textContent = palette.label;
+
+    btn.appendChild(sw);
+    btn.appendChild(label);
+    return btn;
+  }
+
+  // The dynamic swatches show what the board would look like now, so their
+  // dots are repainted whenever their seed moves.
+  function paintSwatchDots(btn, palette) {
+    if (!btn || !palette) return;
+    const dots = btn.querySelectorAll('.swatches span');
+    [2, 6, 10].forEach(function (i, index) {
+      if (dots[index]) dots[index].style.background = recolor(WARM[i], palette);
+    });
+  }
+
+  function wallpaperPlugin() {
+    const plugins = window.Capacitor && window.Capacitor.Plugins;
+    const plugin = plugins && plugins.WallpaperColors;
+    return plugin && typeof plugin.colors === 'function' ? plugin : null;
+  }
+
+  // Reads the phone's wallpaper colours and rebuilds the wallpaper palette.
+  // Returns false where no shell can answer, so the caller keeps the cached
+  // seed instead of leaving the reader on a dead swatch.
+  function readWallpaper(persist) {
+    const plugin = wallpaperPlugin();
+    if (!plugin) return false;
+    let pending;
+    try { pending = plugin.colors(); } catch (err) { return false; }
+    if (!pending || typeof pending.then !== 'function') return false;
+    pending.then(function (result) {
+      const seed = normalizeHex(result && (result.primary || result.secondary || result.tertiary));
+      if (!seed) return;
+      state.wallpaper = seed;
+      setDynamicPalette('wallpaper', 'Wallpaper', seed);
+      paintSwatchDots(document.querySelector('[data-palette-opt="wallpaper"]'), dynamicPalette('wallpaper'));
+      applyPalette('wallpaper', persist);
+    }).catch(function () {
+      /* an older shell or a wallpaper with no extracted colours */
+    });
+    return true;
+  }
+
   function buildPalettes() {
     const wrap = document.getElementById('palettes');
     if (!wrap) return;
     PALETTES.forEach(function (p) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'palette';
-      // Opted in where it is built, so a palette swatch added later has to say
-      // whether it takes part in the appearance cross-fade.
-      btn.dataset.fade = '';
-      btn.dataset.paletteOpt = p.id;
-      btn.setAttribute('aria-pressed', 'false');
-      // Use the visible palette name. A composed "Warm colours" label stops
-      // matching the visible word once the locale translates them separately.
-      btn.setAttribute('aria-label', p.label);
-
-      const sw = document.createElement('span');
-      sw.className = 'swatches';
-      [2, 6, 10].forEach(function (i) {
-        const dot = document.createElement('span');
-        dot.style.background = recolor(WARM[i], p);
-        sw.appendChild(dot);
-      });
-
-      const label = document.createElement('span');
-      label.textContent = p.label;
-
-      btn.appendChild(sw);
-      btn.appendChild(label);
+      const btn = paletteSwatch(p);
       btn.addEventListener('click', function () {
         applyPalette(p.id, true);
       });
       wrap.appendChild(btn);
     });
+
+    // A browser cannot read the wallpaper, and showing a control that can
+    // never answer would be worse than not offering it. The palette still
+    // resolves from the cached seed, so a reader who chose it in the app keeps
+    // its colours if the page is opened outside the shell.
+    if (wallpaperPlugin()) {
+      const btn = paletteSwatch(dynamicPalette('wallpaper') || seededPalette('wallpaper', 'Wallpaper', state.wallpaper));
+      btn.addEventListener('click', function () {
+        if (!readWallpaper(true)) applyPalette('wallpaper', true);
+      });
+      wrap.appendChild(btn);
+    }
+
+    customSwatch = paletteSwatch(dynamicPalette('custom') || seededPalette('custom', 'Custom', state.custom));
+    customSwatch.addEventListener('click', function () {
+      applyPalette('custom', true);
+      const field = document.getElementById('colour-hex');
+      if (field) field.value = state.custom.toUpperCase();
+      if (customDetails) customDetails.open = true;
+    });
+    wrap.appendChild(customSwatch);
+  }
+
+  // The custom panel is a disclosure under the swatches: a preview row while
+  // it is closed, and the picker, the hex field and one Apply while it is open.
+  // Typing paints the preview live; only Apply (or the platform picker's own
+  // confirmation) commits, so a half-typed hex never recolours the whole app.
+  function wireCustomColour() {
+    customDetails = document.getElementById('colour-custom');
+    const picker = document.getElementById('colour-picker');
+    const field = document.getElementById('colour-hex');
+    const applyBtn = document.getElementById('colour-apply');
+    const hint = document.getElementById('colour-hint');
+    const preview = document.getElementById('colour-custom-preview');
+    const printed = document.getElementById('colour-custom-hex');
+    if (!picker || !field || !applyBtn) return;
+
+    function paint(value) {
+      const hex = normalizeHex(value) || state.custom;
+      if (preview) preview.style.background = hex;
+      if (printed) printed.textContent = hex.toUpperCase();
+      picker.value = hex;
+    }
+
+    function commit() {
+      const value = normalizeHex(field.value);
+      if (!value) {
+        field.setAttribute('aria-invalid', 'true');
+        if (hint) hint.textContent = 'Use a hex colour such as #E85F3B.';
+        return;
+      }
+      field.removeAttribute('aria-invalid');
+      field.value = value.toUpperCase();
+      state.custom = value;
+      setDynamicPalette('custom', 'Custom', value);
+      paintSwatchDots(customSwatch, dynamicPalette('custom'));
+      paint(value);
+      applyPalette('custom', true);
+      if (hint) hint.textContent = 'Custom colour applied.';
+    }
+
+    field.addEventListener('input', function () {
+      const value = normalizeHex(field.value);
+      if (!value) {
+        field.setAttribute('aria-invalid', 'true');
+        return;
+      }
+      field.removeAttribute('aria-invalid');
+      paint(value);
+    });
+    field.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      commit();
+    });
+    picker.addEventListener('input', function () {
+      field.value = String(picker.value || '').toUpperCase();
+      field.removeAttribute('aria-invalid');
+      paint(picker.value);
+    });
+    picker.addEventListener('change', commit);
+    applyBtn.addEventListener('click', commit);
+    paint(state.custom);
   }
 
   /* ---------- fullscreen ---------- */
@@ -1014,9 +1213,17 @@
 
   /* ---------- start ---------- */
 
+  // Both runtime palettes exist before the first apply, so restoring
+  // "wallpaper" or "custom" from storage resolves to real colours.
+  setDynamicPalette('wallpaper', 'Wallpaper', state.wallpaper);
+  setDynamicPalette('custom', 'Custom', state.custom);
   buildPalettes();
+  wireCustomColour();
   applyTheme(state.theme, false);
   applyPalette(state.palette, false);
+  // The cache is what the page last saw; ask the phone once the page is up, so
+  // a wallpaper changed since then is picked up without a visible re-entry.
+  if (state.palette === 'wallpaper' && wallpaperPlugin()) readWallpaper(false);
   // The head paints the page colour inline so a hard reload (a return from the
   // legal page) never flashes white before styles.css arrives. From here the
   // stylesheet owns that colour: an inline value would survive a theme switch
@@ -1061,4 +1268,12 @@
   };
   if (mq.addEventListener) mq.addEventListener('change', onSchemeChange);
   else if (mq.addListener) mq.addListener(onSchemeChange);
+
+  // A wallpaper set while the app was in the background is the common way the
+  // phone changes it, and the palette should already match on the way back.
+  // Only the wallpaper source pays for this; the fixed ramps never ask.
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden || state.palette !== 'wallpaper') return;
+    readWallpaper(false);
+  });
 })();

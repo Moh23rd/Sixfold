@@ -2245,3 +2245,186 @@ html.is-theme-fading .sheet-backdrop {
   #ttt .ttt-difficulty { gap: 6px; }
   #ttt .ttt-difficulty button { min-height: 42px; font-size: 12px; }
 }
+
+/* ==========================================================================
+   Colour sources (wallpaper / custom hex) and motion polish
+   ========================================================================== */
+
+/* ---------- custom colour ---------- */
+
+.colour-custom {
+  margin-top: 8px;
+  border-radius: 12px;
+  background: var(--seg-bg);
+  box-shadow: var(--ghost-shadow);
+  overflow: hidden;
+}
+
+.colour-custom-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font: inherit;
+  list-style: none;
+  cursor: pointer;
+}
+
+.colour-custom-summary::-webkit-details-marker { display: none; }
+
+.colour-custom-summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
+
+.colour-custom-preview {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e85f3b;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 14%, transparent) inset;
+  transition: background-color 220ms var(--ease-out);
+}
+
+.colour-custom-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.colour-custom-copy strong {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.colour-custom-copy small {
+  color: var(--muted-strong);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.colour-custom-chevron {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--muted);
+  transition: transform 180ms var(--ease-out);
+}
+
+.colour-custom[open] .colour-custom-chevron { transform: rotate(90deg); }
+
+.colour-custom-body {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px 10px;
+}
+
+.colour-picker {
+  width: 44px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.colour-picker::-webkit-color-swatch-wrapper { padding: 3px; }
+.colour-picker::-webkit-color-swatch {
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent) inset;
+}
+
+.colour-hex {
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--ghost-shadow);
+  color: var(--ink);
+  font: 700 13px/1 var(--font-ui);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.colour-hex[aria-invalid="true"] {
+  box-shadow: 0 0 0 2px var(--danger, #c0392b) inset;
+}
+
+.colour-apply {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+}
+
+.colour-hint {
+  margin: 0;
+  padding: 0 12px 10px;
+  color: var(--muted-strong);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.colour-hint:empty { display: none; }
+
+html[data-motion="reduced"] .colour-custom-preview,
+html[data-motion="reduced"] .colour-custom-chevron { transition: none; }
+
+/* ---------- disclosures open with a little travel, not a jump ---------- */
+
+@keyframes disclosure-open {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: none; }
+}
+
+html[data-motion="full"] .language-picker[open] > .seg,
+html[data-motion="full"] .settings-disclosure[open] > .settings-list,
+html[data-motion="full"] .colour-custom[open] > .colour-custom-body {
+  animation: disclosure-open 200ms var(--ease-out) both;
+}
+
+.settings-summary-chevron { transition: transform 180ms var(--ease-out); }
+html[data-motion="full"] .settings-disclosure[open] .settings-summary-chevron { transform: rotate(90deg); }
+html[data-motion="reduced"] .settings-summary-chevron { transition: none; }
+
+/* ---------- the sheet settles instead of snapping ---------- */
+
+/* A slightly longer enter with a strong ease-out reads as a surface coming to
+   rest; the exit is quicker, so dismissing never feels like waiting. Only
+   transform runs here, which keeps the whole move on the compositor. */
+html[data-motion="full"] .sheet-card {
+  transition:
+    transform 340ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color var(--motion-base) var(--ease-out),
+    box-shadow var(--motion-base) var(--ease-out);
+}
+
+html[data-motion="full"] .sheet.is-closing .sheet-card {
+  transition: transform 220ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* ---------- a game screen arrives instead of cutting in ---------- */
+
+/* Opacity only, and on the screen itself: the shell inside already owns its
+   own first-visit entrance, and a second animation on that element would
+   replace it. Fading the whole fixed surface keeps the compositor in charge
+   and gives every arrival a calm half-beat without touching layout. */
+@keyframes screen-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+html[data-motion="full"] .play-screen.is-entering {
+  animation: screen-enter 220ms var(--ease-out) both;
+}

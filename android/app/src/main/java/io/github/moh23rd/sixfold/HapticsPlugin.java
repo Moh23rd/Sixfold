@@ -23,10 +23,12 @@ import org.json.JSONException;
  * same patterns to the platform vibrator instead.
  *
  * The page sends a waveform in navigator.vibrate's own shape — alternating
- * on/off milliseconds — and it is played once. Amplitudes stay at the motor's
- * default: the set runs from 9ms merge ticks to 30ms pulses, with an 18ms tap
- * carrying a keypress, and asking for a lower amplitude on a phone whose motor
- * cannot do it would only make them vanish.
+ * on/off milliseconds — and it is played once. It also sends an amplitude per
+ * pulse (0–255, Android's own scale) so a merge tick can be a light touch
+ * instead of the motor at full strength: shaped amplitude is what makes the
+ * feedback feel like a system haptic rather than a buzz. A motor without
+ * amplitude control plays the timings at its default strength, which is the
+ * behaviour this plugin always had.
  */
 @CapacitorPlugin(name = "Haptics")
 public class HapticsPlugin extends Plugin {
@@ -57,6 +59,10 @@ public class HapticsPlugin extends Plugin {
         // [on, off, on, off] becomes [wait, on, off, on, off]: the platform
         // waveform starts with the delay before the first pulse.
         long[] timings = new long[pattern.length() + 1];
+        JSArray gains = call.getArray("amplitudes");
+        int[] amplitudes = gains != null && gains.length() == pattern.length()
+            ? new int[timings.length]
+            : null;
         timings[0] = 0;
         for (int i = 0; i < pattern.length(); i += 1) {
             long slice;
@@ -67,11 +73,25 @@ public class HapticsPlugin extends Plugin {
                 return;
             }
             timings[i + 1] = Math.min(slice, 1000);
+            if (amplitudes != null) {
+                int gain;
+                try {
+                    gain = gains.getInt(i);
+                } catch (JSONException err) {
+                    amplitudes = null;
+                    continue;
+                }
+                amplitudes[i + 1] = Math.max(0, Math.min(255, gain));
+            }
         }
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                motor.vibrate(VibrationEffect.createWaveform(timings, -1));
+                if (amplitudes != null) {
+                    motor.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1));
+                } else {
+                    motor.vibrate(VibrationEffect.createWaveform(timings, -1));
+                }
             } else {
                 motor.vibrate(timings, -1);
             }

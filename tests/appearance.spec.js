@@ -1164,3 +1164,80 @@ test('a game screen keeps its shell entrance to the first visit', async ({ page 
   expect(wordle.first, 'the first visit still gets the word game arrival').toBe('wordleArrive');
   expect(wordle.settled, 'a settled word game arrives as a cut').toBe('none');
 });
+
+// A custom hex is a third colour source next to the fixed ramps and the
+// wallpaper. The panel previews while typing, commits on Apply, and the choice
+// has to survive a reload just like a palette swatch.
+test('a custom hex recolours the app and survives a reload', async ({ page }) => {
+  await openLook(page);
+  const warmTile = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t8').trim()
+  );
+
+  await page.locator('#colour-custom summary').click();
+  await page.locator('#colour-hex').fill('#2f6fed');
+  await page.locator('#colour-apply').click();
+
+  expect(await page.evaluate(() => localStorage.getItem('merge2048.palette'))).toBe('custom');
+  expect(await page.evaluate(() => localStorage.getItem('merge2048.palette.custom'))).toBe('#2f6fed');
+  expect(await page.locator('#colour-hint')).toHaveText('Custom colour applied.');
+
+  const painted = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t8').trim()
+  );
+  expect(painted, 'the board takes the seed hue').not.toBe(warmTile);
+
+  await page.reload();
+  await page.waitForSelector('#daily');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  expect(await page.evaluate(() => localStorage.getItem('merge2048.palette'))).toBe('custom');
+  expect(await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t8').trim()
+  )).toBe(painted);
+});
+
+test('an invalid hex is refused without changing the palette', async ({ page }) => {
+  await openLook(page);
+  await page.locator('#colour-custom summary').click();
+  await page.locator('#colour-hex').fill('#12');
+  await page.locator('#colour-apply').click();
+
+  await expect(page.locator('#colour-hint')).toHaveText('Use a hex colour such as #E85F3B.');
+  await expect(page.locator('#colour-hex')).toHaveAttribute('aria-invalid', 'true');
+  expect(await page.evaluate(() => localStorage.getItem('merge2048.palette'))).toBe(null);
+});
+
+// The wallpaper source is native-only, so the plugin is stubbed here the way
+// the APK answers. The swatch has to appear only when a shell can read the
+// wallpaper, take the primary colour, cache it for the next launch, and apply
+// it through the same palette pipeline the fixed ramps use.
+test('the wallpaper palette takes the phone colour and caches it', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.Capacitor = window.Capacitor || {};
+    window.Capacitor.Plugins = window.Capacitor.Plugins || {};
+    window.Capacitor.Plugins.WallpaperColors = {
+      colors: () => Promise.resolve({ primary: '#0a7d57', secondary: '#0f5f45' })
+    };
+  });
+  await openLook(page);
+  const warmTile = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t8').trim()
+  );
+
+  const swatch = page.locator('[data-palette-opt="wallpaper"]');
+  await expect(swatch, 'a shell that can read the wallpaper offers it').toBeVisible();
+  await swatch.click();
+
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('merge2048.palette'))).toBe('wallpaper');
+  expect(await page.evaluate(() => localStorage.getItem('merge2048.palette.wallpaper'))).toBe('#0a7d57');
+  const painted = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--t8').trim()
+  );
+  expect(painted, 'the board follows the wallpaper').not.toBe(warmTile);
+});
+
+test('a browser without the wallpaper plugin does not offer the swatch', async ({ page }) => {
+  await openLook(page);
+  await expect(page.locator('[data-palette-opt="wallpaper"]')).toHaveCount(0);
+  await expect(page.locator('[data-palette-opt="custom"]'), 'custom needs no native part').toHaveCount(1);
+});

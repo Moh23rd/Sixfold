@@ -27,16 +27,29 @@
   const MIN_GAP = 32;
   let lastPulse = 0;
 
+  // Timings say when the motor runs; gains say how hard. Android's amplitude
+  // scale (0–255) is what makes a tick feel like a system haptic instead of a
+  // buzz: the same short pulse at 120 is a tap, at 255 it is an alarm. The
+  // patterns below stay under 200ms total and leave room between pulses, so a
+  // chain of merges reads as separate touches rather than one long rattle.
   const PATTERN = {
     // 8ms sat under the spin-up time of most phone motors: the call reached the
-    // plugin and the phone stayed still. 18ms is the shortest tap that reads as
-    // a deliberate tick, so a move actually says something.
-    tap: [18],
-    mergeLow: [20],
-    mergeMid: [11, 16, 9],
-    mergeHigh: [12, 18, 10, 18, 12],
-    win: [11, 30, 12, 30, 14, 30, 22],
-    over: [24, 46, 15]
+    // plugin and the phone stayed still. 10ms with a light gain is the shortest
+    // pulse that still reads as deliberate.
+    tap: [10],
+    mergeLow: [14],
+    mergeMid: [10, 26, 12],
+    mergeHigh: [9, 24, 12, 24, 16],
+    win: [10, 34, 13, 36, 16, 40, 24],
+    over: [20, 48, 14]
+  };
+  const GAIN = {
+    tap: [120],
+    mergeLow: [150],
+    mergeMid: [140, 0, 170],
+    mergeHigh: [150, 0, 180, 0, 210],
+    win: [130, 0, 160, 0, 190, 0, 230],
+    over: [180, 0, 120]
   };
 
   function supported() {
@@ -61,13 +74,15 @@
     }
   }
 
-  function buzz(pattern, force) {
+  function buzz(pattern, gain, force) {
     if (!enabled || !api) return false;
     const now = performance.now();
     if (!force && now - lastPulse < MIN_GAP) return false;
     lastPulse = now;
     try {
-      const result = native ? bridge.vibrate({ pattern: pattern }) : navigator.vibrate(pattern);
+      // The web API has no amplitude, so a browser plays the timings alone;
+      // the shell takes both and shapes the pulses.
+      const result = native ? bridge.vibrate({ pattern: pattern, amplitudes: gain }) : navigator.vibrate(pattern);
       // The bridge answers with a promise; a phone with no motor rejects it,
       // and a rejection here is not worth telling the game about.
       if (result && typeof result.catch === 'function') result.catch(function () {});
@@ -99,24 +114,24 @@
     cancel: cancel,
 
     tap: function () {
-      buzz(PATTERN.tap);
+      buzz(PATTERN.tap, GAIN.tap);
     },
 
     merge: function (value) {
       const size = Number(value) || 0;
-      if (size >= 256) buzz(PATTERN.mergeHigh);
-      else if (size >= 64) buzz(PATTERN.mergeMid);
-      else buzz(PATTERN.mergeLow);
+      if (size >= 256) buzz(PATTERN.mergeHigh, GAIN.mergeHigh);
+      else if (size >= 64) buzz(PATTERN.mergeMid, GAIN.mergeMid);
+      else buzz(PATTERN.mergeLow, GAIN.mergeLow);
     },
 
     // An ending lands in the same task as the move that caused it, so it is
     // forced past the coalescing window: the tap must not swallow the win.
     win: function () {
-      buzz(PATTERN.win, true);
+      buzz(PATTERN.win, GAIN.win, true);
     },
 
     over: function () {
-      buzz(PATTERN.over, true);
+      buzz(PATTERN.over, GAIN.over, true);
     },
 
     isEnabled: function () {
@@ -144,7 +159,7 @@
       }
       // A crisp confirmation on the switch itself, even if the last pulse was
       // a moment ago.
-      buzz(PATTERN.tap, true);
+      buzz(PATTERN.tap, GAIN.tap, true);
       announce();
       return true;
     }
