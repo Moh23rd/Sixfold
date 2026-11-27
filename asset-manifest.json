@@ -3,12 +3,12 @@
     {
       "path": "index.html",
       "bytes": 119375,
-      "sha256": "c9453a347c57a75a7142564002422f56682dff8f4fc47f43922eef5bace51103"
+      "sha256": "6ba45dce1436b01dddd8fa5505cdea2325d6ce07ea74e6a6cddb9e1086997be1"
     },
     {
       "path": "licenses.html",
       "bytes": 54458,
-      "sha256": "78ae40d7abb868584ae2bfa496ede52b74e180fc64b4adbb531d38ca29af40b0"
+      "sha256": "09e9d3dbf42a9f35aac7dbc805319a0f6d36f394955367e4da119efed5011fae"
     },
     {
       "path": "LICENSE",
@@ -128,7 +128,7 @@
     {
       "path": "i18n/i18n-locale.js",
       "bytes": 2942,
-      "sha256": "1f8dd95c5b093e2690ea4ecb7d25421d63ba99f6499407889f9122802d01d464"
+      "sha256": "80ce6d75a5038d9ef9c3c5c5b742e26cfd6e5da24a9c336fa0e3c91c8f4222fb"
     },
     {
       "path": "i18n/i18n.js",
