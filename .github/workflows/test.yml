@@ -376,7 +376,11 @@ jobs:
       # key carries the image tag and a version suffix; changing either makes
       # the affected rows download a fresh image (switching to -v1 refilled all
       # five at once), so bump it only for a change to the cached paths or the
-      # SDK's install layout.
+      # SDK's install layout. The restore keys degrade instead of missing: the
+      # same API and tag at an older version first (the exact image), then any
+      # tag or version for that API (at least the emulator plus whatever image
+      # was cached). A version bump then costs an incremental install, not a
+      # full download on every row.
       - name: Cache the emulator and its system image
         uses: actions/cache@v5
         with:
@@ -384,6 +388,9 @@ jobs:
             /usr/local/lib/android/sdk/emulator
             /usr/local/lib/android/sdk/system-images
           key: emulator-api${{ matrix.api }}-${{ matrix.image_tag || 'google_apis' }}-x86_64-v1
+          restore-keys: |
+            emulator-api${{ matrix.api }}-${{ matrix.image_tag || 'google_apis' }}-x86_64-
+            emulator-api${{ matrix.api }}-
       # Plain SDK tooling rather than an emulator action: the boot, the install
       # and the assertions are the same commands a workstation runs, so a
       # failure here can be reproduced instead of guessed at.
