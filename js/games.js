@@ -183,17 +183,27 @@
         panel.hidden = true;
         return;
       }
-      // Give the panel its current height as a starting point, then let the
-      // class take that height, its spacing and its border to zero; hiding it
-      // afterwards no longer moves the page, because it already has no height.
-      panel.style.height = panel.getBoundingClientRect().height + 'px';
-      void panel.offsetHeight;
-      panel.classList.add('is-leaving');
-      window.setTimeout(function () {
-        panel.hidden = true;
-        panel.classList.remove('is-leaving');
-        panel.style.height = '';
-      }, 240);
+      // Keep the exit on the compositor: the card leaves the flow immediately
+      // and a fixed ghost fades out where it stood, so the page reflows under
+      // a surface that is still visible instead of jumping.
+      const rect = panel.getBoundingClientRect();
+      const ghost = panel.cloneNode(true);
+      ghost.classList.add('whats-new-ghost');
+      ghost.removeAttribute('id');
+      ghost.setAttribute('aria-hidden', 'true');
+      ghost.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+      ghost.style.position = 'fixed';
+      ghost.style.left = rect.left + 'px';
+      ghost.style.top = rect.top + 'px';
+      ghost.style.width = rect.width + 'px';
+      ghost.style.height = rect.height + 'px';
+      ghost.style.zIndex = '40';
+      document.body.appendChild(ghost);
+      panel.hidden = true;
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(function () { ghost.classList.add('is-leaving'); });
+      });
+      window.setTimeout(function () { ghost.remove(); }, 240);
     });
   })();
 
@@ -1007,8 +1017,7 @@
   const sixHitTimers = new WeakMap();
   let sixStep = 0;
   let sixTouch = null;
-  let sixLastTapIndex = -1;
-  let sixLastTapAt = 0;
+  let sixTouchHandled = null;
   let sixLocked = false;
   function clearSixPress() {
     sixPieces.forEach(function (piece) {
@@ -1028,14 +1037,10 @@
     sixHitTimers.set(piece, window.setTimeout(function () {
       piece.classList.remove('is-six-hit');
       sixHitTimers.delete(piece);
-    }, 280));
+    }, 150));
   }
   function commitSixTap(index) {
     if (sixLocked) return;
-    const now = Date.now();
-    if (index === sixLastTapIndex && now - sixLastTapAt < 450) return;
-    sixLastTapIndex = index;
-    sixLastTapAt = now;
     handleSixPress(index);
   }
   function handleSixPress(index) {
@@ -1061,7 +1066,7 @@
         if (sixGrid) sixGrid.classList.remove('is-unlocking');
         sixLocked = false;
         showHiddenReveal();
-      }, calmMotion() ? 80 : 520);
+      }, calmMotion() ? 80 : 320);
     }
   }
   // The build animation holds its final transform until it is removed, which
@@ -1069,13 +1074,26 @@
   // settled when its own animation ends, and on a fallback for a page whose
   // motion is reduced (no animation runs, but the class still has to land).
   function settleSixCover() {
-    document.documentElement.classList.add('six-settled');
+    const html = document.documentElement;
+    // The launch hand-off samples the running build at home-ready; settling
+    // before that would zero the stagger it is meant to leave untouched.
+    if (!html.classList.contains('home-ready')) {
+      window.setTimeout(settleSixCover, 120);
+      return;
+    }
+    html.classList.add('six-settled');
   }
   if (calmMotion()) settleSixCover();
   else window.setTimeout(settleSixCover, 1600);
 
   sixPieces.forEach(function (piece, index) {
-    piece.addEventListener('click', function () { commitSixTap(index); });
+    piece.addEventListener('click', function () {
+      // The touchend path already committed this gesture; ignore its ghost
+      // click, but never a fresh press on the same tile.
+      const handled = sixTouchHandled;
+      if (handled && handled.index === index && Date.now() - handled.when < 500) return;
+      commitSixTap(index);
+    });
     piece.addEventListener('animationend', function (event) {
       if (event.animationName !== 'sixBuild') return;
       settleSixCover();
@@ -1092,6 +1110,7 @@
       sixTouch = null;
       if (!touch || !start || touch.identifier !== start.id) return;
       if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 18) return;
+      sixTouchHandled = { index: index, when: Date.now() };
       commitSixTap(index);
     }, { passive: true });
     piece.addEventListener('touchcancel', function () { sixTouch = null; }, { passive: true });
@@ -1102,7 +1121,7 @@
   function resetSixProgress() {
     sixStep = 0;
     sixLocked = false;
-    sixLastTapIndex = -1;
+    sixTouchHandled = null;
     clearSixPress();
     if (sixGrid) sixGrid.classList.remove('is-unlocking');
   }

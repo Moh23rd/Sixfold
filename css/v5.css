@@ -128,7 +128,7 @@ html[data-daily="off"] #daily { display: none; }
   border: 1px solid color-mix(in srgb, var(--t256) 45%, var(--home-rule, var(--line)));
   border-radius: 9px;
   background: color-mix(in srgb, var(--t256) 10%, var(--panel));
-  transition: background-color 180ms ease, border-color 180ms ease;
+  transition: background-color 180ms var(--ease-out);
 }
 
 .daily-badge-mark {
@@ -224,11 +224,11 @@ html[data-daily="off"] #daily { display: none; }
   transform-origin: left center;
   /* scaleX keeps the sweep on the compositor; the old width animation
      relaid out the badge on every frame. */
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .daily-badge.is-new {
-  animation: dailyBadgePop 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: dailyBadgePop 360ms var(--ease-out);
 }
 
 @keyframes dailyBadgePop {
@@ -250,7 +250,7 @@ html[data-daily="off"] #daily { display: none; }
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, background-color 180ms ease;
+  transition: transform 120ms var(--ease-out), background-color 180ms var(--ease-out);
 }
 
 .daily-calendar-btn:hover { background: color-mix(in srgb, var(--panel) 70%, var(--card)); }
@@ -317,7 +317,7 @@ html[data-daily="off"] #daily { display: none; }
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, background-color 180ms ease;
+  transition: transform 120ms var(--ease-out), background-color 180ms var(--ease-out);
 }
 
 .daily-share:hover { background: color-mix(in srgb, var(--panel) 70%, var(--card)); }
@@ -382,7 +382,7 @@ html[data-daily="off"] #daily { display: none; }
   font-weight: 800;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, background-color 180ms ease;
+  transition: transform 120ms var(--ease-out), background-color 180ms var(--ease-out);
 }
 
 .daily-gauntlet-action:hover { background: color-mix(in srgb, var(--ink) 86%, var(--page)); }
@@ -474,7 +474,7 @@ html[data-daily="off"] #daily { display: none; }
   box-shadow: 0 3px 0 color-mix(in srgb, var(--ink) 72%, #000);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 140ms ease, background-color 180ms ease;
+  transition: transform 140ms var(--ease-out), background-color 180ms var(--ease-out);
 }
 
 .daily-play:hover { background: color-mix(in srgb, var(--daily-accent) 92%, var(--page)); }
@@ -489,7 +489,7 @@ html[data-daily="off"] #daily { display: none; }
   flex: none;
   border-radius: 50%;
   background: color-mix(in srgb, var(--daily-ink) 16%, transparent);
-  transition: transform 160ms ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .daily-play-arrow svg {
@@ -647,7 +647,7 @@ html[dir="rtl"] .daily-play:hover .daily-play-arrow { transform: translateX(-2px
   color: var(--muted);
   font-size: 15px;
   line-height: 1;
-  transition: transform 160ms ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .language-picker[open] .language-summary-chevron { transform: rotate(90deg); }
@@ -716,7 +716,7 @@ html[dir="rtl"] .daily-play:hover .daily-play-arrow { transform: translateX(-2px
   color: var(--muted);
   font-size: 15px;
   line-height: 1;
-  transition: transform 160ms ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .settings-disclosure[open] .settings-summary-chevron { transform: rotate(90deg); }
@@ -1683,7 +1683,7 @@ html[data-motion="reduced"] .daily-calendar-btn { animation: none; transition: n
   pointer-events: none;
   transform: translate(-50%, 18px) scale(0.97);
   transform-origin: center bottom;
-  transition: opacity 180ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 180ms var(--ease-out), transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .daily-finish.is-on {
@@ -2420,10 +2420,7 @@ html[data-motion="reduced"] .settings-summary-chevron { transition: none; }
    rest; the exit is quicker, so dismissing never feels like waiting. Only
    transform runs here, which keeps the whole move on the compositor. */
 html[data-motion="full"] .sheet-card {
-  transition:
-    transform 340ms cubic-bezier(0.16, 1, 0.3, 1),
-    background-color var(--motion-base) var(--ease-out),
-    box-shadow var(--motion-base) var(--ease-out);
+  transition: transform 340ms cubic-bezier(0.16, 1, 0.3, 1), background-color var(--motion-base) var(--ease-out);
 }
 
 html[data-motion="full"] .sheet.is-closing .sheet-card {
@@ -2443,4 +2440,19 @@ html[data-motion="full"] .sheet.is-closing .sheet-card {
 
 html[data-motion="full"] .play-screen.is-entering {
   animation: screen-enter 220ms var(--ease-out) both;
+}
+
+/* ---------- tap affordance ----------
+   Every control answers on the press, not after the browser's double-tap
+   window, and no platform highlight is painted over the app's own press state. */
+button,
+[role="button"],
+summary,
+a[href],
+label,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }

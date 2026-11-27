@@ -60,7 +60,7 @@
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color 130ms ease, color 130ms ease, box-shadow 130ms ease;
+  transition: background-color 130ms var(--ease-out), color 130ms var(--ease-out);
 }
 
 .sudoku-cell.is-edge-right {
@@ -97,7 +97,7 @@
 }
 
 .sudoku-cell.is-hint {
-  animation: sudokuHint 900ms ease;
+  animation: sudokuHint 360ms var(--ease-out);
 }
 
 .sudoku-cell:focus-visible {
@@ -125,8 +125,8 @@
 }
 
 @keyframes sudokuHint {
-  0%, 100% { box-shadow: inset 0 0 0 2px var(--cart); }
-  40% { box-shadow: inset 0 0 0 3px var(--cart), 0 0 0 4px color-mix(in srgb, var(--cart) 30%, transparent); }
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.09); }
 }
 
 .sudoku-pad {

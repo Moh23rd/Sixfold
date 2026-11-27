@@ -65,7 +65,7 @@ test.describe('What’s New 6.0', () => {
   }
 });
 
-test('dismissing the card collapses it instead of jumping the page', async ({ page }) => {
+test('dismissing the card fades a ghost instead of animating layout', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.removeItem('sixfold.whats-new.dismissed');
@@ -73,15 +73,39 @@ test('dismissing the card collapses it instead of jumping the page', async ({ pa
   await page.goto('/');
   const panel = page.locator('#whats-new');
   await expect(panel).toBeVisible();
-  const start = await panel.evaluate((element) => element.getBoundingClientRect().height);
-  expect(start).toBeGreaterThan(20);
+  // Keep Playwright's click from scrolling the hub between the measurement
+  // and the dismissal.
+  await panel.scrollIntoViewIfNeeded();
+  const before = await panel.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { height: rect.height };
+  });
+  expect(before.height).toBeGreaterThan(20);
 
   await page.locator('#whats-new-close').click();
-  await page.waitForTimeout(90);
-  const mid = await panel.evaluate((element) => element.getBoundingClientRect().height);
-  expect(mid, 'the card is still collapsing, not gone').toBeGreaterThan(0);
-  expect(mid, 'its height is on the way down').toBeLessThan(start);
-
   await expect(panel).toBeHidden();
+
+  // The page reflowed at once, and a fixed copy keeps the card's old place
+  // while it fades: nothing animates height, margin or padding.
+  const ghost = page.locator('.whats-new-ghost');
+  await expect(ghost).toBeVisible();
+  const ghostBox = await ghost.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      position: style.position,
+      transition: style.transitionProperty,
+      height: rect.height,
+      top: rect.top
+    };
+  });
+  expect(ghostBox.position).toBe('fixed');
+  expect(ghostBox.transition).not.toContain('height');
+  expect(ghostBox.transition).not.toContain('margin');
+  expect(ghostBox.transition).toContain('opacity');
+  expect(ghostBox.transition).toContain('transform');
+  expect(ghostBox.height).toBeCloseTo(before.height, 0);
+
+  await expect(ghost).toHaveCount(0, { timeout: 1500 });
   await expect.poll(() => page.evaluate(() => localStorage.getItem('sixfold.whats-new.dismissed'))).not.toBeNull();
 });

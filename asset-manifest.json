@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 120246,
-      "sha256": "ba294a3a4e372f49053780e336d53d1ac953ecc7f680a4e2d741409fde51eec8"
+      "bytes": 120242,
+      "sha256": "22b2fb2753adf5df018116662262ef237f7633a40e048167f4812f43fdb502ed"
     },
     {
       "path": "licenses.html",
@@ -17,8 +17,8 @@
     },
     {
       "path": "css/styles.css",
-      "bytes": 52726,
-      "sha256": "e81d9256d449c897d7a430f81e4e1072b9be91195415ec2df2045f1ffef35259"
+      "bytes": 52396,
+      "sha256": "a8c91f82452702294dd6215df0294ffb96c70da6980f33160b55defb5b8912e2"
     },
     {
       "path": "js/theme.js",
@@ -57,28 +57,28 @@
     },
     {
       "path": "css/games.css",
-      "bytes": 112487,
-      "sha256": "d7aa4fe0c90aa454b3246f4e121a28255f194074cb2195bad14e51cf83b93822"
+      "bytes": 112510,
+      "sha256": "96e7c786329d87eb9eed0d33decf597894b91d5d54d4c749ebc48d51b25365dc"
     },
     {
       "path": "css/home.css",
-      "bytes": 33007,
-      "sha256": "4f5c545d39dc989ae78fbae1672599446c66f12b3a9f92326f7f720de4a4800d"
+      "bytes": 32954,
+      "sha256": "98b437542d4385500988535d4266760136ee26e2c2a4624f8fdad116175e6e06"
     },
     {
       "path": "css/polish.css",
-      "bytes": 48220,
-      "sha256": "1a4cbee7a328b6b38d56c00696e60fa02b9b29bcd3478b003e23c8af53535618"
+      "bytes": 47624,
+      "sha256": "644533ada2bdef998697a0ef646d0fe46836e214c54f7e21c3cb658fcd46dbeb"
     },
     {
       "path": "css/sudoku.css",
-      "bytes": 22955,
-      "sha256": "5ad3b43b72eca2f9e54ab6cb05ba9f8281a31bc135659c982ab594f1853cb85e"
+      "bytes": 22868,
+      "sha256": "8e062a49bf890f560cc7e89de4ce678c0a20d089df7b170457c47670a1dcba08"
     },
     {
       "path": "css/v5.css",
-      "bytes": 70088,
-      "sha256": "b5ea041c5077f9e31a80f5db677cf8f28e969671ab08be57812c8ee4cf0ebef3"
+      "bytes": 70482,
+      "sha256": "bb8f56777ee230939ff50e78ac38830d40399fbd8c41187237729302401fbdd8"
     },
     {
       "path": "css/progressive-blur.css",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 170929,
-      "sha256": "f60583b74db8166544b008a3879b5df57737578e690149c4a2d99d7c8bcfd6c5"
+      "bytes": 171897,
+      "sha256": "d4102bb04bafa9b842420fdf7ed67926016e8bf2aa16334af299f3516df754a3"
     },
     {
       "path": "js/daily.js",

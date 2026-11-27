@@ -1368,9 +1368,11 @@ test('the colour panel is localised at runtime', async ({ page }) => {
 });
 
 // The cover's build animation used fill-mode both, so its final transform kept
-// winning over :active and a finished tile could not show a press. The mark
-// settles on animationend; the tile must then carry no animation of its own.
-test('a settled six-piece tile is free to press', async ({ page }) => {
+// winning over :active and a finished tile could not show a press. Once the
+// mark is settled a press must land every time, and pressing must never put
+// the tile back under the build animation (which re-armed invisibly when the
+// hit class excluded the settled rule).
+test('a settled six-piece presses every time without replaying the build', async ({ page }) => {
   await page.goto('/?perf=full');
   await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
   await page.waitForFunction(
@@ -1378,7 +1380,17 @@ test('a settled six-piece tile is free to press', async ({ page }) => {
     null,
     { timeout: 8000 }
   );
-  expect(
-    await page.evaluate(() => getComputedStyle(document.querySelector('.home-six-piece')).animationName)
-  ).toBe('none');
+  const piece = page.locator('.home-six-piece').first();
+  for (let press = 0; press < 2; press += 1) {
+    await piece.click();
+    await expect(piece, 'press ' + (press + 1) + ' shows its press state').toHaveClass(/is-six-hit/);
+    const state = await piece.evaluate((el) => ({
+      animation: getComputedStyle(el).animationName,
+      transform: getComputedStyle(el).transform
+    }));
+    expect(state.animation, 'a press never restarts the launch build').toBe('none');
+    expect(state.transform).not.toBe('none');
+    await page.waitForTimeout(220);
+    await expect(piece).not.toHaveClass(/is-six-hit/);
+  }
 });

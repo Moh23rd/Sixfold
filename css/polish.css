@@ -39,7 +39,7 @@ html[data-motion="full"] .home-six-piece {
     cursor: pointer;
     touch-action: manipulation;
     user-select: none;
-    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 160ms var(--ease-out);
   }
 
 html[data-motion="full"] .home-six-piece:hover {
@@ -49,9 +49,7 @@ html[data-motion="full"] .home-six-piece:hover {
 html[data-motion="full"] .home-six-piece:active { transform: translateY(0) scale(0.975); }
 
 html[data-motion="full"] .home-game {
-    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      border-color 180ms ease,
-      box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
 html[data-motion="full"] .home-game:hover { transform: translateY(-5px); }
@@ -83,24 +81,20 @@ html[data-motion="full"] .result-share:hover { transform: translateY(-1px); }
      stutter. Transform transitions alone are enough here. */
 }
 
-/* A tap is a brief press, not an animation. Keeping it off the animation
-   property means it can never cancel or replace the sixBuild entrance. */
+/* A tap is a brief press, not an animation. Keeping it to transform only
+   keeps the feedback composited: no ring, no filter, no shadow repaint. */
 .home-six-piece.is-six-hit {
-  transform: translateY(2px) scale(0.94);
-  filter: brightness(1.07) saturate(1.06);
-  box-shadow:
-    inset 0 -2px 0 rgba(33, 29, 24, 0.12),
-    0 0 0 3px color-mix(in srgb, var(--ink) 15%, transparent);
+  transform: translateY(1px) scale(0.97);
 }
 
 .home-six.is-unlocking {
-  animation: sixUnlock 520ms var(--ease-spring) both;
+  animation: sixUnlock 320ms var(--ease-out) both;
 }
 
 @keyframes sixUnlock {
   0% { transform: rotate(-3deg) scale(1); }
-  38% { transform: rotate(-3deg) scale(1.035); }
-  68% { transform: rotate(-3deg) scale(0.993); }
+  40% { transform: rotate(-3deg) scale(1.02); }
+  72% { transform: rotate(-3deg) scale(0.997); }
   100% { transform: rotate(-3deg) scale(1); }
 }
 
@@ -121,7 +115,7 @@ html[data-motion="full"] .tile { transition: transform 170ms cubic-bezier(0.22, 
    the browser would restart this lift on every re-entry; shell-settled is set
    when the reader leaves a screen, and its return is then a cut. */
 .play-screen:not([hidden]):not(.shell-settled) .play-shell {
-  animation: sixfoldShellIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: sixfoldShellIn 320ms var(--ease-out) both;
 }
 
 .play-win:not([hidden]),
@@ -204,7 +198,7 @@ html[data-theme="dark"] #wordle {
   text-transform: uppercase;
   transform: rotateX(0);
   backface-visibility: hidden;
-  transition: border-color 140ms ease, background-color 160ms ease, transform 140ms ease;
+  transition: background-color 160ms var(--ease-out), transform 140ms var(--ease-out);
 }
 
 .wordle-tile[data-filled="true"] {
@@ -362,7 +356,7 @@ html[data-theme="dark"] #wordle {
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 110ms ease, background-color 150ms ease, color 150ms ease;
+  transition: transform 110ms var(--ease-out), background-color 150ms var(--ease-out), color 150ms var(--ease-out);
 }
 
 .wordle-key:hover { background: color-mix(in srgb, var(--wordle-key) 70%, var(--card)); }
@@ -927,7 +921,7 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
   opacity: 0.34;
   transform: scaleX(var(--auto-next-left, 1));
   transform-origin: left center;
-  transition: transform 120ms linear;
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 html[dir="rtl"] .play-btn.is-counting::after { transform-origin: right center; }
@@ -1014,12 +1008,12 @@ html[data-motion="full"].home-ready .home-grid .home-game:nth-child(6) { animati
   animation: wordleArrive 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 2px of blur over 360ms: 3px over 520ms kept a whole screen filtered long
-   enough to show up as a slow, smeared arrival. */
+/* A lift and fade only: the old blur filtered the whole screen every frame,
+   which is exactly the paint work the WebView cannot afford. */
 @keyframes wordleArrive {
-  from { opacity: 0; transform: translateY(10px) scale(0.99); filter: blur(2px); }
-  68% { opacity: 1; transform: translateY(-1px) scale(1.002); filter: blur(0); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  68% { opacity: 1; transform: translateY(-1px) scale(1.002); }
+  to { opacity: 1; transform: none; }
 }
 
 /* A result is a new beat even when the card was already in the DOM. The
@@ -1199,20 +1193,13 @@ html.hidden-reveal-open body {
 .hidden-reveal-tiles span:nth-child(4) { animation-delay: 285ms; }
 
 .hidden-reveal-tiles span.is-key {
-  animation-name: hiddenTileIn, hiddenKeyIn;
-  animation-duration: 420ms, 900ms;
-  animation-delay: 340ms, 560ms;
+  animation: hiddenTileIn 340ms var(--ease-out) 340ms both;
 }
 
 @keyframes hiddenTileIn {
   from { opacity: 0; transform: translateY(10px) rotate(-4deg) scale(0.82); }
   70% { opacity: 1; transform: translateY(-2px) rotate(1deg) scale(1.04); }
   to { opacity: 1; transform: none; }
-}
-
-@keyframes hiddenKeyIn {
-  0%, 100% { box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--ink) 10%, transparent); }
-  45% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--g6, #9a6bb5) 18%, transparent), inset 0 -3px 0 color-mix(in srgb, var(--ink) 10%, transparent); }
 }
 
 .hidden-reveal-eyebrow {
@@ -1525,4 +1512,4 @@ html.is-native #install-block { display: none !important; }
    over :active and a finished tile stopped pressing. The class lands on
    animationend (or its reduced-motion fallback); a tile being pressed keeps
    its own flash. */
-html.six-settled .home-six-piece:not(.is-six-hit) { animation: none; }
+html.six-settled.home-ready .home-six-piece { animation: none; }
