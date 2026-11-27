@@ -19,16 +19,17 @@ and the internal build **6.0.0** until the next release cut.
   opacity no longer re-raster every card on the way. Haptics send amplitudes so
   the motor is shaped rather than always at full strength, and reduced motion
   still switches instantly.
-- **First launch starts on the guide**: the hub is held back until the welcome
-  sheet is up, instead of painting and being covered a moment later.
+- **First launch starts on the guide**: the welcome sheet opens over the hub,
+  so the guide is the first screen and no game is ever left showing behind it.
 - **The cover presses again**: the six-piece build animation used fill-mode
   both and kept winning over `:active`, so a finished tile stopped pressing.
-  The tiles settle on `animationend` and press like buttons again.
+  A tap now holds its whole 160 ms press transform, and the cover settles only
+  after the last of the six build animations, so no tile is cut off mid-build.
 - **Wordle hands off**: the hidden game opens under the reveal scrim as it
   leaves, so the cover becomes the board in one movement instead of a cut.
-- **What's New leaves without a jump**: dismissing the card animates its
-  height, spacing and border to zero before it is hidden, so the page no longer
-  snaps up.
+- **What's New leaves without a jump**: dismissing the card takes it out of the
+  flow at once and fades an opaque fixed copy in its place, so the page reflows
+  underneath without a height animation or a blink.
 - **Android 7.1 no longer crashes at launch**: the wallpaper plugin named an
   API-27 type in its own signatures, which killed the process while the WebView
   attached on API 24 and 26. The reader now lives in its own version-guarded

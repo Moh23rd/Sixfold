@@ -73,6 +73,51 @@ test('the cover builds as the launch layer lifts, never as a static flash', asyn
   ).toBeGreaterThan(0.5);
 });
 
+// Settling makes the finished tiles pressable, but settling on the first
+// piece's animationend used to cancel the other five mid-build. The class may
+// only land after every piece has finished its own sixBuild animation.
+test('the cover settles only after all six pieces finish building', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__coverSettle = { ends: [], endsAtSettle: 0, settledAt: null };
+    const state = window.__coverSettle;
+
+    // Capture phase: the page's own listener adds `six-settled` while handling
+    // the final animationend, and a microtask can be delivered between the two
+    // listeners. Counting on the way down records the end first.
+    document.addEventListener('animationend', (event) => {
+      if (event.animationName !== 'sixBuild') return;
+      const pieces = document.querySelectorAll('.home-six-piece');
+      const index = Array.prototype.indexOf.call(pieces, event.target);
+      if (index === -1) return;
+      state.ends.push({ index: index, at: performance.now() });
+    }, true);
+
+    // documentElement does not exist yet at document-start, so the class
+    // observer has to wait for the parser to build it.
+    document.addEventListener('DOMContentLoaded', () => {
+      const root = document.documentElement;
+      const sample = () => {
+        if (state.settledAt !== null || !root.classList.contains('six-settled')) return;
+        state.settledAt = performance.now();
+        state.endsAtSettle = state.ends.length;
+      };
+      new MutationObserver(sample).observe(root, { attributes: true, attributeFilter: ['class'] });
+      sample();
+    }, { once: true });
+  });
+
+  await page.goto('/');
+  await page.waitForFunction(() => document.documentElement.classList.contains('six-settled'), null, {
+    timeout: 10000
+  });
+  const result = await page.evaluate(() => window.__coverSettle);
+
+  expect(result.ends.map((end) => end.index).sort(), 'all six pieces built').toEqual([0, 1, 2, 3, 4, 5]);
+  expect(result.endsAtSettle, 'settling does not cut off a running build').toBe(6);
+  const lastEnd = Math.max.apply(null, result.ends.map((end) => end.at));
+  expect(result.settledAt, 'the settle class lands after the final animationend').toBeGreaterThanOrEqual(lastEnd);
+});
+
 // The legal page is a document of its own. Leaving it for the hub used to be a
 // fresh launch on the web: the splash and the hub's entrances replayed over a
 // collection that was already built. The return is now a cut on both paths.
