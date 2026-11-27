@@ -373,10 +373,10 @@ jobs:
       # A cold run downloads the emulator and a 1.2 GB system image, which is
       # most of this job's wall clock. The script only installs what is missing,
       # so caching those two directories is enough to skip the download. The
-      # key keeps the `-v1` suffix of the cache the rows used before the image
-      # tag split it, so the google_apis rows restore what they already stored;
-      # only the AOSP rows pay one cold download. Bump the suffix if the cached
-      # paths or the SDK's install layout change.
+      # key carries the image tag and a version suffix; changing either makes
+      # the affected rows download a fresh image (switching to -v1 refilled all
+      # five at once), so bump it only for a change to the cached paths or the
+      # SDK's install layout.
       - name: Cache the emulator and its system image
         uses: actions/cache@v5
         with:
