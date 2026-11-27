@@ -18,24 +18,24 @@ const HAPTICS_JS = '6.0.20';
 const SHARE_CARD = '5.3.5';
 const STYLE_ASSET = '5.4.5';
 const FONT_ASSET = '5.0.2';
-const THEME_JS = '6.0.21';
+const THEME_JS = '6.0.23';
 const OVERSCROLL_JS = '6.0.5';
 const GAME_CODE = '5.3.5';
 const WORDLE_CODE = '5.3.4-wordle';
 const SUDOKU_GAME_CODE = '5.3.5';
 const LOCALE_FONT = '5.1.4';
-const GAMES_CSS = '5.3.13';
-const POLISH_CSS = '4.0.7-w23';
-const GAMES_JS = '5.5.4';
+const GAMES_CSS = '5.3.14';
+const POLISH_CSS = '4.0.7-w25';
+const GAMES_JS = '5.5.6';
 const SUDOKU_CSS = '4.0.5';
-const V5_CSS = '5.6.5';
+const V5_CSS = '5.6.7';
 const BLUR_CSS = '1.4.1';
 const HOME_CSS = '4.1.14';
 const DAILY_CODE = '5.4.6';
 const PROFILE_CODE = '1.0.0';
 const BADGES_CODE = '1.1.1';
 const GAUNTLET_CODE = '1.0.3';
-const I18N_CODE = '6.0.6';
+const I18N_CODE = '6.0.8';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.

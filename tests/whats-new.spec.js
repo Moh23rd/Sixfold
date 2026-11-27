@@ -2,11 +2,11 @@ const { test, expect } = require('@playwright/test');
 const { LANGUAGE_NAMES, LOCALES, expectNoClippedText } = require('./helpers');
 
 const WHATS_NEW_ITEMS = [
-  'Daily Gauntlet: play all six daily challenges in one run, leave and resume at any round, and keep one finish time.',
-  'A local profile on the badges page: daily and replay counts, bests, and every finished Gauntlet — stored on this device.',
-  'A calmer finish: light, dark and palette changes fade smoothly, hidden games stop redrawing, and reduced motion still switches instantly.',
-  'A sturdier app: saved cards reach the gallery, the window frame follows the app, and older Android WebViews stay supported.',
-  'Fruit Merge plays as fruit or numbered tiles, and the app icon now sits properly inside the launcher shape.'
+  'Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.',
+  'A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.',
+  'The welcome guide now lands before the hub, so a first launch never flashes the collection.',
+  'The hidden seventh game opens with a smooth hand-off from the six-piece cover.',
+  'Two ways to play: the installable web app and the direct Android APK — both on 6.0.'
 ];
 
 test.describe('What’s New 6.0', () => {
@@ -63,4 +63,25 @@ test.describe('What’s New 6.0', () => {
       }
     });
   }
+});
+
+test('dismissing the card collapses it instead of jumping the page', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.removeItem('sixfold.whats-new.dismissed');
+  });
+  await page.goto('/');
+  const panel = page.locator('#whats-new');
+  await expect(panel).toBeVisible();
+  const start = await panel.evaluate((element) => element.getBoundingClientRect().height);
+  expect(start).toBeGreaterThan(20);
+
+  await page.locator('#whats-new-close').click();
+  await page.waitForTimeout(90);
+  const mid = await panel.evaluate((element) => element.getBoundingClientRect().height);
+  expect(mid, 'the card is still collapsing, not gone').toBeGreaterThan(0);
+  expect(mid, 'its height is on the way down').toBeLessThan(start);
+
+  await expect(panel).toBeHidden();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('sixfold.whats-new.dismissed'))).not.toBeNull();
 });

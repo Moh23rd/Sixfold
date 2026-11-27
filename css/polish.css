@@ -1520,3 +1520,9 @@ html[data-input="touch"] [tabindex]:focus-visible {
 /* The install block belongs to the browser: the APK is already installed, and
    the app never offers to add itself to the home screen. */
 html.is-native #install-block { display: none !important; }
+
+/* The build animation used fill-mode both, so its final transform kept winning
+   over :active and a finished tile stopped pressing. The class lands on
+   animationend (or its reduced-motion fallback); a tile being pressed keeps
+   its own flash. */
+html.six-settled .home-six-piece:not(.is-six-hit) { animation: none; }

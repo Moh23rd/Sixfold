@@ -92,3 +92,27 @@ for (const locale of ['ar', 'ja']) {
     await expect(page.locator('#welcome-start')).toBeVisible();
   });
 }
+
+// First paint is the guide, not the collection. The hub is held behind the
+// pending class until the sheet is open; otherwise a fresh install showed the
+// hub for a moment and then covered it.
+test('a fresh install never paints the hub before the guide', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await boot(page);
+  await expect(page.locator('#welcome')).toBeVisible();
+
+  expect(
+    await page.evaluate(() => document.documentElement.classList.contains('is-welcome-pending')),
+    'the hub is held back while the guide is up'
+  ).toBe(true);
+  expect(await page.evaluate(() => getComputedStyle(document.getElementById('hub')).opacity)).toBe('0');
+
+  await page.locator('#welcome-start').click();
+  await expect(page.locator('#welcome')).toBeHidden();
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.classList.contains('is-welcome-pending')))
+    .toBe(false);
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.getElementById('hub')).opacity))
+    .toBe('1');
+});

@@ -8,6 +8,14 @@
     "ogDescription": "ಆರು ಆಟಗಳು. ಭರ್ತಿ ಇಲ್ಲ. ಆಫ್‌ಲೈನ್ ಜೇಬಿನ ಆರ್ಕೇಡ್: ಆರು ಒಗಟುಗಳು, ಖಾತೆಗಳಿಲ್ಲ, ಜಾಹೀರಾತುಗಳಿಲ್ಲ."
   },
   "messages": {
+    "Rose": "ಗುಲಾಬಿ",
+    "Slate": "ಸ್ಲೇಟ್",
+    "Ink": "ಶಾಯಿ",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "ಫೋನ್ ಜೊತೆ ಬದಲಾಗುವ ಬಣ್ಣ: Android ನಲ್ಲಿ ವಾಲ್‌ಪೇಪರ್ ಪ್ಯಾಲೆಟ್ ಬಳಸಿ ಅಥವಾ ನಿಮ್ಮ ಇಷ್ಟದ ಹೆಕ್ಸ್ ಬಣ್ಣ ಆಯ್ಕೆಮಾಡಿ.",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "ಹೆಚ್ಚು ಮೃದು ಅನುಭವ: ಬೆಳಕು-ಕತ್ತಲೆ ಬದಲಾವಣೆಗಳು ನಯವಾಗಿ, ಸುಧಾರಿತ ಕಂಪನ ಮತ್ತು ಶಾಂತ What’s New ಕಾರ್ಡ್.",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "ಸ್ವಾಗತ ಮಾರ್ಗದರ್ಶಿ ಈಗ ಹಬ್‌ಗಿಂತ ಮೊದಲು ಬರುತ್ತದೆ, ಹಾಗಾಗಿ ಮೊದಲ ಬಾರಿ ಸಂಗ್ರಹ ಕಾಣಿಸುವುದಿಲ್ಲ.",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "ಮರೆಯಾದ ಏಳನೇ ಆಟ ಆರು ತುಣುಕುಗಳ ಮುಖಪುಟದಿಂದ ನಯವಾಗಿ ತೆರೆಯುತ್ತದೆ.",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "ಆಡಲು ಎರಡು ದಾರಿಗಳು: ಸ್ಥಾಪಿಸಬಹುದಾದ ವೆಬ್ ಆ್ಯಪ್ ಮತ್ತು ನೇರ Android APK — ಎರಡೂ ಒಂದೇ ಬಿಡುಗಡೆ.",
     "Wallpaper": "ವಾಲ್‌ಪೇಪರ್",
     "Custom": "ಕಸ್ಟಮ್",
     "Custom colour": "ಕಸ್ಟಮ್ ಬಣ್ಣ",

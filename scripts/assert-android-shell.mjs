@@ -1898,17 +1898,25 @@ try {
 } catch (error) {
   if (error instanceof AppRemoved) {
     const evidence = error.evidence || {};
-    console.error(`::error::${error.message}`);
-    if (evidence.line) console.error(`::error::the platform's record: ${evidence.line}`);
     if (evidence.crashed) {
+      console.error(`::error::${error.message}`);
+      if (evidence.line) console.error(`::error::the platform's record: ${evidence.line}`);
       console.error('::error::this was a crash or an ANR in the app, so it is not retried');
       process.exit(1);
     }
     if (!evidence.external) {
+      console.error(`::error::${error.message}`);
+      if (evidence.line) console.error(`::error::the platform's record: ${evidence.line}`);
       console.error('::error::no platform kill explains it, so it is reported as an app failure');
       process.exit(1);
     }
-    console.error('::error::the platform removed the app, which is not its own failure; the smoke will repeat this boot');
+    // A platform removal is not the app's failure: the smoke repeats the boot
+    // and that repeat decides the row. Reporting it as an error left a green
+    // run with red annotations on every push, so the diagnostics are warnings
+    // and only a repeat that fails is annotated as an error.
+    console.warn(`::warning::${error.message}`);
+    if (evidence.line) console.warn(`::warning::the platform's record: ${evidence.line}`);
+    console.warn('::warning::the platform removed the app; the smoke will repeat this boot');
     process.exit(APP_REMOVED);
   }
   if (error instanceof EmulatorLost) {

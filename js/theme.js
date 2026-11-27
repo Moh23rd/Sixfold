@@ -60,7 +60,7 @@
   // is what turns on the colour transitions at the end of v5.css: they are
   // raised for the length of one switch and taken away again, so the app pays
   // nothing for them while it is being played.
-  const FADE_MS = 220;
+  const FADE_MS = 160;
   let fadeTimer = 0;
 
   function endCrossFade() {
@@ -368,7 +368,7 @@
     window.setTimeout(function () {
       if (token !== repaintToken) return;
       surfaces.forEach(function (el) { el.style.willChange = ''; });
-    }, 420);
+    }, FADE_MS + 80);
   }
 
   function refreshPage() {
@@ -460,7 +460,7 @@
 
   function syncHubPalette() {
     const label = document.getElementById('hub-palette-label');
-    if (label) label.textContent = activePalette().label;
+    if (label) label.textContent = tr(activePalette().label);
   }
 
   // Where a palette write came from, as one stack frame. Run #163's artifact
@@ -542,7 +542,7 @@
     btn.setAttribute('aria-pressed', 'false');
     // Use the visible palette name. A composed "Warm colours" label stops
     // matching the visible word once the locale translates them separately.
-    btn.setAttribute('aria-label', palette.label);
+    btn.setAttribute('aria-label', tr(palette.label));
 
     const sw = document.createElement('span');
     sw.className = 'swatches';
@@ -553,7 +553,7 @@
     });
 
     const label = document.createElement('span');
-    label.textContent = palette.label;
+    label.textContent = tr(palette.label);
 
     btn.appendChild(sw);
     btn.appendChild(label);
@@ -1045,9 +1045,19 @@
     try { localStorage.setItem(WELCOME_KEY, '1'); } catch (err) {}
   }
 
+  // A first launch must not paint the collection behind the guide: the hub is
+  // held back until the welcome is on screen, so the note is the first thing
+  // the reader sees rather than something that arrives over the hub.
+  if (welcomeSheet && !welcomeSeen()) document.documentElement.classList.add('is-welcome-pending');
+
+  function revealHub() {
+    document.documentElement.classList.remove('is-welcome-pending');
+  }
+
   function closeWelcome() {
     if (!welcomeSheet || welcomeSheet.hidden) return;
     markWelcomeSeen();
+    revealHub();
     closeSheet(welcomeSheet);
     // Hand the reader to the collection rather than leaving focus on a dialog
     // that no longer exists.
@@ -1089,16 +1099,15 @@
       });
     }
 
-    // The launch layer marks home-ready once the hub has built. Wait past its
-    // entrance before covering the first screen, so the guide lands on a
-    // settled page instead of during the build.
+    // The hub is held back until the guide is up, so there is nothing to wait
+    // for: a short tick lets the sheet module finish wiring before it opens.
     if (document.documentElement.classList.contains('home-ready')) {
-      window.setTimeout(maybeWelcome, 520);
+      window.setTimeout(maybeWelcome, 30);
     } else if ('MutationObserver' in window) {
       const readyObserver = new MutationObserver(function () {
         if (!document.documentElement.classList.contains('home-ready')) return;
         readyObserver.disconnect();
-        window.setTimeout(maybeWelcome, 520);
+        window.setTimeout(maybeWelcome, 30);
       });
       readyObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     }

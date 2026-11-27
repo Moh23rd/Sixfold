@@ -9,6 +9,8 @@
     "serve": "python3 -m http.server 8000 --bind 127.0.0.1",
     "test": "playwright test",
     "test:i18n": "node scripts/check-i18n.mjs",
+    "preflight": "node scripts/check-i18n.mjs && node scripts/check-webview-floor.mjs && node scripts/asset-manifest.mjs --check && node scripts/check-shell-pins.mjs && node scripts/check-native-pins.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
     "test:webview-floor": "node scripts/check-webview-floor.mjs",
     "test:death-report": "node --test scripts/lib/death-report.test.mjs",
     "test:reattach": "node --test scripts/lib/reattach.test.mjs",

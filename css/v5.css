@@ -2060,8 +2060,12 @@ html[data-motion="reduced"] .daily-finish { transition: none; }
      system bar does. A faded page layer is what could keep the previous
      appearance's raster in the WebView. */
 html[data-motion="full"].is-theme-fading [data-fade]:not(body):not(.hub):not(.play-screen):not(.app) {
-    transition-property: color, background-color, border-color, outline-color, fill, stroke, box-shadow, text-decoration-color, transform, opacity;
-    transition-duration: 220ms;
+    /* Colour plus a compositor-owned transform. A theme switch repaints enough
+       surfaces already, and transitioning box-shadow or opacity made every
+       card cast a fresh shadow and re-raster each frame, which is what made
+       the switch feel jumpy. */
+    transition-property: color, background-color, border-color, outline-color, fill, stroke, text-decoration-color, transform;
+    transition-duration: 160ms;
     transition-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
   }
 
@@ -2069,6 +2073,13 @@ html[data-motion="full"].is-theme-fading [data-fade]:not(body):not(.hub):not(.pl
    recomputed for every frame of a colour fade — the most expensive thing on
    screen and the least visible while the colours move. It keeps its dim for
    the switch and takes the blur back when the fade ends. */
+/* First launch: the guide is the first screen, so the collection waits behind
+   it instead of painting and then being covered. */
+html.is-welcome-pending #hub {
+  opacity: 0;
+  pointer-events: none;
+}
+
 html.is-theme-fading .sheet-backdrop {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

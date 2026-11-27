@@ -25,6 +25,17 @@
   var catalog = { messages: {}, patterns: [] };
 
   var ES = {
+    "Warm": "Cálido",
+    "Ocean": "Océano",
+    "Forest": "Bosque",
+    "Rose": "Rosa",
+    "Slate": "Pizarra",
+    "Ink": "Tinta",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "Color que sigue al teléfono: usa la paleta del fondo de pantalla en Android o elige cualquier código hexadecimal.",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "Una sensación más suave: cambios de tema más fluidos, vibración refinada y una tarjeta de novedades más tranquila.",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "La guía de bienvenida aparece antes del inicio, así que la primera apertura ya no muestra la colección.",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "El séptimo juego oculto se abre con un tránsito fluido desde la portada de seis piezas.",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "Dos formas de jugar: la web instalable y el APK directo de Android, ambos en 6.0.",
     "Wallpaper": "Fondo de pantalla",
     "Custom": "Personalizado",
     "Custom colour": "Color personalizado",

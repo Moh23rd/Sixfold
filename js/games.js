@@ -183,11 +183,17 @@
         panel.hidden = true;
         return;
       }
+      // Give the panel its current height as a starting point, then let the
+      // class take that height, its spacing and its border to zero; hiding it
+      // afterwards no longer moves the page, because it already has no height.
+      panel.style.height = panel.getBoundingClientRect().height + 'px';
+      void panel.offsetHeight;
       panel.classList.add('is-leaving');
       window.setTimeout(function () {
         panel.hidden = true;
         panel.classList.remove('is-leaving');
-      }, 220);
+        panel.style.height = '';
+      }, 240);
     });
   })();
 
@@ -754,12 +760,15 @@
     hiddenReveal.classList.add('is-closing');
     if (hub) hub.removeAttribute('inert');
     document.documentElement.classList.remove('hidden-reveal-open');
+    // The game enters under the scrim that is already leaving, so the reader
+    // sees one movement from the cover to the board instead of the hub being
+    // swapped out after the reveal has gone.
+    openWordle();
     window.clearTimeout(hiddenRevealCloseTimer);
     hiddenRevealCloseTimer = window.setTimeout(function () {
       hiddenReveal.hidden = true;
       hiddenReveal.setAttribute('aria-hidden', 'true');
       hiddenReveal.classList.remove('is-closing');
-      openWordle();
     }, calmMotion() ? 40 : 300);
   }
 
@@ -1055,8 +1064,22 @@
       }, calmMotion() ? 80 : 520);
     }
   }
+  // The build animation holds its final transform until it is removed, which
+  // is what stopped a finished tile from showing a press. Mark the cover as
+  // settled when its own animation ends, and on a fallback for a page whose
+  // motion is reduced (no animation runs, but the class still has to land).
+  function settleSixCover() {
+    document.documentElement.classList.add('six-settled');
+  }
+  if (calmMotion()) settleSixCover();
+  else window.setTimeout(settleSixCover, 1600);
+
   sixPieces.forEach(function (piece, index) {
     piece.addEventListener('click', function () { commitSixTap(index); });
+    piece.addEventListener('animationend', function (event) {
+      if (event.animationName !== 'sixBuild') return;
+      settleSixCover();
+    });
     // Safari can suppress the synthetic click on animated tiles. Handle the
     // physical tap directly, and let the same-index guard absorb a late click.
     piece.addEventListener('touchstart', function (event) {

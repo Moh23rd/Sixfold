@@ -8,6 +8,14 @@
     "ogDescription": "छह खेल. कोई भराव नहीं. एक टैप में खेलें। आपकी प्रगति इसी डिवाइस पर रहती है।"
   },
   "messages": {
+    "Rose": "गुलाबी",
+    "Slate": "स्लेट",
+    "Ink": "स्याही",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "फ़ोन के साथ बदलता रंग: Android पर वॉलपेपर पैलेट चुनें या कोई भी हेक्स रंग चुनें।",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "ज़्यादा नरम अनुभव: लाइट-डार्क बदलाव ज़्यादा सहज, बेहतर कंपन और शांत What’s New कार्ड।",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "स्वागत गाइड अब हब से पहले दिखती है, इसलिए पहली बार ऐप खोलने पर कलेक्शन नहीं झलकता।",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "छिपा सातवाँ खेल छह टुकड़ों वाले कवर से सहज संक्रमण के साथ खुलता है।",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "खेलने के दो तरीके: इंस्टॉल होने वाला वेब ऐप और सीधा Android APK — दोनों एक ही रिलीज़ पर।",
     "Wallpaper": "वॉलपेपर",
     "Custom": "कस्टम",
     "Custom colour": "कस्टम रंग",

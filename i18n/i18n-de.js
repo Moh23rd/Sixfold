@@ -3,6 +3,14 @@
   'use strict';
 
   var M = {
+    "Rose": "Rosé",
+    "Slate": "Schiefer",
+    "Ink": "Tinte",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "Farbe, die dem Telefon folgt: unter Android das Hintergrundbild als Palette übernehmen oder einen eigenen Hex-Wert wählen.",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "Ein weicheres Gefühl: flüssigere Hell-Dunkel-Wechsel, feineres haptisches Feedback und eine ruhigere Neuigkeiten-Karte.",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "Die Willkommensführung erscheint vor dem Hub, sodass der erste Start nie die Sammlung aufblitzt.",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "Das verborgene siebte Spiel öffnet sich mit einem fließenden Übergang vom Sechsteile-Cover.",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "Zwei Wege zu spielen: die installierbare Web-App und die direkte Android-APK — beide auf 6.0.",
     "Wallpaper": "Hintergrundbild",
     "Custom": "Eigene",
     "Custom colour": "Eigene Farbe",

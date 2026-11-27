@@ -8,6 +8,14 @@
     "ogDescription": "六款游戏。无凑数内容。 一键开始。进度保留在此设备。"
   },
   "messages": {
+    "Rose": "玫瑰",
+    "Slate": "石板",
+    "Ink": "墨色",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "跟随手机的颜色：在 Android 上采用壁纸调色板，或选择任意十六进制颜色。",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "更柔和的手感：明暗切换更流畅，触感更细腻，更新卡片更从容。",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "欢迎指南现在先于主页出现，首次启动不再闪现游戏合集。",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "隐藏的第七款游戏从六格封面平滑过渡进入。",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "两种游玩方式：可安装的网页应用和直接的 Android APK，均为 6.0。",
     "Wallpaper": "壁纸",
     "Custom": "自定义",
     "Custom colour": "自定义颜色",

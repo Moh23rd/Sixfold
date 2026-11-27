@@ -7,6 +7,43 @@
 Fixes and checks committed after the 6.0 build. The public label stays **v6.0**
 and the internal build **6.0.0** until the next release cut.
 
+### Release preparation — 27 November 2026
+
+- **Colour from the phone**: Look & feel offers a wallpaper palette on Android
+  (the shell reports the wallpaper's primary colour and the board ramp follows
+  it) and a custom colour card with a picker, a hex field and a live preview.
+  Both persist per device, follow the interface language, and the six fixed
+  palette names are now translated in all twelve catalogues.
+- **A calmer switch**: light, dark and palette changes fade colour only, over
+  170 ms, with the page background joining the fade; shadows, transforms and
+  opacity no longer re-raster every card on the way. Haptics send amplitudes so
+  the motor is shaped rather than always at full strength, and reduced motion
+  still switches instantly.
+- **First launch starts on the guide**: the hub is held back until the welcome
+  sheet is up, instead of painting and being covered a moment later.
+- **The cover presses again**: the six-piece build animation used fill-mode
+  both and kept winning over `:active`, so a finished tile stopped pressing.
+  The tiles settle on `animationend` and press like buttons again.
+- **Wordle hands off**: the hidden game opens under the reveal scrim as it
+  leaves, so the cover becomes the board in one movement instead of a cut.
+- **What's New leaves without a jump**: dismissing the card animates its
+  height, spacing and border to zero before it is hidden, so the page no longer
+  snaps up.
+- **Android 7.1 no longer crashes at launch**: the wallpaper plugin named an
+  API-27 type in its own signatures, which killed the process while the WebView
+  attached on API 24 and 26. The reader now lives in its own version-guarded
+  class and the plugin uses no newer types.
+- **The settings sweep is clean again**: a closed colour panel kept laying out
+  its hidden Apply button, which the clipping and axe checks reported in every
+  language.
+- **CI stops crying wolf**: a platform removal that the smoke retries is now a
+  warning, so a green row carries no red annotations. `npm run preflight`
+  checks i18n, the asset manifest, shell pins and native pins before a push,
+  and `npm run hooks:install` wires it in as the pre-push hook.
+- **Two deliveries, one tree**: the installable web app and the direct Android
+  APK stay on the same 6.0 build (`versionCode 600`, `versionName 6.0.0`), with
+  the same saves, twelve languages and daily seeds.
+
 ### Fixes and polish
 
 - **The API 36 emulator row waits for the page's viewport**: the edge-to-edge

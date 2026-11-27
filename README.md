@@ -52,6 +52,8 @@ npm run assets:manifest:check # shell content hashes
 npm run test:shell-pins   # a shell file may not change without its ?v= pin
 npm run test:shell-pins:fixture # the guard itself, against a throwaway repo
 npm run test:cache-budget # shell bytes by asset class
+npm run preflight         # every guard CI runs, in one pass
+npm run hooks:install     # run preflight automatically before every push
 ```
 
 The Android shell lives in `android/`; build and distribution notes are in

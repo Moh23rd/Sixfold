@@ -63,7 +63,7 @@ test('a theme switch fades the surfaces and then lets them rest', async ({ page 
 
   expect(during.fading, 'the switch raises the cross-fade flag').toBe(true);
   expect(during.theme).toBe('dark');
-  expect(during.cardDuration).toBe('0.22s');
+  expect(during.cardDuration).toBe('0.16s');
   expect(during.cardProperties).toContain('background-color');
 
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-theme-fading'));
@@ -104,10 +104,11 @@ test('the fade leaves closed surfaces and their motion alone', async ({ page }) 
   expect(during.sheetDuration).toBe(before.sheetDuration);
 
   // The theme tabs keep the press motion they own; the fade adds colour to it
-  // instead of replacing it.
+  // instead of replacing it. Shadows are deliberately not transitioned: a card
+  // casting a new shadow every frame was the expensive part of the switch.
   expect(during.tabProperties).toContain('transform');
   expect(during.cardProperties).toContain('transform');
-  expect(during.cardProperties).toContain('box-shadow');
+  expect(during.cardProperties).not.toContain('box-shadow');
 });
 
 test('a palette switch fades the tiles with the page', async ({ page }) => {
@@ -118,7 +119,7 @@ test('a palette switch fades the tiles with the page', async ({ page }) => {
   const during = await appearance(page);
 
   expect(during.fading).toBe(true);
-  expect(during.cardDuration).toBe('0.22s');
+  expect(during.cardDuration).toBe('0.16s');
   expect(await page.evaluate(() => localStorage.getItem('merge2048.palette'))).toBe('ocean');
 
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-theme-fading'));
@@ -1328,9 +1329,28 @@ test('the colour panel is localised at runtime', async ({ page }) => {
   await expect(page.locator('#colour-apply')).toHaveText('Appliquer');
   await expect(page.locator('#colour-picker')).toHaveAttribute('aria-label', 'Choisir une couleur');
   await expect(page.locator('[data-palette-opt="custom"]')).toContainText('Personnalisé');
+  const warmName = await page.evaluate(() => window.SixfoldI18n.t('Warm'));
+  expect(warmName, 'the palette names use the catalog').not.toBe('Warm');
+  await expect(page.locator('[data-palette-opt="warm"]')).toContainText(warmName);
 
   await page.locator('#colour-custom summary').click();
   await page.locator('#colour-hex').fill('#zzz');
   await page.locator('#colour-apply').click();
   await expect(page.locator('#colour-hint')).toHaveText('Saisissez une couleur hexadécimale comme #RRGGBB.');
+});
+
+// The cover's build animation used fill-mode both, so its final transform kept
+// winning over :active and a finished tile could not show a press. The mark
+// settles on animationend; the tile must then carry no animation of its own.
+test('a settled six-piece tile is free to press', async ({ page }) => {
+  await page.goto('/?perf=full');
+  await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+  await page.waitForFunction(
+    () => document.documentElement.classList.contains('six-settled'),
+    null,
+    { timeout: 8000 }
+  );
+  expect(
+    await page.evaluate(() => getComputedStyle(document.querySelector('.home-six-piece')).animationName)
+  ).toBe('none');
 });

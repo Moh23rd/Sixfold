@@ -8,6 +8,14 @@
     "ogDescription": "6つのゲーム。手抜きなし。 ワンタップでプレイ。進行状況はこの端末に保存されます。"
   },
   "messages": {
+    "Rose": "ローズ",
+    "Slate": "スレート",
+    "Ink": "インク",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "スマホに寄り添う色：Android では壁紙のパレットを使い、好きな16進カラーも選べます。",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "より柔らかな手触り：明暗の切り替えが滑らかに、触覚が上品に、更新カードも落ち着きました。",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "ウェルカムガイドがホームより先に表示され、初回起動でコレクションがちらつきません。",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "隠された7つ目のゲームが、6ピースのカバーから滑らかにつながって開きます。",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "遊び方は2通り：インストールできる Web アプリと直接配布の Android APK、どちらも 6.0。",
     "Wallpaper": "壁紙",
     "Custom": "カスタム",
     "Custom colour": "カスタムカラー",

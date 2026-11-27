@@ -8,6 +8,14 @@
     "ogDescription": "ست ألعاب. بلا حشو. نقرة واحدة للعب. يبقى تقدمك على هذا الجهاز."
   },
   "messages": {
+    "Rose": "وردي",
+    "Slate": "أردوازي",
+    "Ink": "حبر",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "لون يتبع الهاتف: استخدم لوحة خلفية الشاشة على Android أو اختر أي لون سداسي عشري.",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "إحساس أنعم: تبديل أفتح وأغمق أكثر سلاسة، واهتزاز أدق، وبطاقة «ما الجديد» أهدأ.",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "يظهر دليل الترحيب قبل الصفحة الرئيسية، فلا تومض المجموعة عند أول تشغيل.",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "تُفتح اللعبة السابعة المخفية بانتقال سلس من غلاف القطع الست.",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "طريقتان للعب: تطبيق الويب القابل للتثبيت وملف APK المباشر لأندرويد — كلاهما من الإصدار نفسه.",
     "Wallpaper": "خلفية الشاشة",
     "Custom": "مخصص",
     "Custom colour": "لون مخصص",

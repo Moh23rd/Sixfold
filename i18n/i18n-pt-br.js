@@ -8,6 +8,14 @@
     "ogDescription": "Seis jogos. Sem enrolação. Um toque para jogar. Seu progresso fica neste dispositivo."
   },
   "messages": {
+    "Rose": "Rosa",
+    "Slate": "Ardósia",
+    "Ink": "Tinta",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "Cor que acompanha o celular: use a paleta do papel de parede no Android ou escolha qualquer código hexadecimal.",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "Toque mais suave: trocas de tema mais fluidas, vibração refinada e um cartão de novidades mais calmo.",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "O guia de boas-vindas aparece antes da tela inicial, então a primeira abertura não pisca a coleção.",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "O sétimo jogo oculto abre com uma transição suave a partir da capa de seis peças.",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "Dois jeitos de jogar: o app web instalável e o APK direto do Android — ambos na 6.0.",
     "Wallpaper": "Papel de parede",
     "Custom": "Personalizada",
     "Custom colour": "Cor personalizada",

@@ -408,6 +408,23 @@ it):
 sdk.dir=/path/to/Android/Sdk
 ```
 
+## Which APK is this?
+
+One universal, WebView-based APK — not a native, Flutter or game-engine build,
+and not an Android App Bundle:
+
+| | |
+|---|---|
+| Package | `io.github.moh23rd.sixfold` |
+| Build type | `debug`, from CI and from `npm run native:apk:debug`; the `release` build type is unsigned until a key is configured |
+| ABI | a single universal APK, with no ABI splits or filters |
+| SDK | min 24 (Android 7.0), target and compile 36 |
+| Contents | the whole offline web shell in `assets/public`, plus small native plugins for the window surface, haptics, wallpaper colours, gallery save and launch actions |
+| Signing | the local debug key, or CI's `ciTest` key from the `ANDROID_TEST_*` secrets when they are set |
+
+That is enough to sideload and update in place while the signing key stays the
+same. Play distribution would need a release signing config and an AAB.
+
 ## Build a debug APK
 
 From the repository root:
