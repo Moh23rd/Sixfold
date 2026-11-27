@@ -47,12 +47,19 @@ export function classifyRemoval({ crashText = '', eventsText = '', mainText = ''
   const killMain = main
     .filter((line) => line.includes(pkg) && /Killing \d+:/.test(line))
     .pop() || '';
-  const reasonSource = killEvents.length ? killEvents[killEvents.length - 1] : killMain;
-  const external = !anrEvent && !crashEvent && !errorKill && !fatal && !anrMain && PROVIDER_OR_MEMORY.test(reasonSource);
+  // Both buffers are asked, not just the newest-looking one: the events ring
+  // also holds this run's launch-time force-stop, whose bare "user request"
+  // reason would otherwise hide the provider kill the main buffer recorded
+  // seconds later. A stale provider line from an earlier process can only cost
+  // one repeated assertion, never a green run, because the repeat executes
+  // every check again.
+  const kills = killMain ? [...killEvents, killMain] : killEvents;
+  const platformKill = kills.find((line) => PROVIDER_OR_MEMORY.test(line)) || '';
+  const crashed = anrEvent || crashEvent || errorKill || fatal || anrMain;
 
   return {
-    crashed: anrEvent || crashEvent || errorKill || fatal || anrMain,
-    external,
-    line: (reasonSource || killMain || '').trim()
+    crashed,
+    external: !crashed && Boolean(platformKill),
+    line: (platformKill || killMain || killEvents[killEvents.length - 1] || '').trim()
   };
 }

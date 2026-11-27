@@ -62,6 +62,17 @@ test('the events ring records the same provider kill', () => {
   assert.equal(verdict.external, true);
 });
 
+test("this run's own launch force-stop cannot hide the provider kill", () => {
+  const verdict = classifyRemoval({
+    mainText: [LAUNCH_FORCE_STOP, PROVIDER_KILL].join('\n'),
+    eventsText: '11-27 06:36:10.200  1000  1553  1638 I am_kill : [0,3071,io.github.moh23rd.sixfold,0,user request]',
+    crashText: '',
+    packageName: PACKAGE
+  });
+  assert.equal(verdict.crashed, false);
+  assert.equal(verdict.external, true);
+});
+
 test('a crash is never retryable', () => {
   const verdict = classifyRemoval({
     mainText: '',

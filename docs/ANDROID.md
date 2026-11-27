@@ -509,7 +509,10 @@ provider) or under memory pressure; the compositor then shows the launcher, and
 its wallpaper is not the app's page colour. The assertion checks the pid and the
 resumed activity before every sample and reports that case as exit 4 with the
 platform's own kill record, instead of calling it a stale surface after the
-30-second poll. The smoke repeats the assertion once on the same boot for exit
+30-second poll. A launch the platform cuts short is classified the same way: if
+the process is gone when the launch proof fails, a recorded platform kill is
+exit 4 rather than a missing devtools target. The smoke repeats the assertion
+once on the same boot for exit
 4 only: the repeat installs, launches and exercises every check again. A crash,
 an ANR, an app-requested kill or an unexplained disappearance exits 1 and is
 never repeated, and a genuinely stale page surface still fails its poll.

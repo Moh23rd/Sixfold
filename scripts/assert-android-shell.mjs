@@ -828,6 +828,17 @@ async function startAndProveLaunch(action = '') {
     for (const line of report) log(line);
     const trace = await anrTraceReport();
     for (const line of trace) log(line);
+    // The platform can end the launch the same way it ends a later sample: on
+    // the API 34 image the GMS fonts provider died under the app while it was
+    // still booting, so its devtools target never appeared. Classify that as a
+    // removal so the smoke repeats the assertion, and never for a crash, an ANR
+    // or an app that is still alive but slow.
+    if (!appPid()) {
+      const evidence = removalEvidence();
+      if (evidence.external && !evidence.crashed) {
+        throw new AppRemoved(`the app was removed while starting (pid ${pid || 'unknown'})`, evidence);
+      }
+    }
     fail(
       `the launch failed (app pid ${pid || 'unknown'}):` +
         ` ${describeDeath(report, trace)} [${problem}]`
