@@ -1,6 +1,6 @@
-/* The share card, in the 2.x pocket-arcade language: cream paper, the app
-   icon's six, one huge number and the six-colour strip. Drawn locally so every
-   game can share the same object without shipping image files. */
+/* The share card, in the 2.x pocket-arcade language: cream paper, the launcher
+   mark, one huge number and the six-colour strip. Everything but the mark is
+   drawn locally; the mark is the app's own artwork, see `brandMark`. */
 (function () {
   'use strict';
 
@@ -123,67 +123,35 @@
     }
   }
 
-  // The launcher mark at card scale: the plate of merge tiles under its cream
-  // ring, drawn here so a saved image ships no bitmap and the card keeps
-  // working offline. The geometry follows assets/icon-source.svg.
+  // The launcher mark at card scale. It is the app's own artwork, drawn from
+  // the image `index.html` keeps for it (and, during the launch, from the boot
+  // splash's copy of the same file): one source, one pin, so the card and the
+  // launcher cannot drift apart and nothing is re-drawn by hand here. The URL
+  // is the one the shell already caches, so the card costs no extra fetch and
+  // works offline.
+  function markArt() {
+    return document.getElementById('share-mark') || document.querySelector('.boot-mark');
+  }
+
   function brandMark(ctx, x, centerY, size) {
-    const y = centerY - size / 2;
-    const cx = x + size / 2;
-    const cy = y + size / 2;
+    const art = markArt();
+    if (!art || !art.naturalWidth) return;
+    ctx.drawImage(art, x, centerY - size / 2, size, size);
+  }
 
-    ctx.save();
-    roundRect(ctx, x, y, size, size, size * 0.48);
-    const plate = ctx.createLinearGradient(x, y, x + size, y + size);
-    plate.addColorStop(0, '#35302a');
-    plate.addColorStop(1, '#1d1a16');
-    ctx.fillStyle = plate;
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, size * 0.468, 0, Math.PI * 2);
-    ctx.strokeStyle = '#f5f1e7';
-    ctx.lineWidth = Math.max(1, size * 0.014);
-    ctx.stroke();
-
-    const tile = size * 0.145;
-    const gap = size * 0.019;
-    const left = x + size * 0.26;
-    const top = y + size * 0.342;
-    const radius = tile * 0.28;
-    function square(atX, atY, width, colour) {
-      roundRect(ctx, atX, atY, width, tile, radius);
-      ctx.fillStyle = colour;
-      ctx.fill();
+  // Resolves once the mark can be drawn. The image is part of the document and
+  // normally decoded long before a card exists; this only covers a save that
+  // lands first, so it can never write a card without the mark.
+  function markReady() {
+    const art = markArt();
+    if (!art || art.naturalWidth) return Promise.resolve();
+    if (typeof art.decode === 'function') {
+      return art.decode().catch(function () {});
     }
-    square(left, top, tile, '#f5f1e7');
-    square(left + tile + gap, top, tile, '#e85f3b');
-    const second = top + tile + gap;
-    square(left, second, tile, '#efb07a');
-    square(left + tile + gap, second, tile, '#e8704a');
-    square(left + 2 * (tile + gap), second, tile * 1.2, '#e85f3b');
-
-    // The gold tile is the one already moving to its next square, so it sits
-    // tilted above the block, with the sparkle at its corner.
-    ctx.save();
-    ctx.translate(x + size * 0.758, y + size * 0.31);
-    ctx.rotate(-14 * (Math.PI / 180));
-    roundRect(ctx, -tile * 0.58, -tile * 0.58, tile * 1.16, tile * 1.16, radius);
-    ctx.fillStyle = '#e6c364';
-    ctx.fill();
-    ctx.restore();
-
-    const sparkle = size * 0.028;
-    const at = { x: x + size * 0.655, y: y + size * 0.43 };
-    ctx.beginPath();
-    ctx.moveTo(at.x, at.y - sparkle);
-    ctx.quadraticCurveTo(at.x, at.y, at.x + sparkle, at.y);
-    ctx.quadraticCurveTo(at.x, at.y, at.x, at.y + sparkle);
-    ctx.quadraticCurveTo(at.x, at.y, at.x - sparkle, at.y);
-    ctx.quadraticCurveTo(at.x, at.y, at.x, at.y - sparkle);
-    ctx.closePath();
-    ctx.fillStyle = '#f5f1e7';
-    ctx.fill();
-    ctx.restore();
+    return new Promise(function (resolve) {
+      art.addEventListener('load', resolve, { once: true });
+      art.addEventListener('error', resolve, { once: true });
+    });
   }
 
   function drawDaily(data) {
@@ -565,6 +533,7 @@
   }
 
   async function file(data) {
+    await markReady();
     try {
       if (document.fonts && document.fonts.load) {
         await document.fonts.load(font(800, 64));

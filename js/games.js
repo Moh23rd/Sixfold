@@ -90,11 +90,13 @@
     }, 2300);
   }
 
-  function saveCard(data) {
+  async function saveCard(data) {
     let file = null;
     try {
-      if (window.MergeShareCard && window.MergeShareCard.fileSync && typeof File === 'function') {
-        file = window.MergeShareCard.fileSync(data);
+      // The async path waits for the card's launcher mark to decode, so a save
+      // that lands on the first frame still carries the app's own artwork.
+      if (window.MergeShareCard && window.MergeShareCard.file) {
+        file = await window.MergeShareCard.file(data);
       }
     } catch (err) {
       file = null;

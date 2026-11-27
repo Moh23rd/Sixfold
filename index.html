@@ -422,6 +422,12 @@
     </div>
     <p class="boot-foot">Six games. No filler.</p>
   </div>
+  <!-- The share card draws the launcher art from this image rather than
+       re-drawing it, so the card and the launcher are one file. It is hidden
+       from the layout, stays in the document after the boot stage is torn
+       down, and reuses the boot mark's pinned URL: the shell caches one copy
+       and a card saved offline still carries the mark. -->
+  <img id="share-mark" src="icons/mark-456.webp?v=6.0.2" alt="" width="456" height="456" hidden />
 
   <div class="hidden-reveal" id="hidden-reveal" role="dialog" aria-modal="true" aria-labelledby="hidden-reveal-title" aria-describedby="hidden-reveal-copy" aria-hidden="true" hidden>
     <div class="hidden-reveal-scrim" data-hidden-reveal-skip></div>
@@ -1546,12 +1552,12 @@
   <script src="js/haptics.js?v=6.0.19"></script>
   <script src="js/overscroll.js?v=6.0.4"></script>
   <script src="js/celebrate.js?v=5.0.1"></script>
-  <script src="js/sharecard.js?v=5.3.4"></script>
+  <script src="js/sharecard.js?v=5.3.5"></script>
   <script src="js/theme.js?v=6.0.18"></script>
   <script src="js/game.js?v=5.3.5"></script>
   <script src="js/install.js?v=5.0.1"></script>
   <script src="js/sudoku.js?v=5.3.5"></script>
-  <script src="js/games.js?v=5.5.1"></script>
+  <script src="js/games.js?v=5.5.2"></script>
   <script src="js/daily.js?v=5.4.6"></script>
   <script src="js/profile.js?v=1.0.0"></script>
   <script src="js/badges.js?v=1.1.1"></script>

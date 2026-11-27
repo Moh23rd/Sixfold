@@ -101,6 +101,31 @@ test('every game downloads its PNG instead of opening a share sheet', async ({ p
   expect(pageErrors).toEqual([]);
 });
 
+test('the card carries the launcher art itself, not a redrawing of it', async ({ page }) => {
+  await openPage(page);
+  const seen = await page.evaluate(async () => {
+    const art = document.getElementById('share-mark');
+    await window.MergeShareCard.file({ title: 'Mark' });
+    const canvas = window.MergeShareCard.draw({ title: 'Mark' });
+    // The mark sits at x 80, y 61..125 in the card's 1080px square. The plate is
+    // dark across most of that box; cream paper would leave it empty.
+    const pixels = canvas.getContext('2d').getImageData(80, 61, 64, 64).data;
+    let dark = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (Math.max(pixels[i], pixels[i + 1], pixels[i + 2]) < 80) dark += 1;
+    }
+    return {
+      src: art && art.getAttribute('src'),
+      width: art ? art.naturalWidth : 0,
+      dark
+    };
+  });
+
+  expect(seen.width, 'the card draws the checked-in launcher art').toBeGreaterThanOrEqual(456);
+  expect(seen.src).toMatch(/^icons\/mark-456\.webp\?v=/);
+  expect(seen.dark, 'the mark is painted on the card').toBeGreaterThan(400);
+});
+
 test('the hub saves the collection card', async ({ page }) => {
   await openPage(page);
   const downloadPromise = page.waitForEvent('download');

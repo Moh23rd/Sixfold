@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 116896,
-      "sha256": "d898b32ee797e604d48a0d3a4e5eaa5fec91211165f6e1c9f78255d321c91c93"
+      "bytes": 117359,
+      "sha256": "615b923b1d90d5dae8f246253ef7fbb181eb706a6750ab898e312aad7896d181"
     },
     {
       "path": "licenses.html",
@@ -47,8 +47,8 @@
     },
     {
       "path": "js/sharecard.js",
-      "bytes": 22788,
-      "sha256": "38e2c846c3c2d4710ba737ec2a42bf6947117c2fdc7cec314b5738d336219313"
+      "bytes": 21863,
+      "sha256": "1b743aa1649dc2e62386ba865fe813a018db156654f04eb1fe41891504f6e95e"
     },
     {
       "path": "js/install.js",
@@ -97,8 +97,8 @@
     },
     {
       "path": "js/games.js",
-      "bytes": 167371,
-      "sha256": "37daeece14debfcb93c7f551c1bcb119ccba0247c187076e06fec53e84fea7a7"
+      "bytes": 167501,
+      "sha256": "385a386793631f875f14ed478b8b916a8ef2b4e4cdf0d0bb9e6cd8b9538cc47e"
     },
     {
       "path": "js/daily.js",

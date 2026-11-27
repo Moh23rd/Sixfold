@@ -15,7 +15,7 @@ const ASSET = '5.0.1';
 // Haptics has its own suffix: its patterns change without touching the other
 // shared-baseline scripts, and an installed app must pick the new pulse up.
 const HAPTICS_JS = '6.0.19';
-const SHARE_CARD = '5.3.4';
+const SHARE_CARD = '5.3.5';
 const STYLE_ASSET = '5.4.4';
 const FONT_ASSET = '5.0.2';
 const THEME_JS = '6.0.18';
@@ -26,7 +26,7 @@ const SUDOKU_GAME_CODE = '5.3.5';
 const LOCALE_FONT = '5.1.4';
 const GAMES_CSS = '5.3.12';
 const POLISH_CSS = '4.0.6-w23';
-const GAMES_JS = '5.5.1';
+const GAMES_JS = '5.5.2';
 const SUDOKU_CSS = '4.0.5';
 const V5_CSS = '5.6.3';
 const BLUR_CSS = '1.4.1';
