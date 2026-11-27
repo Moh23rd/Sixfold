@@ -1172,7 +1172,18 @@ try {
      on the rerun with the same APK. The wait below is about the page reporting,
      so it polls only the page and names what it saw when it gives up. */
   const metrics = await until('the display size', async () => screenCssSize(), 20000, 500);
+  /* The probe waits for the page's viewport, not only for the inset heights.
+     On the API 36 row (run #209) the page answered every poll with
+     `innerHeight 0` for the whole 30s window: the document was alive but had no
+     layout viewport yet, so a page-only wait could never pass and the row
+     failed while the app was still laying out. Wait the viewport out, and while
+     it is zero ask the devtools socket for the newest visible target again — a
+     socket left on the page an activity replaced also reports no viewport. The
+     insets are still the verdict: a page with a viewport and no bar heights
+     fails, because that is the padded-content-view defect. */
   let lastGeometry = null;
+  let reattachedAt = 0;
+  let loggedViewport = false;
   const geometryWait = await waitFor(
     'the page to report its edge-to-edge geometry',
     async () => {
@@ -1180,21 +1191,44 @@ try {
         "(() => { const style = getComputedStyle(document.documentElement);" +
           " return { height: innerHeight, width: innerWidth," +
           " top: parseFloat(style.getPropertyValue('--safe-area-inset-top')) || 0," +
-          " bottom: parseFloat(style.getPropertyValue('--safe-area-inset-bottom')) || 0 }; })()"
+          " bottom: parseFloat(style.getPropertyValue('--safe-area-inset-bottom')) || 0," +
+          " ready: document.readyState, state: document.visibilityState," +
+          " focused: document.hasFocus() }; })()"
       );
       lastGeometry = seen;
-      return seen.top > 0 ? { metrics, seen } : null;
+      if (seen.height > 0) {
+        loggedViewport = false;
+        return seen.top > 0 ? { metrics, seen } : null;
+      }
+      if (!loggedViewport) {
+        loggedViewport = true;
+        log(
+          `the page has no layout viewport yet (innerHeight ${seen.height}, ${seen.ready},` +
+            ` ${seen.state}${seen.focused ? ', focused' : ', not focused'}); waiting for it`
+        );
+      }
+      if (Date.now() - reattachedAt > 5000) {
+        reattachedAt = Date.now();
+        try {
+          await connectToWebView();
+        } catch (error) {
+          if (error instanceof EmulatorLost) throw error;
+          log(`could not reattach while the page had no viewport: ${error.message}`);
+        }
+      }
+      return null;
     },
-    30000,
+    60000,
     400
   );
   if (!geometryWait.value) {
     const saw = lastGeometry
       ? `last seen: innerHeight ${lastGeometry.height}, screen ${metrics.height} CSS px,` +
-        ` --safe-area-inset-top ${lastGeometry.top}, --safe-area-inset-bottom ${lastGeometry.bottom}`
+        ` --safe-area-inset-top ${lastGeometry.top}, --safe-area-inset-bottom ${lastGeometry.bottom},` +
+        ` ${lastGeometry.ready}, ${lastGeometry.state}${lastGeometry.focused ? ', focused' : ', not focused'}`
       : 'the page never answered';
     fail(
-      'timed out after 30s waiting for the page to report its edge-to-edge geometry' +
+      'timed out after 60s waiting for the page to report its edge-to-edge geometry' +
         ` (${saw}${geometryWait.error ? `; ${geometryWait.error.message}` : ''})`
     );
   }

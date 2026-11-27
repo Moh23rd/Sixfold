@@ -131,6 +131,15 @@ turns haptics off, not on the way out, where the longest pattern (under 150 ms)
 is over before the next screen settles. Nothing else in the shell calls a plugin
 from `pagehide`, `visibilitychange` or `unload`.
 
+The rule is a check, not a comment: `scripts/check-unload-bridge.mjs` parses the
+shell's scripts, follows a local alias of the Capacitor proxy (`var plugins =
+cap.Plugins`), and fails on a bridge call inside a `pagehide`, `unload` or
+`beforeunload` handler, naming the file, line and call. `npm run
+test:unload-bridge` runs it on the shell and `npm run
+test:unload-bridge:fixture` proves it still fails on one. Both are CI steps in
+the test job, so re-adding an unload-time cancel fails in a second instead of
+waiting for an intermittent crash on the API 33 row.
+
 ## Edge-to-edge and safe areas
 
 `MainActivity` draws the WebView behind transparent status and navigation bars,
@@ -570,25 +579,29 @@ then rebuilds the launcher from the icon sources so its generated insets or
 locale-qualified resources cannot survive. The static generator needs Python 3
 with Pillow; the CI snapshot check is Node-only and always runs.
 
-The adaptive icon uses a full-bleed ink background and a foreground holding
-only the cream six and its coral shadow, fitted inside the launcher's 66dp safe
-zone. A full-bleed foreground put the old outer tiles under the mask, which
-read as a zoomed, cropped icon in App info and on circular launchers.
+The adaptive icon uses a full-bleed plate-coloured background and a foreground
+holding the merge tiles, ring and sparkle, fitted inside the launcher's 66dp
+safe zone. A full-bleed foreground would put the ring under the mask, and the
+ring reads as a sliced edge in App info and on circular launchers. The plate's
+black backing is dropped from every layer, so the icon has one silhouette
+whichever shape a launcher applies.
 `capacitor-assets` adds `<inset>` wrappers to the XML on each generation, which
 would shrink the art inside the launcher mask; `native:assets:android`
 therefore ends with `scripts/guard-adaptive-icon.mjs`. Run
 `npm run assets:guard` to verify without generating.
 
-The launcher icon is static: one six mark for every language. The ink
-background is `#3b3833`, so the dark plate and the mask share one colour and
-only the numeral needs a safe margin. The default
+The launcher icon is static: one mark for every language. The background is
+`#211d18`, sampled from the artwork's own plate, so the generated field and the
+plate share one colour and only the ring and tiles need a safe margin. The
+default
 `mipmap-anydpi-v26` adaptive XML references `@mipmap/ic_launcher_foreground`,
 and there are no locale-qualified mipmap directories. The guard rejects any
 such directory so the icon cannot start following the device language again.
 The same adaptive XML also references `@mipmap/ic_launcher_monochrome`, a layer
-rendered from the numeral alone. Android 13's themed-icon setting tints that
-silhouette with the wallpaper palette instead of falling back to the coloured
-mark; the guard verifies the layer and its density sizes like the other two.
+rendered from the bright shapes alone (ring, tiles, sparkle). Android 13's
+themed-icon setting tints that silhouette with the wallpaper palette instead of
+falling back to the coloured mark; the guard verifies the layer and its density
+sizes like the other two.
 
 ## Troubleshooting
 

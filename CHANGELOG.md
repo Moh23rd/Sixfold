@@ -9,6 +9,28 @@ and the internal build **6.0.0** until the next release cut.
 
 ### Fixes and polish
 
+- **The API 36 emulator row waits for the page's viewport**: the edge-to-edge
+  check asked only for the inset heights, so a page that answered with
+  `innerHeight 0` for the whole 30s window timed the row out while the app was
+  still laying out (run #209). The wait now covers the viewport, reattaches to
+  the newest visible WebView target while the page has none, and gives a slow
+  software-rendered guest 60s. A page with a viewport and no bar heights still
+  fails, because that is the padded-content-view defect.
+- **An unload-time bridge call fails in CI**: `scripts/check-unload-bridge.mjs`
+  parses the shell, follows a local alias of the Capacitor proxy and fails on a
+  plugin call inside a `pagehide`, `unload` or `beforeunload` handler, naming
+  the file, line and call. It runs on the shell plus a fixture proof
+  (`npm run test:unload-bridge`, `npm run test:unload-bridge:fixture`), so the
+  WebView 109 crash cannot be reintroduced silently.
+- **A new launcher mark**: the icon is the plate of six merge tiles with the
+  cream ring, rendered from `assets/icon-source.svg`. The source's black backing
+  is dropped so a launcher mask sees one silhouette; the maskable and adaptive
+  layers scale the art inside their safe circles instead of letting a round mask
+  slice the ring. Every size follows — favicon, touch icon, maskable, six
+  densities of legacy/round/adaptive/monochrome, the 288dp launch icon, the boot
+  mark and the iOS launch images. The share card is regenerated as a 1200×630
+  frame (`npm run assets:og`), and the icon class of the cache budget moves to
+  88 KiB for the gradient art.
 - **The hub is not relaunched on every return**: leaving the collection and
   coming back replayed the card stagger, the six-piece cover build and the
   shell lift. The hub is hidden behind a game, and a browser restarts a CSS
