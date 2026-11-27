@@ -31,10 +31,12 @@ async function open(browser, { locale, entries = {} } = {}) {
   await expect(page.locator('#boot-splash')).toBeHidden();
   await expect(page.locator('html')).toHaveClass(/home-ready/);
   // The favicon is static; language selection must not rewrite these links.
+  // The suffix is a cache pin, so only its shape is fixed here; a bumped pin
+  // must not fail a test about language selection.
   await expect(page.locator('link[rel="icon"][sizes="192x192"]'))
-    .toHaveAttribute('href', 'icons/icon-192.png?v=6.0.2');
+    .toHaveAttribute('href', /^icons\/icon-192\.png\?v=\d+(?:\.\d+)*$/);
   await expect(page.locator('link[rel="apple-touch-icon"]'))
-    .toHaveAttribute('href', 'icons/icon-180.png?v=6.0.2');
+    .toHaveAttribute('href', /^icons\/icon-180\.png\?v=\d+(?:\.\d+)*$/);
   expect(await page.locator('html').getAttribute('data-icon')).toBeNull();
   return { context, page };
 }
