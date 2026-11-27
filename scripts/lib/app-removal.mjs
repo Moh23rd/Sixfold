@@ -10,7 +10,10 @@
    pass on a second attempt. */
 
 const PROVIDER_OR_MEMORY = /depends on provider|low ?memory|lowmemorykiller|lmkd|empty/i;
-const APP_REQUESTED = /user request|anr|crash/i;
+// Android records an ANR kill as "user request after error". A plain "user
+// request" is a force-stop someone sent, which is neither retryable nor a
+// crash, so it falls through to the unexplained case.
+const APP_REQUESTED = /user request after error|\banr\b/i;
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

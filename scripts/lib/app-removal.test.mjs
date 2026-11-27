@@ -92,6 +92,17 @@ test('an ANR recorded only in the main buffer is caught', () => {
   assert.equal(verdict.external, false);
 });
 
+test('a force-stop someone sent is not called a crash', () => {
+  const verdict = classifyRemoval({
+    mainText: LAUNCH_FORCE_STOP,
+    eventsText: '11-27 06:37:00.700  1000  1553  1638 I am_kill : [0,2721,io.github.moh23rd.sixfold,0,user request]',
+    crashText: '',
+    packageName: PACKAGE
+  });
+  assert.equal(verdict.crashed, false);
+  assert.equal(verdict.external, false);
+});
+
 test('an unexplained disappearance is not retryable', () => {
   const verdict = classifyRemoval({
     mainText: LAUNCH_FORCE_STOP,
