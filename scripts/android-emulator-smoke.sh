@@ -319,6 +319,11 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     # makes every pixel check read a black window.
     adb_run shell svc power stayon true >/dev/null 2>&1
     export PATH="$SDK/platform-tools:$PATH"
+    # Count what this launch does, not what an earlier attempt left in the ring:
+    # the recreate this row is watching for is a second activity create inside
+    # one launch, and a cleared buffer also keeps an earlier attempt's crash out
+    # of the death report the assertion reads.
+    adb_run logcat -c
     status=0
     SMOKE_FAILURE_DIR="$OUT" node scripts/assert-android-shell.mjs || status=$?
     # The platform can remove a foreground app when a provider it connects to
@@ -334,6 +339,7 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
       if [ -n "$RETRY_WORK" ]; then : > "$RETRY_WORK/state/retry-taken"; fi
       # The repeat decides the row: a passing second run must leave status at 0,
       # and a second removal or a real failure must still fail the row.
+      adb_run logcat -c
       status=0
       SMOKE_FAILURE_DIR="$OUT" node scripts/assert-android-shell.mjs || status=$?
     fi
@@ -368,13 +374,13 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     # recovered, which is the only way to tell two green runs apart.
     creates=$(adb_run logcat -d 2>/dev/null | grep -c 'Starting BridgeActivity' || true)
     relaunches=$(adb_run logcat -b events -d 2>/dev/null | grep -c 'am_relaunch_activity' || true)
-    note "the launch: ${creates} activity create(s) and ${relaunches} relaunch(es) since boot"
+    note "the launch: ${creates} activity create(s) and ${relaunches} relaunch(es)"
     # The attach can recover from a recreate, which would otherwise leave a
     # green row that looks clean. A warning is the signal that the launch
     # itself was not: it shows on the check run, so the recreate is counted on
     # every row that had one instead of only in a job log nobody reads.
     if [ "${relaunches:-0}" -gt 0 ] || [ "${creates:-0}" -gt 1 ]; then
-      echo "::warning title=Android launch recreated::the platform recreated the activity mid-launch (${creates} create(s), ${relaunches} relaunch(es)); the attach recovered, but the boot was not clean"
+      echo "::warning title=Android launch recreated::this launch created the activity ${creates} time(s) (${relaunches} relaunch(es)); the attach recovered, but the launch was not clean"
     fi
     # The retry self-test is a property of this whole attempt: the removal was
     # armed, the assertion classified it as exit 4, and the repeat passed. A
