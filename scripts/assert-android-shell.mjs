@@ -1234,6 +1234,7 @@ async function assertLegalReturn(kind) {
   // shorter than any failure this check is looking for.
   await wait(1500);
 
+  const returnStarted = Date.now();
   const state = await until(
     `the hub to return from the legal page (${via})`,
     async () => {
@@ -1244,6 +1245,10 @@ async function assertLegalReturn(kind) {
     40000,
     300
   );
+  // How much of the window the return actually used. The API 34 row timed out
+  // here on the repeat after the platform removed the app, and without this
+  // number a loaded runner and a genuinely slow return read the same.
+  log(`the hub came back from the legal page in ${Date.now() - returnStarted}ms (${via})`);
 
   // The head script sets __sixfoldReturning as it reads the marker, before the
   // body parses, so this is the race-free evidence that the load was treated as
