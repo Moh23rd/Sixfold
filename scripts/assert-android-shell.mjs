@@ -1179,7 +1179,7 @@ async function openAboutForLegal() {
    built, whether the hub came back settled, and whether any hub entrance is
    still running. The selector list is the one the page-level launch-cover test
    watches, so the two surfaces judge the same animations. */
-function returnState() {
+function returnState(timeoutMs = 20000) {
   return evaluate(
     '(() => { const root = document.documentElement;' +
       ' const running = [];' +
@@ -1195,7 +1195,9 @@ function returnState() {
       "   settled: root.classList.contains('hub-settled')," +
       "   screen: document.body ? document.body.dataset.screen : ''," +
       "   hub: Boolean(document.getElementById('hub'))," +
-      '   running: running }; })()'
+      '   running: running }; })()',
+    false,
+    timeoutMs
   );
 }
 
@@ -1234,11 +1236,26 @@ async function assertLegalReturn(kind) {
   // shorter than any failure this check is looking for.
   await wait(1500);
 
+  /* One probe may not spend the whole window. Each evaluate carries a 20 s
+     timeout of its own, so a renderer that stalled twice would exhaust this
+     40 s poll and report a wedged page as a slow return. The poll asks every
+     300 ms, so a short bound costs nothing: a probe that does not come back is
+     retried, not waited out. */
+  const LEGAL_RETURN_PROBE_TIMEOUT = 3000;
   const returnStarted = Date.now();
+  let stuckProbes = 0;
   const state = await until(
     `the hub to return from the legal page (${via})`,
     async () => {
-      const seen = await returnState();
+      let seen;
+      try {
+        seen = await returnState(LEGAL_RETURN_PROBE_TIMEOUT);
+      } catch (error) {
+        // Counted, not swallowed: a return that needed many attempts has to say
+        // whether it was the document or the renderer that was slow.
+        if (/did not answer within/.test(error.message)) stuckProbes += 1;
+        throw error;
+      }
       const home = seen.path === '/' || /(^|\/)index\.html$/.test(seen.path);
       return home && seen.hub && seen.ready ? seen : null;
     },
@@ -1248,7 +1265,10 @@ async function assertLegalReturn(kind) {
   // How much of the window the return actually used. The API 34 row timed out
   // here on the repeat after the platform removed the app, and without this
   // number a loaded runner and a genuinely slow return read the same.
-  log(`the hub came back from the legal page in ${Date.now() - returnStarted}ms (${via})`);
+  log(
+    `the hub came back from the legal page in ${Date.now() - returnStarted}ms (${via})` +
+      (stuckProbes ? `, after ${stuckProbes} probe(s) went unanswered` : '')
+  );
 
   // The head script sets __sixfoldReturning as it reads the marker, before the
   // body parses, so this is the race-free evidence that the load was treated as
@@ -1267,7 +1287,7 @@ async function assertLegalReturn(kind) {
   // the parse a bounded window to remove it.
   const cleared = await waitFor(
     'the launch layer to be cleared on the return',
-    async () => ((await returnState()).splash ? null : true),
+    async () => ((await returnState(LEGAL_RETURN_PROBE_TIMEOUT)).splash ? null : true),
     10000,
     200
   );
