@@ -29,10 +29,18 @@
    Run it with an emulator attached and the debug APK already built. */
 
 import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 
 import { anrTraceLines, describeDeath, parseDeathReport } from './lib/death-report.mjs';
-import { attachToLiveLaunch } from './lib/reattach.mjs';
+import {
+  attachToLiveLaunch,
+  BRIDGE_PROBE_BUDGET,
+  BRIDGE_REPROBE_BUDGET,
+  chooseLivePage,
+  chooseUnprovenPage
+} from './lib/reattach.mjs';
 import { classifyRemoval } from './lib/app-removal.mjs';
 
 // The smoke can point this at a wrapper (scripts/test-emulator-retry.sh does)
@@ -658,6 +666,52 @@ function startActivity(action = '') {
   return started;
 }
 
+/* A fresh install is not finished when `adb install` returns: the platform still
+   has to tell the app about the package change. A process that starts inside
+   that window is handed an updated ApplicationInfo, ActivityThread answers by
+   bumping Configuration.assetsSeq, and the platform relaunches the activity for
+   it (am_relaunch_resume_activity). That difference is CONFIG_ASSETS_PATHS,
+   which AOSP keeps hidden because an app cannot declare it in
+   android:configChanges — no manifest or theme choice prevents that recreate, so
+   the launch has to stop racing the installer. Wait until the package's own
+   broadcast traffic has gone quiet; the launch under test then behaves like the
+   one a returning player makes. */
+async function settleInstall() {
+  const QUIET_MS = 3000;
+  const LIMIT_MS = 30000;
+  const started = Date.now();
+  const ownPackage = PACKAGE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const traffic = new RegExp(`PACKAGE_(ADDED|CHANGED|REPLACED)[^\\n]*${ownPackage}`);
+  /* The newest matching timestamp, not a count: the ring keeps rotating while
+     the boot is still busy, so lines leave the tail and a count would read as
+     traffic forever. Only a newer broadcast means the install is still being
+     delivered. */
+  const newestTraffic = () => {
+    const dump = adbSafe(['shell', 'logcat', '-d', '-v', 'epoch', '-t', '3000'], 20000);
+    let newest = 0;
+    for (const line of dump.split('\n')) {
+      if (!traffic.test(line)) continue;
+      const stamp = Number(line.slice(0, line.indexOf(' ')));
+      if (Number.isFinite(stamp) && stamp > newest) newest = stamp;
+    }
+    return newest;
+  };
+  let newest = newestTraffic();
+  let quietSince = Date.now();
+  while (Date.now() - started < LIMIT_MS) {
+    await wait(500);
+    const current = newestTraffic();
+    if (current > newest) {
+      newest = current;
+      quietSince = Date.now();
+    } else if (Date.now() - quietSince >= QUIET_MS) {
+      log(`the install's package broadcasts settled after ${Date.now() - started}ms`);
+      return;
+    }
+  }
+  log('the install was still broadcasting after 30s; launching anyway');
+}
+
 async function launchApp(action = '') {
   adb(['shell', 'am', 'force-stop', PACKAGE]);
   startActivity(action);
@@ -701,7 +755,89 @@ async function processIsGone() {
   return !appPid();
 }
 
+/* A page is only the launched app while its own native bridge still answers.
+   A cold start on the API 26 image can create the activity twice: the first
+   instance is destroyed about a second after it resumes, while its page keeps
+   answering devtools evaluations and every plugin call it makes is dropped by
+   the plugin thread that went away with that bridge. Attaching to it turned a
+   healthy launch into a sixty-second wait for a paint callback the page could
+   never request (the two failed API 26 attempts of run #261 did exactly that).
+   The App plugin's own getInfo() is the probe: only a live bridge runs the
+   method and answers with the app's id, and it changes no app state. The probe
+   asks until the bridge answers instead of asking once: the devtools target
+   appears while the page is still booting its bridge, and the plugin object
+   exists a moment before the native side answers it, so a single call at the
+   wrong instant made every cold start spend a reattach on a page that would
+   have answered a moment later.
+
+   Silence is not proof of death, though. A page that is still booting on a
+   loaded guest answers nothing for as long as its renderer is busy: on the API
+   33 row's shortcut launch the page stayed quiet through the whole ten-second
+   budget and then ran the app's own plugin call, so treating silence as a dead
+   bridge failed a healthy launch. Only a refusal is a dead bridge; a silent page
+   is attached to anyway (see chooseUnprovenPage) and the paint proof decides. */
+/* One call per evaluation, and the waiting happens in the harness. A page-side
+   retry loop cannot do it: the first calls land before the page has finished
+   booting its bridge, the promise they return never settles, and a pending
+   evaluation on this WebView never runs its own timers — so the loop sat until
+   the evaluation timed out and every cold start looked like a dead page. Each
+   attempt here is a fresh evaluation, and the first one that comes back wins. */
+const BRIDGE_PROBE =
+  "(() => { const cap = window.Capacitor;" +
+  " const app = cap && cap.Plugins && cap.Plugins.App;" +
+  " if (!app || typeof app.getInfo !== 'function') return 'no-plugin';" +
+  ' try {' +
+  '   const call = app.getInfo();' +
+  "   if (!call || typeof call.then !== 'function') return 'no-promise';" +
+  '   return call.then(function (info) {' +
+  "     return info && typeof info === 'object' && (info.id || info.name || info.build) ? 'ok' : 'empty';" +
+  "   }, function () { return 'refused'; });" +
+  " } catch (error) { return 'refused'; } })()";
+
+const BRIDGE_PROBE_TIMEOUT = 3000;
+/* Target id -> when its probe first went unanswered. A page that has already
+   spent its budget is asked again briefly, so a reattach does not start from
+   zero on a page the harness has been waiting on. */
+const silentPages = new Map();
+
+async function bridgeAnswers(bound) {
+  const id = String(bound.target.id || bound.target.url || 'page');
+  const budget = silentPages.has(id) ? BRIDGE_REPROBE_BUDGET : BRIDGE_PROBE_BUDGET;
+  const deadline = Date.now() + budget;
+  let sawPlugin = false;
+  for (;;) {
+    let answer = null;
+    try {
+      answer = await bound.evaluate(BRIDGE_PROBE, true, BRIDGE_PROBE_TIMEOUT);
+    } catch (error) {
+      // A dead emulator is not a dead page: let the host-loss path see it. Any
+      // other failure is a call that never came back, which on a starved guest
+      // is a renderer still booting its page.
+      if (error instanceof EmulatorLost) throw error;
+    }
+    // Any answer means the native side ran a plugin method.
+    if (answer === 'ok' || answer === 'empty') {
+      silentPages.delete(id);
+      return 'alive';
+    }
+    // A refusal is the page's bridge saying no: that bridge is gone.
+    if (answer === 'refused') {
+      silentPages.delete(id);
+      return 'gone';
+    }
+    if (answer === 'no-plugin' || answer === 'no-promise') sawPlugin = true;
+    if (Date.now() >= deadline) {
+      if (!sawPlugin && !silentPages.has(id)) silentPages.set(id, Date.now());
+      return sawPlugin ? 'starting' : 'unanswered';
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+}
+
 async function connectToWebView() {
+  // Report this attempt's first listing even when it matches the previous one,
+  // so a retry always says what it saw instead of only logging changes.
+  lastListing = '';
   // The reattach path is called from a probe that must be able to time out, so
   // a missing target throws instead of ending the process.
   const found = await waitFor(
@@ -746,7 +882,11 @@ async function connectToWebView() {
         false,
         20000
       );
-      bound.state = state || {};
+      const seen = state || {};
+      bound.visible = seen.visible;
+      bound.focused = Boolean(seen.focused);
+      bound.origin = seen.origin || 0;
+      bound.bridge = await bridgeAnswers(bound);
       opened.push(bound);
     } catch (error) {
       lastError = error;
@@ -756,15 +896,35 @@ async function connectToWebView() {
   if (!opened.length) {
     throw lastError || new Error('could not attach to the WebView devtools socket');
   }
-  const newest = (list) => list.slice().sort((a, b) => (b.state.origin || 0) - (a.state.origin || 0))[0];
-  const visible = opened.filter((bound) => bound.state.visible !== 'hidden');
-  if (!visible.length) {
+  for (const bound of opened) {
+    if (bound.bridge !== 'alive') {
+      log(`the WebView page at ${bound.target.url} has not answered its native bridge (${bound.bridge})`);
+    }
+  }
+  // A page that answered goes first. A silent one is not a proven-dead one, so
+  // it is attached to rather than failed: the paint proof is the assertion, and
+  // a probe that could not get an answer in time must not decide the launch.
+  const chosen = chooseLivePage(opened) || chooseUnprovenPage(opened);
+  if (!chosen) {
     for (const bound of opened) bound.socket.close();
-    // The old page can outlive its window for a moment. Wait for the current
-    // one rather than asserting against a page the player cannot see.
+    if (opened.every((bound) => bound.bridge === 'gone')) {
+      // Every page refused the probe: these are the leftovers of activity
+      // instances that were replaced mid-launch, and none can report a paint.
+      throw new Error(
+        `no WebView page can reach a native bridge (${opened.length}` +
+          ` page${opened.length === 1 ? '' : 's'}: ${opened.map((bound) => bound.bridge).join(', ')})`
+      );
+    }
+    // The current page can outlive its window for a moment. Wait for it rather
+    // than asserting against a page the player cannot see.
     throw new Error('the WebView page is not visible yet');
   }
-  const chosen = newest(visible.filter((bound) => bound.state.focused)) || newest(visible);
+  if (chosen.bridge !== 'alive') {
+    log(
+      `attaching to a page whose native bridge has not answered (${chosen.bridge});` +
+        ' the paint hand-off still has to arrive'
+    );
+  }
   for (const bound of opened) {
     if (bound !== chosen) bound.socket.close();
   }
@@ -823,6 +983,27 @@ async function launchPaint() {
       return null;
     }
     throw error;
+  }
+}
+
+/* What the page says about the launch at the moment the paint proof gives up.
+   The timeout used to be all a reader got, which said nothing about whether the
+   page had ever asked for the callback, hidden its splash or finished parsing —
+   so a dead page and a slow one read the same. Reported, never judged: the
+   assertion itself is still the callback's own timestamps. */
+async function launchState() {
+  try {
+    return await evaluate(
+      "(() => ({ painted: window.__sixfoldPainted === true," +
+        " requestedAt: window.__sixfoldPaintRequestedAt," +
+        " paintAt: window.__sixfoldPaintAt, hiddenAt: window.__sixfoldSplashHiddenAt," +
+        " bootAtHide: window.__sixfoldBootAtHide === true," +
+        " homeReady: Boolean(document.documentElement && document.documentElement.classList.contains('home-ready'))," +
+        " ready: document.readyState, splash: Boolean(document.getElementById('boot-splash'))," +
+        " visibility: document.visibilityState }))()"
+    );
+  } catch (error) {
+    return { error: error.message };
   }
 }
 
@@ -885,8 +1066,11 @@ async function startAndProveLaunch(action = '') {
       60000,
       300
     );
-    if (!ready.value) problem = ready.error ? ready.error.message : 'the native paint hand-off never completed';
-    else {
+    if (!ready.value) {
+      const state = await launchState();
+      log(`the page at the paint deadline: ${JSON.stringify(state)}`);
+      problem = ready.error ? ready.error.message : 'the native paint hand-off never completed';
+    } else {
       if (ready.value.paintAt < ready.value.requestedAt) {
         problem = 'the Android paint callback arrived before the page asked for it';
       } else if (ready.value.paintAt > ready.value.hiddenAt) {
@@ -995,7 +1179,7 @@ async function openAboutForLegal() {
    built, whether the hub came back settled, and whether any hub entrance is
    still running. The selector list is the one the page-level launch-cover test
    watches, so the two surfaces judge the same animations. */
-function returnState() {
+function returnState(timeoutMs = 20000) {
   return evaluate(
     '(() => { const root = document.documentElement;' +
       ' const running = [];' +
@@ -1011,7 +1195,9 @@ function returnState() {
       "   settled: root.classList.contains('hub-settled')," +
       "   screen: document.body ? document.body.dataset.screen : ''," +
       "   hub: Boolean(document.getElementById('hub'))," +
-      '   running: running }; })()'
+      '   running: running }; })()',
+    false,
+    timeoutMs
   );
 }
 
@@ -1050,15 +1236,38 @@ async function assertLegalReturn(kind) {
   // shorter than any failure this check is looking for.
   await wait(1500);
 
+  /* One probe may not spend the whole window. Each evaluate carries a 20 s
+     timeout of its own, so a renderer that stalled twice would exhaust this
+     40 s poll and report a wedged page as a slow return. The poll asks every
+     300 ms, so a short bound costs nothing: a probe that does not come back is
+     retried, not waited out. */
+  const LEGAL_RETURN_PROBE_TIMEOUT = 3000;
+  const returnStarted = Date.now();
+  let stuckProbes = 0;
   const state = await until(
     `the hub to return from the legal page (${via})`,
     async () => {
-      const seen = await returnState();
+      let seen;
+      try {
+        seen = await returnState(LEGAL_RETURN_PROBE_TIMEOUT);
+      } catch (error) {
+        // Counted, not swallowed: a return that needed many attempts has to say
+        // whether it was the document or the renderer that was slow.
+        if (/did not answer within/.test(error.message)) stuckProbes += 1;
+        throw error;
+      }
       const home = seen.path === '/' || /(^|\/)index\.html$/.test(seen.path);
       return home && seen.hub && seen.ready ? seen : null;
     },
     40000,
     300
+  );
+  // How much of the window the return actually used. The API 34 row timed out
+  // here on the repeat after the platform removed the app, and without this
+  // number a loaded runner and a genuinely slow return read the same.
+  log(
+    `the hub came back from the legal page in ${Date.now() - returnStarted}ms (${via})` +
+      (stuckProbes ? `, after ${stuckProbes} probe(s) went unanswered` : '')
   );
 
   // The head script sets __sixfoldReturning as it reads the marker, before the
@@ -1078,7 +1287,7 @@ async function assertLegalReturn(kind) {
   // the parse a bounded window to remove it.
   const cleared = await waitFor(
     'the launch layer to be cleared on the return',
-    async () => ((await returnState()).splash ? null : true),
+    async () => ((await returnState(LEGAL_RETURN_PROBE_TIMEOUT)).splash ? null : true),
     10000,
     200
   );
@@ -1146,15 +1355,63 @@ async function evaluate(expression, awaitPromise = false) {
   }
 }
 
+/* Every attach attempt reports the devtools listing it saw, and any change to
+   that listing while the attempt is still waiting. A launch that leaves a page
+   behind has to show in the artifact whether the replacement page ever appeared:
+   run #261 recorded only the single target the smoke attached to, which left the
+   question open. The id prefix is what separates two pages with the same URL. */
+let lastListing = '';
+/* Every distinct listing this launch produced, in order. The job log carries
+   them too, but a failed run is judged from its artifact, and the question a
+   leftover page raises is exactly whether the replacement page ever appeared. */
+const listingHistory = [];
+
+function describeTarget(target) {
+  return `${target.type || 'unknown'} ${target.url || '(no url)'} [${String(target.id || '').slice(0, 8)}]`;
+}
+
+function reportTargets(targets) {
+  const listing = targets.map((target) => `${target.type}:${target.id}:${target.url}`).join('|');
+  if (listing === lastListing) return;
+  lastListing = listing;
+  const text =
+    `the devtools listing holds ${targets.length} target${targets.length === 1 ? '' : 's'}: ` +
+    (targets.map(describeTarget).join('; ') || 'none');
+  log(text);
+  listingHistory.push({ at: new Date().toISOString(), text });
+}
+
+/* scripts/android-emulator-smoke.sh points this at the directory it uploads
+   when a row fails, so the listings sit next to the logcat. A workstation run
+   without the variable writes nothing and only logs. */
+function writeDevtoolsHistory() {
+  const dir = process.env.SMOKE_FAILURE_DIR;
+  if (!dir) return;
+  const text = listingHistory.length
+    ? listingHistory.map((entry) => `${entry.at}  ${entry.text}`).join('\n') + '\n'
+    : 'no devtools listing was read before this failure\n';
+  try {
+    writeFileSync(join(dir, 'devtools-listings.txt'), text);
+  } catch (error) {
+    console.error(`::warning::could not write the devtools listings to ${dir}: ${error.message}`);
+  }
+}
+
+/* Many checks report through `fail`, which exits from inside the check, so the
+   exit path is the only place every failure goes through. */
+process.on('exit', (code) => {
+  if (code) writeDevtoolsHistory();
+});
+
 async function devtoolsTargets() {
   const response = await fetch(`http://127.0.0.1:${PORT}/json/list`);
   if (!response.ok) throw new Error(`devtools listing returned ${response.status}`);
   const targets = await response.json();
+  reportTargets(targets);
   // Android can briefly expose the WebView from the activity it is replacing
   // as well as the one the player is looking at. Return both; connectToWebView
   // asks each page whether it is visible instead of trusting list order.
   const pages = targets.filter((target) => target.type === 'page' && /localhost|index\.html/.test(target.url));
-  if (pages.length > 1) log(`${pages.length} WebView page targets are open`);
   return pages.length ? pages : null;
 }
 
@@ -1186,6 +1443,7 @@ try {
 
   log(`installing ${APK}`);
   adb(['install', '-r', '-t', APK]);
+  await settleInstall();
 
   // Not `am start -W`: the hub animates from the first frame, so the activity
   // never goes idle and the wait reports a timeout even though it launched.

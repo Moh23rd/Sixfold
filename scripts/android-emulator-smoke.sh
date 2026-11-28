@@ -63,6 +63,10 @@ AVDMANAGER="$SDK/cmdline-tools/latest/bin/avdmanager"
 [ -x "$SDKMANAGER" ] || SDKMANAGER="$(command -v sdkmanager || true)"
 [ -x "$AVDMANAGER" ] || AVDMANAGER="$(command -v avdmanager || true)"
 APK="android/app/build/outputs/apk/debug/app-debug.apk"
+# The package the counts below belong to. The event buffer carries every
+# component's relaunches — this boot's FallbackHome relaunches too — so a count
+# that is not scoped to it reads a clean launch as a recreate.
+APP_ID="io.github.moh23rd.sixfold"
 OUT="${FAILURE_DIR:-emulator-failure}"
 LOG="${OUT}/emulator.log"
 ATTEMPTS="${SMOKE_ATTEMPTS:-3}"
@@ -77,6 +81,31 @@ die() { echo "::error::$*"; exit 1; }
 # nothing for twenty minutes. Polls ignore failures: an unready device is the
 # expected answer while it boots.
 adb_run() { timeout 20 "$ADB" "$@" || true; }
+
+# Counts one launch's evidence inside the log buffer: from the app's first start
+# request after this attempt's marker to the next one. The recreate question is
+# about that first launch — it is the one that can race the installer — while a
+# full-pass row starts the app again for each shortcut step and each font scale.
+# A boot-wide count read three bridge starts for three launches and called a
+# clean run a recreate, which is how the API 36 row reported three creates, no
+# destroys and then failed while assembling a warning about it.
+#
+# The marker is what makes "this attempt" true even when `logcat -c` is refused
+# (the API 26 image refuses it): a second assertion on the same boot would
+# otherwise count the first one's launch. A buffer with no marker is counted
+# from its start, so a missing marker can only widen the window, never silence
+# the count.
+MARK_TAG="SIXFOLD_LAUNCH"
+first_launch_counts() { # <logfile> <extended regex>
+  local marked
+  marked=$(grep -c "$MARK_TAG" "$1" || true)
+  awk -v pkg="$APP_ID" -v pat="$2" -v unmarked="$(( marked > 0 ? 0 : 1 ))" '
+    BEGIN { armed = unmarked }
+    index($0, "SIXFOLD_LAUNCH") { armed = 1; next }
+    armed && /START u0/ && index($0, pkg) && ++launches == 2 { exit }
+    armed && launches == 1 && $0 ~ pat { count++ }
+    END { print count + 0 }' "$1"
+}
 
 [ -x "$ADB" ] || die "platform-tools are missing from $SDK"
 [ -x "$SDKMANAGER" ] || die "sdkmanager is missing (install cmdline-tools)"
@@ -171,7 +200,54 @@ cleanup() {
     # lines a second: a 400-line tail covered barely one second, so the run #163
     # artifact could not show what the app did before the failure.
     timeout 120 "$ADB" logcat -d > "$OUT/logcat.txt" 2>&1 || true
+    # The main buffer says what the app did; the activity manager's own event
+    # buffer says what the platform did to it. A recreate is an
+    # am_relaunch_activity, and the configuration_changed event before it carries
+    # the configuration that caused it — the cause the app's log cannot name.
+    timeout 120 "$ADB" logcat -b events -d > "$OUT/logcat-events.txt" 2>&1 || true
     timeout 120 "$ADB" exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
+    # A cold start on this image can be torn down and recreated under the
+    # launch. When it is, the first instance's page keeps answering devtools
+    # while its bridge thread is gone, so the paint hand-off can never arrive.
+    # The logcat is in the artifact, but the reader should not have to count
+    # bridge starts by eye: write the recreate evidence as its own file.
+    if [ -s "$OUT/logcat.txt" ]; then
+      created=$(first_launch_counts "$OUT/logcat.txt" 'Starting BridgeActivity')
+      destroyed=$(first_launch_counts "$OUT/logcat.txt" 'App destroyed')
+      dropped=$(grep -c 'on a dead thread' "$OUT/logcat.txt" || true)
+      relaunched=0
+      if [ -s "$OUT/logcat-events.txt" ]; then
+        relaunched=$(grep -E 'am_relaunch_resume_activity|am_relaunch_activity' "$OUT/logcat-events.txt" \
+          | grep -cF "$APP_ID" || true)
+      fi
+      {
+        echo "the app activity was created ${created} time(s) in this launch"
+        echo "the log records ${destroyed} activity destroy(s) and ${dropped} plugin call(s) dropped on a dead bridge thread"
+        echo "the activity manager recorded ${relaunched} relaunch(es) of a running activity"
+        if [ "$created" -gt 1 ] || [ "$relaunched" -gt 0 ]; then
+          echo "the launch was recreated: the platform replaced the activity after it started,"
+          echo "so the first instance's page can be a leftover that never reaches the native bridge"
+        else
+          echo "the launch was not recreated in this boot"
+        fi
+        echo
+        echo '--- bridge starts, activity lifecycle and the configuration the platform applied ---'
+        grep -E 'Starting BridgeActivity|App destroyed|App resumed|App paused|ResourcesManager: Invalidated|Choreographer|Config changes=|Relaunching' \
+          "$OUT/logcat.txt" | tail -n 120 || true
+        echo
+        echo '--- whoever asked for the recreate (AppCompat and ActivityThread at raised verbosity) ---'
+        grep -aE 'Schedule relaunch|Relaunching activity|recreate|Recreate|applyDayNight|updateForNightMode|Config changes|Configuration changed' \
+          "$OUT/logcat.txt" | tail -n 60 || true
+        if [ -s "$OUT/logcat-events.txt" ]; then
+          echo
+          echo '--- activity manager events: what the platform did to the activity ---'
+          echo 'configuration_changed carries the changed-bits mask; the ActivityManager line'
+          echo "with 'Config changes=' above names the same change in the app's own log."
+          grep -E 'am_relaunch_resume_activity|am_relaunch_activity|am_create_activity|am_destroy_activity|configuration_changed|am_on_resume_called|am_proc_start|am_kill|am_anr' \
+            "$OUT/logcat-events.txt" | tail -n 120 || true
+        fi
+      } > "$OUT/activity-recreate.txt"
+    fi
     # A lost device is the failure this artifact has to explain: record what
     # adb still sees, whether the emulator process survived, and what the
     # kernel said about it. Without these, "device offline" is a guess.
@@ -277,8 +353,30 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     # makes every pixel check read a black window.
     adb_run shell svc power stayon true >/dev/null 2>&1
     export PATH="$SDK/platform-tools:$PATH"
+    # A recreate is logged by whoever asked for it, and those callers are silent
+    # at the default level: AppCompat's applyDayNight says at DEBUG why it
+    # recreated, ActivityThread only says it scheduled a relaunch at VERBOSE,
+    # and the platform's own configuration pass (the "Config changes=" line) is
+    # a VERBOSE log on the Configuration tag in these userdebug images. Raise
+    # them before the app process starts so the next recreate names its caller.
+    # The ring grows with them: a verbose launch writes more than the default
+    # 256 KiB buffer holds, and the first create would scroll out of the log the
+    # warning reads.
+    adb_run logcat -G 16M
+    for prop in ActivityThread:VERBOSE AppCompatDelegate:DEBUG Configuration:VERBOSE SplashScreen:VERBOSE; do
+      adb_run shell setprop "log.tag.${prop%%:*}" "${prop#*:}"
+    done
+    # Count what this launch does, not what an earlier attempt left in the ring:
+    # the recreate this row is watching for is a second activity create inside
+    # one launch, and a cleared buffer also keeps an earlier attempt's crash out
+    # of the death report the assertion reads.
+    adb_run logcat -c
+    # Where this attempt's counts start. The ring is per boot, and `-c` is best
+    # effort on these images, so a marker in the buffer makes "the first launch"
+    # mean this attempt's launch instead of whatever the ring still holds.
+    adb_run shell log -t "$MARK_TAG" "the launch under test begins"
     status=0
-    node scripts/assert-android-shell.mjs || status=$?
+    SMOKE_FAILURE_DIR="$OUT" node scripts/assert-android-shell.mjs || status=$?
     # The platform can remove a foreground app when a provider it connects to
     # dies (the API 34 image did this with the GMS fonts provider) or under
     # memory pressure. The assertion reports that as status 4 because the pixels
@@ -292,8 +390,10 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
       if [ -n "$RETRY_WORK" ]; then : > "$RETRY_WORK/state/retry-taken"; fi
       # The repeat decides the row: a passing second run must leave status at 0,
       # and a second removal or a real failure must still fail the row.
+      adb_run logcat -c
+      adb_run shell log -t "$MARK_TAG" "the launch under test begins"
       status=0
-      node scripts/assert-android-shell.mjs || status=$?
+      SMOKE_FAILURE_DIR="$OUT" node scripts/assert-android-shell.mjs || status=$?
     fi
     # Exit 13 is Node's own "the event loop drained with a top-level await
     # pending". The assertion bounds every wait and reports an app failure as
@@ -320,6 +420,78 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
   fi
 
   if [ "$status" -eq 0 ]; then
+    # A green row says the paint proof passed, not what the platform did to the
+    # activity on the way there. Report the counts from this launch so a run that
+    # was recreated is visible even when the attach recovered, which is the only
+    # way to tell two green runs apart.
+    #
+    # Nothing here may decide the row: the paint proof already did. Every read is
+    # guarded, because `set -euo pipefail` turns a `grep` that finds nothing into
+    # an exit. The API 36 row passed every assertion, then found no `App
+    # destroyed` line to quote, and left the script at status 1 before the
+    # warning it was assembling was ever printed — a red row with no annotation
+    # and no failed check.
+    launch_log=$(mktemp)
+    adb_run logcat -d > "$launch_log" 2>/dev/null || true
+    creates=$(first_launch_counts "$launch_log" 'Starting BridgeActivity')
+    destroys=$(first_launch_counts "$launch_log" 'App destroyed')
+    starts=$(grep -c 'START u0' "$launch_log" || true)
+    # A relaunch of the resumed activity is am_relaunch_resume_activity; plain
+    # am_relaunch_activity is the not-resumed case. Counting only the second
+    # name reported 0 relaunches for a launch the platform had just relaunched,
+    # and counting both without the package picks up the boot's FallbackHome.
+    relaunches=$(adb_run logcat -b events -d 2>/dev/null \
+      | grep -E 'am_relaunch_resume_activity|am_relaunch_activity' \
+      | grep -cF "$APP_ID" || true)
+    note "the launch: ${creates} activity create(s), ${destroys} destroy(s), ${starts} start request(s) this boot, ${relaunches} relaunch(es)"
+    # The attach can recover from a recreate, which would otherwise leave a green
+    # row that looks clean. A warning is the signal that the launch itself was
+    # not: it shows on the check run, so the recreate is reported on every row
+    # that had one instead of only in a job log nobody reads.
+    if [ "${relaunches:-0}" -gt 0 ] || [ "${creates:-0}" -gt 1 ]; then
+      # The warning has to name the cause, not just the symptom. The second
+      # create's neighbourhood carries the configuration the platform applied in
+      # front of it; the start requests show whether anything outside this
+      # harness asked for the activity at all. Whoever called recreate() logs
+      # just before the destroy, not between it and the replacement, so the
+      # window reaches back over the first instance's teardown.
+      second=$(grep -n 'Starting BridgeActivity' "$launch_log" | sed -n '2p' | cut -d: -f1 || true)
+      nearest="no configuration line in front of it"
+      if [ -n "$second" ]; then
+        nearest_line=$(head -n "$second" "$launch_log" | grep -E 'Config changes=' | tail -n 1 || true)
+        if [ -n "$nearest_line" ]; then
+          nearest="${nearest_line#*Config changes=}"
+          nearest="Config changes=${nearest:0:180}"
+        fi
+      fi
+      # Nothing in the counts says who asked for the restart, and the lines
+      # between the destroy and the second create do: AppCompat, the splash
+      # install or the platform names itself there.
+      between="nothing logged between them"
+      if [ -n "$second" ]; then
+        first_destroy=$(grep -n 'App destroyed' "$launch_log" | head -n 1 | cut -d: -f1 || true)
+        if [ -n "$first_destroy" ] && [ "$first_destroy" -lt "$second" ]; then
+          from=$((first_destroy - 12))
+          [ "$from" -lt 1 ] && from=1
+          between=$(sed -n "${from},${second}p" "$launch_log" \
+            | sed -E 's/^[0-9-]+ [0-9:.]+[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] //' \
+            | cut -c1-160 | tail -n 14 | tr '\n' '|' || true)
+        fi
+      fi
+      [ -n "$between" ] || between="nothing logged between them"
+      # The caller itself, wherever it landed in the launch: the raised tags are
+      # the only lines that can name a recreate that no start request explains.
+      caller=$(grep -aE 'Schedule relaunch|Relaunching activity|recreate|Recreate|applyDayNight|updateForNightMode|Config changes|Configuration changed' "$launch_log" \
+        | sed -E 's/^[0-9-]+ [0-9:.]+[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] //' \
+        | cut -c1-160 | head -n 4 | tr '\n' '|' || true)
+      [ -n "$caller" ] || caller="no recreate caller in the log"
+      start_list=$(grep 'START u0' "$launch_log" \
+        | sed -E 's/^([0-9-]+ [0-9:.]+)[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] /\1 /' \
+        | cut -c1-150 | head -n 4 | tr '\n' '|' || true)
+      [ -n "$start_list" ] || start_list="none"
+      echo "::warning title=Android launch recreated::this launch created the activity ${creates} time(s), destroyed it ${destroys} time(s) and made ${starts} start request(s) (${relaunches} relaunch(es)); nearest before the second create: ${nearest}; around the destroy: ${between}; recreate caller: ${caller}; start requests: ${start_list}"
+    fi
+    rm -f "$launch_log"
     # The retry self-test is a property of this whole attempt: the removal was
     # armed, the assertion classified it as exit 4, and the repeat passed. A
     # green row that skipped the branch is the failure this catches.

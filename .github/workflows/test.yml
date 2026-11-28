@@ -85,6 +85,11 @@ jobs:
         run: npm run test:app-removal
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test ${{ matrix.files }}
+      - name: Name the failing specs in the job summary
+        if: failure()
+        env:
+          PLAYWRIGHT_JSON: test-results/playwright-report.json
+        run: node scripts/playwright-failure-summary.mjs "$PLAYWRIGHT_JSON"
       - name: Record an approved cache-footprint baseline
         if: success() && matrix.group == 'core' && github.event_name == 'workflow_dispatch' && inputs.rebaseline_reason != ''
         env:
@@ -296,6 +301,10 @@ jobs:
     # emulator stays on the last image whose guest completes the assertions.
     runs-on: ubuntu-24.04
     needs: android
+    # No job-level concurrency here: every matrix row is its own hosted runner,
+    # and a shared group with cancel-in-progress cancelled the rows themselves
+    # (API 24 and 26 were killed as 33 started). max-parallel already keeps one
+    # guest at a time inside a run.
     # A cold run downloads the emulator and its system image before it boots
     # anything; the cache makes later runs short, but the first one needs room.
     timeout-minutes: 50

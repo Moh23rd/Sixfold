@@ -504,7 +504,12 @@ regression, and the return from the legal page through both its own
 document of its own, so each return loads the app again; the check fails unless
 that load lands the hub settled, with no launch layer in the DOM and no hub
 entrance still running, which is the same animation set the page-level
-`launch-cover` test watches. Each job downloads the signed APK from the Android
+`launch-cover` test watches. Each return probe asks the page for its state over
+devtools, and each ask is bounded at three seconds: a probe the page never
+answers costs three seconds instead of the whole forty-second window, and the
+poll retries 300 ms later, so the rest of the window goes to a probe that can
+still answer. The timing line the row logs names how many probes went
+unanswered. Each job downloads the signed APK from the Android
 job instead of rebuilding it, so all API levels install the same artifact.
 
 The rows do not all boot the same image. API 34 and 36 run the AOSP `default`
@@ -524,15 +529,92 @@ being tested against the record that started this.
 
 A cold-starting WebView can be torn down and recreated by the system after the
 activity has started, which closes its DevTools socket before any page answers.
-The smoke retries only that attach: a new attempt starts only while a 20-second
+The smoke retries only that attach: a new attempt starts only while a 30-second
 window from the first attempt is open, and only while the process it launched
 is still the same live pid. An attach already in progress is left to finish, so
-the whole recovery can take longer than that window. The launch itself is never
+the whole recovery can take longer than that window. The window covers one page
+whose bridge is gone, where the liveness probe spends its whole ten-second
+budget before calling the page gone, plus the attach that follows; a second such
+page passes the window and the launch stays fatal. The launch itself is never
 repeated. A crash, kill or ANR recorded for that pid is fatal, a changed or
 missing pid is fatal, and the page still has to reach `home-ready` within the
 launch's own deadline, so a slow or dead first paint cannot pass as a WebView
 restart. Assertion failures after the launch proof are never retried, and the
 emulator-lost path (exit 3) still reboots the guest as before.
+
+A cold start can also leave a page behind. On the API 26 image the activity is
+occasionally destroyed and recreated about a second after it resumes, and the
+first instance's page keeps answering devtools evaluations while every plugin
+call it makes is dropped by the bridge thread that went away with it. That page
+can never report the native paint hand-off. The smoke therefore asks each page's
+`App` plugin for its own info before it attaches: only a page whose bridge
+answers is a candidate, and the newest visible, focused one of those is chosen.
+The question is asked again until the bridge answers, because the devtools
+target appears while the page is still booting its bridge and the plugin object
+exists a moment before the native side answers it. The retry runs in the
+harness: a page-side loop cannot work, since a call made that early never
+settles and a pending evaluation never runs the page's own timers.
+
+Silence is not proof that a bridge is gone, and treating it as one failed
+two rows. A page still booting on a loaded guest answers nothing for as long as
+its renderer is busy: on the API 33 row's shortcut launch the page stayed quiet
+through the whole ten-second budget and then ran the app's own plugin call, so
+the launch was reported dead while the app was healthy. Only a refused call is a
+dead bridge. A silent page gets fifteen seconds of questions, a page already
+found silent is re-asked for two rather than the whole budget, and a silent page
+that never answers is attached to anyway so the paint proof — the assertion that
+actually matters — decides, with the probe's verdict named in the log and in the
+failure state. A page whose bridge refused is never attached to, which is the
+leftover the probe exists to avoid. Both failed API 26 attempts of run #261 had
+attached to that leftover page and reported `the native paint hand-off never
+completed` with no cause recorded; the deadline now also logs the page's own
+launch state, so a slow page and a dead one stay distinguishable in the
+artifact. A failing row's artifact answers both questions:
+`activity-recreate.txt` counts the bridge starts, the activity destroys, the
+plugin calls dropped on a dead thread and the activity manager's own relaunches
+inside the launch, and lists the lifecycle lines around them; `logcat-events.txt`
+keeps the platform's event buffer, where `am_relaunch_resume_activity` and the
+`configuration_changed` event before it name the cause the app's log cannot;
+`devtools-listings.txt` holds every devtools listing the smoke read, with times
+and target ids, so whether a replacement page ever appeared is visible without
+grepping the logcat. The counts read both relaunch events, scoped to the app's
+own package: relaunching the resumed activity writes
+`am_relaunch_resume_activity`, and counting only `am_relaunch_activity` reported
+zero relaunches for a launch the platform had just relaunched, while counting
+the resumed form for every component read a clean launch as a recreate because
+the boot relaunches `com.android.settings/.FallbackHome` on its own.
+
+The trigger is the platform's, and it is a race with the installer rather than
+anything the app calls. `adb install` returns before the package broadcasts
+finish; an activity that starts inside that window is handed a new
+`ApplicationInfo`, `ActivityThread` bumps `Configuration.assetsSeq` for it, and
+the activity is relaunched for `CONFIG_ASSETS_PATHS` — a change AOSP keeps
+hidden because an app cannot handle an asset-path change itself, so no
+`android:configChanges` entry, theme or `recreate()` is involved and none could
+prevent it. A wiped AVD reproduces it on roughly half of its first launches,
+about a second after the launch resumes; a launch on a device that booted
+earlier never showed it, which is why ten local cold launches originally came
+out clean, and why the recreate survived declaring `mcc|mnc`.
+
+The smoke therefore waits for the install's own package traffic to be quiet for
+three seconds before its first launch, so the launch it asserts is the one a
+returning player makes rather than a race with the installer. The attach retry
+stays as the safety net for a recreate from any other source, and a green row
+still reports its activity creates and relaunches and warns when it had more
+than one. Both counts cover the attempt's *first* launch only, from the app's
+first start request to the next one: a full-pass row starts the app again for
+each shortcut step and each font scale, so a boot-wide count read three bridge
+starts for three launches and called a clean run a recreate. The report can
+never decide the row either — every read in it is guarded, because a `grep` that
+finds no `App destroyed` line returned 1 under `set -euo pipefail` and failed
+the API 36 row after every assertion had passed, before the warning it was
+assembling was printed. That warning raises `log.tag.ActivityThread`,
+`log.tag.AppCompatDelegate`, `log.tag.Configuration` and
+`log.tag.SplashScreen` before the app starts and
+quotes the lines those tags produce, plus the platform's own relaunch events, so
+a recreate from an app-side caller names it instead of only counting it. The
+carrier configuration stays declared for the separate `Config changes=3`
+relaunch the older image applied, which was never this one.
 
 A pixel sample is only evidence about the app while its own window is on
 screen. The platform can remove a foreground app when a provider it holds a

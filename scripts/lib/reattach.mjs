@@ -6,7 +6,56 @@
 
 import { describeDeath, recordsDeath } from './death-report.mjs';
 
-export const ATTACH_RETRY_WINDOW = 20000;
+/* How long one page may stay silent before the probe stops asking. The first
+   question gets the whole budget: a page still booting its bridge on a loaded
+   guest can stay quiet past ten seconds while the app's own plugin calls are
+   already succeeding (the API 33 row's shortcut launch did exactly that), so a
+   shorter budget calls a live page dead. A page already found silent is asked
+   again briefly — it has had its budget — which keeps a reattach cheap without
+   giving up on a page that was slow only once. */
+export const BRIDGE_PROBE_BUDGET = 15000;
+export const BRIDGE_REPROBE_BUDGET = 2000;
+
+/* Long enough for one page that spends its whole probe budget before it is
+   rejected, plus the retry delay and the attach that follows. A second dead page
+   passes the window and stays fatal. */
+export const ATTACH_RETRY_WINDOW = 30000;
+
+/* Picks the page the player can actually see out of the WebView targets the
+   devtools list exposes. `bridge` is the answer of the page's own liveness
+   probe: 'alive' when its App plugin ran and answered, 'starting' when the page
+   has not registered its plugins yet, and 'gone' when the call was posted to a
+   bridge thread that no longer exists.
+
+   Only an alive page can report the native paint hand-off, so a page whose
+   bridge is gone is never a candidate even when it is the newest, focused and
+   visible one. That is not hypothetical: a cold start on the API 26 image can
+   create the activity twice, destroying the first instance about a second after
+   it resumes. The first instance's page keeps answering devtools evaluations
+   while every plugin call it makes is dropped, which used to make the smoke
+   wait out its paint deadline against a page that could never answer. */
+export function chooseLivePage(pages) {
+  const live = pages.filter((page) => page.bridge === 'alive' && page.visible !== 'hidden');
+  if (!live.length) return null;
+  const newest = (list) => list.slice().sort((a, b) => (b.origin || 0) - (a.origin || 0))[0];
+  return newest(live.filter((page) => page.focused)) || newest(live);
+}
+
+/* The page to attach to when none of them answered its bridge probe. A silent
+   page is not a proven-dead one: only a refusal (`bridge: 'gone'`) is. A page
+   still booting its bridge on a starved guest stays silent for as long as the
+   renderer is busy, while the app's own plugin calls succeed moments later —
+   the API 33 row failed exactly that way, with the page declared gone ten
+   seconds before it answered. Attaching to the newest visible silent page lets
+   the paint proof, which is the assertion that matters, decide instead of a
+   probe that could not get an answer in time. A page that refused is never
+   returned: its bridge thread is gone and no paint hand-off can arrive. */
+export function chooseUnprovenPage(pages) {
+  const candidates = pages.filter((page) => page.bridge !== 'gone' && page.visible !== 'hidden');
+  if (!candidates.length) return null;
+  const newest = (list) => list.slice().sort((a, b) => (b.origin || 0) - (a.origin || 0))[0];
+  return newest(candidates.filter((page) => page.focused)) || newest(candidates);
+}
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
