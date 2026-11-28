@@ -35,7 +35,7 @@ const DAILY_CODE = '5.4.7';
 const PROFILE_CODE = '1.0.0';
 const BADGES_CODE = '1.1.1';
 const GAUNTLET_CODE = '1.0.3';
-const I18N_CODE = '6.0.11';
+const I18N_CODE = '6.0.12';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.

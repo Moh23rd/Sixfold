@@ -7,7 +7,7 @@
   // Distinguishes a language the reader picked from one the device supplied.
   // Only the picker writes this; a detected locale is never persisted.
   var EXPLICIT_KEY = 'sixfold.locale.explicit.v1';
-  var VERSION = '6.0.11';
+  var VERSION = '6.0.12';
   var BASE = 'i18n/';
   var PATTERNS = BASE + 'i18n-patterns.js';
   var CATALOG = {
