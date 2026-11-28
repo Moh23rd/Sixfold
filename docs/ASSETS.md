@@ -161,12 +161,13 @@ npm run assets:icons
 npm run assets:og
 ```
 
-`scripts/build-og-image.mjs` draws a 1200×630 card — the icon in a circle of the
-plate colour, the wordmark in Google Sans Flex, the tagline and the six game
-names — which is the size `index.html` declares in `og:image:width` and
-`og:image:height`. Bump the `?v=` on `og:image` and `twitter:image` when the
-card changes. The iOS launch images use `icons/icon-1024.png`, so they follow
-the launcher too (`npm run assets:ios-splash`).
+`scripts/build-og-image.mjs` draws a 1200×630 landscape of the hub — cream
+paper, the small masthead, the headline and yellow “No filler” mark, the six
+numbered collection pieces, and the game ticker. It is the size `index.html`
+declares in `og:image:width` and `og:image:height`. Bump the `?v=` on
+`og:image` and `twitter:image` when the card changes. The iOS launch images use
+`icons/icon-1024.png`, so they follow the launcher too
+(`npm run assets:ios-splash`).
 
 ## Adaptive icon guard
 
