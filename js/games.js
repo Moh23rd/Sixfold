@@ -32,14 +32,6 @@
   const cards = $$('[data-game]');
   const backButtons = $$('[data-back]');
 
-  // The entering class is a marker for one animation, not a state the screen
-  // keeps: dropping it on animationend lets the browser release the promoted
-  // layer as soon as the entrance is over.
-  document.addEventListener('animationend', function (event) {
-    if (event.animationName !== 'screen-enter') return;
-    const host = event.target && event.target.closest ? event.target.closest('.play-screen') : null;
-    if (host) host.classList.remove('is-entering');
-  });
   if (!app || !hub || !screens.water || !screens.sudoku || !screens.fruit || !screens.ttt || !screens.mines || !screens.wordle || !screens.badges) return;
 
   function load(key, fallback) {
@@ -682,19 +674,6 @@
     else app.setAttribute('aria-hidden', 'true');
     body.dataset.screen = screen;
 
-    // A game screen rises a few pixels as it fades in, instead of appearing
-    // between two frames. Transform and opacity only, so the entrance runs on
-    // the compositor; the class is dropped on animationend so the screen never
-    // keeps a promoted layer while it is played.
-    const arrived = screen === 'hub' ? null : screens[screen];
-    if (arrived && arrived.classList) {
-      arrived.classList.remove('is-entering');
-      if (!reducedMotion()) {
-        void arrived.offsetWidth;
-        arrived.classList.add('is-entering');
-      }
-    }
-
     // The hub's entrance belongs to the launch, not to every return. Once the
     // reader leaves the collection, the classes that own the entrance are
     // switched off, so coming back from a game does not replay the cover build
@@ -1056,21 +1035,21 @@
     });
   }
 
-  /* The cover is the six-piece Sixfold mark, so its six numbered tiles are the
-     secret key. Tap 01 through 06 in order; any wrong tap starts the sequence
-     again. The only feedback is a tiny physical press, which keeps the game
-     hidden until it is actually found. */
+  /* The cover is the six-piece Sixfold mark, and each numbered piece is a real
+     shortcut to the game in that position. The hidden Wordle is still there:
+     press and hold any piece instead of tapping it. */
   const sixArt = document.querySelector('.home-hero-art');
   const sixGrid = document.querySelector('.home-six');
   const sixPieces = $$('.home-six-piece');
   const sixHitTimers = new WeakMap();
+  const SIX_GAMES = ['merge', 'sudoku', 'ttt', 'mines', 'water', 'fruit'];
   // The press is one transform transition in css/home.css. Releasing the class
   // before that transition lands was what made a tap end mid-press and snap
   // back; hold it for the full duration so the tile finishes settling first.
   const SIX_PRESS_MS = 160;
-  let sixStep = 0;
-  let sixTouch = null;
-  let sixTouchHandled = null;
+  let sixHoldTimer = 0;
+  let sixHoldOrigin = null;
+  let sixHoldConsumedAt = 0;
   let sixLocked = false;
   function clearSixPress() {
     sixPieces.forEach(function (piece) {
@@ -1092,35 +1071,38 @@
       sixHitTimers.delete(piece);
     }, SIX_PRESS_MS));
   }
-  function commitSixTap(index) {
-    if (sixLocked) return;
-    handleSixPress(index);
+  function cancelSixHold() {
+    window.clearTimeout(sixHoldTimer);
+    sixHoldTimer = 0;
+    sixHoldOrigin = null;
   }
-  function handleSixPress(index) {
-    const piece = sixPieces[index];
-    if (!piece || sixLocked) return;
-    if (index !== sixStep) {
-      sixStep = index === 0 ? 1 : 0;
-      clearSixPress();
-      if (index === 0) flashSixPiece(piece);
-      return;
-    }
-    sixStep += 1;
-    flashSixPiece(piece);
-    if (sixStep === sixPieces.length) {
-      sixStep = 0;
+  function startSixHold(index, x, y) {
+    cancelSixHold();
+    if (sixLocked) return;
+    sixHoldOrigin = { index: index, x: x, y: y };
+    sixHoldTimer = window.setTimeout(function () {
+      sixHoldTimer = 0;
+      const origin = sixHoldOrigin;
+      sixHoldOrigin = null;
+      if (!origin || sixLocked) return;
+      sixHoldConsumedAt = Date.now();
       sixLocked = true;
       if (sixGrid) {
         sixGrid.classList.remove('is-unlocking');
         void sixGrid.offsetWidth;
         sixGrid.classList.add('is-unlocking');
       }
+      if (window.MergeHaptics && window.MergeHaptics.tap) window.MergeHaptics.tap();
       window.setTimeout(function () {
         if (sixGrid) sixGrid.classList.remove('is-unlocking');
-        sixLocked = false;
         showHiddenReveal();
       }, calmMotion() ? 80 : 320);
-    }
+    }, 650);
+  }
+  function openSixGame(index) {
+    if (sixLocked) return;
+    const game = SIX_GAMES[index];
+    if (game) openGame(game);
   }
   // The build animation used to hold its final transform until the class was
   // removed, which is what stopped a finished tile from showing a press. Mark
@@ -1161,41 +1143,42 @@
 
   sixPieces.forEach(function (piece, index) {
     piece.addEventListener('click', function () {
-      // The touchend path already committed this gesture; ignore its ghost
-      // click, but never a fresh press on the same tile.
-      const handled = sixTouchHandled;
-      if (handled && handled.index === index && Date.now() - handled.when < 500) return;
-      commitSixTap(index);
+      if (Date.now() - sixHoldConsumedAt < 800) return;
+      openSixGame(index);
     });
     piece.addEventListener('animationend', function (event) {
       if (event.animationName !== 'sixBuild') return;
       sixBuildsLeft = Math.max(0, sixBuildsLeft - 1);
       settleSixCover();
     });
-    // Safari can suppress the synthetic click on animated tiles. Handle the
-    // physical tap directly, and let the same-index guard absorb a late click.
-    piece.addEventListener('touchstart', function (event) {
-      const touch = event.changedTouches && event.changedTouches[0];
-      sixTouch = touch ? { x: touch.clientX, y: touch.clientY, id: touch.identifier } : null;
-    }, { passive: true });
-    piece.addEventListener('touchend', function (event) {
-      const touch = event.changedTouches && event.changedTouches[0];
-      const start = sixTouch;
-      sixTouch = null;
-      if (!touch || !start || touch.identifier !== start.id) return;
-      if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 18) return;
-      sixTouchHandled = { index: index, when: Date.now() };
-      commitSixTap(index);
-    }, { passive: true });
-    piece.addEventListener('touchcancel', function () { sixTouch = null; }, { passive: true });
+    function holdStart(event) {
+      const touch = event.touches && event.touches[0];
+      const point = touch || event;
+      if (typeof point.clientX === 'number') {
+        flashSixPiece(piece);
+        startSixHold(index, point.clientX, point.clientY);
+      }
+    }
+    function holdMove(event) {
+      if (!sixHoldOrigin || sixHoldOrigin.index !== index) return;
+      const touch = event.touches && event.touches[0];
+      const point = touch || event;
+      if (Math.hypot(point.clientX - sixHoldOrigin.x, point.clientY - sixHoldOrigin.y) > 18) cancelSixHold();
+    }
+    function holdEnd() { cancelSixHold(); }
+    piece.addEventListener('pointerdown', holdStart);
+    piece.addEventListener('pointermove', holdMove);
+    piece.addEventListener('pointerup', holdEnd);
+    piece.addEventListener('pointercancel', holdEnd);
+    piece.addEventListener('pointerleave', holdEnd);
   });
 
   /* The cover build is a launch animation. Returning to the hub only resets
-     the hidden game's sequence; it never replays the build. */
+     the long-press state; it never replays the build. */
   function resetSixProgress() {
-    sixStep = 0;
+    cancelSixHold();
+    sixHoldConsumedAt = 0;
     sixLocked = false;
-    sixTouchHandled = null;
     clearSixPress();
     if (sixGrid) sixGrid.classList.remove('is-unlocking');
   }

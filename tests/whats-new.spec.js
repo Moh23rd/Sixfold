@@ -2,10 +2,10 @@ const { test, expect } = require('@playwright/test');
 const { LANGUAGE_NAMES, LOCALES, expectNoClippedText } = require('./helpers');
 
 const WHATS_NEW_ITEMS = [
-  'Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.',
+  'One colour from your wallpaper: the palette now stays on that hue, with no stray purple or red.',
+  'Games and the first launch open cleanly, without flashing the screen behind them.',
+  'Every numbered cover tile opens its game; press and hold one for the hidden seventh.',
   'A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.',
-  'The welcome guide now lands before the hub, so a first launch never flashes the collection.',
-  'The hidden seventh game opens with a smooth hand-off from the six-piece cover.',
   'Two ways to play: the installable web app and the direct Android APK — both on 6.0.'
 ];
 

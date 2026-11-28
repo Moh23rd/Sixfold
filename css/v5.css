@@ -2420,21 +2420,6 @@ html[data-motion="full"] .sheet.is-closing .sheet-card {
   transition: transform 220ms cubic-bezier(0.4, 0, 1, 1);
 }
 
-/* ---------- a game screen arrives instead of cutting in ---------- */
-
-/* Opacity only, and on the screen itself: the shell inside already owns its
-   own first-visit entrance, and a second animation on that element would
-   replace it. Fading the whole fixed surface keeps the compositor in charge
-   and gives every arrival a calm half-beat without touching layout. */
-@keyframes screen-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-html[data-motion="full"] .play-screen.is-entering {
-  animation: screen-enter 220ms var(--ease-out) both;
-}
-
 /* ---------- tap affordance ----------
    Every control answers on the press, not after the browser's double-tap
    window, and no platform highlight is painted over the app's own press state. */

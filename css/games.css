@@ -292,7 +292,7 @@ html:not([data-fruit-numbers="on"]) .mini-number-cluster { display: none; }
 
 .mini-mines .mines-open { color: var(--g5, #4e79c4); background: color-mix(in srgb, var(--page) 52%, var(--panel)); }
 .mini-mines .mines-flag { color: var(--t64); }
-.mini-mines .mines-mine { color: var(--warn); background: color-mix(in srgb, var(--warn) 18%, var(--panel)); }
+.mini-mines .mines-mine { color: var(--g1); background: color-mix(in srgb, var(--g1) 18%, var(--panel)); }
 
 .game-tag {
   color: var(--muted);
@@ -1412,13 +1412,13 @@ html[data-theme="dark"] .mines-cell.has-7 { color: #f2e9dc; }
 html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 
 .mines-cell.is-mine {
-  background: color-mix(in srgb, var(--warn) 22%, var(--panel));
-  color: var(--warn);
+  background: color-mix(in srgb, var(--g1) 22%, var(--panel));
+  color: var(--g1);
   font-size: clamp(14px, 4.4vw, 19px);
 }
 
 .mines-cell.is-detonated {
-  background: var(--warn);
+  background: var(--g1);
   color: #fff7f3;
   box-shadow: inset 0 0 0 2px color-mix(in srgb, #fff7f3 55%, transparent);
 }
@@ -4114,8 +4114,8 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   height: 30px;
   left: 60px;
   top: 86px;
-  background: radial-gradient(circle at 35% 28%, #f39a92, #d4525a 60%, #8f2f3a);
-  box-shadow: 13px 5px 0 -3px #c24650, inset -4px -5px 0 rgba(0, 0, 0, 0.16);
+  background: radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--g7) 64%, #fff), var(--g1) 60%, color-mix(in srgb, var(--g1) 68%, #000));
+  box-shadow: 13px 5px 0 -3px var(--g2), inset -4px -5px 0 rgba(0, 0, 0, 0.16);
 }
 
 .f1::before {
@@ -4125,8 +4125,8 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   top: -13px;
   width: 17px;
   height: 14px;
-  border-top: 2px solid #5d8d4f;
-  border-right: 2px solid #5d8d4f;
+  border-top: 2px solid var(--ink-tile-low);
+  border-right: 2px solid var(--ink-tile-low);
   border-radius: 0 12px 0 0;
   transform: rotate(-8deg);
 }
@@ -4136,7 +4136,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   height: 38px;
   left: 92px;
   top: 56px;
-  background: radial-gradient(circle at 33% 28%, #f8c07a, #ef9a4c 58%, #d9762b);
+  background: radial-gradient(circle at 33% 28%, color-mix(in srgb, var(--g7) 60%, #fff), var(--g2) 58%, color-mix(in srgb, var(--g2) 64%, #000));
 }
 
 .f2::before {
@@ -4147,7 +4147,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 21px;
   top: -5px;
   border-radius: 70% 10% 70% 10%;
-  background: #5d8d4f;
+  background: var(--ink-tile-low);
   transform: rotate(-24deg);
 }
 
@@ -4157,15 +4157,15 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 36px;
   top: 32px;
   border-radius: 46% 54% 48% 52%;
-  background-color: #6f4b91;
+  background-color: var(--g4);
   background-image:
-    radial-gradient(circle at 29% 22%, #c29ce0 0 19%, transparent 20%),
-    radial-gradient(circle at 56% 18%, #b58ad6 0 19%, transparent 20%),
-    radial-gradient(circle at 22% 46%, #b58ad6 0 19%, transparent 20%),
-    radial-gradient(circle at 48% 44%, #c29ce0 0 20%, transparent 21%),
-    radial-gradient(circle at 72% 43%, #a87bc8 0 18%, transparent 19%),
-    radial-gradient(circle at 37% 68%, #b58ad6 0 19%, transparent 20%),
-    radial-gradient(circle at 63% 69%, #c29ce0 0 18%, transparent 19%);
+    radial-gradient(circle at 29% 22%, var(--g7) 0 19%, transparent 20%),
+    radial-gradient(circle at 56% 18%, var(--g5) 0 19%, transparent 20%),
+    radial-gradient(circle at 22% 46%, var(--g5) 0 19%, transparent 20%),
+    radial-gradient(circle at 48% 44%, var(--g7) 0 20%, transparent 21%),
+    radial-gradient(circle at 72% 43%, var(--g2) 0 18%, transparent 19%),
+    radial-gradient(circle at 37% 68%, var(--g5) 0 19%, transparent 20%),
+    radial-gradient(circle at 63% 69%, var(--g7) 0 18%, transparent 19%);
   box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.18);
 }
 
@@ -4177,7 +4177,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 24px;
   top: -6px;
   border-radius: 70% 10% 70% 10%;
-  background: #5d8d4f;
+  background: var(--ink-tile-low);
   transform: rotate(-30deg);
 }
 
@@ -4187,7 +4187,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 6px;
   top: 68px;
   border-radius: 48% 48% 46% 46% / 42% 42% 58% 58%;
-  background: radial-gradient(circle at 38% 30%, #d5e49a, #9bbb5b 55%, #6f963f);
+  background: radial-gradient(circle at 38% 30%, color-mix(in srgb, var(--g7) 68%, #fff), var(--g3) 55%, color-mix(in srgb, var(--g3) 64%, #000));
 }
 
 .f4::before {
@@ -4198,7 +4198,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 20px;
   top: -7px;
   border-radius: 3px;
-  background: #6b5236;
+  background: var(--ink-tile-low);
   transform: rotate(7deg);
 }
 
@@ -4208,8 +4208,8 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 114px;
   top: 24px;
   border-radius: 50% 50% 46% 46% / 44% 44% 58% 58%;
-  background-color: #d95151;
-  background-image: radial-gradient(#f7dfae 0 1px, transparent 1.4px);
+  background-color: var(--g6);
+  background-image: radial-gradient(var(--g7) 0 1px, transparent 1.4px);
   background-size: 7px 8px;
 }
 
@@ -4220,7 +4220,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   height: 9px;
   left: 7px;
   top: -4px;
-  background: #5d8d4f;
+  background: var(--ink-tile-low);
   clip-path: polygon(50% 0, 62% 55%, 100% 35%, 74% 78%, 50% 60%, 26% 78%, 0 35%, 38% 55%);
 }
 

@@ -426,11 +426,11 @@
   </script>
   <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/styles.css?v=5.4.7" />
-  <link rel="stylesheet" href="css/games.css?v=5.3.18" />
+  <link rel="stylesheet" href="css/games.css?v=5.3.19" />
   <link rel="stylesheet" href="css/home.css?v=4.1.16" />
-  <link rel="stylesheet" href="css/polish.css?v=4.0.10" />
+  <link rel="stylesheet" href="css/polish.css?v=4.0.11" />
   <link rel="stylesheet" href="css/sudoku.css?v=4.0.6" />
-  <link rel="stylesheet" href="css/v5.css?v=5.6.9" />
+  <link rel="stylesheet" href="css/v5.css?v=5.6.10" />
   <link rel="stylesheet" href="css/progressive-blur.css?v=1.4.1" />
 </head>
 <body data-screen="hub" data-fade>
@@ -501,10 +501,10 @@
         <details class="whats-new-details">
           <summary class="whats-new-label" id="whats-new-title">What’s new in 6.0</summary>
           <ul class="whats-new-list">
-            <li>Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.</li>
+            <li>One colour from your wallpaper: the palette now stays on that hue, with no stray purple or red.</li>
+            <li>Games and the first launch open cleanly, without flashing the screen behind them.</li>
+            <li>Every numbered cover tile opens its game; press and hold one for the hidden seventh.</li>
             <li>A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.</li>
-            <li>The welcome guide now lands before the hub, so a first launch never flashes the collection.</li>
-            <li>The hidden seventh game opens with a smooth hand-off from the six-piece cover.</li>
             <li>Two ways to play: the installable web app and the direct Android APK — both on 6.0.</li>
           </ul>
         </details>
@@ -531,12 +531,12 @@
 
         <div class="home-hero-art" aria-hidden="true">
           <div class="home-six">
-            <button class="home-six-piece six-1" type="button" tabindex="-1" data-fade>01</button>
-            <button class="home-six-piece six-2" type="button" tabindex="-1" data-fade>02</button>
-            <button class="home-six-piece six-3" type="button" tabindex="-1" data-fade>03</button>
-            <button class="home-six-piece six-4" type="button" tabindex="-1" data-fade>04</button>
-            <button class="home-six-piece six-5" type="button" tabindex="-1" data-fade>05</button>
-            <button class="home-six-piece six-6" type="button" tabindex="-1" data-fade>06</button>
+            <button class="home-six-piece six-1" type="button" tabindex="-1" aria-label="Play Merge" data-fade>01</button>
+            <button class="home-six-piece six-2" type="button" tabindex="-1" aria-label="Play Sudoku" data-fade>02</button>
+            <button class="home-six-piece six-3" type="button" tabindex="-1" aria-label="Play Tic Tac Toe" data-fade>03</button>
+            <button class="home-six-piece six-4" type="button" tabindex="-1" aria-label="Play Minesweeper" data-fade>04</button>
+            <button class="home-six-piece six-5" type="button" tabindex="-1" aria-label="Play Water Sort" data-fade>05</button>
+            <button class="home-six-piece six-6" type="button" tabindex="-1" aria-label="Play Fruit Merge" data-fade>06</button>
           </div>
           <p class="home-six-caption" data-fade><span>Play offline</span><span>01—06</span></p>
         </div>
@@ -1588,17 +1588,17 @@
   <script src="js/overscroll.js?v=6.0.5"></script>
   <script src="js/celebrate.js?v=5.0.1"></script>
   <script src="js/sharecard.js?v=5.3.5"></script>
-  <script src="js/theme.js?v=6.0.26"></script>
+  <script src="js/theme.js?v=6.0.27"></script>
   <script src="js/game.js?v=5.3.5"></script>
   <script src="js/install.js?v=5.0.1"></script>
   <script src="js/sudoku.js?v=5.3.5"></script>
-  <script src="js/games.js?v=5.5.10"></script>
+  <script src="js/games.js?v=5.5.11"></script>
   <script src="js/daily.js?v=5.4.7"></script>
   <script src="js/profile.js?v=1.0.0"></script>
   <script src="js/badges.js?v=1.1.1"></script>
   <script src="js/gauntlet.js?v=1.0.3"></script>
   <script src="js/update.js?v=5.1.0"></script>
-  <script src="i18n/i18n-locale.js?v=6.0.10"></script>
+  <script src="i18n/i18n-locale.js?v=6.0.11"></script>
   <script>
     // Only the active language pack is on the first-visit critical path. Every
     // other catalog is cached when its language is selected.
@@ -1609,8 +1609,8 @@
       });
     })();
   </script>
-  <script src="i18n/i18n.js?v=6.0.10"></script>
-  <script src="js/native.js?v=5.2.1"></script>
+  <script src="i18n/i18n.js?v=6.0.11"></script>
+  <script src="js/native.js?v=5.2.2"></script>
   <script src="js/wordle-loader.js?v=5.3.4-wordle"></script>
   <script>
     (function () {

@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { holdCover } = require('./helpers');
 
 const SAVED_GAME_OVER = {
   size: 4,
@@ -795,15 +796,8 @@ test('back dismisses the Wordle result and stays in Wordle', async ({ page }) =>
   await page.goto('/');
   await page.waitForSelector('#daily');
   await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
-  // The seventh game stays hidden behind the six-piece mark on the hub.
-  for (let i = 0; i < 6; i += 1) {
-    await page.evaluate((index) => {
-      const piece = document.querySelectorAll('.home-six-piece')[index];
-      if (piece) piece.click();
-    }, i);
-    await page.waitForTimeout(50);
-  }
-  await page.waitForTimeout(400);
+  // The seventh game stays hidden behind a press-and-hold on the cover mark.
+  await holdCover(page);
   if (await page.locator('#hidden-reveal').isVisible()) {
     await page.evaluate(() => document.querySelector('#hidden-reveal-skip').click());
   }
@@ -890,13 +884,7 @@ test('back dismisses the hidden-game reveal', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('#daily');
   await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
-  for (let i = 0; i < 6; i += 1) {
-    await page.evaluate((index) => {
-      const piece = document.querySelectorAll('.home-six-piece')[index];
-      if (piece) piece.click();
-    }, i);
-    await page.waitForTimeout(50);
-  }
+  await holdCover(page);
   await expect(page.locator('#hidden-reveal')).toBeVisible();
 
   expect(await pressBack(page), 'the reveal answers back').toBe(true);
@@ -1303,7 +1291,7 @@ test('a browser without the wallpaper plugin does not offer the swatch', async (
   await expect(page.locator('[data-palette-opt="custom"]'), 'custom needs no native part').toHaveCount(1);
 });
 
-test('the wallpaper ramp uses all three colours Android extracts', async ({ page }) => {
+test('the wallpaper ramp uses only the primary colour Android extracts', async ({ page }) => {
   await page.addInitScript(() => {
     window.Capacitor = window.Capacitor || {};
     window.Capacitor.Plugins = window.Capacitor.Plugins || {};
@@ -1320,9 +1308,36 @@ test('the wallpaper ramp uses all three colours Android extracts', async ({ page
     g3: getComputedStyle(document.documentElement).getPropertyValue('--g3').trim(),
     cached: JSON.parse(localStorage.getItem('merge2048.palette.wallpaper.colors'))
   }));
-  expect(painted.cached).toEqual(['#0a7d57', '#b23a48', '#d8a12b']);
-  expect(painted.g1, 'the first game follows the primary').not.toBe(painted.g2);
-  expect(painted.g2, 'the second game follows the secondary').not.toBe(painted.g3);
+  expect(painted.cached).toEqual(['#0a7d57']);
+  expect(painted.g1, 'accents stay distinguishable').not.toBe(painted.g2);
+  expect(painted.g2, 'accents stay distinguishable').not.toBe(painted.g3);
+
+  const hues = await page.evaluate(() => {
+    function hue(hex) {
+      const n = parseInt(hex.slice(1), 16);
+      const r = ((n >> 16) & 255) / 255;
+      const g = ((n >> 8) & 255) / 255;
+      const b = (n & 255) / 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const d = max - min;
+      if (!d) return 0;
+      let h;
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      return h * 60;
+    }
+    const source = hue('#0a7d57');
+    const values = [];
+    for (let i = 1; i <= 7; i += 1) {
+      values.push(hue(getComputedStyle(document.documentElement).getPropertyValue('--g' + i).trim()));
+    }
+    return values.map((value) => Math.min(Math.abs(value - source), 360 - Math.abs(value - source)));
+  });
+  for (const difference of hues) {
+    expect(difference, 'every game accent keeps the wallpaper hue').toBeLessThanOrEqual(1);
+  }
 });
 
 test('Red replaces the retired Mono palette', async ({ page }) => {
@@ -1466,10 +1481,9 @@ test('the colour panel is localised at runtime', async ({ page }) => {
 
 // The cover's build animation used fill-mode both, so its final transform kept
 // winning over :active and a finished tile could not show a press. Once the
-// mark is settled a press must land every time, and pressing must never put
-// the tile back under the build animation (which re-armed invisibly when the
-// hit class excluded the settled rule).
-test('a settled six-piece presses every time without replaying the build', async ({ page }) => {
+// mark is settled a press must land, keep its whole transform, and open the
+// game that piece stands for. Releasing is a click, not a reveal.
+test('a settled six-piece presses fully and opens its game', async ({ page }) => {
   await page.goto('/?perf=full');
   await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
   await page.waitForFunction(
@@ -1478,34 +1492,44 @@ test('a settled six-piece presses every time without replaying the build', async
     { timeout: 8000 }
   );
   const piece = page.locator('.home-six-piece').first();
-  for (let press = 0; press < 2; press += 1) {
-    // Time the hold in the page: a Playwright click round-trip is long enough
-    // to swallow the last part of a 160ms press. The press must own its whole
-    // transform, not snap back partway through it.
-    await piece.evaluate((el) => {
-      window.__sixPress = { added: 0, removed: 0 };
-      const observer = new MutationObserver(() => {
-        const on = el.classList.contains('is-six-hit');
-        if (on && !window.__sixPress.added) window.__sixPress.added = performance.now();
-        if (!on && window.__sixPress.added && !window.__sixPress.removed) {
-          window.__sixPress.removed = performance.now();
-          observer.disconnect();
-        }
-      });
-      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+  await piece.hover();
+  // Time the hold in the page: a Playwright click round-trip can swallow the
+  // last part of a 160ms press. The press must own its whole transform.
+  await piece.evaluate((el) => {
+    window.__sixPress = { added: 0, removed: 0 };
+    const observer = new MutationObserver(() => {
+      const on = el.classList.contains('is-six-hit');
+      if (on && !window.__sixPress.added) window.__sixPress.added = performance.now();
+      if (!on && window.__sixPress.added && !window.__sixPress.removed) {
+        window.__sixPress.removed = performance.now();
+        observer.disconnect();
+      }
     });
-    await piece.click();
-    await expect(piece, 'press ' + (press + 1) + ' shows its press state').toHaveClass(/is-six-hit/);
-    const state = await piece.evaluate((el) => ({
-      animation: getComputedStyle(el).animationName,
-      transform: getComputedStyle(el).transform
-    }));
-    expect(state.animation, 'a press never restarts the launch build').toBe('none');
-    expect(state.transform).not.toBe('none');
-    await page.waitForFunction(() => window.__sixPress.removed > 0);
-    const hold = await page.evaluate(() => window.__sixPress.removed - window.__sixPress.added);
-    expect(hold, 'press ' + (press + 1) + ' lasts its whole transform').toBeGreaterThanOrEqual(150);
-    await expect(piece).not.toHaveClass(/is-six-hit/);
+    observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+  await page.mouse.down();
+  await expect(piece, 'the press shows its state').toHaveClass(/is-six-hit/);
+  const state = await piece.evaluate((el) => ({
+    animation: getComputedStyle(el).animationName,
+    transform: getComputedStyle(el).transform
+  }));
+  expect(state.animation, 'a press never restarts the launch build').toBe('none');
+  expect(state.transform).not.toBe('none');
+  await page.mouse.up();
+  await page.waitForFunction(() => window.__sixPress.removed > 0);
+  const hold = await page.evaluate(() => window.__sixPress.removed - window.__sixPress.added);
+  expect(hold, 'the press lasts its whole transform').toBeGreaterThanOrEqual(150);
+  await expect(page.locator('body'), 'the first cover piece opens Merge').toHaveAttribute('data-screen', 'merge');
+});
+
+test('each cover piece opens the game it stands for', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sixfold.welcome.v1', '1'));
+  const games = ['merge', 'sudoku', 'ttt', 'mines', 'water', 'fruit'];
+  for (let index = 0; index < games.length; index += 1) {
+    await page.goto('/');
+    await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
+    await page.locator('.home-six-piece').nth(index).click();
+    await expect(page.locator('body'), 'cover 0' + (index + 1)).toHaveAttribute('data-screen', games[index]);
   }
 });
 

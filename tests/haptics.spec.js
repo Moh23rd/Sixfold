@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { holdCover } = require('./helpers');
 
 // These tests stand up the Capacitor Haptics plugin the way the APK does,
 // before any page script runs. The games then go through the real
@@ -46,14 +47,7 @@ async function openWordle(page) {
   await page.goto('/');
   await page.waitForSelector('#daily');
   await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
-  for (let i = 0; i < 6; i += 1) {
-    await page.evaluate((index) => {
-      const piece = document.querySelectorAll('.home-six-piece')[index];
-      if (piece) piece.click();
-    }, i);
-    await page.waitForTimeout(50);
-  }
-  await page.waitForTimeout(400);
+  await holdCover(page);
   if (await page.locator('#hidden-reveal').isVisible()) {
     await page.evaluate(() => document.querySelector('#hidden-reveal-skip').click());
   }

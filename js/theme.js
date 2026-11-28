@@ -215,38 +215,40 @@
     };
   }
 
-  // A wallpaper palette is more than one hue. Android gives the primary,
-  // secondary and tertiary colours it extracted from the image, so split the
-  // eleven Warm positions between those anchors instead of throwing two of
-  // them away. Lightness still comes from the hand-tuned ramp: a dark wallpaper
-  // must not make the board unreadable, and a pale one must not erase the
-  // numbers.
+  // A wallpaper palette keeps one hue: the primary colour Android extracted.
+  // Android also reports a secondary and tertiary colour, but those are often
+  // complementary accents from elsewhere in the image; mixing them into the
+  // board made a green wallpaper produce red and purple tiles. Every tile and
+  // game accent is a shade of the primary colour instead. Lightness still comes
+  // from the hand-tuned ramp, so a dark wallpaper cannot erase the numbers and
+  // a pale one cannot wash out the board.
   function wallpaperPalette(id, label, seed, colours) {
     const anchors = normalizeColours(colours);
-    if (!anchors.length) anchors.push(normalizeHex(seed) || '#e85f3b');
-    const base = seededPalette(id, label, anchors[0]);
-    const anchorHsl = anchors.map(function (hex) {
-      const n = parseInt(hex.slice(1), 16);
-      return rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    const primary = normalizeHex(seed) || anchors[0] || '#e85f3b';
+    const base = seededPalette(id, label, primary);
+    const n = parseInt(primary.slice(1), 16);
+    const hsl = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    const saturation = Math.max(0.28, Math.min(0.88, hsl[1] * 0.92));
+    // Seven steps of the one hue keep the collection's cards and the games'
+    // pieces distinguishable without borrowing a second colour from the image.
+    const accentLightness = [0.66, 0.58, 0.50, 0.42, 0.70, 0.54, 0.46];
+    base.anchors = [primary];
+    base.colors = [primary];
+    // Keep the hand-tuned ramp's lightness curve, but pin every step to the
+    // primary hue. Recolouring the Warm ramp by hue-shift would leave the
+    // light and gold ends pointing at their own hues, which is how a green
+    // wallpaper ended up with blue and cyan tiles.
+    base.ramp = WARM.map(function (hex) {
+      const value = parseInt(hex.slice(1), 16);
+      const source = rgbToHsl((value >> 16) & 255, (value >> 8) & 255, value & 255);
+      const tileSaturation = Math.max(0.08, Math.min(0.88, source[1] * 0.7 + hsl[1] * 0.3));
+      const tileLightness = Math.max(0.10, Math.min(0.94, source[2] + (hsl[2] - 0.5) * 0.10));
+      return hslToHex(hsl[0], tileSaturation, tileLightness);
     });
-    function anchored(sourceHex, index, strength) {
-      const n = parseInt(sourceHex.slice(1), 16);
-      const source = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
-      const anchor = anchorHsl[index % anchorHsl.length];
-      const saturation = Math.max(0.12, Math.min(0.92, source[1] * (1 - strength) + anchor[1] * strength));
-      const lightness = Math.max(0.08, Math.min(0.96, source[2] + (anchor[2] - 0.5) * strength * 0.16));
-      return hslToHex(anchor[0], saturation, lightness);
-    }
-    base.anchors = anchors;
-    base.colors = anchors;
-    base.ramp = WARM.map(function (hex, index) {
-      const anchorIndex = Math.min(anchors.length - 1, Math.floor(index * anchors.length / WARM.length));
-      return anchored(hex, anchorIndex, 0.78);
+    base.accents = accentLightness.map(function (lightness) {
+      return hslToHex(hsl[0], saturation, lightness);
     });
-    base.accents = GAME_ACCENTS.map(function (hex, index) {
-      return anchored(hex, index, 0.72);
-    });
-    base.inkLow = hslToHex(anchorHsl[0][0], 0.14, 0.38);
+    base.inkLow = hslToHex(hsl[0], 0.14, 0.38);
     return base;
   }
 
@@ -695,16 +697,19 @@
     wallpaperRead = pending;
     pending.then(function (result) {
       wallpaperRead = null;
-      const colors = normalizeColours(result && [result.primary, result.secondary, result.tertiary]);
-      const seed = colors[0];
+      // Only the primary colour is ours. Android's secondary and tertiary are
+      // separate accents from the image and can be a complementary red or
+      // purple; keeping them in the palette is what broke a green wallpaper.
+      const seed = normalizeHex(result && result.primary);
       if (!seed) return;
+      const colors = [seed];
       const current = dynamicPalette('wallpaper');
       // The common resume: the same wallpaper the last paint already used.
       // Rebuilding the ramp here used to repaint every surface and run a fade
       // for a colour that had not moved, which is exactly the churn a phone
       // that changes wallpaper on every lock would make constant.
       if (state.palette === 'wallpaper' && current && current.colors &&
-        current.colors.join('|') === colors.join('|')) return;
+        current.colors[0] === seed) return;
       state.wallpaper = seed;
       state.wallpaperColors = colors;
       setWallpaperPalette(seed, colors);

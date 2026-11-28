@@ -2,7 +2,7 @@
 
 > Public release label: **v6.0**.
 
-## v6.0 — 27 November 2026
+## v6.0 — 28 November 2026
 
 Internal build: **6.0.0**
 
@@ -14,6 +14,26 @@ whole set feel settled. No accounts, ads, tracking or server.
 Everything below shipped after 5.0; closely related commits are grouped under
 the outcome they produce, and the list runs from the headline features to the
 release guards. Existing saves, daily history and backups upgrade in place.
+
+### Release blockers fixed
+
+- **The wallpaper palette is one colour**: Android still reports the
+  wallpaper's anchors, but the page now reads only the primary. Every ramp
+  tile, game accent and piece of fruit artwork is a lightness or saturation
+  step of that hue, so a green wallpaper can no longer produce purple or red
+  tiles. The old secondary and tertiary anchors are ignored.
+- **No flash between screens**: a game screen no longer fades its whole root
+  in over the hub, which used to show the previous board underneath it for a
+  frame. Screens are opaque and swap directly; the launch cover is held over
+  the WebView until the hub or welcome guide has actually painted.
+- **The six cover tiles are buttons again**: 01–06 each open the game in that
+  position, on the web and in the APK. The hidden seventh game moved to a
+  press-and-hold on any tile, so the old 01→06 sequence is no longer the only
+  way to reach it and no tap is swallowed.
+- **The launch screen keeps its composition**: the native shell no longer
+  drops the mark, wordmark and rail on the page hand-off, and the platform
+  splash stays up through a cold WebView's first frames instead of uncovering
+  a flat surface.
 
 ### The Daily Gauntlet
 
@@ -73,9 +93,9 @@ release guards. Existing saves, daily history and backups upgrade in place.
 ### Appearance that follows the phone
 
 - **Colour from the phone**: Look & feel offers a wallpaper palette on Android
-  (the shell reports the wallpaper's primary, secondary and tertiary anchors;
-  the board ramp follows all three, the page keeps a low-saturation tint of the
-  primary, and the game accents use the secondary and tertiary) and a custom
+  (the shell reports the wallpaper's anchors, and the palette uses the primary
+  only: every ramp tile and accent is a lightness or saturation step of that
+  one hue, with the fruit and mine artwork recoloured to match) and a custom
   colour card with a picker, a hex field and a live preview. Both persist per
   device, follow the interface language, and the fixed palette names are
   translated in all twelve catalogues.
@@ -956,9 +976,9 @@ six-piece cover work.
   controls.
 - **A three-step Sudoku coach** that teaches selecting a cell, placing a
   number, and using Notes and Hint.
-- **Hidden-game discovery**: the six-piece cover assembles, tapping 01 through
-  06 in order unlocks a short reveal, and the cover replays its build when you
-  return to the hub.
+- **Hidden-game discovery**: each numbered cover tile opens its game on a tap;
+  press and hold any tile to unlock the short reveal for the seventh game. The
+  cover replays its build only on a fresh launch.
 - **A six-piece launch splash** with a staggered mark and progress rail.
 - **Wordle image share cards**, alongside the existing result shares.
 - **A versioned What's New note** above the hero.
