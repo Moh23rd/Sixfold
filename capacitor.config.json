@@ -1,0 +1,14 @@
+{
+  "appId": "io.github.moh23rd.sixfold",
+  "appName": "Sixfold",
+  "webDir": "native/www",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "disable"
+    },
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "launchFadeOutDuration": 180
+    }
+  }
+}

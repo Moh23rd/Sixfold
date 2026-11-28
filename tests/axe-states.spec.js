@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { setPreferences } = require('./helpers');
+const { setPreferences, holdCover } = require('./helpers');
 const { expectNoAxeViolations } = require('./accessibility');
 
 const SAVED_GAME_OVER = {
@@ -19,14 +19,7 @@ async function openWordle(page) {
   await page.goto('/');
   await page.waitForSelector('#daily');
   await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
-  for (let i = 0; i < 6; i += 1) {
-    await page.evaluate((index) => {
-      const piece = document.querySelectorAll('.home-six-piece')[index];
-      if (piece) piece.click();
-    }, i);
-    await page.waitForTimeout(50);
-  }
-  await page.waitForTimeout(450);
+  await holdCover(page);
   const skip = page.locator('#hidden-reveal-skip');
   if (await skip.isVisible().catch(() => false)) await skip.click();
   await page.waitForSelector('body[data-screen="wordle"]');
@@ -57,6 +50,12 @@ async function solveWordle(page) {
 async function showSudokuResult(page) {
   await openGame(page, 'sudoku');
   await page.waitForSelector('#sudoku-board .sudoku-cell');
+  // Sudoku's activate() pass hides the result. Wait for the timer to tick so
+  // that pass has finished before exposing the overlay for the axe scan.
+  await page.waitForFunction(() => {
+    const time = document.getElementById('sudoku-time');
+    return time && time.textContent.trim() !== '0:00';
+  });
   await page.evaluate(() => {
     document.getElementById('sudoku-result-stats').textContent = 'Easy · 4:12 · no hints';
     document.getElementById('sudoku-result').hidden = false;

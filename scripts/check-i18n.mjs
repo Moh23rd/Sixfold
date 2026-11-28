@@ -38,6 +38,25 @@ function extract(source, label, pattern) {
   return vm.runInNewContext('(' + match[1] + ')');
 }
 
+// Every literal tr('...') key used by the main UI must exist in the English
+// source catalog. Catalog-to-catalog comparison cannot catch this: a key that
+// is absent from English is absent from every catalog too, so the UI silently
+// falls back to the source text. Dynamic prefixes such as tr('Play ' + name)
+// are skipped because they are not complete keys.
+function literalTrKeys(files) {
+  const keys = new Map();
+  for (const file of files) {
+    const source = read('js/' + file);
+    for (const match of source.matchAll(/\btr\(\s*(['"])((?:\\.|(?!\1).)*)\1/g)) {
+      const key = match[2].replace(/\\(['"\\])/g, '$1');
+      if (/ $/.test(key)) continue;
+      if (!keys.has(key)) keys.set(key, []);
+      keys.get(key).push(file);
+    }
+  }
+  return keys;
+}
+
 function placeholders(value) {
   // A translation may need the same argument twice (for example, repeating
   // the digit name in a sentence). Compare the set of arguments, not how
@@ -201,6 +220,44 @@ const supported = extract(
   /  var SUPPORTED = (\{[\s\S]*?\n  \});/
 );
 
+const mainFiles = readdirSync(join(root, 'js'))
+  .filter((file) => file.endsWith('.js') && file !== 'wordle.js');
+const trKeys = literalTrKeys(mainFiles);
+const missingTrKeys = [...trKeys].filter(([key]) => !(key in english));
+if (missingTrKeys.length) {
+  fail(
+    'literal tr() key(s) missing from the English source: ' +
+    missingTrKeys.map(([key, files]) => JSON.stringify(key) + ' (' + files.join(', ') + ')').join(' | ')
+  );
+}
+
+// Spanish is the ES table above, keyed by the English source string, so its
+// key set is the English key set by construction. Its values still need the
+// same numbered placeholders as their key, and no empty copy.
+function checkSpanish(spanish) {
+  let count = 0;
+  for (const [key, value] of Object.entries(spanish)) {
+    if (typeof value !== 'string' || !value.trim()) {
+      fail('es: empty message for "' + key + '"');
+      continue;
+    }
+    if (placeholders(value) !== placeholders(key)) {
+      fail('es: placeholder mismatch for "' + key + '"');
+    }
+    count += 1;
+  }
+  return count;
+}
+
+const spanishCount = checkSpanish(english);
+if (!errors.some((message) => message.startsWith('es:'))) {
+  console.log('  ok  es — ' + spanishCount + ' messages');
+}
+
+// Wordle keys are not in the main English catalog; they are checked against
+// the Wordle English catalog below.
+const wordleTrKeys = literalTrKeys(['wordle.js']);
+
 const window = {};
 evaluate('i18n/i18n-patterns.js', { window });
 const sourceText = window.SixfoldPatterns && window.SixfoldPatterns.text;
@@ -277,6 +334,13 @@ let wordleStringCount = 0;
 if (!englishWordle) {
   fail('Wordle: English catalog is missing');
 } else {
+  const missingWordleTrKeys = [...wordleTrKeys].filter(([key]) => !(key in englishWordle));
+  if (missingWordleTrKeys.length) {
+    fail(
+      'Wordle literal tr() key(s) missing from the English source: ' +
+      missingWordleTrKeys.map(([key]) => JSON.stringify(key)).join(' | ')
+    );
+  }
   for (const locale of expectedWordleLocales) {
     if (!(locale in wordleStrings)) continue;
     wordleStringCount += checkWordleStrings(locale, wordleStrings[locale], englishWordle);

@@ -28,8 +28,6 @@
     { days: 365, color: '#9a6bb5' }
   ];
   const WEEKLY_BADGE = { days: ORDER.length, color: '#8bbd54' };
-  const REMINDER_KEY = 'sixfold.daily.reminder.v1';
-  const REMINDER_HOUR = 9;
   const $ = function (id) { return document.getElementById(id); };
 
   function pad(value) { return String(value).padStart(2, '0'); }
@@ -60,9 +58,47 @@
     };
   }
 
+  function dayIndex(key) {
+    const d = dateFromKey(key);
+    if (!d) return 0;
+    return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  }
+
+  // A day-seeded pick, but a permutation per six-day block rather than six
+  // independent modulo rolls. The old salt could land on the same game three
+  // days running (and often did), which reads as a broken rotation even though
+  // the hash is stable. Within a block every game appears once; a block whose
+  // first game repeats the previous block's last one is rotated by one.
+  const featuredOrders = {};
+  function featuredOrder(block) {
+    if (featuredOrders[block]) return featuredOrders[block];
+    const order = ORDER.slice();
+    const random = seededRandom('sixfold-daily-feature|' + block);
+    for (let i = order.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(random() * (i + 1));
+      const swap = order[i];
+      order[i] = order[j];
+      order[j] = swap;
+    }
+    featuredOrders[block] = order;
+    return order;
+  }
+
   function featuredGame(key) {
     const safe = isKey(key) ? key : todayKey();
-    return ORDER[seedValue('sixfold-daily-feature|' + safe) % ORDER.length];
+    const day = dayIndex(safe);
+    const block = Math.floor(day / ORDER.length);
+    const position = ((day % ORDER.length) + ORDER.length) % ORDER.length;
+    const order = featuredOrder(block).slice();
+    if (position === 0) {
+      const previous = featuredOrder(block - 1);
+      if (order[0] === previous[previous.length - 1]) {
+        const swap = order[0];
+        order[0] = order[1];
+        order[1] = swap;
+      }
+    }
+    return order[position];
   }
 
   function dateFromKey(key) {
@@ -176,6 +212,28 @@
   function isDone(key, game) {
     const day = dayFor(key);
     return Boolean(day && day.games && day.games[game]);
+  }
+
+  // A normalized per-game aggregate for the 6.0 profile store. The days map
+  // stays private here; the profile only needs how often each game was
+  // credited, plus the first and last dates it happened.
+  function gameSummary() {
+    const summary = {};
+    ORDER.forEach(function (game) {
+      summary[game] = { done: 0, first: null, last: null };
+    });
+    Object.keys(data.days).forEach(function (key) {
+      const day = data.days[key];
+      if (!day || !day.games) return;
+      ORDER.forEach(function (game) {
+        if (!day.games[game]) return;
+        const entry = summary[game];
+        entry.done += 1;
+        if (!entry.first || key < entry.first) entry.first = key;
+        if (!entry.last || key > entry.last) entry.last = key;
+      });
+    });
+    return summary;
   }
 
   function streak() {
@@ -314,14 +372,27 @@
     if (!GAMES[game]) return false;
     const key = isKey(dateKey) ? dateKey : todayKey();
     const day = data.days[key] || { games: {} };
-    if (day.games[game]) {
+    const credited = !day.games[game];
+    // Every game finishes through here exactly once, so this is the only
+    // completion boundary 6.0 needs. It fires before the duplicate check: a
+    // replay is still a finished round. `credited` says whether the daily
+    // store counted it, and `sixfold:daily-change` keeps its first-credit
+    // meaning for the hub, badges and weekly dots.
+    try {
+      window.dispatchEvent(new CustomEvent('sixfold:daily-complete', {
+        detail: { date: key, game: game, credited: credited, meta: meta || null }
+      }));
+    } catch (err) {}
+    if (!credited) {
       render();
       return false;
     }
+    // Read the week before the game is written, or this completion is already
+    // part of the "previous" state and Perfect six can never be announced.
+    const previousWeekly = weeklyBadge();
     day.games[game] = true;
     data.days[key] = day;
     const previousBest = data.best || 0;
-    const previousWeekly = weeklyBadge();
     const current = streak();
     const previousBadge = highestMilestone(previousBest);
     const earnedBadge = highestMilestone(current);
@@ -341,7 +412,6 @@
     announce(notes.join(' '));
     if (key === todayKey() && game === featuredGame(key)) {
       showFinish(game, earnedBadge > previousBadge ? earnedBadge : 0, weeklyEarned);
-      scheduleReminder();
     }
     const total = countFor(key);
     try {
@@ -413,6 +483,7 @@
 
   function render() {
     const key = todayKey();
+    shownKey = key;
     const dateEl = $('daily-date');
     const streakEl = $('daily-streak');
     const bestEl = $('daily-best');
@@ -473,7 +544,7 @@
       const to = next || 0;
       const ratio = to > from ? Math.max(0, Math.min(1, (best - from) / (to - from))) : 0;
       badgeProgress.hidden = !next;
-      badgeFill.style.width = Math.round(ratio * 100) + '%';
+      badgeFill.style.transform = 'scaleX(' + Math.round(ratio * 1000) / 1000 + ')';
     }
 
     const weekEl = $('daily-week');
@@ -485,6 +556,7 @@
       ORDER.forEach(function (game) {
         const dot = document.createElement('i');
         dot.className = 'daily-week-dot' + (week.games.indexOf(game) !== -1 ? ' is-done' : '');
+        dot.dataset.fade = '';
         dot.dataset.game = game;
         weekTrack.appendChild(dot);
       });
@@ -572,8 +644,21 @@
     else { sheet.hidden = true; sheet.classList.remove('is-open'); }
   }
 
+  // A shared card should open the app wherever the reader is already playing
+  // it. The native shell serves itself from https://localhost, and a link to a
+  // development address is useless to whoever receives it, so both of those
+  // keep the canonical public page.
+  const CANONICAL = 'https://moh23rd.github.io/Sixfold/';
+  function shareBase() {
+    const native = Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    const host = location.hostname;
+    const local = !host || host === 'localhost' || host === '127.0.0.1';
+    if (native || local || !/^https?:$/.test(location.protocol)) return CANONICAL;
+    return location.origin + location.pathname;
+  }
+
   function shareData(dateKey) {
-    const key = isKey(dateKey) ? dateKey : todayKey();
+    const key = isKey(dateKey) ? dateKey : (shownKey || todayKey());
     const game = featuredGame(key);
     return {
       daily: true,
@@ -586,100 +671,25 @@
       color: gameColor(game),
       index: ORDER.indexOf(game),
       file: 'sixfold-daily-' + key,
-      url: 'https://moh23rd.github.io/Sixfold/?daily=' + key
+      url: shareBase() + '?daily=' + key
     };
   }
 
-  function reminderEnabled() {
-    try {
-      return Boolean(window.SixfoldSettings && window.SixfoldSettings.get('dailyReminder'));
-    } catch (err) {
-      return false;
-    }
-  }
-
-  function reminderStamp() {
-    try {
-      const value = JSON.parse(localStorage.getItem(REMINDER_KEY) || 'null');
-      return value && typeof value === 'object' ? value : {};
-    } catch (err) {
-      return {};
-    }
-  }
-
-  function markReminderShown(key) {
-    try {
-      localStorage.setItem(REMINDER_KEY, JSON.stringify({ lastShown: key }));
-    } catch (err) {}
-  }
-
-  function reminderAllowed() {
-    return 'Notification' in window && Notification.permission === 'granted';
-  }
-
-  let reminderTimer = 0;
-  let reminderInFlight = false;
-
-  function showReminder() {
-    if (reminderInFlight || !reminderEnabled() || !reminderAllowed()) return;
+  // A phone is usually left asleep on the hub overnight. Coming back to a
+  // stale card is what makes a saved card look like the wrong day.
+  function refreshIfStale() {
     const key = todayKey();
-    const game = featuredGame(key);
-    if (isDone(key, game) || reminderStamp().lastShown === key) return;
-
-    const title = tr('Daily Sixfold');
-    const body = tr(GAMES[game].label) + ' · ' + tr(GAMES[game].goal);
-    const done = function () { markReminderShown(key); };
-    const fallback = function () {
-      try {
-        new Notification(title, { body: body, tag: 'sixfold-daily' });
-        done();
-      } catch (err) {}
-    };
-
-    reminderInFlight = true;
-    const finish = function () { reminderInFlight = false; };
-    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
-      navigator.serviceWorker.getRegistration().then(function (registration) {
-        if (!registration) {
-          fallback();
-          finish();
-          return;
-        }
-        return registration.showNotification(title, {
-          body: body,
-          tag: 'sixfold-daily',
-          icon: 'icons/icon-192.png',
-          data: { url: './#daily' }
-        }).then(done).catch(fallback).then(finish);
-      }).catch(function () {
-        fallback();
-        finish();
-      });
-      return;
-    }
-    fallback();
-    finish();
-  }
-
-  function scheduleReminder(skipToday) {
-    window.clearTimeout(reminderTimer);
-    if (!reminderEnabled() || !reminderAllowed()) return;
-    const key = todayKey();
-    if (skipToday) markReminderShown(key);
-    if (isDone(key, featuredGame(key))) return;
-
-    const now = new Date();
-    const at = new Date(now);
-    at.setHours(REMINDER_HOUR, 0, 0, 0);
-    if (now >= at) {
-      if (reminderStamp().lastShown !== key) showReminder();
-      return;
-    }
-    reminderTimer = window.setTimeout(showReminder, at.getTime() - now.getTime());
+    if (shownKey === key) return;
+    selectedDay = key;
+    render();
   }
 
   function init() {
     render();
+    window.addEventListener('focus', refreshIfStale);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refreshIfStale();
+    });
     const calendarBtn = $('daily-calendar-open');
     if (calendarBtn) calendarBtn.addEventListener('click', function () { openCalendar(calendarBtn); });
     const featuredBtn = $('daily-featured');
@@ -711,12 +721,6 @@
       render();
     });
     try { window.addEventListener('sixfold:daily-change', render); } catch (err) {}
-    try { window.addEventListener('sixfold:settings', scheduleReminder); } catch (err) {}
-    document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) scheduleReminder();
-    });
-    scheduleReminder();
-
     const url = new URL(location.href);
     const shared = url.searchParams.get('daily');
     if (isKey(shared) && shared <= todayKey() && shared >= shiftKey(todayKey(), -(MAX_ARCHIVE - 1))) {
@@ -728,6 +732,9 @@
 
   let data = load();
   let selectedDay = todayKey();
+  // The day the hub is currently showing. A saved card uses this, not a fresh
+  // clock read, so an app left open across midnight cannot save the wrong day.
+  let shownKey = '';
 
   window.SixfoldDaily = {
     todayKey: todayKey,
@@ -744,10 +751,10 @@
     weekProgress: weekProgress,
     weekStartKey: weekStartKey,
     shareData: shareData,
-    refreshReminder: scheduleReminder,
     hideFinish: hideFinish,
     isDone: isDone,
     countFor: countFor,
+    gameSummary: gameSummary,
     seededRandom: seededRandom
   };
 

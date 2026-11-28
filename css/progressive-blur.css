@@ -1,0 +1,184 @@
+/* ==========================================================================
+   Progressive blur
+   --------------------------------------------------------------------------
+   Content dissolves as it scrolls under the phone's transparent status and
+   navigation bars. CSS still has no gradient blur, so the ramp is a stack of
+   six backdrop-filter layers whose masked windows overlap by half a step:
+   each layer hands off exactly where the next has already faded in, which is
+   why the joins stay invisible.
+
+   The band is only as tall as the chrome it protects, so at rest nothing on
+   screen is touched and only six thin strips are composited at a time. The
+   layers are decorative: no motion, no pointer target, and nothing at all
+   where backdrop-filter is missing or transparency is reduced.
+   ========================================================================== */
+
+/* Safe-area tokens. Both channels resolve once here: the WebView's env() on
+   iOS and in a browser, and the --safe-area-inset-* properties MainActivity
+   writes for the Android shell, whose WebView reports env() as zero. Every
+   screen and both blur bands measure the same thing. */
+:root {
+  --sa-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --sa-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  --sa-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    env(safe-area-max-inset-bottom, 0px),
+    var(--safe-area-inset-bottom, 0px)
+  );
+  --sa-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+
+  /* One ladder drives the band height and the tightest resting gutter: the
+     band is the bar plus the feather, and --pb-gutter-* is that plus 2px of
+     clearance for the screen. Screens that need more space add to it; none
+     should ever ask for less. */
+  --pb-feather-top: 16px;
+  --pb-feather-bottom: 8px;
+  --pb-band-top: calc(var(--sa-top) + var(--pb-feather-top));
+  --pb-band-bottom: calc(var(--sa-bottom) + var(--pb-feather-bottom));
+  --pb-gutter-top: calc(var(--pb-band-top) + 2px);
+  --pb-gutter-bottom: calc(var(--pb-band-bottom) + 2px);
+}
+
+/* The feather never exceeds the tightest resting gutter, so both bands end
+   inside the gutter instead of on top of resting content. Measured gutters:
+   top is 20px on play screens, 18px on the hub, 10-12px on short screens and
+   8px in landscape; bottom is 10-16px on tall screens, 8px short and 6px in
+   landscape. The insets dominate the heights, so both bands stay as thick as
+   the system bars themselves on a phone. */
+@media (max-height: 700px) {
+  :root {
+    --pb-feather-top: 8px;
+    --pb-feather-bottom: 6px;
+  }
+}
+
+/* From this width the Merge screen switches to its desktop grid, which drops
+   its outer padding and puts the header 10px from the top. */
+@media (min-width: 900px) {
+  :root { --pb-feather-top: 8px; }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  :root {
+    --pb-feather-top: 6px;
+    --pb-feather-bottom: 4px;
+  }
+}
+
+.progressive-blur { display: none; }
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .progressive-blur {
+    position: fixed;
+    right: 0;
+    left: 0;
+    z-index: 40;
+    display: block;
+    height: min(var(--pb-band-top), 72px);
+    background: none;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .progressive-blur--top {
+    top: 0;
+    --pb-direction: to top;
+  }
+
+  /* The bottom band measures the same tokens as the screens' own padding, so
+     a screen that keeps its footer above --pb-gutter-bottom always keeps it
+     clear of the band. */
+  .progressive-blur--bottom {
+    bottom: 0;
+    --pb-direction: to bottom;
+    height: min(var(--pb-band-bottom), 72px);
+  }
+
+  /* Three passes, each painting only the slice it fades across. The previous
+     six full-height layers each re-read the whole band, so the two deepest
+     radii covered six times the area they needed; that is what made scrolling
+     and screen changes stutter. Slicing keeps the ramp, at roughly a third of
+     the blur work. */
+  .progressive-blur > span {
+    position: absolute;
+    right: 0;
+    left: 0;
+    -webkit-backdrop-filter: blur(var(--pb-blur, 1px));
+    backdrop-filter: blur(var(--pb-blur, 1px));
+    -webkit-mask-image: linear-gradient(var(--pb-direction), rgba(0, 0, 0, 0) 0%, #000 var(--pb-fade, 50%), #000 100%);
+    mask-image: linear-gradient(var(--pb-direction), rgba(0, 0, 0, 0) 0%, #000 var(--pb-fade, 50%), #000 100%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+  }
+
+  /* Inner edge: a whisper of blur, fading in from the content side. */
+  .progressive-blur > span:nth-child(1) {
+    --pb-blur: 0.6px;
+    --pb-fade: 65%;
+    height: 40%;
+  }
+
+  /* Middle: the band's body, still much lighter than the edge. */
+  .progressive-blur > span:nth-child(2) {
+    --pb-blur: 2.2px;
+    --pb-fade: 60%;
+    height: 50%;
+  }
+
+  /* Outer edge, under the system bar: the deepest blur, on half the band. */
+  .progressive-blur > span:nth-child(3) {
+    --pb-blur: 8px;
+    --pb-fade: 55%;
+    height: 45%;
+  }
+
+  /* The two bands are different heights (the top carries the feather), so
+     their slices are tuned separately. Both ramps were matched against the
+     six-layer render before the switch. */
+  .progressive-blur--top > span:nth-child(1) { bottom: 0; }
+  .progressive-blur--top > span:nth-child(2) { bottom: 28%; }
+  .progressive-blur--top > span:nth-child(3) { bottom: 55%; }
+
+  .progressive-blur--bottom > span:nth-child(1) { top: 0; height: 45%; --pb-fade: 60%; }
+  .progressive-blur--bottom > span:nth-child(2) { top: 25%; height: 55%; --pb-fade: 50%; }
+  .progressive-blur--bottom > span:nth-child(3) { top: 50%; height: 50%; --pb-fade: 45%; }
+
+  /* A sheet already blurs the whole page behind it, so skip the extra passes
+     while one is open. */
+  html.sheet-open .progressive-blur { display: none; }
+
+  /* The result overlay lives inside the play area's own stacking context, so
+     the bands step out of the way there too instead of blurring its card.
+     Kept in its own support check so an engine without :has() still gets the
+     sheet rule above. */
+  @supports selector(:has(*)) {
+    html:has(.overlay:not([hidden])) .progressive-blur { display: none; }
+  }
+
+  /* Low-end mode. Three masked backdrop filters are the most expensive thing
+     on the page, so on a phone that reports little memory or few cores the
+     same band is painted as one solid surface that fades toward the content:
+     no blur, no compositing, and the same safe-area geometry. */
+  html.perf-lite .progressive-blur {
+    background: var(--page);
+    -webkit-mask-image: linear-gradient(var(--pb-direction, to top), rgba(0, 0, 0, 0) 0%, #000 45%, #000 100%);
+    mask-image: linear-gradient(var(--pb-direction, to top), rgba(0, 0, 0, 0) 0%, #000 45%, #000 100%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  html.perf-lite .progressive-blur > span { display: none; }
+}
+
+/* The bands exist for the screens that scroll under the system bars: the hub
+   and the badge collection, which is a long reading page rather than a game
+   frame. A play screen owns its own frame, so no glass sits over a board. */
+body:not([data-screen="hub"]):not([data-screen="badges"]) .progressive-blur { display: none; }
+
+/* Safari and iOS can ask for less transparency; respect it and show nothing. */
+@media (prefers-reduced-transparency: reduce) {
+  .progressive-blur { display: none !important; }
+}

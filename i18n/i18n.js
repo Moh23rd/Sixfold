@@ -25,6 +25,68 @@
   var catalog = { messages: {}, patterns: [] };
 
   var ES = {
+    "Warm": "Cálido",
+    "Ocean": "Océano",
+    "Forest": "Bosque",
+    "Rose": "Rosa",
+    "Slate": "Pizarra",
+    "Ink": "Tinta",
+    "Colour that follows the phone: take the wallpaper palette on Android, or pick any hex of your own.": "Color que sigue al teléfono: usa la paleta del fondo de pantalla en Android o elige cualquier código hexadecimal.",
+    "A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.": "Una sensación más suave: cambios de tema más fluidos, vibración refinada y una tarjeta de novedades más tranquila.",
+    "The welcome guide now lands before the hub, so a first launch never flashes the collection.": "La guía de bienvenida aparece antes del inicio, así que la primera apertura ya no muestra la colección.",
+    "The hidden seventh game opens with a smooth hand-off from the six-piece cover.": "El séptimo juego oculto se abre con un tránsito fluido desde la portada de seis piezas.",
+    "Two ways to play: the installable web app and the direct Android APK — both on 6.0.": "Dos formas de jugar: la web instalable y el APK directo de Android, ambos en 6.0.",
+    "One colour from your wallpaper: the palette now stays on that hue, with no stray purple or red.": "Un solo color de tu fondo de pantalla: la paleta se mantiene en ese tono, sin morados ni rojos sueltos.",
+    "Games and the first launch open cleanly, without flashing the screen behind them.": "Los juegos y el primer inicio se abren sin destellos de la pantalla anterior.",
+    "Every numbered cover tile opens its game; press and hold one for the hidden seventh.": "Cada pieza numerada de la portada abre su juego; mantén pulsada una para el séptimo oculto.",
+    "Wallpaper": "Fondo de pantalla",
+    "Custom": "Personalizado",
+    "Custom colour": "Color personalizado",
+    "Pick a colour": "Elige un color",
+    "Hex colour": "Color hexadecimal",
+    "Apply": "Aplicar",
+    "Enter a hex colour such as #RRGGBB.": "Escribe un color hexadecimal como #RRGGBB.",
+    "Custom colour applied.": "Color personalizado aplicado.",
+    "Motion": "Movimiento",
+    "System": "Sistema",
+    "Full": "Completo",
+    "Reduced": "Reducido",
+    'Welcome to Sixfold': 'Te damos la bienvenida a Sixfold',
+    'Six games, one place. Everything saves on this device.': 'Seis juegos en un solo lugar. Todo se guarda en este dispositivo.',
+    'Tap any cover on the hub to start a game.': 'Toca cualquier portada de la pantalla de inicio para empezar una partida.',
+    'Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.': 'Sixfold diario te da un puzle nuevo en cada juego y mantiene tu racha.',
+    'Look changes the theme, language, contrast and backup. First-play tips wait inside each game.': 'Aspecto cambia el tema, el idioma, el contraste y la copia de seguridad. Dentro de cada juego encontrarás consejos para la primera partida.',
+    'Start playing': 'Empezar a jugar',
+    'Replay this guide from Look & feel.': 'Puedes repetir esta guía desde Aspecto.',
+    'Guide': 'Guía',
+    'Welcome & guide': 'Bienvenida y guía',
+    'Six games, the daily set and where everything lives.': 'Los seis juegos, el set diario y dónde está todo.',
+    'Daily Gauntlet': 'Gauntlet diario',
+    'Six rounds. One run.': 'Seis rondas. Una partida.',
+    'Start': 'Empezar',
+    'Start the Daily Gauntlet': 'Empezar el Gauntlet diario',
+    'Done today': 'Hecho hoy',
+    'Last run': 'Última partida',
+    'Again': 'Otra vez',
+    'Start today': 'Empezar hoy',
+    'Start another Daily Gauntlet': 'Empezar otro Gauntlet diario',
+    'Start today’s Daily Gauntlet': 'Empezar el Gauntlet diario de hoy',
+    'Run ended': 'Partida terminada',
+    'Continue': 'Continuar',
+    'Continue the Daily Gauntlet': 'Continuar el Gauntlet diario',
+    'Start run': 'Empezar partida',
+    'Start again': 'Empezar de nuevo',
+    'Start today’s run': 'Empezar la partida de hoy',
+    'Done earlier': 'Hecho antes',
+    'Not played': 'Sin jugar',
+    'Gauntlet rounds': 'Rondas del Gauntlet',
+    'Started': 'Inicio',
+    'Now': 'Ahora',
+    'No run yet. Six games, one order, one time.': 'Aún no hay partida. Seis juegos, un orden, un tiempo.',
+    'Runs': 'Partidas',
+    'No runs yet.': 'Aún no hay partidas.',
+    'Round {1} of {2}': 'Ronda {1} de {2}',
+    'Round {1} / {2}': 'Ronda {1} / {2}',
     'Sixfold — Six games. No filler.': 'Sixfold — Seis juegos. Sin relleno.',
     'The pocket arcade': 'El arcade de bolsillo',
     'Six games. No filler.': 'Seis juegos. Sin relleno.',
@@ -39,14 +101,11 @@
     'Puzzle collection': 'Colección de puzles',
     'Look': 'Aspecto',
     'Warm': 'Cálido',
-    'What’s new in 5.0': 'Novedades de 5.0',
-    'Spanish localization: the complete interface, game labels, dates and accessibility copy can switch between English and Español': 'Localización en español: toda la interfaz, las etiquetas de juego, las fechas y los textos de accesibilidad pueden cambiar entre English y Español',
-    'Wordle in all twelve languages: localized word lists, native input for Arabic, Hindi, Kannada, Japanese, Korean and Chinese, and an offline English fallback': 'Wordle en los doce idiomas: listas de palabras localizadas, entrada nativa para árabe, hindi, canarés, japonés, coreano y chino, y un respaldo en inglés sin conexión',
-    'Wordle offline support: the selected dictionary downloads in the background, and an English fallback round keeps the game playable when it is not cached': 'Wordle sin conexión: el diccionario seleccionado se descarga en segundo plano y una ronda de respaldo en inglés mantiene el juego disponible cuando aún no está en caché',
-    'Arabic and Hindi numerals, right-to-left Arabic, localized dates and share text across every game': 'Números en árabe y hindi, árabe de derecha a izquierda, fechas y texto para compartir localizados en todos los juegos',
-    'New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic, with complete catalogs and offline fonts': 'Nuevos idiomas de interfaz: francés, alemán, chino, japonés, coreano, portugués (Brasil), hindi, canarés y árabe, con catálogos completos y fuentes sin conexión',
-    'Sudoku Learn mode: technique hints, auto-notes, optional mistake checking and a short technique guide': 'Modo Aprender de Sudoku: pistas de técnica, notas automáticas, comprobación opcional de errores y una breve guía de técnicas',
-    'Accessibility and safety: high contrast, colour-blind cues, larger digits, left-handed Sudoku, backup and restore': 'Accesibilidad y seguridad: alto contraste, señales para daltonismo, dígitos grandes, Sudoku para zurdos, copia y restauración',
+    'What’s new in 6.0': 'Novedades de 6.0',
+    'Daily Gauntlet: play all six daily challenges in one run, leave and resume at any round, and keep one finish time.': 'Gauntlet diario: juega los seis retos diarios en una sola partida, sal y retómalo en cualquier ronda, y conserva un único tiempo final.',
+    'A local profile on the badges page: daily and replay counts, bests, and every finished Gauntlet — stored on this device.': 'Un perfil local en la página de insignias: partidas diarias y repeticiones, mejores marcas y cada Gauntlet terminado, todo guardado en este dispositivo.',
+    'A calmer finish: light, dark and palette changes fade smoothly, hidden games stop redrawing, and reduced motion still switches instantly.': 'Un acabado más sereno: los cambios de tema claro, oscuro y de paleta se funden suavemente, los juegos ocultos dejan de redibujarse y el movimiento reducido sigue siendo instantáneo.',
+    'A sturdier app: saved cards reach the gallery, the window frame follows the app, and older Android WebViews stay supported.': 'Una app más sólida: las tarjetas guardadas llegan a la galería, el marco de la ventana acompaña a la app y las WebView antiguas de Android siguen funcionando.',
     'Six games.': 'Seis juegos.',
     'No filler.': 'Sin relleno.',
     'A small arcade for the in-between. Six satisfying puzzles, no accounts, no ads — and they work offline.': 'Un pequeño arcade para los ratos libres. Seis puzles satisfactorios, sin cuentas y sin anuncios, que funcionan sin conexión.',
@@ -75,12 +134,6 @@
     'days to': 'días para',
     'games / week': 'juegos / semana',
     'Share today’s challenge': 'Compartir el reto de hoy',
-    'Daily reminder': 'Recordatorio diario',
-    'One local nudge at 9:00 while Sixfold is open.': 'Un aviso local a las 9:00 mientras Sixfold esté abierto.',
-    'Reminder on. One nudge a day at 9:00.': 'Recordatorio activado. Un aviso al día a las 9:00.',
-    'Reminder off.': 'Recordatorio desactivado.',
-    'Notifications are not available in this browser.': 'Las notificaciones no están disponibles en este navegador.',
-    'Notifications are blocked in your browser settings.': 'Las notificaciones están bloqueadas en los ajustes del navegador.',
     'Replay': 'Repetir',
     'Next badge': 'Próxima insignia',
     'Every game has a date-seeded daily. Pick one to begin.': 'Cada juego tiene un reto diario con semilla por fecha. Elige uno para empezar.',
@@ -125,6 +178,10 @@
     'Share': 'Compartir',
     'Try again': 'Intentar de nuevo',
     'Save image': 'Guardar imagen',
+    'Saved to your gallery.': 'Guardado en tu galería.',
+    'Image downloaded.': 'Imagen descargada.',
+    'Full screen': 'Pantalla completa',
+    'Couldn’t save the image.': 'No se pudo guardar la imagen.',
     'New game': 'Nueva partida',
     'Tip: park your biggest tile in a corner.': 'Consejo: guarda tu ficha más grande en una esquina.',
     'Tip: build along one edge, not in the middle.': 'Consejo: construye junto a un borde, no en el centro.',
@@ -206,6 +263,7 @@
     'Careful — the pile is close to the top.': 'Cuidado, la pila está cerca de arriba.',
     'Room again. Keep building pairs.': 'Hay sitio otra vez. Sigue creando parejas.',
     'Let the last fruit settle for a moment.': 'Deja que la última fruta se asiente un momento.',
+    'Nearly full — look for a match.': 'Casi lleno — busca una pareja.',
     'Tap a square to begin. Long-press to flag.': 'Toca una casilla para empezar. Mantén pulsado para marcar.',
     'Mine hit. The field is revealed.': 'Mina pisada. El campo está al descubierto.',
     'Flag placed. Tap it again to remove it.': 'Bandera colocada. Toca otra vez para quitarla.',
@@ -320,6 +378,13 @@
     'Board on the right in landscape.': 'Tablero a la derecha en horizontal.',
     'Hide timer': 'Ocultar temporizador',
     'Play Sudoku without a clock in view.': 'Juega al Sudoku sin reloj a la vista.',
+    'Water Sort settings': 'Ajustes de Water Sort',
+    'Minesweeper settings': 'Ajustes de Buscaminas',
+    'Saved on this device for every Water Sort board.': 'Se guarda en este dispositivo para cada tablero de Water Sort.',
+    'Saved on this device for every Minesweeper field.': 'Se guarda en este dispositivo para cada campo de Buscaminas.',
+    'Larger mine numbers': 'Números de mina más grandes',
+    'Bigger numbers on the board.': 'Números más grandes en el tablero.',
+    'Play Sudoku and Minesweeper without a clock.': 'Juega al Sudoku y al Buscaminas sin reloj.',
     'Check mistakes': 'Comprobar errores',
     'Mark Sudoku entries that do not fit.': 'Marca las entradas de Sudoku que no encajan.',
     'Sudoku input': 'Entrada de Sudoku',
@@ -357,13 +422,14 @@
     'Install': 'Instalar',
     'Install Sixfold for an app-like window and offline play.': 'Instala Sixfold para tener una ventana tipo app y jugar sin conexión.',
     'Already installed but it won’t open? Remove the old app from your Home Screen or browser app settings, then try again. The phone controls the bottom system bar, so it keeps the colour it was given when the app was installed.': '¿Ya está instalada pero no se abre? Elimina la app antigua de la pantalla de inicio o de los ajustes del navegador y vuelve a intentarlo. El teléfono controla la barra inferior, así que conserva el color que tenía al instalarse.',
-    'No accounts, ads or tracking. Your board, best scores and appearance choices stay on this device. Each game has its own reset in its tool row, so clearing one game never touches the others. Your light/dark choice is also remembered in a first-party cookie so an installed app can choose matching launch chrome.': 'Sin cuentas, anuncios ni rastreo. Tu tablero, récords y preferencias de aspecto se quedan en este dispositivo. Cada juego tiene su propio reinicio, así que borrar uno nunca toca los demás. La elección claro/oscuro también se recuerda en una cookie propia para que una app instalada elija el color de lanzamiento adecuado.',
+    'No accounts, ads or tracking. Your board, best scores and appearance choices stay on this device. Each game has its own reset in its tool row, so clearing one game never touches the others. Your light/dark choice is remembered on this device, so the launch screen opens in the appearance you were using.': 'Sin cuentas, anuncios ni rastreo. Tu tablero, récords y preferencias de aspecto se quedan en este dispositivo. Cada juego tiene su propio reinicio, así que borrar uno nunca toca los demás. La elección claro/oscuro se recuerda en este dispositivo, así que la pantalla de inicio se abre con el aspecto que estabas usando.',
     'Questions, bug reports or feedback?': '¿Preguntas, errores o comentarios?',
     'Open a discussion': 'Abrir una conversación',
     'Report a bug or send feedback': 'Informar de un error o enviar comentarios',
     'A backup is yours: export it from Look & feel whenever you want a copy.': 'La copia de seguridad es tuya: expórtala desde Aspecto y ajustes cuando quieras.',
     'Release notes live in': 'Las notas de la versión están en',
-    'Version 5.0': 'Versión 5.0',
+    'Android builds are attached there when published.': 'Las compilaciones de Android se adjuntan allí cuando se publican.',
+    'Version 6.0': 'Versión 6.0',
     'Difficulty': 'Dificultad',
     'Every puzzle has exactly one solution. Best times save on this device.': 'Cada puzle tiene exactamente una solución. Los mejores tiempos se guardan en este dispositivo.',
     'Daily calendar': 'Calendario diario',
@@ -411,14 +477,12 @@
     'Berry colours': 'Colores baya',
     'Dusk colours': 'Colores crepúsculo',
     'Forest colours': 'Colores bosque',
-    'Mono colours': 'Colores monocromos',
     'Ocean colours': 'Colores océano',
     'Warm colours': 'Colores cálidos',
     'Quick tutorial': 'Tutorial rápido',
     'Skip tutorial': 'Saltar tutorial',
     'Skip': 'Saltar',
     'Vibration off': 'Vibración desactivada',
-    'Exit fullscreen': 'Salir de pantalla completa',
     'Got it': 'Entendido',
     'Swipe or drag the board to move every tile.': 'Desliza o arrastra el tablero para mover todas las fichas.',
     'Two tiles with the same number merge into one and double, adding to your score.': 'Dos fichas con el mismo número se unen en una y se doblan, sumando a tu puntuación.',
@@ -484,7 +548,6 @@
     'Dismiss': 'Descartar',
     'Dismiss install notice': 'Descartar aviso de instalación',
     'Dismiss what’s new': 'Descartar novedades',
-    'Enter fullscreen': 'Pantalla completa',
     'Fruit Merge board': 'Tablero de Fruit Merge',
     'Fruit Merge score': 'Puntuación de Fruit Merge',
     'Game board': 'Tablero de juego',
@@ -494,6 +557,17 @@
     'Minesweeper progress': 'Progreso de Minesweeper',
     'Number pad': 'Teclado numérico',
     'Play Fruit Merge': 'Jugar a Fruit Merge',
+    'Number Merge': 'Fusión de números',
+    'Play Number Merge': 'Jugar a Fusión de números',
+    'Number Merge score': 'Puntuación de Fusión de números',
+    'Drop matching numbers. Don’t overflow.': 'Suelta números iguales. No dejes que se desborde.',
+    'Pair the same number. Don’t reach the top.': 'Une números iguales. No llegues arriba del todo.',
+    'Numbers mode': 'Modo números',
+    'Swap fruit for numbered tiles.': 'Cambia la fruta por fichas numeradas.',
+    'Fruit Merge settings': 'Ajustes de Fruit Merge',
+    'Saved on this device for every Fruit Merge run.': 'Se guarda en este dispositivo para cada partida de Fruit Merge.',
+    'Contrast, colour cues and larger text.': 'Contraste, pistas de color y texto más grande.',
+    'Fruit Merge plays as fruit or numbered tiles, and the app icon now sits properly inside the launcher shape.': 'Fruit Merge se juega con fruta o con fichas numeradas, y el icono de la app ya encaja bien en la forma del lanzador.',
     'Play Merge': 'Jugar a Merge',
     'Play Minesweeper': 'Jugar a Minesweeper',
     'Play Sudoku': 'Jugar a Sudoku',
@@ -502,7 +576,7 @@
     'Reset Merge data': 'Restablecer datos de Merge',
     'Share result': 'Compartir resultado',
     'Share this game collection': 'Compartir esta colección',
-    'Sixfold version 5.0': 'Sixfold versión 5.0',
+    'Sixfold version 6.0': 'Sixfold versión 6.0',
     'Sudoku board': 'Tablero de Sudoku',
     'Sudoku controls': 'Controles de Sudoku',
     'Sudoku difficulty': 'Dificultad del Sudoku',
@@ -522,7 +596,7 @@
     'Forest': 'Bosque',
     'Berry': 'Baya',
     'Dusk': 'Crepúsculo',
-    'Mono': 'Mono',
+    'Red': 'Red',
     'Strawberry': 'Fresa',
     'Grapes': 'Uvas',
     'Dekopon': 'Dekopon',
@@ -546,22 +620,33 @@
     "Can you finish it?": "¿Puedes completarlo?",
     "Your badge": "Tu insignia",
     "Six games": "Seis juegos",
-    "Save your result": "Guarda tu resultado",
-    "Your Sixfold result card": "Tu tarjeta de resultado de Sixfold",
-    "This browser cannot open the native image share sheet. Save the card instead.": "Este navegador no puede abrir el panel nativo para compartir imágenes. Guarda la tarjeta en su lugar.",
-    "Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.": "Compartir imágenes de forma nativa está bloqueado dentro de la vista previa integrada. Guarda la tarjeta aquí o abre la URL de la vista previa directamente en tu navegador para usar el panel de compartir.",
     "Daily Sudoku": "Sudoku diario",
     "Copy is not available in this browser.": "Copiar no está disponible en este navegador.",
-    "Copied — paste it anywhere.": "Copiado: pégalo donde quieras.",
-    "Could not copy the text.": "No se pudo copiar el texto.",
-    "Couldn’t copy": "No se pudo copiar",
     "Copied": "Copiado",
     "DAY STREAK": "RACHA DE DÍAS",
     "GAMES / WEEK": "JUEGOS / SEMANA",
     "An offline pocket arcade.": "Una sala de juegos de bolsillo sin conexión.",
     "No ads. No accounts. Offline.": "Sin anuncios. Sin cuentas. Sin conexión.",
     "X wins": "Gana X",
-    "O wins": "Gana O"
+    "O wins": "Gana O",
+    "Back to Sixfold": "Volver a Sixfold",
+    "Source on GitHub": "Código en GitHub",
+    "Sixfold / legal": "Sixfold / legal",
+    "Licenses": "Licencias",
+    "Sixfold is free software released under the GNU General Public License, version 3. The complete source is available on GitHub.": "Sixfold es software libre publicado bajo la Licencia Pública General de GNU, versión 3. El código completo está disponible en GitHub.",
+    "View source on GitHub": "Ver el código en GitHub",
+    "Wordle dictionary sources": "Fuentes de los diccionarios de Wordle",
+    "Third-party word data and the licenses recorded by the dictionary packs.": "Datos de palabras de terceros y las licencias registradas por los paquetes de diccionarios.",
+    "MIT code; contributed word lists may carry their own terms.": "Código MIT; las listas de palabras aportadas pueden tener sus propios términos.",
+    "Apache-2.0 code; data files are CC BY-SA 4.0.": "Código Apache-2.0; los archivos de datos son CC BY-SA 4.0.",
+    "MIT.": "MIT.",
+    "MIT, Copyright (c) 2022 Hannah Park.": "MIT, Copyright (c) 2022 Hannah Park.",
+    "The dictionaries are filtered to five user-perceived characters. Answer and valid-guess pools are both filtered against the audit policy; valid lists remain larger than the answer pools.": "Los diccionarios se filtran a cinco caracteres percibidos por el usuario. Las listas de respuestas y de jugadas válidas se filtran con la política de auditoría; las listas de jugadas válidas siguen siendo mayores que las de respuestas.",
+    "Repository modifications are GPL-3.0-only, while the source data remains under the licenses above. Reference revisions and checked-in hashes are recorded in the sources file; the original extraction revision is not recoverable from this tree.": "Las modificaciones del repositorio son GPL-3.0-only, mientras que los datos de origen siguen bajo las licencias anteriores. Las revisiones de referencia y los hashes incluidos se registran en el archivo de fuentes; la revisión de extracción original no se puede recuperar de este árbol.",
+    "GNU General Public License v3.0": "Licencia Pública General de GNU v3.0",
+    "The canonical license text distributed with Sixfold.": "El texto canónico de la licencia distribuido con Sixfold.",
+    "Read the full GNU GPL v3.0 text": "Leer el texto completo de la GPL de GNU v3.0",
+    "Source code": "Código fuente",
   };
 
   var PATTERNS = [
@@ -752,7 +837,7 @@
   }
 
   function translateValue(value) {
-    var match = String(value).match(/^(\s*)(.*?)(\s*)$/s);
+    var match = String(value).match(/^(\s*)([\s\S]*?)(\s*)$/);
     if (!match || !match[2]) return value;
     var core = match[2].replace(/\s+/g, ' ');
     return match[1] + localizeDigits(lookup(core)) + match[3];
@@ -788,6 +873,9 @@
 
   function translateHead() {
     if (locale === 'en') return;
+    // The legal page is its own document with its own title and description;
+    // the hub's marketing copy does not belong in its tab.
+    if (document.documentElement.getAttribute('data-page') === 'legal') return;
     var meta = catalog.meta || {};
     var title = meta.title || catalog.messages['Sixfold — Six games. No filler.'];
     if (title) document.title = title;
@@ -815,9 +903,12 @@
       button.setAttribute('aria-pressed', button.dataset.locale === locale ? 'true' : 'false');
       button.addEventListener('click', function () {
         var next = button.dataset.locale;
-        if (!SUPPORTED[next] || next === locale) return;
-        try { localStorage.setItem(KEY, next); } catch (err) {}
-        location.reload();
+        if (!SUPPORTED[next]) return;
+        try {
+          localStorage.setItem(KEY, next);
+          localStorage.setItem(window.SixfoldLocale.EXPLICIT_KEY, '1');
+        } catch (err) {}
+        if (next !== locale) location.reload();
       });
     });
   }
@@ -825,7 +916,8 @@
   function setLang() {
     document.documentElement.lang = locale;
     document.documentElement.dir = RTL[locale] ? 'rtl' : 'ltr';
-    try { localStorage.setItem(KEY, locale); } catch (err) {}
+    // A detected locale is deliberately not persisted: it has to stay free to
+    // follow the phone. Only bindLanguage() marks an explicit choice.
   }
 
   // A CSS font can occasionally fail its first decode in a browser even though
@@ -918,14 +1010,31 @@
     translateHead();
     translateTree(document.body);
     bindLanguage();
-    if ('MutationObserver' in window) {
+    // English needs no translation, so the observer is not installed at all.
+    // Otherwise, re-walking the body on every mutation made each status line and
+    // timer tick re-read the document; the nodes that changed are collected and
+    // translated once per frame instead, and one removed in the meantime is
+    // skipped because it is no longer connected.
+    if (locale !== 'en' && 'MutationObserver' in window) {
       var pending = false;
-      var observer = new MutationObserver(function () {
-        if (pending) return;
+      var queue = [];
+      var observer = new MutationObserver(function (records) {
+        for (var i = 0; i < records.length; i += 1) {
+          var record = records[i];
+          if (record.type === 'childList') {
+            for (var j = 0; j < record.addedNodes.length; j += 1) queue.push(record.addedNodes[j]);
+          } else {
+            queue.push(record.target);
+          }
+        }
+        if (pending || !queue.length) return;
         pending = true;
         window.requestAnimationFrame(function () {
           pending = false;
-          translateTree(document.body);
+          var nodes = queue.splice(0);
+          for (var index = 0; index < nodes.length; index += 1) {
+            if (nodes[index].isConnected) translateNode(nodes[index]);
+          }
         });
       });
       observer.observe(document.body, {
@@ -943,6 +1052,19 @@
   locale = detect();
   catalog = catalogs()[locale] || { messages: {}, patterns: [] };
   setLang();
+
+  // Follow a phone language change while the app is open, unless the reader
+  // has picked a language themselves. A reload is the one path that keeps the
+  // catalog, the document direction, the script face and the icon in step.
+  if (window.addEventListener) {
+    window.addEventListener('languagechange', function () {
+      var explicit = false;
+      try {
+        explicit = localStorage.getItem(window.SixfoldLocale.EXPLICIT_KEY) === '1';
+      } catch (err) {}
+      if (!explicit && detect() !== locale) location.reload();
+    });
+  }
 
   window.SixfoldI18n = {
     locale: function () { return locale; },

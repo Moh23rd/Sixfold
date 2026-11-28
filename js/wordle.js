@@ -460,6 +460,7 @@
     input = pieces(input + next).join('');
     setStatus('');
     render();
+    if (window.MergeHaptics && window.MergeHaptics.tap) window.MergeHaptics.tap();
   }
 
   function removeLetter() {
@@ -468,6 +469,7 @@
     syncImeValue();
     setStatus('');
     render();
+    if (window.MergeHaptics && window.MergeHaptics.tap) window.MergeHaptics.tap();
   }
 
   function submitGuess() {
@@ -526,7 +528,29 @@
           window.MergeCelebrate.win(resultEl.querySelector('.wordle-result-card'));
         }, 120);
       }
+    } else if (window.MergeHaptics && window.MergeHaptics.over) {
+      // Running out of rows used to end the round in silence.
+      window.MergeHaptics.over();
     }
+  }
+
+  // The finished round is a dialog: the board, the keyboard and the screen's own
+  // controls leave the tab order and the pointer while it is up, and the
+  // keydown below keeps Tab inside the card.
+  let resultInert = [];
+  function setResultModal(on) {
+    if (on) {
+      [boardEl, keyboardEl, document.querySelector('#wordle .play-head'), document.querySelector('#wordle .play-foot')]
+        .forEach(function (el) {
+          if (el && 'inert' in el && !el.inert) {
+            el.inert = true;
+            resultInert.push(el);
+          }
+        });
+      return;
+    }
+    resultInert.forEach(function (el) { el.inert = false; });
+    resultInert = [];
   }
 
   function showResult(won) {
@@ -534,6 +558,7 @@
     const resultCard = resultEl.querySelector('.wordle-result-card');
     if (!won && window.MergeCelebrate) window.MergeCelebrate.clear(resultCard);
     resultEl.hidden = false;
+    setResultModal(true);
     // The result card is reused after a new round. Reflow once so its reveal
     // animation plays every time instead of only on the first finish.
     resultEl.classList.remove('is-revealed');
@@ -573,7 +598,47 @@
     resultEl.hidden = true;
     resultEl.classList.remove('is-revealed');
     resultEl.removeAttribute('data-state');
+    setResultModal(false);
   }
+
+  // The result card is modal; back dismisses it rather than leaving the game.
+  // A sheet opened over it still takes precedence.
+  document.addEventListener('sixfold:back', function (event) {
+    if (!resultEl || resultEl.hidden || document.body.dataset.screen !== 'wordle') return;
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    event.preventDefault();
+    hideResult();
+    try { (imeInput || boardEl).focus({ preventScroll: true }); } catch (err) {}
+  });
+
+  // Escape and Tab belong to the card while it is open, so a keyboard reader
+  // cannot leave the dialog by accident or tab into the board behind it.
+  document.addEventListener('keydown', function (event) {
+    if (resultEl.hidden || document.body.dataset.screen !== 'wordle') return;
+    if (event.key === 'Escape') {
+      // A sheet opened over the result owns the gesture; one Escape must not
+      // close both the panel and the card underneath it.
+      if (event.defaultPrevented || document.documentElement.classList.contains('sheet-open')) return;
+      event.preventDefault();
+      hideResult();
+      try { (imeInput || boardEl).focus({ preventScroll: true }); } catch (err) {}
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusables = Array.prototype.slice.call(resultEl.querySelectorAll('button, [href]'))
+      .filter(function (el) { return !el.hidden && !el.disabled && el.getClientRects().length > 0; });
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || !resultEl.contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || !resultEl.contains(active))) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   function newGame() {
     window.clearTimeout(revealTimer);
@@ -601,11 +666,8 @@
     const text = 'Sixfold — Wordle ' + score + '/6\n\n' + pattern;
     const win = state.status === 'won';
     const streak = stats.streak ? tr('dayStreak', { n: stats.streak }) : tr('noStreak');
-    // Keep the emoji grid in the shared text, but give Wordle the same image
-    // card as every other finished game when file sharing is available.
-    /* The image card needs a browser file-share sheet. Without one, keep
-       Wordle's emoji-grid text (the clipboard fallback the test expects). */
-    if (window.MergeShare && window.MergeShare.result && navigator.share && navigator.canShare) {
+    // Wordle uses the same saved image card as every other finished game.
+    if (window.MergeShare && window.MergeShare.result) {
       window.MergeShare.result('Sixfold — Wordle', text, {
         game: 'Wordle', number: '??', kind: tr('shareGuesses'),
         title: win ? tr('shareSolved') : tr('shareLost'),
@@ -613,9 +675,9 @@
         meta: [tr('wordWas', { word: displayWord(state.answer) }), streak],
         accent: shareAccent('#9a6bb5')
       });
-    } else if (window.MergeShare && window.MergeShare.share) {
-      window.MergeShare.share('Sixfold — Wordle', text);
-    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).catch(function () {});
     }
   }

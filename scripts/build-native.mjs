@@ -9,7 +9,6 @@ const files = [
   'index.html',
   'licenses.html',
   'LICENSE',
-  'APPSTORE-EXCEPTION.md',
   'manifest.webmanifest',
   'manifest-dark.webmanifest'
 ];

@@ -106,34 +106,21 @@ test('share-card chrome and data follow every interface language', async ({ page
 });
 
 for (const locale of ['ar', 'hi', 'ja']) {
-  test('share fallback copy follows ' + LANGUAGE_NAMES[locale], async ({ page }) => {
+  test('save feedback follows ' + LANGUAGE_NAMES[locale], async ({ page }) => {
     await page.addInitScript((next) => {
       localStorage.setItem('sixfold.locale.v1', next);
     }, locale);
     await page.goto('/');
     await page.waitForFunction(() => window.MergeShare && window.MergeShare.result && window.MergeShareCard);
 
+    const copy = await page.evaluate(() => window.SixfoldI18n.t('Image downloaded.'));
+    const downloadPromise = page.waitForEvent('download');
     await page.evaluate((card) => {
-      Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
-      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => false });
       window.MergeShare.result(card.title, card.text, card.data);
     }, { title: CARD.title, text: 'I sorted Water Sort in 4 moves.', data: CARD });
+    await downloadPromise;
 
-    const fallback = page.locator('#share-fallback');
-    await expect(fallback).toBeVisible();
-    const copy = await page.evaluate(() => {
-      const i18n = window.SixfoldI18n;
-      return {
-        title: i18n.t('Save your result'),
-        save: i18n.t('Save image'),
-        done: i18n.t('Done'),
-        alt: i18n.t('Your Sixfold result card')
-      };
-    });
-    await expect(fallback.locator('#share-fallback-title')).toHaveText(copy.title);
-    await expect(fallback.locator('.share-fallback-save')).toHaveText(copy.save);
-    await expect(fallback.locator('.share-fallback-done')).toHaveText(copy.done);
-    await expect(fallback.locator('.share-fallback-image')).toHaveAttribute('alt', copy.alt);
+    await expect(page.locator('#toast')).toHaveText(copy);
   });
 }
 

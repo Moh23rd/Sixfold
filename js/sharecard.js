@@ -1,6 +1,6 @@
-/* The share card, in the 2.x pocket-arcade language: cream paper, the
-   six-piece mark, one huge number and the six-colour strip. Drawn locally so
-   every game can share the same object without shipping image files. */
+/* The share card, in the 2.x pocket-arcade language: cream paper, the launcher
+   mark, one huge number and the six-colour strip. Everything but the mark is
+   drawn locally; the mark is the app's own artwork, see `brandMark`. */
 (function () {
   'use strict';
 
@@ -123,6 +123,37 @@
     }
   }
 
+  // The launcher mark at card scale. It is the app's own artwork, drawn from
+  // the image `index.html` keeps for it (and, during the launch, from the boot
+  // splash's copy of the same file): one source, one pin, so the card and the
+  // launcher cannot drift apart and nothing is re-drawn by hand here. The URL
+  // is the one the shell already caches, so the card costs no extra fetch and
+  // works offline.
+  function markArt() {
+    return document.getElementById('share-mark') || document.querySelector('.boot-mark');
+  }
+
+  function brandMark(ctx, x, centerY, size) {
+    const art = markArt();
+    if (!art || !art.naturalWidth) return;
+    ctx.drawImage(art, x, centerY - size / 2, size, size);
+  }
+
+  // Resolves once the mark can be drawn. The image is part of the document and
+  // normally decoded long before a card exists; this only covers a save that
+  // lands first, so it can never write a card without the mark.
+  function markReady() {
+    const art = markArt();
+    if (!art || art.naturalWidth) return Promise.resolve();
+    if (typeof art.decode === 'function') {
+      return art.decode().catch(function () {});
+    }
+    return new Promise(function (resolve) {
+      art.addEventListener('load', resolve, { once: true });
+      art.addEventListener('error', resolve, { once: true });
+    });
+  }
+
   function drawDaily(data) {
     const W = 1080;
     const canvas = document.createElement('canvas');
@@ -149,14 +180,8 @@
 
     const markX = 80;
     const markY = 72;
-    const tile = 19;
-    const gap = 4;
-    for (let i = 0; i < 6; i += 1) {
-      roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = tiles[i];
-      ctx.fill();
-    }
-    const brandX = markX + 3 * (tile + gap) + 14;
+    brandMark(ctx, markX, 93, 64);
+    const brandX = markX + 64 + 14;
     ctx.fillStyle = INK;
     ctx.font = font(800, 40);
     ctx.fillText('SIXFOLD', brandX, markY + 25);
@@ -262,14 +287,8 @@
 
     const markX = 80;
     const markY = 72;
-    const tile = 19;
-    const gap = 4;
-    for (let i = 0; i < 6; i += 1) {
-      roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = tiles[i];
-      ctx.fill();
-    }
-    const brandX = markX + 3 * (tile + gap) + 14;
+    brandMark(ctx, markX, 93, 64);
+    const brandX = markX + 64 + 14;
     ctx.fillStyle = INK;
     ctx.font = font(800, 40);
     ctx.fillText('SIXFOLD', brandX, markY + 25);
@@ -415,14 +434,8 @@
     // Mark + wordmark.
     const markX = 80;
     const markY = 72;
-    const tile = 19;
-    const gap = 4;
-    for (let i = 0; i < 6; i += 1) {
-      roundRect(ctx, markX + (i % 3) * (tile + gap), markY + Math.floor(i / 3) * (tile + gap), tile, tile, 5);
-      ctx.fillStyle = tiles[i];
-      ctx.fill();
-    }
-    const brandX = markX + 3 * (tile + gap) + 14;
+    brandMark(ctx, markX, 93, 64);
+    const brandX = markX + 64 + 14;
     ctx.fillStyle = INK;
     ctx.font = font(800, 40);
     ctx.fillText('SIXFOLD', brandX, markY + 25);
@@ -475,7 +488,7 @@
       ctx.fillText(meta, 80, 648);
     }
 
-    // Six-piece footer strip, anchored by the same tiles as the app mark.
+    // Six-piece footer strip in the six game colours.
     const stripY = 716;
     const strip = 64;
     for (let i = 0; i < 6; i += 1) {
@@ -520,6 +533,7 @@
   }
 
   async function file(data) {
+    await markReady();
     try {
       if (document.fonts && document.fonts.load) {
         await document.fonts.load(font(800, 64));
@@ -548,21 +562,104 @@
     return asFile(new Blob([bytes], { type: 'image/png' }), data);
   }
 
-  async function share(data, title, text) {
-    try {
-      if (document.fonts && document.fonts.load) {
-        await document.fonts.load(font(800, 64));
-      }
-      const image = await file(data);
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [image] })) {
-        await navigator.share({ files: [image], title: title, text: text, url: 'https://moh23rd.github.io/Sixfold/' });
-        return true;
-      }
-    } catch (err) {
-      if (err && err.name === 'AbortError') return true;
-    }
-    return false;
+  function base64(blob) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const result = String(reader.result || '');
+        resolve(result.slice(result.indexOf(',') + 1));
+      };
+      reader.onerror = function () { reject(new Error('image unreadable')); };
+      reader.readAsDataURL(blob);
+    });
   }
 
-  window.MergeShareCard = { draw: draw, file: file, fileSync: fileSync, share: share };
+  // Browsers cannot write to the photo gallery, so the same PNG is downloaded.
+  function download(file) {
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name || 'sixfold-result.png';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function galleryPlugin() {
+    const cap = window.Capacitor;
+    if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return null;
+    const plugin = cap.Plugins && cap.Plugins.GallerySave;
+    // The chunked trio is the preferred path; a shell that only has the single
+    // call still counts as a gallery plugin.
+    return plugin && (plugin.begin || plugin.save) ? plugin : null;
+  }
+
+  // Save the card into the phone's photo gallery. Inside the Android shell the
+  // GallerySave plugin writes it through MediaStore; everywhere else the file
+  // is downloaded. Neither path opens a share sheet.
+  //
+  // The two paths are exclusive. Inside the shell a failed plugin call cannot be
+  // rescued by an <a download>, which the WebView ignores, so falling back used
+  // to report success for a picture that was never written.
+  // 48 KiB of base64 per message: a card is split into a few pieces, no single
+  // bridge message is large, and 48 KiB is a multiple of 4 so every piece
+  // decodes on its own boundary.
+  const CHUNK = 48 * 1024;
+
+  // One save at a time. Two overlapping writes of the same card used to be
+  // possible from a double tap, which is exactly the kind of duplicate the
+  // gallery then collapses.
+  let saving = null;
+
+  function save(file) {
+    if (saving) return saving;
+    saving = saveOnce(file).then(function (value) {
+      saving = null;
+      return value;
+    }, function () {
+      saving = null;
+      return false;
+    });
+    return saving;
+  }
+
+  async function saveOnce(file) {
+    if (!file) return false;
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) {
+      try {
+        download(file);
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+    const plugin = galleryPlugin();
+    if (!plugin) return false;
+    const name = file.name || 'sixfold-result.png';
+    try {
+      const data = await base64(file);
+      if (plugin.begin && plugin.write && plugin.end) {
+        const started = await plugin.begin({ name: name });
+        const id = started && started.id;
+        if (!id) throw new Error('no image session');
+        try {
+          for (let at = 0; at < data.length; at += CHUNK) {
+            await plugin.write({ id: id, data: data.slice(at, at + CHUNK) });
+          }
+          await plugin.end({ id: id });
+        } catch (err) {
+          if (plugin.abort) { try { await plugin.abort({ id: id }); } catch (ignored) {} }
+          throw err;
+        }
+        return true;
+      }
+      await plugin.save({ data: data, name: name });
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  window.MergeShareCard = { draw: draw, file: file, fileSync: fileSync, save: save };
 })();

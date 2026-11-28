@@ -128,7 +128,7 @@ html[data-daily="off"] #daily { display: none; }
   border: 1px solid color-mix(in srgb, var(--t256) 45%, var(--home-rule, var(--line)));
   border-radius: 9px;
   background: color-mix(in srgb, var(--t256) 10%, var(--panel));
-  transition: background-color 180ms ease, border-color 180ms ease;
+  transition: background-color 180ms var(--ease-out);
 }
 
 .daily-badge-mark {
@@ -216,15 +216,19 @@ html[data-daily="off"] #daily { display: none; }
 .daily-badge-progress[hidden] { display: none; }
 .daily-badge-progress i {
   display: block;
-  width: 0;
+  width: 100%;
   height: 100%;
   border-radius: inherit;
   background: var(--t256);
-  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: scaleX(0);
+  transform-origin: left center;
+  /* scaleX keeps the sweep on the compositor; the old width animation
+     relaid out the badge on every frame. */
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .daily-badge.is-new {
-  animation: dailyBadgePop 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: dailyBadgePop 360ms var(--ease-out);
 }
 
 @keyframes dailyBadgePop {
@@ -246,7 +250,7 @@ html[data-daily="off"] #daily { display: none; }
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, background-color 180ms ease;
+  transition: transform 120ms var(--ease-out), background-color 180ms var(--ease-out);
 }
 
 .daily-calendar-btn:hover { background: color-mix(in srgb, var(--panel) 70%, var(--card)); }
@@ -313,13 +317,77 @@ html[data-daily="off"] #daily { display: none; }
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, background-color 180ms ease;
+  transition: transform 120ms var(--ease-out), background-color 180ms var(--ease-out);
 }
 
 .daily-share:hover { background: color-mix(in srgb, var(--panel) 70%, var(--card)); }
 .daily-share:active { transform: scale(0.96); }
 .daily-share:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .daily-share svg { width: 17px; height: 17px; display: block; }
+
+/* The optional gauntlet entry sits inside the daily card, beside the featured
+   action, so ignoring it leaves the daily flow unchanged. */
+.daily-gauntlet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px dashed color-mix(in srgb, var(--ink) 24%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+
+.daily-gauntlet[data-state="active"],
+.daily-gauntlet[data-state="complete"] { border-style: solid; }
+
+.daily-gauntlet-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.daily-gauntlet-title {
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.daily-gauntlet-note {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.daily-gauntlet-action {
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--page);
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 120ms var(--ease-out), background-color 180ms var(--ease-out);
+}
+
+.daily-gauntlet-action:hover { background: color-mix(in srgb, var(--ink) 86%, var(--page)); }
+.daily-gauntlet-action:active { transform: scale(0.97); }
+.daily-gauntlet-action:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 .daily-week {
   display: flex;
@@ -385,12 +453,6 @@ html[data-daily="off"] #daily { display: none; }
   color: var(--ink);
 }
 
-#daily-reminder-status {
-  margin: 6px 2px 10px;
-}
-
-#daily-reminder-status:empty { display: none; }
-
 .daily-play {
   display: flex;
   align-items: center;
@@ -412,7 +474,7 @@ html[data-daily="off"] #daily { display: none; }
   box-shadow: 0 3px 0 color-mix(in srgb, var(--ink) 72%, #000);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 140ms ease, background-color 180ms ease;
+  transition: transform 140ms var(--ease-out), background-color 180ms var(--ease-out);
 }
 
 .daily-play:hover { background: color-mix(in srgb, var(--daily-accent) 92%, var(--page)); }
@@ -427,7 +489,7 @@ html[data-daily="off"] #daily { display: none; }
   flex: none;
   border-radius: 50%;
   background: color-mix(in srgb, var(--daily-ink) 16%, transparent);
-  transition: transform 160ms ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .daily-play-arrow svg {
@@ -585,7 +647,7 @@ html[dir="rtl"] .daily-play:hover .daily-play-arrow { transform: translateX(-2px
   color: var(--muted);
   font-size: 15px;
   line-height: 1;
-  transition: transform 160ms ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .language-picker[open] .language-summary-chevron { transform: rotate(90deg); }
@@ -621,21 +683,30 @@ html[dir="rtl"] .daily-play:hover .daily-play-arrow { transform: translateX(-2px
 
 .settings-disclosure { margin-top: 20px; }
 
+/* The disclosure is a row like the settings under it, not a bare section
+   label: contrast and colour cues are easy to miss otherwise. */
 .settings-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 40px;
+  width: 100%;
+  min-height: 48px;
   margin: 0;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  border-radius: 10px;
+  background: var(--seg-bg, var(--panel));
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
   list-style: none;
   cursor: pointer;
 }
+
+.settings-summary:hover { background: color-mix(in srgb, var(--panel) 70%, var(--card)); }
+.settings-summary .setting-copy strong { font-size: 12px; }
+.settings-summary .setting-copy small { color: var(--muted-strong); font-size: 10px; line-height: 1.25; }
 
 .settings-summary::-webkit-details-marker { display: none; }
 .settings-summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 6px; }
@@ -645,7 +716,7 @@ html[dir="rtl"] .daily-play:hover .daily-play-arrow { transform: translateX(-2px
   color: var(--muted);
   font-size: 15px;
   line-height: 1;
-  transition: transform 160ms ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .settings-disclosure[open] .settings-summary-chevron { transform: rotate(90deg); }
@@ -737,6 +808,7 @@ html[data-theme="dark"][data-contrast="high"] {
 
 html[data-contrast="high"] .sudoku-board,
 html[data-contrast="high"] .sudoku-cell,
+html[data-contrast="high"] .settings-summary,
 html[data-contrast="high"] .setting-row,
 html[data-contrast="high"] .daily,
 html[data-contrast="high"] .daily-calendar-btn,
@@ -754,6 +826,28 @@ html[data-large-digits="on"] #sudoku .sudoku-cell {
 
 html[data-large-digits="on"] #sudoku .sudoku-notes {
   font-size: clamp(8px, 1.55dvh, 12px);
+}
+
+html[data-hide-timer="on"] #mines .play-stats .play-stat:last-child { display: none; }
+
+html[data-large-mines="on"] #mines .mines-cell {
+  font-size: clamp(18px, 5.4vw, 24px);
+}
+
+html[data-large-mines="on"] #mines .mines-board[data-cols="16"] .mines-cell {
+  font-size: clamp(12px, 3.2vw, 16px);
+}
+
+html[data-large-mines="on"] #mines .mines-board[data-cols="30"] .mines-cell {
+  font-size: clamp(9px, 2.3vw, 13px);
+}
+
+html[data-contrast="high"] #mines .mines-cell {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 60%, transparent);
+}
+
+html[data-contrast="high"] #water .water-glass {
+  border-color: var(--ink);
 }
 
 /* Wordle keeps its letter states legible without relying on hue. */
@@ -780,6 +874,44 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   text-decoration: underline wavy #b83828 2px;
   text-underline-offset: 3px;
 }
+
+/* Water Sort repeats each layer's colour as a shape, so a full tube can be
+   read without separating coral from rose, or amber from lime. The shape sits
+   in a dark chip with a light rim: white text alone disappeared on amber and
+   lime, especially at 320px where a segment is only about 21px tall. */
+html[data-colorblind="on"] #water .water-seg::after {
+  content: attr(data-symbol);
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin: auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, #1a1918 78%, transparent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72);
+  color: #fff;
+  font-size: clamp(9.5px, 2.9vw, 12px);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: none;
+  pointer-events: none;
+}
+
+html[data-contrast="high"][data-colorblind="on"] #water .water-seg::after {
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--page);
+  color: var(--page);
+}
+
+/* Fruit Merge's optional number mode. Both versions live in the markup, so
+   the translation pass sees both strings and the stored setting can switch
+   them without rebuilding the hub. */
+.is-number-mode { display: none; }
+html[data-fruit-numbers="on"] .is-number-mode { display: inline; }
+html[data-fruit-numbers="on"] .is-fruit-mode { display: none; }
 
 /* Left-handed Sudoku: mirror the board and the control rail in landscape. */
 @media (orientation: landscape) {
@@ -820,34 +952,53 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
 
 .sudoku-hint-panel {
   width: min(100%, 430px);
-  padding: 10px 12px;
+  padding: 8px 11px;
   border: 1px solid color-mix(in srgb, var(--cart) 38%, transparent);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--cart) 8%, var(--card));
+  /* --panel is opaque in every theme; --card is translucent, which let the
+     number pad show through the hint copy. */
+  background: color-mix(in srgb, var(--cart) 8%, var(--panel));
+  box-shadow: 0 10px 24px -20px color-mix(in srgb, var(--ink) 80%, transparent);
+}
+
+/* The hint replaces the status line and the coach shares its slot. Let the
+   slot grow to the card instead of spilling the card over the pad. */
+.sudoku-main.has-hint .play-feedback {
+  height: auto;
+  min-height: 0;
+  align-self: stretch;
+  place-items: stretch;
+}
+
+.sudoku-main.has-hint .play-status,
+.sudoku-main.has-hint .coach { display: none; }
+
+@media (orientation: portrait) {
+  .sudoku-main.has-hint .sudoku-wrap { width: min(100%, 260px, 38dvh); }
 }
 
 .sudoku-hint-panel strong {
   display: block;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   color: var(--cart);
-  font-size: 11px;
+  font-size: 10.5px;
   letter-spacing: 0.03em;
 }
 
 .sudoku-hint-panel p {
   margin: 0;
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: 10.5px;
+  line-height: 1.35;
 }
 
 .sudoku-hint-actions {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 5px;
+  margin-top: 6px;
 }
 
 .sudoku-hint-actions button {
-  min-height: 32px;
+  min-height: 30px;
   padding: 0 10px;
   border: 1px solid color-mix(in srgb, var(--cart) 40%, transparent);
   border-radius: 7px;
@@ -923,7 +1074,7 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
 .update-banner {
   position: fixed;
   left: 50%;
-  bottom: calc(max(env(safe-area-inset-bottom, 0px), 14px) + 8px);
+  bottom: calc(max(var(--sa-bottom), 14px) + 8px);
   z-index: 120;
   display: flex;
   align-items: center;
@@ -955,13 +1106,11 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   .sudoku-hint-actions button { min-height: 28px; font-size: 9px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .daily-badge,
-  .daily-badge-progress i,
-  .daily-badge.is-new,
-  .daily-play,
-  .daily-calendar-btn { animation: none; transition: none; }
-}
+html[data-motion="reduced"] .daily-badge,
+html[data-motion="reduced"] .daily-badge-progress i,
+html[data-motion="reduced"] .daily-badge.is-new,
+html[data-motion="reduced"] .daily-play,
+html[data-motion="reduced"] .daily-calendar-btn { animation: none; transition: none; }
 
 /* ---------- Badge collection ---------- */
 
@@ -988,7 +1137,10 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   height: auto;
   min-height: 100%;
   gap: 16px;
-  padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 24px);
+  /* Clear the fixed blur band: the collection scrolls under the status bar,
+     but its first row must rest below the feather instead of inside it. */
+  padding-top: calc(var(--sa-top) + 22px);
+  padding-bottom: calc(var(--sa-bottom) + 24px);
 }
 
 .badges-head {
@@ -1216,13 +1368,306 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   .badge-card-number { font-size: 26px; }
 }
 
+/* ---------- Profile: six games and the gauntlet ---------- */
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.profile-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.profile-title {
+  margin: 0;
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.profile-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.profile-games {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-game {
+  --profile-color: var(--t256);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--home-rule);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 2px 0 var(--home-hard);
+}
+
+.profile-game::before {
+  content: "";
+  width: 4px;
+  height: 30px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--profile-color);
+}
+
+.profile-game-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-game-copy strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.profile-game-copy span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-game-best {
+  flex: none;
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-game[data-game="merge"] { --profile-color: var(--six-1); }
+.profile-game[data-game="sudoku"] { --profile-color: var(--six-2); }
+.profile-game[data-game="ttt"] { --profile-color: var(--six-3); }
+.profile-game[data-game="mines"] { --profile-color: var(--six-4); }
+.profile-game[data-game="water"] { --profile-color: var(--six-5); }
+.profile-game[data-game="fruit"] { --profile-color: var(--six-6); }
+
+.profile-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--home-rule);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 88%, var(--page));
+  box-shadow: 0 2px 0 var(--home-hard);
+}
+
+.profile-metric strong {
+  font-family: var(--font-ui);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-metric span {
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 8.5px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.profile-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* ---------- Daily Gauntlet run on the badges page ---------- */
+
+.gauntlet-run {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--home-rule);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 2px 0 var(--home-hard);
+}
+
+.gauntlet-run-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gauntlet-run-status {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.gauntlet-run-time {
+  margin: 0;
+  color: var(--muted-strong);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauntlet-run-date {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: start;
+}
+
+.gauntlet-rounds {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gauntlet-round {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 6px 0;
+  border-top: 1px solid color-mix(in srgb, var(--home-rule) 65%, transparent);
+}
+
+.gauntlet-round:first-child { border-top: 0; }
+
+.gauntlet-round-index {
+  flex: none;
+  width: 18px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauntlet-round-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gauntlet-round-copy strong {
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.gauntlet-round-copy span {
+  flex: none;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.2;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauntlet-round.is-done .gauntlet-round-index { color: var(--gauntlet-color, var(--six-4)); }
+.gauntlet-round.is-current .gauntlet-round-index { color: var(--ink); }
+
+.gauntlet-round[data-game="merge"] { --gauntlet-color: var(--six-1); }
+.gauntlet-round[data-game="sudoku"] { --gauntlet-color: var(--six-2); }
+.gauntlet-round[data-game="ttt"] { --gauntlet-color: var(--six-3); }
+.gauntlet-round[data-game="mines"] { --gauntlet-color: var(--six-4); }
+.gauntlet-round[data-game="water"] { --gauntlet-color: var(--six-5); }
+.gauntlet-round[data-game="fruit"] { --gauntlet-color: var(--six-6); }
+
+.gauntlet-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.gauntlet-run-action {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--page);
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.gauntlet-run-action:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+@media (max-width: 340px) {
+  .profile-game { flex-wrap: wrap; }
+  .profile-game-best { padding-inline-start: 15px; text-align: start; }
+}
+
 /* ---------- Daily challenge finish ---------- */
 
 .daily-finish {
   position: fixed;
   z-index: 75;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  bottom: calc(var(--sa-bottom) + 16px);
   display: flex;
   align-items: center;
   gap: 9px;
@@ -1238,7 +1683,7 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
   pointer-events: none;
   transform: translate(-50%, 18px) scale(0.97);
   transform-origin: center bottom;
-  transition: opacity 180ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 180ms var(--ease-out), transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .daily-finish.is-on {
@@ -1317,6 +1762,675 @@ html[data-colorblind="on"] .sudoku-cell.is-conflict {
 
 .daily-finish-close:hover { color: var(--ink); background: var(--panel); }
 
-@media (prefers-reduced-motion: reduce) {
-  .daily-finish { transition: none; }
+html[data-motion="reduced"] .daily-finish { transition: none; }
+
+/* ==========================================================================
+   Collection v6 — landscape on phones, and the smallest portrait screens
+   --------------------------------------------------------------------------
+   Every play shell is a two-column grid in landscape. Three things were wrong
+   with how it measured: a board took its size from the raw viewport, so a
+   phone's status and navigation bars sat on top of it; the rail's rows were
+   allowed to overflow, so its last row landed on the pad, the tool cluster or
+   the footer; and the difficulty tabs above a board ate the height the board
+   needed. The blocks below size a board from the space between the bars, keep
+   every rail row inside the shell, and move a board's tabs into the rail so
+   the board can use the whole column.
+   ========================================================================== */
+
+@media (orientation: landscape) and (max-height: 560px) {
+  /* ---------- sudoku: board between the bars, rail in five tidy rows ------- */
+
+  .sudoku-shell {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    row-gap: 5px;
+  }
+
+  .sudoku-shell .board-stage {
+    width: min(calc(100dvh - var(--sa-top) - var(--sa-bottom) - 16px), 55vw);
+  }
+
+  .sudoku-shell .play-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 0;
+  }
+
+  .sudoku-shell .play-stats {
+    width: auto;
+    flex: none;
+    margin-top: 0;
+    padding-top: 0;
+    gap: 5px;
+  }
+
+  .sudoku-shell .sudoku-pad-key { min-height: 24px; }
+
+  /* The learning layout gives the tools three columns; in landscape the rail
+     is wide enough for all six in one row, which is the height the footer
+     needs. */
+  #sudoku .sudoku-tools {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  #sudoku .sudoku-tool { min-height: 24px; padding: 0 2px; font-size: 8px; }
+  .sudoku-shell .play-foot { min-height: 28px; }
+  .sudoku-shell .play-foot .play-btn { min-height: 28px; }
+
+  /* ---------- minesweeper and tic tac toe: tabs into the rail -------------- */
+
+  #mines .play-shell,
+  #ttt .play-shell {
+    grid-template-columns: minmax(168px, 300px) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "head board"
+      "toolbar board"
+      "status board"
+      "foot board";
+    align-content: stretch;
+    gap: 4px clamp(14px, 2.4vw, 26px);
+    padding-top: calc(var(--sa-top) + 12px);
+  }
+
+  #mines .play-main,
+  #ttt .play-main { display: contents; }
+
+  #mines .play-head,
+  #ttt .play-head { gap: 4px; }
+
+  #mines .play-title-row,
+  #ttt .play-title-row { display: block; margin-top: 2px; }
+
+  #mines .play-intro h1,
+  #ttt .play-intro h1 { font-size: clamp(21px, 2.6vw, 26px); }
+
+  #mines .play-intro .sub,
+  #ttt .play-intro .sub { display: none; }
+
+  #mines .play-stats,
+  #ttt .play-stats { width: 100%; margin-top: 6px; gap: 5px; }
+
+  #mines .play-stat,
+  #ttt .play-stat { padding: 4px 6px; }
+  #mines .play-stat strong,
+  #ttt .play-stat strong { font-size: 16px; }
+
+  #mines .mines-toolbar,
+  #ttt .ttt-difficulty {
+    grid-area: toolbar;
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    align-self: start;
+    margin-top: 2px;
+  }
+
+  /* The mines toolbar's single auto track sized itself to its widest child,
+     so the three difficulty tabs sat in a 219px block inside a 300px rail and
+     "Intermediate" spilled out of its 70px tab. The track fills the rail now. */
+  #mines .mines-toolbar { grid-template-columns: minmax(0, 1fr); }
+
+  #mines .mines-difficulty { width: 100%; justify-content: space-between; }
+  #mines .mines-difficulty button { min-height: 28px; padding-inline: 6px; font-size: 9px; }
+  #mines .mines-flag-toggle {
+    min-height: 28px;
+    width: 100%;
+    justify-content: center;
+    font-size: 9px;
+  }
+
+  #ttt .ttt-difficulty { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #ttt .ttt-difficulty button { min-height: 28px; padding-inline: 6px; font-size: 9px; }
+
+  #mines .board-stage,
+  #ttt .board-stage {
+    grid-area: board;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  #mines .mines-board-wrap { width: min(100%, calc(100cqh - 4px)); }
+  #ttt .ttt-board { width: min(100%, calc(100cqh - 4px)); }
+
+  #mines .play-feedback,
+  #ttt .play-feedback { grid-area: status; width: 100%; min-height: 0; }
+
+  #mines .play-feedback .play-status,
+  #ttt .play-feedback .play-status { font-size: 10px; }
+
+  #mines .play-foot,
+  #ttt .play-foot {
+    display: flex;
+    align-self: end;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  /* ---------- water sort: one rack, tall glasses --------------------------- */
+
+  #water .water-tubes { flex-wrap: nowrap; }
+  #water .water-tube { flex: 1 1 0; min-width: 0; }
+  #water .water-glass { width: min(100%, 72px); height: auto; aspect-ratio: 62 / 148; }
+}
+
+/* Small portrait phones (320 x 568 and friends) could not hold a game's header,
+   its controls and its footer on the same screen: the footer slipped under the
+   home indicator and the board had to be scrolled to. The title and its stats
+   share one line and the boards give up a little size, which is what these
+   screens have to spend. */
+@media (orientation: portrait) and (max-height: 700px) {
+  #sudoku .play-title-row,
+  #mines .play-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  #sudoku .play-stats,
+  #mines .play-stats {
+    width: auto;
+    flex: none;
+    margin-top: 0;
+    padding-top: 0;
+    gap: 5px;
+  }
+
+  #sudoku .play-intro h1,
+  #mines .play-intro h1 { font-size: 23px; }
+
+  #sudoku .play-feedback,
+  #mines .play-feedback { min-height: 32px; }
+
+  #sudoku .sudoku-pad-key { min-height: 26px; }
+  #sudoku .sudoku-tools { gap: 4px; }
+  #sudoku .sudoku-tool { min-height: 24px; font-size: 9px; }
+  #sudoku .play-foot { min-height: 34px; }
+  #sudoku .play-foot .play-btn { min-height: 34px; }
+
+  #mines .mines-toolbar { gap: 4px; }
+  #mines .mines-difficulty button { min-height: 26px; padding-inline: 6px; font-size: 9px; }
+  #mines .mines-flag-toggle { min-height: 26px; font-size: 9px; }
+  #mines .mines-board-wrap { width: min(100%, 380px, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 290px)); }
+}
+
+/* A 520 x 320 landscape window is the shortest play field the shell supports:
+   the left rail has six pixels less than its rows need, so the header gives
+   them back rather than letting the status line touch the footer. */
+@media (orientation: landscape) and (max-height: 360px) {
+  #mines .play-intro h1,
+  #ttt .play-intro h1 { font-size: 19px; }
+  #mines .play-stats,
+  #ttt .play-stats { margin-top: 4px; }
+  #mines .play-stat,
+  #ttt .play-stat { padding: 2px 5px; }
+  #mines .mines-difficulty button,
+  #ttt .ttt-difficulty button { min-height: 26px; }
+}
+
+/* Merge on the same short portrait phones: its footer carries the tool cluster
+   and the two-line hint, which together ran 62px past the home indicator. The
+   board gives up the difference and the keyboard hint, which no phone needs,
+   steps out of the flow. */
+@media (orientation: portrait) and (max-height: 700px) {
+  main.app { gap: 8px; }
+  main.app .board { width: min(100%, 70dvh, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 296px)); }
+  main.app .footer .key-hint { display: none; }
+}
+
+/* Below 380px the Merge footer stacks: the tool cluster wraps to a second row
+   and the hint keeps a row of its own, which is 50px more column than the
+   short-screen formula above budgeted for. A 320 x 568 phone therefore put the
+   hint and the bottom of the tool row 18px under the screen. The board gives up
+   the difference; on taller phones the cap is inert and the width still wins. */
+@media (orientation: portrait) and (max-width: 380px) {
+  main.app .board {
+    width: min(100%, 70dvh, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 318px));
+  }
+}
+
+/* Tablets in portrait have room the phone-sized caps were not using: the
+   square fields grow instead of sitting at 360px in a 1024px-tall screen. */
+@media (orientation: portrait) and (min-width: 721px) {
+  #mines .mines-board-wrap,
+  #mines .mines-toolbar,
+  #ttt .ttt-board,
+  #ttt .ttt-difficulty { width: min(100%, 520px); }
+}
+
+/* The shortest landscape field, measured with the bars a phone actually
+   reports: a 320px-tall window gives the rail 48px less height than the block
+   above assumes, and a window under 620px wide was also handing Minesweeper's
+   rail the whole 300px, which left its board in a 182px column. On these
+   screens the title and its stats share one line, the rail keeps a narrower
+   column and the Sudoku pad gives up three pixels a row, so neither the tools
+   nor the status line lands on the footer. */
+@media (orientation: landscape) and (max-height: 360px) and (max-width: 620px) {
+  #sudoku .sudoku-shell { row-gap: 3px; }
+  #sudoku .sudoku-pad-key { min-height: 21px; }
+  #sudoku .sudoku-tool { min-height: 21px; }
+  #sudoku .play-foot { min-height: 26px; }
+  #sudoku .play-foot .play-btn { min-height: 26px; }
+
+  #mines .play-shell,
+  #ttt .play-shell { grid-template-columns: minmax(150px, 42vw) minmax(0, 1fr); }
+
+  /* The stats sat beside the title in a 42vw rail and left it 121.5px wide:
+     "Minesweeper" broke before its last letter and "Tic Tac Toe" stacked three
+     lines. At this rail width the stats drop under the title instead, which
+     also costs no height because the rail's spare row absorbs it. */
+  #mines .play-title-row,
+  #ttt .play-title-row { display: block; }
+
+  #mines .play-intro h1,
+  #ttt .play-intro h1 { font-size: 17px; }
+
+  #mines .play-stats,
+  #ttt .play-stats { width: 100%; margin-top: 4px; }
+
+  #mines .play-foot,
+  #ttt .play-foot { min-height: 26px; }
+  #mines .play-foot .play-btn,
+  #ttt .play-foot .play-btn { min-height: 26px; }
+}
+
+/* ==========================================================================
+   Appearance cross-fade
+   --------------------------------------------------------------------------
+   A theme or palette switch used to repaint every surface in one frame, which
+   reads as a cut. A surface opts in by carrying [data-fade] — in the markup, or
+   when the script that builds it creates it — so the fade is declared where the
+   surface lives rather than inferred from a selector list a new component can
+   silently miss. Surfaces that own a press, hover or leave motion stay out; the
+   list of properties includes transform and opacity so the ones that are in
+   keep their motion through the switch as well.
+
+   theme.js raises the flag for the length of one switch and drops it again, so
+   the app pays nothing for these transitions while it is being played, and a
+   phone on the light paint path or with reduced motion never raises it at all.
+   ========================================================================== */
+
+/* Full-page surfaces are left out: their colour has to land in the frame the
+     system bar does. A faded page layer is what could keep the previous
+     appearance's raster in the WebView. */
+html[data-motion="full"].is-theme-fading [data-fade]:not(body):not(.hub):not(.play-screen):not(.app) {
+    /* Colour plus a compositor-owned transform. A theme switch repaints enough
+       surfaces already, and transitioning box-shadow or opacity made every
+       card cast a fresh shadow and re-raster each frame, which is what made
+       the switch feel jumpy. */
+    transition-property: color, background-color, border-color, outline-color, fill, stroke, text-decoration-color, transform;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
+  }
+
+/* The sheet dims the page behind it with a backdrop blur, and that filter is
+   recomputed for every frame of a colour fade — the most expensive thing on
+   screen and the least visible while the colours move. It keeps its dim for
+   the switch and takes the blur back when the fade ends. */
+html.is-theme-fading .sheet-backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ==========================================================================
+   Landscape phones: the controls, not only the boards
+   --------------------------------------------------------------------------
+   The <=560px block above sized the fields and moved a board's tabs into the
+   rail. A phone on its side still had controls too small to use: Sudoku's pad
+   was pinned to 24px rows while the rail under it sat empty, Minesweeper's
+   tabs and Flag mode were 9px labels, its New board button was squeezed into
+   two lines by the footer note, and Fruit Merge spent 44px of its column on a
+   status line that repeats the footer, which shrank the glass and pushed its
+   bottom edge out of the panel.
+   ========================================================================== */
+
+@media (orientation: landscape) and (max-height: 560px) {
+  /* ---------- sudoku: the pad takes the rail's spare height -------------- */
+
+  .sudoku-shell { grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
+
+  #sudoku .sudoku-pad {
+    align-self: stretch;
+    grid-auto-rows: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  #sudoku .sudoku-pad-key {
+    min-height: 0;
+    height: 100%;
+    font-size: clamp(15px, 4.4dvh, 20px);
+  }
+
+  #sudoku .sudoku-tool { min-height: 28px; font-size: 9.5px; }
+
+  /* ---------- minesweeper: controls a thumb can hit ---------------------- */
+
+  /* The tabs were an inline row 223px wide inside a 300px rail; they share the
+     width now, so each one is a real target rather than a 58px sliver. */
+  #mines .mines-difficulty { display: flex; width: 100%; gap: 4px; }
+  #mines .mines-difficulty button { flex: 1 1 0; min-width: 0; min-height: 32px; padding-inline: 6px; font-size: 10.5px; }
+  #mines .mines-flag-toggle { width: 100%; min-height: 32px; font-size: 10.5px; }
+
+  #mines .play-feedback.has-coach { min-height: 34px; }
+  #mines .play-feedback .coach { min-height: 34px; padding: 3px 6px 3px 8px; }
+  #mines .play-feedback .coach-text { font-size: 11px; line-height: 1.25; }
+  #mines .play-feedback .coach-step { height: 22px; font-size: 9px; }
+  #mines .play-feedback .coach-skip { min-width: 38px; height: 28px; font-size: 10px; }
+
+  /* The footer note sat beside New board and squeezed it into two lines. The
+     rail has room for one control, and the button is the one. */
+  #mines .play-note { display: none; }
+  #mines .play-actions { flex: 1; }
+  #mines .play-foot .play-btn { width: 100%; min-height: 34px; white-space: nowrap; }
+
+  /* A hint card is taller than a one-line status. Keep it compact so the
+     pad still has usable rows beside the board. */
+  #sudoku .sudoku-hint-panel { padding: 6px 9px; }
+  #sudoku .sudoku-hint-panel strong { font-size: 9.5px; }
+  #sudoku .sudoku-hint-panel p { font-size: 9.5px; line-height: 1.28; }
+  #sudoku .sudoku-hint-actions { margin-top: 4px; gap: 4px; }
+  #sudoku .sudoku-hint-actions button { min-height: 26px; padding-inline: 7px; font-size: 8.5px; }
+
+  /* ---------- fruit merge: the glass owns the column --------------------- */
+
+  /* The status line sat in the board column and its 44px came straight out of
+     the glass. It moves into the rail, one line under the header, so the board
+     column keeps its full height and the sentence still shows. */
+  #fruit .play-shell {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "head board"
+      "status board"
+      "foot board";
+  }
+
+  #fruit .play-main { display: contents; }
+  #fruit .board-stage { grid-area: board; height: 100%; align-self: stretch; }
+
+  #fruit .play-feedback {
+    grid-area: status;
+    /* Grid, so the tutorial card and the status share one cell the way they do
+       in every other game: the coach covers the line instead of stacking on it. */
+    display: grid;
+    place-items: start;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin-top: 2px;
+  }
+
+  #fruit .play-feedback .play-status {
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    font-size: 10.5px;
+    line-height: 1.3;
+    /* One line, always: a long message ellipsises instead of pushing the
+       footer or wrapping under the tools. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Height-driven width, so the panel and the glass inside it both end inside
+     the column instead of the canvas running past the panel's bottom edge. */
+  #fruit .fruit-stage { width: min(100%, calc((100cqh - 44px) * 0.8)); }
+  #fruit .fruit-hud { padding-top: 6px; }
+}
+
+/* A 320-tall landscape phone with the Sudoku hint open has to hold the header,
+   the two-line hint, three pad rows, the tools and the footer in a 240 x 302
+   rail. The pad row was the flexible one, so it collapsed to 16.7px rows and
+   its digits spilled under the tools. Only while the hint is open, every row
+   keeps its content height, the pad has a 21px floor, and the hint chrome, row
+   gaps and level chip give back the height that floor costs. The
+   remaining-count line, which made a key 23px tall, steps out; with the card
+   open the digit is what the thumb needs. With the hint closed the pad keeps
+   the rail's spare height and its counts. */
+@media (orientation: landscape) and (max-height: 360px) and (max-width: 620px) {
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    row-gap: 1px;
+  }
+
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) .sudoku-pad { grid-auto-rows: minmax(21px, auto); }
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) .sudoku-pad-key { min-height: 21px; height: auto; }
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) .sudoku-pad-key::after { display: none; }
+
+  #sudoku .sudoku-hint-panel { padding: 2px 8px; }
+  #sudoku .sudoku-hint-panel strong { font-size: 9px; }
+  #sudoku .sudoku-hint-panel p { line-height: 1.15; }
+  #sudoku .sudoku-hint-actions { margin-top: 2px; }
+  #sudoku .sudoku-hint-actions button { min-height: 24px; }
+  #sudoku .sudoku-shell:has(.sudoku-main.has-hint) .play-chip { min-height: 24px; padding-block: 1px; }
+
+  /* "Intermediate" needs 75px of text, while three tabs in this rail are only
+     70px wide. A nine-pixel label and two-pixel padding keep the whole word
+     inside its tab instead of spilling over the next one. */
+  #mines .mines-difficulty button {
+    padding-inline: 2px;
+    font-size: 9px;
+    min-height: 26px;
+    letter-spacing: -0.01em;
+  }
+
+  /* The stats now have a row of their own, so with a real status bar and
+     navigation bar the rail has 254px instead of 302. Give the outer gutters
+     back and keep the rows tight; the game stays inside both bars. */
+  #mines .play-shell,
+  #ttt .play-shell {
+    row-gap: 2px;
+    padding-top: calc(var(--sa-top) + 8px);
+    padding-bottom: calc(var(--sa-bottom) + 6px);
+  }
+}
+
+/* The rail's tabs were still 28px labels with a large void above the footer.
+   Give them thumb-sized rows and spread the rail's spare height evenly. */
+@media (orientation: landscape) and (min-height: 361px) and (max-height: 560px) {
+  #mines .play-shell,
+  #ttt .play-shell {
+    grid-template-rows: auto auto auto auto;
+    align-content: space-between;
+  }
+
+  #mines .mines-toolbar { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  #mines .mines-difficulty { gap: 5px; }
+  #mines .mines-difficulty button { min-height: 42px; font-size: 12px; }
+  #mines .mines-flag-toggle { min-height: 42px; font-size: 12px; }
+
+  #ttt .ttt-difficulty { gap: 6px; }
+  #ttt .ttt-difficulty button { min-height: 42px; font-size: 12px; }
+}
+
+/* ==========================================================================
+   Colour sources (wallpaper / custom hex) and motion polish
+   ========================================================================== */
+
+/* ---------- custom colour ---------- */
+
+.colour-custom {
+  margin-top: 8px;
+  border-radius: 12px;
+  background: var(--seg-bg);
+  box-shadow: var(--ghost-shadow);
+  overflow: hidden;
+}
+
+.colour-custom-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font: inherit;
+  list-style: none;
+  cursor: pointer;
+}
+
+.colour-custom-summary::-webkit-details-marker { display: none; }
+
+.colour-custom-summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
+
+.colour-custom-preview {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e85f3b;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 14%, transparent) inset;
+  transition: background-color 220ms var(--ease-out);
+}
+
+.colour-custom-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.colour-custom-copy strong {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.colour-custom-copy small {
+  color: var(--muted-strong);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.colour-custom-chevron {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--muted);
+  transition: transform 180ms var(--ease-out);
+}
+
+.colour-custom[open] .colour-custom-chevron { transform: rotate(90deg); }
+
+/* A closed disclosure still laid its contents out, which both clipped the
+   hidden Apply button and kept a grid the reader could not see. */
+.colour-custom:not([open]) > .colour-custom-body,
+.colour-custom:not([open]) > .colour-hint { display: none; }
+
+.colour-custom-body {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px 10px;
+}
+
+.colour-picker {
+  width: 44px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.colour-picker::-webkit-color-swatch-wrapper { padding: 3px; }
+.colour-picker::-webkit-color-swatch {
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent) inset;
+}
+
+.colour-hex {
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: var(--ghost-shadow);
+  color: var(--ink);
+  font: 700 13px/1 var(--font-ui);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.colour-hex[aria-invalid="true"] {
+  box-shadow: 0 0 0 2px var(--danger, #c0392b) inset;
+}
+
+.colour-apply {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+}
+
+.colour-hint {
+  margin: 0;
+  padding: 0 12px 10px;
+  color: var(--muted-strong);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+.colour-hint:empty { display: none; }
+
+html[data-motion="reduced"] .colour-custom-preview,
+html[data-motion="reduced"] .colour-custom-chevron { transition: none; }
+
+/* ---------- disclosures open with a little travel, not a jump ---------- */
+
+@keyframes disclosure-open {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: none; }
+}
+
+html[data-motion="full"] .language-picker[open] > .seg,
+html[data-motion="full"] .settings-disclosure[open] > .settings-list,
+html[data-motion="full"] .colour-custom[open] > .colour-custom-body {
+  animation: disclosure-open 200ms var(--ease-out) both;
+}
+
+.settings-summary-chevron { transition: transform 180ms var(--ease-out); }
+html[data-motion="full"] .settings-disclosure[open] .settings-summary-chevron { transform: rotate(90deg); }
+html[data-motion="reduced"] .settings-summary-chevron { transition: none; }
+
+/* ---------- the sheet settles instead of snapping ---------- */
+
+/* A slightly longer enter with a strong ease-out reads as a surface coming to
+   rest; the exit is quicker, so dismissing never feels like waiting. Only
+   transform runs here, which keeps the whole move on the compositor. */
+html[data-motion="full"] .sheet-card {
+  transition: transform 340ms cubic-bezier(0.16, 1, 0.3, 1), background-color var(--motion-base) var(--ease-out);
+}
+
+html[data-motion="full"] .sheet.is-closing .sheet-card {
+  transition: transform 220ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* ---------- tap affordance ----------
+   Every control answers on the press, not after the browser's double-tap
+   window, and no platform highlight is painted over the app's own press state. */
+button,
+[role="button"],
+summary,
+a[href],
+label,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }

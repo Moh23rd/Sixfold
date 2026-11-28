@@ -8,15 +8,39 @@
     highContrast: false,
     colorblind: false,
     largeDigits: false,
+    largeMines: false,
+    fruitNumbers: false,
     leftHanded: false,
     hideTimer: false,
     checkMistakes: false,
     inputMode: 'cell',
     dailyPuzzle: true,
-    dailyReminder: false
+    motion: 'full'
   };
   const $ = function (id) { return document.getElementById(id); };
   let values = load();
+
+  // The page's one motion answer. "system" follows the device setting the
+  // stylesheet used to read directly; "full" and "reduced" are an explicit
+  // override. Full is the default: the app used to hide every transition
+  // behind the device's reduced-motion query, so a machine with that setting
+  // opened with no motion at all and no way to get it back. The attribute is
+  // also set by the head boot script before the first paint, so the entrance
+  // animations resolve on their first frame.
+  function systemReduced() {
+    return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  function resolvedMotion() {
+    if (values.motion === 'full') return 'full';
+    if (values.motion === 'reduced') return 'reduced';
+    return systemReduced() ? 'reduced' : 'full';
+  }
+
+  window.SixfoldMotion = {
+    reduced: function () { return resolvedMotion() === 'reduced'; },
+    choice: function () { return values.motion; }
+  };
 
   function load() {
     try {
@@ -27,6 +51,7 @@
           if (typeof raw[key] === typeof DEFAULTS[key]) next[key] = raw[key];
         });
         if (next.inputMode !== 'cell' && next.inputMode !== 'digit') next.inputMode = 'cell';
+        if (next.motion !== 'system' && next.motion !== 'full' && next.motion !== 'reduced') next.motion = 'full';
       }
       return next;
     } catch (err) {
@@ -44,6 +69,8 @@
       contrast: values.highContrast ? 'high' : '',
       colorblind: values.colorblind ? 'on' : '',
       'large-digits': values.largeDigits ? 'on' : '',
+      'large-mines': values.largeMines ? 'on' : '',
+      'fruit-numbers': values.fruitNumbers ? 'on' : '',
       'left-handed': values.leftHanded ? 'on' : '',
       'hide-timer': values.hideTimer ? 'on' : '',
       'check-mistakes': values.checkMistakes ? 'on' : '',
@@ -53,6 +80,15 @@
     Object.keys(attrs).forEach(function (name) {
       if (attrs[name]) root.setAttribute('data-' + name, attrs[name]);
       else root.removeAttribute('data-' + name);
+    });
+    const motion = resolvedMotion();
+    root.setAttribute('data-motion', motion);
+    // A launch that began in Reduced never armed the cover build. Dropping the
+    // launch-only class on a switch to Reduced also stops a later Full switch
+    // from replaying a build the player already saw.
+    if (motion === 'reduced') root.classList.remove('home-build');
+    document.querySelectorAll('[data-motion-opt]').forEach(function (button) {
+      button.setAttribute('aria-pressed', button.dataset.motionOpt === values.motion ? 'true' : 'false');
     });
     document.querySelectorAll('[data-setting]').forEach(function (button) {
       const key = button.dataset.setting;
@@ -72,6 +108,7 @@
   function set(key, value) {
     if (!Object.prototype.hasOwnProperty.call(DEFAULTS, key)) return;
     if (key === 'inputMode') values.inputMode = value === 'digit' ? 'digit' : 'cell';
+    else if (key === 'motion') values.motion = value === 'full' || value === 'reduced' ? value : 'system';
     else values[key] = Boolean(value);
     save();
     apply();
@@ -95,74 +132,58 @@
     if (el) el.textContent = message;
   }
 
-  function reminderStatus(message) {
-    const el = $('daily-reminder-status');
-    if (!el) return;
-    let copy = message;
+  function isNative() {
+    return Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+
+  // The WebView that runs the installed app has no download manager, so an
+  // <a download> writes nothing at all. The app writes a real file into its
+  // cache and hands it to the system share sheet instead, so a backup can go
+  // to Files, Drive or a chat.
+  function textToBase64(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary);
+  }
+
+  async function saveBackupNatively(text, name) {
+    const plugins = (window.Capacitor && window.Capacitor.Plugins) || {};
+    const filesystem = plugins.Filesystem;
+    if (!filesystem || !filesystem.writeFile) return false;
+    let written = null;
     try {
-      if (copy && window.SixfoldI18n) copy = window.SixfoldI18n.t(copy);
-    } catch (err) {}
-    el.textContent = copy || '';
-  }
-
-  function reminderSupported() {
-    return 'Notification' in window;
-  }
-
-  function setReminder(value, message, skipToday) {
-    values.dailyReminder = Boolean(value);
-    save();
-    apply();
-    reminderStatus(message || (value ? 'Reminder on. One nudge a day at 9:00.' : 'Reminder off.'));
-    if (window.SixfoldDaily && window.SixfoldDaily.refreshReminder) {
-      window.SixfoldDaily.refreshReminder(skipToday);
-    }
-  }
-
-  function toggleReminder() {
-    if (values.dailyReminder) {
-      setReminder(false, 'Reminder off.');
-      return;
-    }
-    if (!reminderSupported()) {
-      setReminder(false, 'Notifications are not available in this browser.');
-      return;
-    }
-    if (Notification.permission === 'denied') {
-      setReminder(false, 'Notifications are blocked in your browser settings.');
-      return;
-    }
-    const granted = function () {
-      setReminder(true, 'Reminder on. One nudge a day at 9:00.', true);
-    };
-    if (Notification.permission === 'granted') {
-      granted();
-      return;
-    }
-    let handled = false;
-    const finish = function (permission) {
-      if (handled) return;
-      handled = true;
-      if (permission === 'granted') granted();
-      else setReminder(false, permission === 'denied'
-        ? 'Notifications are blocked in your browser settings.'
-        : 'Reminder off.');
-    };
-    let pending;
-    try {
-      pending = Notification.requestPermission(finish);
-    } catch (err) {
-      setReminder(false, 'Notifications are not available in this browser.');
-      return;
-    }
-    if (pending && typeof pending.then === 'function') {
-      pending.then(finish).catch(function () {
-        setReminder(false, 'Notifications are not available in this browser.');
+      written = await filesystem.writeFile({
+        path: name,
+        data: textToBase64(text),
+        directory: 'CACHE',
+        encoding: 'base64'
       });
+    } catch (err) {
+      status('The app could not write the backup file.');
+      return true;
     }
+    const share = plugins.Share;
+    if (!share || !share.share || !written || !written.uri) {
+      status('Backup saved. Nothing on this device can open the share sheet.');
+      return true;
+    }
+    try {
+      await share.share({
+        title: 'Sixfold backup',
+        dialogTitle: 'Save your Sixfold backup',
+        url: written.uri
+      });
+      status('Backup ready. Keep the file somewhere safe.');
+    } catch (err) {
+      status('Backup written, but the share sheet did not open.');
+    }
+    return true;
   }
 
-  function exportBackup() {
+  async function exportBackup() {
     const data = {};
     try {
       for (let i = 0; i < localStorage.length; i += 1) {
@@ -180,27 +201,20 @@
       exportedAt: new Date().toISOString(),
       data: data
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const text = JSON.stringify(payload, null, 2);
+    const name = 'sixfold-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    status('Preparing your backup…');
+    if (isNative() && (await saveBackupNatively(text, name))) return;
+    const blob = new Blob([text], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'sixfold-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    link.download = name;
     document.body.appendChild(link);
     link.click();
     link.remove();
     window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     status('Backup downloaded. Keep it somewhere safe.');
-  }
-
-  function clearLocal() {
-    const keys = [];
-    try {
-      for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i);
-        if (key && /^(merge2048|merge-games|sixfold)/.test(key)) keys.push(key);
-      }
-      keys.forEach(function (key) { localStorage.removeItem(key); });
-    } catch (err) {}
   }
 
   function importBackup(file) {
@@ -235,54 +249,51 @@
       }
       const ok = window.confirm('Restore this Sixfold backup? It will replace every board, score and setting on this device.');
       if (!ok) return;
-      clearLocal();
-      entries.forEach(function (key) {
-        try { localStorage.setItem(key, payload.data[key]); } catch (err) {}
-      });
+      // The page that is about to reload still holds a Merge board and a Sudoku
+      // grid in memory, and both rewrite their storage on pagehide. Writing the
+      // restored keys here let that save win, so the payload waits in the
+      // session and the page's first inline script applies it after the reload,
+      // before any game has read storage.
+      const pairs = entries.map(function (key) { return [key, payload.data[key]]; });
       status('Backup restored. Reloading…');
-      window.setTimeout(function () { location.reload(); }, 350);
+      try {
+        sessionStorage.setItem('sixfold.restore.pending', JSON.stringify(pairs));
+      } catch (err) {
+        entries.forEach(function (key) {
+          try { localStorage.setItem(key, payload.data[key]); } catch (err2) {}
+        });
+      }
+      window.setTimeout(function () { location.reload(); }, 150);
     };
     reader.onerror = function () { status('Could not read that file.'); };
     reader.readAsText(file);
   }
 
   function init() {
-    const reminderWasOn = values.dailyReminder;
-    if (reminderWasOn && (!reminderSupported() || Notification.permission !== 'granted')) {
-      values.dailyReminder = false;
-      save();
-    }
     apply();
-    if (reminderWasOn && !values.dailyReminder) {
-      reminderStatus(!reminderSupported()
-        ? 'Notifications are not available in this browser.'
-        : Notification.permission === 'denied'
-          ? 'Notifications are blocked in your browser settings.'
-          : 'Reminder off.');
-    }
     document.querySelectorAll('[data-setting]').forEach(function (button) {
       button.addEventListener('click', function () {
-        if (button.dataset.setting === 'dailyReminder') {
-          toggleReminder();
-          return;
-        }
         toggle(button.dataset.setting);
       });
     });
 
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden || !values.dailyReminder || !reminderSupported()) return;
-      if (Notification.permission === 'granted') return;
-      values.dailyReminder = false;
-      save();
-      apply();
-      reminderStatus(Notification.permission === 'denied'
-        ? 'Notifications are blocked in your browser settings.'
-        : 'Reminder off.');
-    });
     document.querySelectorAll('[data-setting-input]').forEach(function (button) {
       button.addEventListener('click', function () { set('inputMode', button.dataset.settingInput); });
     });
+    document.querySelectorAll('[data-motion-opt]').forEach(function (button) {
+      button.addEventListener('click', function () { set('motion', button.dataset.motionOpt); });
+    });
+    // On "system" the page follows the device live; a phone switching its
+    // accessibility setting should not need a reload. The other two choices
+    // ignore the device and keep what the player picked.
+    const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    if (motionQuery) {
+      const onSystemMotion = function () {
+        if (values.motion === 'system') apply();
+      };
+      if (motionQuery.addEventListener) motionQuery.addEventListener('change', onSystemMotion);
+      else if (motionQuery.addListener) motionQuery.addListener(onSystemMotion);
+    }
     const exportBtn = $('backup-export');
     if (exportBtn) exportBtn.addEventListener('click', exportBackup);
     const openImport = $('backup-import-open');

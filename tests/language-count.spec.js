@@ -5,9 +5,6 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-const WORDLE_KEY = 'Wordle in all twelve languages: localized word lists, native input for Arabic, Hindi, Kannada, Japanese, Korean and Chinese, and an offline English fallback';
-const LANGUAGES_KEY = 'New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic, with complete catalogs and offline fonts';
-
 test('public language copy matches the twelve supported locales', () => {
   const i18n = read('i18n/i18n.js');
   const supported = i18n.match(/var SUPPORTED = \{([\s\S]*?)\n  \};/);
@@ -26,14 +23,16 @@ test('public language copy matches the twelve supported locales', () => {
   ];
   expect(catalogs, 'non-English catalog files').toHaveLength(11);
   for (const catalog of catalogs) {
-    const source = read(catalog);
-    expect(source, catalog + ' Wordle copy').toContain(WORDLE_KEY);
-    expect(source, catalog + ' language list').toContain(LANGUAGES_KEY);
+    expect(read(catalog), catalog + ' current release note').toContain('What’s new in 6.0');
   }
 
+  // The picker is the public language list; every supported locale needs one
+  // option, so a count change cannot hide behind the catalogs alone.
   const html = read('index.html');
-  expect(html, 'What’s New Wordle copy').toContain(WORDLE_KEY);
-  expect(html, 'What’s New Kannada listing').toContain('Hindi, Kannada and Arabic');
+  const picker = [...html.matchAll(/data-locale="([^"]+)"/g)].map((match) => match[1]);
+  expect(new Set(picker).size, 'language picker options').toBe(12);
+  expect(picker, 'language picker includes Kannada').toContain('kn');
+  expect(html, 'What’s New is the current release').toContain('What’s new in 6.0');
 
   const changelog = read('CHANGELOG.md');
   expect(changelog, 'changelog language count').toMatch(/all twelve interface\s+languages/);

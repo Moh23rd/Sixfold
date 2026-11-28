@@ -17,7 +17,7 @@ test('heading, wordmark and labels use Google Sans Flex', async ({ page }) => {
       loaded: document.fonts.check('700 48px "Google Sans Flex"', 'SIXFOLD'),
       heading: read('#hub-title'),
       wordmark: read('.hub-word'),
-      label: read('.hub-tagline'),
+      label: read('.home-kicker'),
       removedDisplayFace: Array.from(document.fonts).some((face) => face.family === 'Space Grotesk')
     };
   });

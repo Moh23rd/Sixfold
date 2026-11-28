@@ -1,10 +1,12 @@
 /* Google Sans Flex is Google's open-source Material 3 Expressive face. The
-   shipped file keeps the rounded terminals, weight and optical size, and
-   includes Latin-1 and Latin Extended-A so accented English, Spanish, French
-   and German copy stays in the same face instead of falling back. */
+   shipped file is the full variable font with roundness pinned to 100 (the
+   soft, bouncy end of the ROND axis) and weight and optical size left live,
+   so headings, body copy and numerals share one rounded voice. It keeps
+   Latin-1 and Latin Extended-A so accented English, Spanish, French and
+   German copy stays in the same face instead of falling back. */
 @font-face {
   font-family: "Google Sans Flex";
-  src: url("../fonts/google-sans-flex.woff2?v=4.0.1") format("woff2");
+  src: url("../fonts/google-sans-flex.woff2?v=5.0.2") format("woff2");
   font-weight: 100 1000;
   font-style: normal;
   font-display: swap;
@@ -221,6 +223,13 @@ html {
   text-size-adjust: 100%;
 }
 
+/* The bundled face carries an fi/fl ligature that renders the i without its
+   dot, so "finish" reads as "finſh". The copy is short UI text; the joined
+   forms buy nothing and are not worth a broken letter. */
+body {
+  font-variant-ligatures: none;
+}
+
 body {
   margin: 0;
   height: 100vh;
@@ -234,7 +243,7 @@ body {
   justify-content: center;
   /* Keep the content clear of the phone's system bars while the page colour
      fills the rest of the available screen. */
-  padding: calc(env(safe-area-inset-top, 0px) + 22px) calc(env(safe-area-inset-right, 0px) + 16px) calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 18px) calc(env(safe-area-inset-left, 0px) + 16px);
+  padding: calc(var(--sa-top) + 22px) calc(var(--sa-right) + 16px) calc(var(--sa-bottom) + 18px) calc(var(--sa-left) + 16px);
   background-color: var(--page);
   color: var(--ink);
   font-family: var(--font-ui);
@@ -248,7 +257,7 @@ body {
   overscroll-behavior: none;
   /* No fade on the page colour: the phone's bar is repainted at the same moment,
      so a slow fade would read as the bar lagging behind the palette. */
-  transition: color 160ms ease;
+  transition: color 160ms var(--ease-out);
 }
 
 /* A soft sheen behind the board, tinted by the chosen palette. It fades out well
@@ -355,26 +364,20 @@ h1 {
 .value.is-long { font-size: 14px; }
 .value.is-longer { font-size: 11.5px; }
 
-/* A new personal best: the Best card pops once and throws off a soft ring. */
+/* A new personal best: the Best card pops once. The ring that used to travel
+   through box-shadow repainted the card every frame; the pop alone is
+   composited. */
 @keyframes recordPop {
   0%   { transform: scale(1); }
   35%  { transform: scale(1.18); }
   100% { transform: scale(1); }
 }
 
-@keyframes recordRing {
-  0%   { box-shadow: var(--card-shadow), 0 0 0 0 color-mix(in srgb, var(--t64) 55%, transparent); }
-  100% { box-shadow: var(--card-shadow), 0 0 0 14px color-mix(in srgb, var(--t64) 0%, transparent); }
-}
+.score.is-record .value { animation: recordPop 360ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 
-.score.is-record { animation: recordRing 900ms ease-out; }
-.score.is-record .value { animation: recordPop 640ms cubic-bezier(0.2, 0.9, 0.3, 1); }
-
-@media (prefers-reduced-motion: reduce) {
-  .score.is-record,
-  .score.is-record .value,
-  .hint.is-warning { animation: none; }
-}
+html[data-motion="reduced"] .score.is-record,
+html[data-motion="reduced"] .score.is-record .value,
+html[data-motion="reduced"] .hint.is-warning { animation: none; }
 
 /* ---------- board ---------- */
 
@@ -423,7 +426,6 @@ h1 {
   left: 0;
   border-radius: 10px;
   transition: transform 110ms cubic-bezier(0.25, 0.8, 0.35, 1);
-  will-change: transform;
   /* A merge or new tile is scaled on its face. Clipping the tile cell keeps
      that little pop inside its own square instead of covering the gap or
      the board's edge. */
@@ -745,7 +747,7 @@ h1 {
   line-height: 1.35;
   color: var(--muted);
   text-align: center;
-  transition: color 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
+  transition: color 200ms var(--ease-out), background-color 200ms var(--ease-out);
 }
 
 /* The near-full heads-up: a red warning pill, deliberately independent of
@@ -813,7 +815,7 @@ h1 {
   color: var(--btn-ink);
   background: var(--btn-bg);
   box-shadow: var(--btn-shadow);
-  transition: transform 120ms ease, opacity 150ms ease;
+  transition: transform 120ms var(--ease-out), opacity 150ms var(--ease-out);
   cursor: pointer;
 }
 
@@ -827,7 +829,7 @@ h1 {
 /* Native-feeling press response on the small controls too. */
 .seg button,
 .palette,
-.sheet-done { transition: transform 120ms ease; }
+.sheet-done { transition: transform 120ms var(--ease-out); }
 
 .seg button:active,
 .palette:active,
@@ -864,11 +866,9 @@ button:focus-visible {
 /* The browser's native fullscreen resize is outside the page's control. Step
    the content back under a short fade, settle at the new size, then bring it
    back, so the board never snaps between two viewport layouts. */
-@media (prefers-reduced-motion: no-preference) {
-  .app {
+html[data-motion="full"] .app {
     transition: opacity 160ms var(--ease-out), transform 240ms var(--ease-out);
   }
-}
 
 .btn.icon .slash { display: none; }
 .btn.icon.is-off { color: var(--muted); }
@@ -903,10 +903,13 @@ html.sheet-open body { overflow: hidden; }
 .sheet-card {
   position: relative;
   width: min(100%, 460px);
-  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 16px);
+  max-height: calc(100dvh - var(--sa-top) - 16px);
   overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 18px 18px calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 20px);
+  /* `none`, not `contain`: the card must not hand the edge gesture to the page
+     behind it, and it must not paint the WebView's own stretch over its copy
+     either. The sheet slides; it does not deform. */
+  overscroll-behavior: none;
+  padding: 0 18px calc(var(--sa-bottom) + 20px);
   border-radius: 20px 20px 0 0;
   background: var(--sheet-bg);
   color: var(--ink);
@@ -924,6 +927,36 @@ html.sheet-open body { overflow: hidden; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+/* A long panel (Look & feel is taller than a phone viewport) used to scroll its
+   own Done button out of reach. Inside a sheet card the head travels with the
+   top edge and paints over the copy that slides beneath it, so the way out is
+   always visible; the card's own top padding moved into the head with it. It is
+   kept as slim as a native app bar and fades into the copy below, so it reads
+   as chrome instead of a band covering the settings. */
+.sheet-card > .sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 -18px;
+  padding: 12px 18px 9px;
+  background: var(--sheet-bg);
+  /* The head travels with the top edge. A square head painted over the card's
+     rounded top looked like the corners had gone flat as soon as the sheet
+     scrolled to a colour control. */
+  border-radius: 12px 12px 0 0;
+}
+
+.sheet-card > .sheet-head::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 10px;
+  pointer-events: none;
+  background: linear-gradient(var(--sheet-bg), transparent);
 }
 
 .sheet-head h2 {
@@ -1061,10 +1094,29 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
   cursor: pointer;
   text-decoration: none;
   touch-action: manipulation;
-  transition: transform 120ms ease;
+  transition: transform 120ms var(--ease-out);
 }
 
 .contact-link:active { transform: scale(0.98); }
+
+/* A link inside a sentence stays a sentence: the chip's 44px height and its
+   own margins broke the release-notes line into three pieces. */
+.contact-link--inline {
+  display: inline;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font-size: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.contact-link--inline:active { transform: none; }
 
 .contact-link:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--ink) 72%, transparent);
@@ -1086,7 +1138,7 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
 .steps li {
   counter-increment: step;
   position: relative;
-  padding-left: 30px;
+  padding-inline-start: 30px;
   font-size: 13px;
   line-height: 1.45;
 }
@@ -1094,7 +1146,7 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
 .steps li::before {
   content: counter(step);
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 1px;
   width: 20px;
   height: 20px;
@@ -1158,7 +1210,7 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
 @media (orientation: landscape) {
   body {
     align-items: center;
-    padding: calc(env(safe-area-inset-top, 0px) + 8px) calc(env(safe-area-inset-right, 0px) + 14px) calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 8px) calc(env(safe-area-inset-left, 0px) + 14px);
+    padding: calc(var(--sa-top) + 8px) calc(var(--sa-right) + 14px) calc(var(--sa-bottom) + 8px) calc(var(--sa-left) + 14px);
   }
 
   .app {
@@ -1187,7 +1239,7 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
   .sheet { align-items: center; }
   .sheet-card {
     border-radius: 20px;
-    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 20px);
+    max-height: min(calc(100dvh - var(--sa-top) - 20px), 780px);
   }
 }
 
@@ -1226,19 +1278,21 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tile { transition-duration: 0.01ms; }
-  .face.appear,
-  .face.bump { animation-duration: 0.01ms; }
-  .overlay,
-  .sheet-backdrop,
-  .sheet-card { animation: none; }
-  .result-thumb img.is-fresh { animation: none; }
-  .btn,
-  .seg button,
-  .palette,
-  .sheet-done { transition-duration: 0.01ms; }
-}
+html[data-motion="reduced"] .tile { transition-duration: 0.01ms; }
+
+html[data-motion="reduced"] .face.appear,
+html[data-motion="reduced"] .face.bump { animation-duration: 0.01ms; }
+
+html[data-motion="reduced"] .overlay,
+html[data-motion="reduced"] .sheet-backdrop,
+html[data-motion="reduced"] .sheet-card { animation: none; }
+
+html[data-motion="reduced"] .result-thumb img.is-fresh { animation: none; }
+
+html[data-motion="reduced"] .btn,
+html[data-motion="reduced"] .seg button,
+html[data-motion="reduced"] .palette,
+html[data-motion="reduced"] .sheet-done { transition-duration: 0.01ms; }
 
 /* ---------- motion system ---------- */
 
@@ -1247,25 +1301,29 @@ html[data-theme="dark"] .seg button[aria-pressed="true"] {
 :root {
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Material 3's emphasized pair for a surface that crosses the screen edge:
+     decelerate on the way in, accelerate on the way out. */
+  --ease-emphasized-in: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-emphasized-out: cubic-bezier(0.3, 0, 0.8, 0.15);
   --motion-fast: 140ms;
   --motion-base: 240ms;
   --motion-slow: 380ms;
 }
 
-html {
-  transition: background-color var(--motion-slow) var(--ease-out);
-}
-
+/* The page colour is not faded: it lands in the same frame as the system bar,
+   which has no transition of its own. A running background transition on these
+   full-page layers is what could leave the WebView on the previous — or an
+   in-between — colour after a switch. The content on top still cross-fades. */
 body {
-  transition: background-color var(--motion-slow) var(--ease-out), color 180ms ease;
+  transition: color 180ms var(--ease-out);
 }
 
 .board {
-  transition: background-color var(--motion-slow) var(--ease-out), box-shadow var(--motion-slow) var(--ease-out);
+  transition: background-color var(--motion-slow) var(--ease-out);
 }
 
 .score {
-  transition: background-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+  transition: background-color var(--motion-base) var(--ease-out);
 }
 
 .cell {
@@ -1278,22 +1336,22 @@ body {
 }
 
 .face {
-  transition: background-color var(--motion-base) var(--ease-out), color 200ms ease, box-shadow var(--motion-base) var(--ease-out);
+  transition: background-color var(--motion-base) var(--ease-out), color 200ms var(--ease-out);
 }
 
 /* The board itself lifts in after the launch screen, rather than appearing
    underneath it with a hard cut. */
-@media (prefers-reduced-motion: no-preference) {
-  html.app-ready .header {
+html[data-motion="full"].app-ready .header {
     animation: appRise 480ms var(--ease-out) 40ms both;
   }
-  html.app-ready .board {
+
+html[data-motion="full"].app-ready .board {
     animation: boardReveal 560ms var(--ease-out) 80ms both;
   }
-  html.app-ready .footer {
+
+html[data-motion="full"].app-ready .footer {
     animation: appRise 480ms var(--ease-out) 150ms both;
   }
-}
 
 @keyframes appRise {
   from { opacity: 0; transform: translateY(7px); }
@@ -1335,7 +1393,7 @@ body {
 }
 
 .hint {
-  transition: color 200ms ease, background-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), transform 180ms var(--ease-out);
+  transition: color 200ms var(--ease-out), background-color var(--motion-base) var(--ease-out), transform 180ms var(--ease-out);
 }
 
 .hint.is-warning {
@@ -1343,14 +1401,14 @@ body {
 }
 
 .btn {
-  transition: transform var(--motion-fast) var(--ease-out), opacity 160ms ease, background-color var(--motion-base) var(--ease-out), color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+  transition: transform var(--motion-fast) var(--ease-out), opacity 160ms var(--ease-out), background-color var(--motion-base) var(--ease-out), color var(--motion-base) var(--ease-out);
 }
 
 .seg button,
 .palette,
 .sheet-done,
 .contact-link {
-  transition: transform var(--motion-fast) var(--ease-out), background-color var(--motion-base) var(--ease-out), color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+  transition: transform var(--motion-fast) var(--ease-out), background-color var(--motion-base) var(--ease-out), color var(--motion-base) var(--ease-out);
 }
 
 /* Result card: fade the dimmer, then let the card settle in from a small
@@ -1373,7 +1431,7 @@ body {
 .overlay-card {
   opacity: 0;
   transform: translateY(10px) scale(0.97);
-  transition: opacity 220ms var(--ease-out), transform 300ms var(--ease-spring), background-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+  transition: opacity 220ms var(--ease-out), transform 300ms var(--ease-spring), background-color var(--motion-base) var(--ease-out);
 }
 
 .overlay.is-open .overlay-card {
@@ -1388,83 +1446,123 @@ body {
 }
 
 /* Sheets use the same language: a soft scrim and a card that rises, then
-   leaves the same way instead of disappearing between frames. */
+   leaves the same way instead of disappearing between frames. The blur is
+   kept out of the opacity transition: a backdrop-filter inside a fading
+   layer is rasterised late on phone GPUs, which made the sheet look as if it
+   was waiting a beat before it blurred. The scrim is fully painted on open;
+   only the card enters, and the scrim fades on close. */
 .sheet {
-  opacity: 0;
+  opacity: 1;
   visibility: hidden;
-  transition: opacity 260ms var(--ease-out), visibility 260ms;
 }
 
-.sheet.is-open {
+.sheet.is-open,
+.sheet.is-closing {
   opacity: 1;
   visibility: visible;
 }
 
 .sheet.is-closing {
-  opacity: 0;
-  visibility: hidden;
   pointer-events: none;
 }
 
 .sheet-backdrop {
   animation: none;
   opacity: 0;
-  transition: opacity 260ms var(--ease-out);
+  transition: opacity 220ms var(--ease-out);
 }
 
 .sheet.is-open .sheet-backdrop {
   opacity: 1;
+  transition: none;
 }
 
 .sheet.is-closing .sheet-backdrop {
   opacity: 0;
+  transition: opacity 220ms var(--ease-out);
 }
 
+/* A modal sheet slides: it does not fade, scale or deform. Material's own
+   sheets cross the screen edge and keep their surface opaque, and a cross-fade
+   made the card look like it was dissolving over the page. The transform-only
+   path also means the whole entrance runs on the compositor. */
 .sheet-card {
   animation: none;
-  opacity: 0;
-  transform: translateY(26px) scale(0.985);
-  transition: opacity 240ms var(--ease-out), transform 360ms var(--ease-spring), background-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+  transform: translateY(100%);
+  transition: transform 300ms var(--ease-emphasized-in), background-color var(--motion-base) var(--ease-out);
+}
+
+/* Promote the card only while it is actually travelling; a sheet sitting
+   closed in the DOM must not hold a compositor layer. */
+.sheet.is-closing .sheet-card {
+  will-change: transform;
 }
 
 .sheet.is-open .sheet-card {
-  opacity: 1;
   transform: none;
 }
 
 .sheet.is-closing .sheet-card {
-  opacity: 0;
-  transform: translateY(18px) scale(0.99);
-  transition-duration: 220ms;
+  transform: translateY(100%);
+  transition: transform 200ms var(--ease-emphasized-out);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.app-ready .header,
-  html.app-ready .board,
-  html.app-ready .footer,
-  .score:not(.is-record).is-scoring .value {
+html[data-motion="reduced"].app-ready .header,
+html[data-motion="reduced"].app-ready .board,
+html[data-motion="reduced"].app-ready .footer,
+html[data-motion="reduced"] .score:not(.is-record).is-scoring .value {
     animation: none;
   }
-  .tile,
-  .face,
-  .overlay,
-  .overlay-card,
-  .sheet,
-  .sheet-backdrop,
-  .sheet-card,
-  .btn,
-  .seg button,
-  .palette,
-  .sheet-done,
-  .contact-link,
-  .hint {
+
+html[data-motion="reduced"] .tile,
+html[data-motion="reduced"] .face,
+html[data-motion="reduced"] .overlay,
+html[data-motion="reduced"] .overlay-card,
+html[data-motion="reduced"] .sheet,
+html[data-motion="reduced"] .sheet-backdrop,
+html[data-motion="reduced"] .sheet-card,
+html[data-motion="reduced"] .btn,
+html[data-motion="reduced"] .seg button,
+html[data-motion="reduced"] .palette,
+html[data-motion="reduced"] .sheet-done,
+html[data-motion="reduced"] .contact-link,
+html[data-motion="reduced"] .hint {
     transition-duration: 0.01ms;
   }
-  .face.appear,
-  .face.bump,
-  .hint.is-warning {
-    animation: none;
-  }
+
+html[data-motion="reduced"] .face.appear,
+html[data-motion="reduced"] .face.bump,
+html[data-motion="reduced"] .hint.is-warning {
+  animation: none;
+}
+
+/* Reduced removes movement, not every transition: an instant cut is its own
+   little jolt, and opacity is not motion. Large surfaces stop lifting and
+   sliding; they and their scrims fade in place. */
+html[data-motion="reduced"] .overlay,
+html[data-motion="reduced"] .sheet-backdrop,
+html[data-motion="reduced"] .overlay-card,
+html[data-motion="reduced"] .sheet-card {
+  transition: opacity 160ms var(--ease-out);
+}
+
+/* The open sheet's scrim and the closing states carry more specific transition
+   rules. Reduced keeps those surfaces in place but still fades them; without
+   these the scrim cut in and the close hid the sheet before its fade ran. */
+html[data-motion="reduced"] .sheet.is-open .sheet-backdrop,
+html[data-motion="reduced"] .sheet.is-closing .sheet-backdrop,
+html[data-motion="reduced"] .sheet.is-open .sheet-card,
+html[data-motion="reduced"] .sheet.is-closing .sheet-card,
+html[data-motion="reduced"] .overlay.is-closing,
+html[data-motion="reduced"] .overlay.is-closing .overlay-card {
+  transition: opacity 160ms var(--ease-out);
+}
+
+html[data-motion="reduced"] .overlay-card,
+html[data-motion="reduced"] .overlay.is-closing .overlay-card,
+html[data-motion="reduced"] .sheet-card,
+html[data-motion="reduced"] .sheet.is-closing .sheet-card {
+  transform: none;
 }
 
 /* ---------- desktop ---------- */
@@ -1477,6 +1575,10 @@ body {
     align-items: center;
     padding: clamp(20px, 4vh, 40px) clamp(32px, 5vw, 64px);
   }
+
+  /* A settings dialog on a desktop does not need the full window height: cap it
+     at a comfortable panel so it reads as a dialog, not a second page. */
+  .sheet-card { max-height: min(calc(100dvh - 24px), 780px); }
 
   .app {
     --pad: clamp(12px, 1.15vw, 16px);
@@ -1742,10 +1844,10 @@ body {
   body {
     align-items: center;
     padding:
-      calc(env(safe-area-inset-top, 0px) + 10px)
-      calc(env(safe-area-inset-right, 0px) + 14px)
-      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 10px)
-      calc(env(safe-area-inset-left, 0px) + 14px);
+      calc(var(--sa-top) + 10px)
+      calc(var(--sa-right) + 14px)
+      calc(var(--sa-bottom) + 10px)
+      calc(var(--sa-left) + 14px);
   }
 
   .app {
@@ -1766,7 +1868,7 @@ body {
     grid-area: board;
     width: min(
       48vw,
-      calc(100dvh - 32px - env(safe-area-inset-top, 0px) - max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px))),
+      calc(100dvh - 32px - var(--sa-top) - var(--sa-bottom)),
       760px
     );
     margin: 0;
@@ -1832,7 +1934,7 @@ body {
   .sheet { align-items: center; }
   .sheet-card {
     border-radius: 20px;
-    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 20px);
+    max-height: min(calc(100dvh - var(--sa-top) - 20px), 780px);
   }
 }
 

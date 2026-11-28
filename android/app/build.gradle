@@ -1,0 +1,75 @@
+apply plugin: 'com.android.application'
+
+def testKeystorePath = System.getenv("ANDROID_TEST_KEYSTORE_PATH")
+def testKeystorePassword = System.getenv("ANDROID_TEST_KEYSTORE_PASSWORD")
+def testKeyAlias = System.getenv("ANDROID_TEST_KEY_ALIAS")
+def testKeyPassword = System.getenv("ANDROID_TEST_KEY_PASSWORD")
+
+android {
+    namespace = "io.github.moh23rd.sixfold"
+    compileSdk = rootProject.ext.compileSdkVersion
+    signingConfigs {
+        if (testKeystorePath) {
+            ciTest {
+                storeFile file(testKeystorePath)
+                storePassword testKeystorePassword
+                keyAlias testKeyAlias
+                keyPassword testKeyPassword
+                storeType "PKCS12"
+            }
+        }
+    }
+    defaultConfig {
+        applicationId "io.github.moh23rd.sixfold"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 600
+        versionName "6.0.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildTypes {
+        debug {
+            if (testKeystorePath) {
+                signingConfig signingConfigs.ciTest
+            }
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

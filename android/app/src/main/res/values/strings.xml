@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sixfold</string>
+    <string name="title_activity_main">Sixfold</string>
+    <string name="package_name">io.github.moh23rd.sixfold</string>
+    <string name="custom_url_scheme">io.github.moh23rd.sixfold</string>
+    <string name="shortcut_gauntlet">Daily Gauntlet</string>
+    <string name="shortcut_gauntlet_long">Play today’s six-round run</string>
+    <string name="shortcut_merge">Fruit Merge</string>
+    <string name="shortcut_merge_long">Open Fruit Merge</string>
+    <string name="shortcut_sudoku">Sudoku</string>
+    <string name="shortcut_sudoku_long">Open Sudoku</string>
+</resources>

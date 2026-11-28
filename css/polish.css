@@ -16,8 +16,11 @@
 
 .home-hero-art { perspective: 900px; }
 
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .home-six {
+@media (hover: hover) and (pointer: fine) {
+  /* Gated on the page's Motion choice, not just the device query: Full on a
+     reduced-motion desktop gets the pointer motion back, and Reduced on a
+     normal desktop does not silently keep it. */
+html[data-motion="full"] .home-six {
     transform: rotate(-3deg) rotateX(var(--six-tilt-x, 0deg)) rotateY(var(--six-tilt-y, 0deg));
     transform-style: preserve-3d;
     transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -27,53 +30,56 @@
      while the pointer is over the cover. A permanent will-change layer and a
      420ms transition made every mouse event retarget a long animation, which
      is what felt sticky on desktop. */
-  .home-six.is-tilting {
+html[data-motion="full"] .home-six.is-tilting {
     transition-duration: 70ms;
     will-change: transform;
   }
 
-  .home-six-piece {
+html[data-motion="full"] .home-six-piece {
     cursor: pointer;
     touch-action: manipulation;
     user-select: none;
-    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 160ms var(--ease-out);
   }
 
-  .home-six-piece:hover {
+html[data-motion="full"] .home-six-piece:hover {
     transform: translateY(-3px);
   }
 
-  .home-six-piece:active { transform: translateY(0) scale(0.975); }
+html[data-motion="full"] .home-six-piece:active { transform: translateY(0) scale(0.975); }
 
-  .home-game {
-    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      border-color 180ms ease,
-      box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
+html[data-motion="full"] .home-game {
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .home-game:hover { transform: translateY(-5px); }
+html[data-motion="full"] .home-game:hover { transform: translateY(-5px); }
 
-  .home-game-stage { transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1); }
-  .home-game:hover .home-game-stage { transform: scale(1.015); }
+/* The hover lift is more specific than the base :active rule, so without this
+   a pressed card stayed lifted and never answered the finger. Keep the press
+   later in the cascade and slightly compress the inner stage for depth. */
+html[data-motion="full"] .home-game:active { transform: translateY(0); }
 
-  .home-cta,
-  .home-surprise,
-  .hub-share,
-  .hub-focus,
-  .hub-look,
-  .play-btn,
-  .play-tool,
-  .games-home,
-  .result-share {
+html[data-motion="full"] .home-game-stage { transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1); }
+html[data-motion="full"] .home-game:hover .home-game-stage { transform: scale(1.015); }
+html[data-motion="full"] .home-game:active .home-game-stage { transform: scale(0.985); }
+
+html[data-motion="full"] .home-cta,
+html[data-motion="full"] .home-surprise,
+html[data-motion="full"] .hub-share,
+html[data-motion="full"] .hub-look,
+html[data-motion="full"] .play-btn,
+html[data-motion="full"] .play-tool,
+html[data-motion="full"] .games-home,
+html[data-motion="full"] .result-share {
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     transition-duration: 240ms;
   }
 
-  .play-btn:hover:not(:active),
-  .play-tool:hover,
-  .games-home:hover { transform: translateY(-2px); }
+html[data-motion="full"] .play-btn:hover:not(:active),
+html[data-motion="full"] .play-tool:hover,
+html[data-motion="full"] .games-home:hover { transform: translateY(-2px); }
 
-  .result-share:hover { transform: translateY(-1px); }
+html[data-motion="full"] .result-share:hover { transform: translateY(-1px); }
 
   /* Merge tiles already get will-change in styles.css. Promoting every water
      glass and every Minesweeper node created hundreds of compositor layers on
@@ -81,42 +87,42 @@
      stutter. Transform transitions alone are enough here. */
 }
 
-/* A tap is a brief press, not an animation. Keeping it off the animation
-   property means it can never cancel or replace the sixBuild entrance. */
+/* A tap is a brief press, not an animation. Keeping it to transform only
+   keeps the feedback composited: no ring, no filter, no shadow repaint. */
 .home-six-piece.is-six-hit {
-  transform: translateY(2px) scale(0.94);
-  filter: brightness(1.07) saturate(1.06);
-  box-shadow:
-    inset 0 -2px 0 rgba(33, 29, 24, 0.12),
-    0 0 0 3px color-mix(in srgb, var(--ink) 15%, transparent);
+  transform: translateY(1px) scale(0.97);
 }
 
 .home-six.is-unlocking {
-  animation: sixUnlock 520ms var(--ease-spring) both;
+  animation: sixUnlock 320ms var(--ease-out) both;
 }
 
 @keyframes sixUnlock {
   0% { transform: rotate(-3deg) scale(1); }
-  38% { transform: rotate(-3deg) scale(1.035); }
-  68% { transform: rotate(-3deg) scale(0.993); }
+  40% { transform: rotate(-3deg) scale(1.02); }
+  72% { transform: rotate(-3deg) scale(0.997); }
   100% { transform: rotate(-3deg) scale(1); }
 }
 
 /* Merge tiles keep their responsive 150ms feel on touch, but a mouse gets a
    slightly longer, springier slide so a fast swipe no longer looks like a snap. */
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .tile { transition: transform 170ms cubic-bezier(0.22, 1, 0.36, 1); }
+@media (hover: hover) and (pointer: fine) {
+html[data-motion="full"] .tile { transition: transform 170ms cubic-bezier(0.22, 1, 0.36, 1); }
 }
 
-/* A screen settles in with a little more travel on a large display, while the
-   board itself stays perfectly still once it has arrived. */
+/* A screen settles in with a short opacity hand-off. It used to travel 12px
+   and scale from 99.2%, so the top of the page visibly shrank and jumped at
+   the moment the hub was hidden. The board stays perfectly still. */
 @keyframes sixfoldShellIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.992); }
+  from { opacity: 0; }
   to { opacity: 1; transform: none; }
 }
 
-.play-screen:not([hidden]) .play-shell {
-  animation: sixfoldShellIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+/* A screen arrives once. The screens are display:none behind each other, so
+   the browser would restart this lift on every re-entry; shell-settled is set
+   when the reader leaves a screen, and its return is then a cut. */
+.play-screen:not([hidden]):not(.shell-settled) .play-shell {
+  animation: sixfoldShellIn 320ms var(--ease-out) both;
 }
 
 .play-win:not([hidden]),
@@ -199,7 +205,7 @@ html[data-theme="dark"] #wordle {
   text-transform: uppercase;
   transform: rotateX(0);
   backface-visibility: hidden;
-  transition: border-color 140ms ease, background-color 160ms ease, transform 140ms ease;
+  transition: background-color 160ms var(--ease-out), transform 140ms var(--ease-out);
 }
 
 .wordle-tile[data-filled="true"] {
@@ -357,7 +363,7 @@ html[data-theme="dark"] #wordle {
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 110ms ease, background-color 150ms ease, color 150ms ease;
+  transition: transform 110ms var(--ease-out), background-color 150ms var(--ease-out), color 150ms var(--ease-out);
 }
 
 .wordle-key:hover { background: color-mix(in srgb, var(--wordle-key) 70%, var(--card)); }
@@ -368,6 +374,13 @@ html[data-theme="dark"] #wordle {
   flex-grow: 1.55;
   font-size: clamp(9px, 1.25dvh, 11px);
   letter-spacing: 0.02em;
+}
+
+/* The delete glyph is drawn by the font, not the label size: a backspace at the
+   wide key's 9-11px label size read as a speck next to the letters. */
+.wordle-key[data-key="Backspace"] {
+  font-size: clamp(16px, 2.15dvh, 20px);
+  line-height: 1;
 }
 
 /* Enter closes the letter keyboard now, so it carries the filled purple the
@@ -489,25 +502,24 @@ html[data-theme="dark"] #wordle {
   .wordle-status { font-size: 10.5px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .home-six,
-  .home-six.is-unlocking,
-  .home-six-piece,
-  .home-game,
-  .home-game-stage,
-  .play-screen:not([hidden]) .play-shell,
-  .play-win:not([hidden]),
-  .fruit-over-card:not([hidden]),
-  .wordle-tile,
-  .wordle-tile.is-revealing,
-  .wordle-row.is-shaking,
-  .wordle-key,
-  .wordle-result-card {
+html[data-motion="reduced"] .home-six,
+html[data-motion="reduced"] .home-six.is-unlocking,
+html[data-motion="reduced"] .home-six-piece,
+html[data-motion="reduced"] .home-game,
+html[data-motion="reduced"] .home-game-stage,
+html[data-motion="reduced"] .play-screen:not([hidden]) .play-shell,
+html[data-motion="reduced"] .play-win:not([hidden]),
+html[data-motion="reduced"] .fruit-over-card:not([hidden]),
+html[data-motion="reduced"] .wordle-tile,
+html[data-motion="reduced"] .wordle-tile.is-revealing,
+html[data-motion="reduced"] .wordle-row.is-shaking,
+html[data-motion="reduced"] .wordle-key,
+html[data-motion="reduced"] .wordle-result-card {
     animation: none;
     transition: none;
   }
-  .home-six-piece.is-six-hit { animation: none; }
-}
+
+html[data-motion="reduced"] .home-six-piece.is-six-hit { animation: none; }
 
 /* ==========================================================================
    Inner-game audit — desktop Wordle keys, the 320px Minesweeper toolbar and
@@ -576,9 +588,12 @@ html[data-theme="dark"] #wordle {
   /* The full label needs 46px more than a 320px screen has. The glyph plus
      "Flag" keeps the control inside the frame; the hidden words still give
      screen readers the full "Flag mode" name. */
-  .mines-flag-toggle { font-size: 0; }
-  .mines-flag-toggle > span { font-size: 13px; }
-  .mines-flag-toggle::after {
+  /* The landscape rule scopes its 9px label with #mines, so the class-level
+     zero that hides the long word loses and the button reads "⚑ Flag mode
+     Flag". Match that specificity here. */
+  #mines .mines-flag-toggle[aria-pressed] { font-size: 0; }
+  #mines .mines-flag-toggle > span { font-size: 13px; }
+  #mines .mines-flag-toggle::after {
     content: "Flag";
     font-size: 9.5px;
     font-weight: 800;
@@ -893,20 +908,53 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
   to { background-position: 0 0; }
 }
 
+/* The pause before the next round is a clock, drawn as a thin edge under the
+   action it will press. The button keeps the label its catalog gave it, so the
+   countdown no longer leaks an English "Next 3s" into every language. */
+.play-btn.is-counting {
+  position: relative;
+  overflow: hidden;
+}
+
+.play-btn.is-counting::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0.34;
+  transform: scaleX(var(--auto-next-left, 1));
+  transform-origin: left center;
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html[dir="rtl"] .play-btn.is-counting::after { transform-origin: right center; }
+html[data-motion="reduced"] .play-btn.is-counting::after { transition: none; }
+
+/* The quiet way back to a result the reader closed, kept in the footer beside
+   the game's own restart action. */
+.play-result-chip {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+}
+
 @keyframes winCardIn {
   0% { opacity: 0; transform: translate(-50%, -47%) scale(0.96); }
   55% { opacity: 1; transform: translate(-50%, -50%) scale(1.012); }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .play-feedback .play-win:not([hidden]),
-  .play-feedback .play-win.is-victory,
-  .win-stamp,
-  .play-feedback .play-win.has-win::before {
+html[data-motion="reduced"] .play-feedback .play-win:not([hidden]),
+html[data-motion="reduced"] .play-feedback .play-win.is-victory,
+html[data-motion="reduced"] .win-stamp,
+html[data-motion="reduced"] .play-feedback .play-win.has-win::before {
     animation: none;
   }
-}
 
 /* A finished entrance animation must not leave a transform on the shell:
    a transformed ancestor becomes the containing block for the fixed win
@@ -928,42 +976,55 @@ html[data-theme="dark"] .sheet-card .wipe-open:hover {
 /* The collection cards follow the six-piece build instead of appearing all at
    once underneath the launch screen. */
 @keyframes homeCardIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.995); }
-  70% { opacity: 1; transform: translateY(-2px) scale(1); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  70% { opacity: 1; }
+  to { opacity: 1; }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  html.home-ready .home-grid .home-game {
-    animation: homeCardIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+/* 40ms steps instead of 50: the last card used to start at 390ms and land
+     at 910ms, which read as the hub still loading. */
+/* The cards arrive with the launch. hub-settled is set the first time the
+   reader leaves the collection, so a return from a game is a cut back to a
+   hub that is already built instead of a second entrance. */
+html[data-motion="full"].home-ready:not(.hub-settled) .home-grid .home-game {
+    /* Backwards, not both: the entrance may hold its first frame through the
+       stagger delay, but once it lands the card must hand its transform back
+       to :hover and :active. `both` kept the final `transform: none` winning
+       forever, which is what made the six cards feel dead under a finger. */
+    animation: homeCardIn 380ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
-  html.home-ready .home-grid .home-game:nth-child(1) { animation-delay: 140ms; }
-  html.home-ready .home-grid .home-game:nth-child(2) { animation-delay: 190ms; }
-  html.home-ready .home-grid .home-game:nth-child(3) { animation-delay: 240ms; }
-  html.home-ready .home-grid .home-game:nth-child(4) { animation-delay: 290ms; }
-  html.home-ready .home-grid .home-game:nth-child(5) { animation-delay: 340ms; }
-  html.home-ready .home-grid .home-game:nth-child(6) { animation-delay: 390ms; }
-}
 
-.hub.is-returning .hub-shell {
-  animation: hubReturn 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(1) { animation-delay: 40ms; }
 
-@keyframes hubReturn {
-  from { opacity: 0.55; transform: translateY(10px) scale(0.994); }
-  to { opacity: 1; transform: none; }
-}
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(2) { animation-delay: 80ms; }
+
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(3) { animation-delay: 120ms; }
+
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(4) { animation-delay: 160ms; }
+
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(5) { animation-delay: 200ms; }
+
+html[data-motion="full"].home-ready .home-grid .home-game:nth-child(6) { animation-delay: 240ms; }
+
+/* Returning to the hub is a cut, not a second launch: the collection keeps
+   the state it had and does not replay its entrance. Arriving in a game is a
+   change of place rather than a cut, and the shell rise carries that
+   (sixfoldShellIn in games.css). The screen root must stay opaque: it covers
+   the merge board, so fading it let another game show through for a fifth of
+   a second on every card and every die. */
 
 /* The hidden game gets a more theatrical arrival than the public cards: a
    brief blur-and-lift before the board settles, still under 600ms. */
-#wordle:not([hidden]) .wordle-shell {
-  animation: wordleArrive 520ms cubic-bezier(0.22, 1, 0.36, 1);
+#wordle:not([hidden]):not(.shell-settled) .wordle-shell {
+  animation: wordleArrive 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* A lift and fade only: the old blur filtered the whole screen every frame,
+   which is exactly the paint work the WebView cannot afford. */
 @keyframes wordleArrive {
-  from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(3px); }
-  68% { opacity: 1; transform: translateY(-1px) scale(1.004); filter: blur(0); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(5px); }
+  68% { opacity: 1; transform: translateY(-1px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* A result is a new beat even when the card was already in the DOM. The
@@ -1043,7 +1104,7 @@ html.hidden-reveal-open body {
 }
 
 .hidden-reveal.is-open .hidden-reveal-card {
-  animation: hiddenRevealIn 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: hiddenRevealIn 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .hidden-reveal.is-closing .hidden-reveal-card {
@@ -1143,20 +1204,13 @@ html.hidden-reveal-open body {
 .hidden-reveal-tiles span:nth-child(4) { animation-delay: 285ms; }
 
 .hidden-reveal-tiles span.is-key {
-  animation-name: hiddenTileIn, hiddenKeyIn;
-  animation-duration: 420ms, 900ms;
-  animation-delay: 340ms, 560ms;
+  animation: hiddenTileIn 340ms var(--ease-out) 340ms both;
 }
 
 @keyframes hiddenTileIn {
   from { opacity: 0; transform: translateY(10px) rotate(-4deg) scale(0.82); }
   70% { opacity: 1; transform: translateY(-2px) rotate(1deg) scale(1.04); }
   to { opacity: 1; transform: none; }
-}
-
-@keyframes hiddenKeyIn {
-  0%, 100% { box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--ink) 10%, transparent); }
-  45% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--g6, #9a6bb5) 18%, transparent), inset 0 -3px 0 color-mix(in srgb, var(--ink) 10%, transparent); }
 }
 
 .hidden-reveal-eyebrow {
@@ -1246,23 +1300,24 @@ html.hidden-reveal-open body {
   .hidden-reveal-foot { margin-top: 8px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.home-ready .home-grid .home-game,
-  .hub.is-returning .hub-shell,
-  #wordle:not([hidden]) .wordle-shell,
-  .wordle-result.is-revealed,
-  .wordle-result.is-revealed .wordle-result-card,
-  .hidden-reveal-card,
-  .hidden-reveal-tiles span {
+html[data-motion="reduced"].home-ready .home-grid .home-game,
+html[data-motion="reduced"] #wordle:not([hidden]) .wordle-shell,
+html[data-motion="reduced"] .wordle-result.is-revealed,
+html[data-motion="reduced"] .wordle-result.is-revealed .wordle-result-card,
+html[data-motion="reduced"] .hidden-reveal-card,
+html[data-motion="reduced"] .hidden-reveal-tiles span {
     animation: none;
   }
-  .hidden-reveal,
-  .hidden-reveal-tiles span { transition: none; }
-  .hidden-reveal-card,
-  .hidden-reveal-tiles span { opacity: 1; transform: none; }
-  .hidden-reveal-tiles span.is-key { transform: rotate(3deg); }
-  .hidden-reveal.is-open .hidden-reveal-card { opacity: 1; transform: none; }
-}
+
+html[data-motion="reduced"] .hidden-reveal,
+html[data-motion="reduced"] .hidden-reveal-tiles span { transition: none; }
+
+html[data-motion="reduced"] .hidden-reveal-card,
+html[data-motion="reduced"] .hidden-reveal-tiles span { opacity: 1; transform: none; }
+
+html[data-motion="reduced"] .hidden-reveal-tiles span.is-key { transform: rotate(3deg); }
+
+html[data-motion="reduced"] .hidden-reveal.is-open .hidden-reveal-card { opacity: 1; transform: none; }
 
 /* Touch targets must stay clickable even when the pointer is a finger rather
    than a mouse. The six pieces are intentionally not game buttons, so Safari
@@ -1274,15 +1329,17 @@ html.hidden-reveal-open body {
   user-select: none;
 }
 
-/* The cover now starts its build after the launch layer is removed. Keep the
-   cascade brisk so the hub is alive as soon as the splash clears. */
-html.home-ready .six-1 { animation-delay: 100ms; }
-html.home-ready .six-2 { animation-delay: 170ms; }
-html.home-ready .six-3 { animation-delay: 240ms; }
-html.home-ready .six-4 { animation-delay: 310ms; }
-html.home-ready .six-5 { animation-delay: 380ms; }
-html.home-ready .six-6 { animation-delay: 450ms; }
-html.home-ready .home-six-caption { animation-delay: 500ms; }
+/* The cover starts its build as the launch layer lifts, so the finished cover
+   is never painted under the fading splash. home-build is the launch-only
+   switch: its delays are set before the first frame and never retimed at the
+   home-ready hand-off, which used to make the cover jump to near its end. */
+html.home-build .six-1 { animation-delay: 60ms; }
+html.home-build .six-2 { animation-delay: 110ms; }
+html.home-build .six-3 { animation-delay: 160ms; }
+html.home-build .six-4 { animation-delay: 210ms; }
+html.home-build .six-5 { animation-delay: 260ms; }
+html.home-build .six-6 { animation-delay: 310ms; }
+html.home-build .home-six-caption { animation-delay: 340ms; }
 
 /* Keep short descriptions from stranding a single word on their last line. */
 .play-intro .sub,
@@ -1295,3 +1352,175 @@ html.home-ready .home-six-caption { animation-delay: 500ms; }
 .sheet-note {
   text-wrap: pretty;
 }
+
+/* ==========================================================================
+   Low-end mode
+   --------------------------------------------------------------------------
+   `html.perf-lite` is set before the first paint by the inline script in
+   index.html when the phone reports 2 GB of memory or fewer, four threads or
+   fewer, or a data saver. It keeps every shape, colour and spacing; it only
+   drops the full-screen backdrop blurs and the blurred arrival, which are the
+   effects a weak GPU cannot composite at 60fps.
+   ========================================================================== */
+
+html.perf-lite .overlay,
+html.perf-lite .sheet-backdrop,
+html.perf-lite .wordle-result,
+html.perf-lite .hidden-reveal-scrim,
+html.perf-lite .fruit-over,
+html.perf-lite .sudoku-result,
+html.perf-lite .sudoku-paused {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The sheet has no backdrop-filter in lite mode, so its normal 44% scrim is
+   too transparent over a busy board. Keep a readable veil without asking a
+   weak GPU to blur the whole viewport.
+
+   Older WebViews (API 33 ships Chromium 109) parse `color-mix()` but compute
+   it to transparent, so the scrim would have no background at all. Keep the
+   opaque page colour as the fallback and only let the mix take over where it
+   is actually supported. */
+html.perf-lite .sheet-backdrop {
+  background: var(--page);
+}
+
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  html.perf-lite .sheet-backdrop {
+    background: color-mix(in srgb, var(--page) 96%, transparent);
+  }
+}
+
+/* Without a blur behind them these veils have to be nearly opaque, or a busy
+   board shows through the card that sits on top. */
+html.perf-lite .overlay,
+html.perf-lite .wordle-result,
+html.perf-lite .hidden-reveal-scrim,
+html.perf-lite .fruit-over,
+html.perf-lite .sudoku-result,
+html.perf-lite .sudoku-paused {
+  background: color-mix(in srgb, var(--page) 96%, transparent);
+}
+
+html.perf-lite #wordle:not([hidden]):not(.shell-settled) .wordle-shell { animation-name: wordleArriveLite; }
+
+@keyframes wordleArriveLite {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ==========================================================================
+   Pointer and touch hygiene
+   --------------------------------------------------------------------------
+   Android's WebView keeps :hover on the element a finger last touched. The
+   hover art here (a lit border, a lighter fill, a 2-5px lift) then stays on a
+   button that is no longer being pressed until something else is tapped, which
+   reads as a selection the reader cannot clear. Hover is decoration, so it is
+   limited to devices that can actually hover; touch keeps :active for feedback.
+   The focus ring is suppressed for touch too, because WebView marks a tapped
+   button :focus-visible; a keyboard still gets the ring.
+   ========================================================================== */
+
+@media (hover: none) {
+  .hub-share:hover,
+  .hub-look:hover {
+    transform: none;
+    border-color: var(--home-rule);
+    background: transparent;
+  }
+
+  .hub-focus:hover {
+    transform: none;
+    border-color: var(--home-rule);
+    background: transparent;
+  }
+
+  .home-cta:hover {
+    transform: none;
+    box-shadow: 0 3px 0 rgba(33, 29, 24, 0.18);
+  }
+
+  .home-surprise:hover {
+    border-color: var(--home-rule);
+    background: transparent;
+  }
+
+  .home-game:hover,
+  html[data-motion="full"] .home-game:hover {
+    transform: none;
+    border-color: var(--home-rule);
+    box-shadow: 0 3px 0 var(--home-hard);
+  }
+
+  .home-game:hover .home-game-stage,
+  .home-game:hover .home-game-arrow,
+  html[dir="rtl"] .home-game:hover .home-game-arrow,
+  .home-game:hover .home-game-play::after {
+    transform: none;
+  }
+
+  html[dir="rtl"] .home-game:hover .home-game-arrow,
+  html[dir="rtl"] .home-game:hover .home-game-play::after {
+    transform: scaleX(-1);
+  }
+
+  html[data-motion="full"] .home-six-piece:hover { transform: none; }
+
+  .hub-link:hover,
+  .play-chip:hover { color: var(--muted); }
+
+  .play-tool:hover { background: transparent; }
+  .result-share:hover { background: var(--ghost-bg); }
+
+  .games-home:hover,
+  .play-chip:hover {
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .play-tool:hover,
+  .result-share:hover,
+  .games-home:hover,
+  html[data-motion="full"] .play-tool:hover,
+  html[data-motion="full"] .games-home:hover,
+  html[data-motion="full"] .result-share:hover { transform: none; }
+
+  .app #new-game:hover,
+  .play-screen .play-btn--solid:hover {
+    background: var(--cart);
+    color: var(--cart-ink);
+  }
+
+  .wordle-key:hover { background: var(--wordle-key); }
+  .wordle-key.wordle-key--enter:hover { background: var(--cart); }
+
+  .settings-summary:hover { background: var(--seg-bg, var(--panel)); }
+  .setting-row:hover { background: var(--seg-bg, var(--panel)); }
+
+  .sudoku-pad-key:hover { background: var(--panel); }
+  .sudoku-tool:hover { background: var(--panel); }
+  .sudoku-tool[aria-pressed="true"]:hover {
+    background: color-mix(in srgb, var(--cart) 18%, var(--panel));
+  }
+
+  .daily-badge:hover { background: color-mix(in srgb, var(--t256) 38%, var(--panel)); }
+  .daily-badge.is-earned:hover { background: color-mix(in srgb, var(--t256) 22%, var(--panel)); }
+}
+
+html[data-input="touch"] button:focus-visible,
+html[data-input="touch"] a:focus-visible,
+html[data-input="touch"] summary:focus-visible,
+html[data-input="touch"] [tabindex]:focus-visible {
+  outline: none !important;
+}
+
+/* The install block belongs to the browser: the APK is already installed, and
+   the app never offers to add itself to the home screen. */
+html.is-native #install-block { display: none !important; }
+
+/* The build animation used fill-mode both, so its final transform kept winning
+   over :active and a finished tile stopped pressing. The class lands on
+   animationend (or its reduced-motion fallback); a tile being pressed keeps
+   its own flash. */
+html.six-settled.home-ready .home-six-piece { animation: none; }

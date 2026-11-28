@@ -1,6 +1,6 @@
 /* Offline cache for Sixfold. Bump VERSION whenever the assets change. */
-// Internal build 5.2.0: localized share cards, consistent script fonts and digit faces.
-const VERSION = 'sixfold-5.2.0';
+// 6.0 release.
+const VERSION = 'sixfold-6.0.0';
 // A build reuses the cache name so an installed app keeps its offline shell.
 // The staging cache is only visible during install; it never serves a page.
 const STAGING = VERSION + '-install';
@@ -11,23 +11,31 @@ const CACHE_PREFIX = 'sixfold-';
 // when the asset URLs themselves do not change. The game code has its own
 // query suffix, so it must be listed separately or offline play would look for
 // files that were never cached.
-const ASSET = '4.0.0';
-const SHARE_CARD = '5.2.7';
-const STYLE_ASSET = '5.2.8';
-const FONT_ASSET = '4.0.1';
-const THEME_JS = '5.2.0';
-const GAME_CODE = '5.2.5';
-const WORDLE_CODE = '5.2.5-wordle';
-const SUDOKU_GAME_CODE = '5.2.6';
+const ASSET = '5.0.1';
+// Haptics has its own suffix: its patterns change without touching the other
+// shared-baseline scripts, and an installed app must pick the new pulse up.
+const HAPTICS_JS = '6.0.20';
+const SHARE_CARD = '5.3.5';
+const STYLE_ASSET = '5.4.7';
+const FONT_ASSET = '5.0.2';
+const THEME_JS = '6.0.27';
+const OVERSCROLL_JS = '6.0.5';
+const GAME_CODE = '5.3.5';
+const WORDLE_CODE = '5.3.4-wordle';
+const SUDOKU_GAME_CODE = '5.3.5';
 const LOCALE_FONT = '5.1.4';
-const GAMES_CSS = '5.2.9';
-const POLISH_CSS = '4.0.0-w16';
-const GAMES_JS = '5.2.8';
-const SUDOKU_CSS = '4.0.0-w15';
-const V5_CSS = '5.4.2';
-const HOME_CSS = '4.0.0-w11';
-const DAILY_CODE = '5.3.9';
-const I18N_CODE = '5.4.5';
+const GAMES_CSS = '5.3.19';
+const POLISH_CSS = '4.0.11';
+const GAMES_JS = '5.5.11';
+const SUDOKU_CSS = '4.0.6';
+const V5_CSS = '5.6.10';
+const BLUR_CSS = '1.4.1';
+const HOME_CSS = '4.1.16';
+const DAILY_CODE = '5.4.7';
+const PROFILE_CODE = '1.0.0';
+const BADGES_CODE = '1.1.1';
+const GAUNTLET_CODE = '1.0.3';
+const I18N_CODE = '6.0.12';
 
 // Runtime assets are deliberately small. The shell is protected separately,
 // so this budget caps everything the app can add after install.
@@ -77,12 +85,11 @@ const SHELL = [
   './index.html',
   './licenses.html',
   './LICENSE',
-  './APPSTORE-EXCEPTION.md',
   './css/styles.css?v=' + STYLE_ASSET,
   './js/theme.js?v=' + THEME_JS,
   './js/game.js?v=' + GAME_CODE,
-  './js/haptics.js?v=' + ASSET,
-  './js/overscroll.js?v=' + ASSET,
+  './js/haptics.js?v=' + HAPTICS_JS,
+  './js/overscroll.js?v=' + OVERSCROLL_JS,
   './js/celebrate.js?v=' + ASSET,
   './js/sharecard.js?v=' + SHARE_CARD,
   './js/install.js?v=' + ASSET,
@@ -91,17 +98,20 @@ const SHELL = [
   './css/polish.css?v=' + POLISH_CSS,
   './css/sudoku.css?v=' + SUDOKU_CSS,
   './css/v5.css?v=' + V5_CSS,
-  './js/settings.js?v=5.2.3',
+  './css/progressive-blur.css?v=' + BLUR_CSS,
+  './js/settings.js?v=5.4.1',
   './js/sudoku.js?v=' + SUDOKU_GAME_CODE,
   './js/games.js?v=' + GAMES_JS,
   './js/daily.js?v=' + DAILY_CODE,
-  './js/badges.js?v=1.0.1',
+  './js/profile.js?v=' + PROFILE_CODE,
+  './js/badges.js?v=' + BADGES_CODE,
+  './js/gauntlet.js?v=' + GAUNTLET_CODE,
   './js/update.js?v=5.1.0',
   // Locale catalogs are not in the install shell. The page loads only the
   // active catalog; i18n.js warms that catalog after the worker controls it.
   './i18n/i18n-locale.js?v=' + I18N_CODE,
   './i18n/i18n.js?v=' + I18N_CODE,
-  './js/native.js?v=5.1.0',
+  './js/native.js?v=5.2.2',
   './js/wordle-loader.js?v=' + WORDLE_CODE,
   // The hidden word game is loaded on demand, but it still belongs in the
   // offline shell so unlocking it works with no connection. The active locale
@@ -109,12 +119,14 @@ const SHELL = [
   './js/wordle-words.js?v=' + WORDLE_CODE,
   './i18n/wordle-i18n.js?v=' + WORDLE_CODE,
   './js/wordle.js?v=' + WORDLE_CODE,
-  './icons/icon-180.png',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-1024.png',
-  './icons/icon-maskable-512.png',
-  './icons/icon-maskable-1024.png',
+  './icons/icon-180.png?v=6.0.3',
+  './icons/icon-192.png?v=6.0.3',
+  // The boot splash draws the mark at up to 152 CSS px; its own 456px WebP
+  // keeps that crisp at 3x for about 8 KiB.
+  './icons/mark-456.webp?v=6.0.3',
+  // The 512px and 1024px icons are install/manifest art, not shell UI. The
+  // manifest fetches them when needed; keeping the large gradient art out of
+  // the offline shell leaves room for the sixfold scripts and fonts.
   './fonts/google-sans-flex.woff2?v=' + FONT_ASSET
 ];
 
@@ -157,7 +169,11 @@ function isCurrentDynamic(url) {
   if (kind === 'catalog') return version === I18N_CODE;
   if (kind === 'wordle') return version === WORDLE_CODE;
   if (kind === 'font') return version === LOCALE_FONT;
-  if (kind === 'manifest') return version === THEME_JS;
+  // The install manifest carries the release stamp the cache name already
+  // holds, not a per-file pin: index.html appends the package version. Comparing
+  // it with the theme script's pin never matched, so every activation pruned the
+  // cached manifest.
+  if (kind === 'manifest') return version === VERSION.slice('sixfold-'.length);
   return false;
 }
 
@@ -281,17 +297,24 @@ self.addEventListener('install', (event) => {
     (async () => {
       await caches.delete(STAGING);
       const staged = await caches.open(STAGING);
-      const results = await Promise.allSettled(
+      // Promise.allSettled() is Chromium 76. Collect the first failure by hand
+      // so an older WebView still stages every shell asset and reports one
+      // usable reason, instead of failing to parse the worker.
+      let failed = null;
+      await Promise.all(
         SHELL.map(async (url) => {
-          const response = await fetch(url, { cache: 'reload' });
-          if (!response.ok) throw new Error('Failed to cache ' + url);
-          await staged.put(url, response);
+          try {
+            const response = await fetch(url, { cache: 'reload' });
+            if (!response.ok) throw new Error('Failed to cache ' + url);
+            await staged.put(url, response);
+          } catch (error) {
+            if (!failed) failed = error;
+          }
         })
       );
-      const failed = results.find((result) => result.status === 'rejected');
       if (failed) {
         await caches.delete(STAGING);
-        throw failed.reason;
+        throw failed;
       }
 
       // Only touch the live cache after every shell asset is staged. A failed
@@ -461,23 +484,5 @@ self.addEventListener('fetch', (event) => {
       }
       return response;
     })()
-  );
-});
-
-// The page shows the local daily nudge through its registration. A tag on the
-// notification replaces an older one instead of stacking reminders.
-self.addEventListener('notificationclick', function (event) {
-  event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || './#daily';
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windows) {
-      for (let i = 0; i < windows.length; i += 1) {
-        if ('focus' in windows[i]) {
-          windows[i].navigate(target).catch(function () {});
-          return windows[i].focus();
-        }
-      }
-      return self.clients.openWindow(target);
-    })
   );
 });

@@ -4,9 +4,19 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      rebaseline_reason:
+        description: 'Reason for accepting a one-time locale-cache increase'
+        required: false
+        type: string
+      rebaseline_approved_by:
+        description: 'Name recorded as the baseline approver (defaults to the dispatcher)'
+        required: false
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   test:
@@ -23,12 +33,18 @@ jobs:
           - group: axe-states
             files: tests/axe-states.spec.js
           - group: core
-            files: tests/smoke.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/release-labels.spec.js
+            files: tests/smoke.spec.js tests/daily-complete.spec.js tests/profile.spec.js tests/gauntlet.spec.js tests/cache-footprint.spec.js tests/cache-footprint-drift.spec.js tests/cache-budget.spec.js tests/cache-footprint-rebaseline.spec.js tests/asset-manifest.spec.js tests/static-icons.spec.js tests/pwa-install.spec.js tests/whats-new.spec.js tests/language-count.spec.js tests/language-follow.spec.js tests/release-labels.spec.js tests/adaptive-icon.spec.js
           - group: games
-            files: tests/layout.spec.js tests/wordle.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js
+            files: tests/layout.spec.js tests/progressive-blur.spec.js tests/wordle.spec.js tests/haptics.spec.js tests/display-font.spec.js tests/palette-order.spec.js tests/share.spec.js tests/share-locales.spec.js tests/save.spec.js tests/perf-lite.spec.js
+          - group: responsive
+            files: tests/hub-hero.spec.js tests/landscape.spec.js tests/backup.spec.js tests/appearance.spec.js tests/fullscreen.spec.js tests/sizing.spec.js tests/boot-splash.spec.js tests/launch-cover.spec.js tests/stretch.spec.js tests/welcome.spec.js
     name: Playwright ${{ matrix.group }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          # The shell-pin check compares each file's last commit with the commit
+          # that set its ?v= pin, so it needs more than the tip.
+          fetch-depth: 0
       - name: Verify every Playwright spec is assigned
         run: |
           assigned=$(grep -E '^[[:space:]]+files:' .github/workflows/test.yml | sed 's/.*files:[[:space:]]*//' | tr '\n' ' ')
@@ -42,7 +58,7 @@ jobs:
             esac
           done
           echo "All Playwright specs are assigned to a CI group."
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -51,26 +67,390 @@ jobs:
         run: npm run test:i18n
       - name: Audit Wordle dictionaries
         run: npm run audit:wordle
+      - name: Audit the WebView JavaScript floor
+        run: npm run test:webview-floor
+      - name: Guard the unload-time bridge rule
+        run: npm run test:unload-bridge
+      - name: Prove the unload guard still fails on a bridge call
+        run: npm run test:unload-bridge:fixture
+      - name: Check shell pin drift
+        run: npm run test:shell-pins
+      - name: Prove the pin guard still fails on drift
+        run: npm run test:shell-pins:fixture
+      - name: Test the launch death report
+        run: npm run test:death-report
+      - name: Test the Android attach retry
+        run: npm run test:reattach
+      - name: Test the app-removal report
+        run: npm run test:app-removal
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test ${{ matrix.files }}
+      - name: Record an approved cache-footprint baseline
+        if: success() && matrix.group == 'core' && github.event_name == 'workflow_dispatch' && inputs.rebaseline_reason != ''
+        env:
+          REASON: ${{ inputs.rebaseline_reason }}
+          APPROVER: ${{ inputs.rebaseline_approved_by || github.actor }}
+        run: |
+          set -euo pipefail
+          current=$(find test-results -name locale-cache-footprints.json -print -quit)
+          test -n "$current"
+          node scripts/rebaseline-cache-footprint.mjs \
+            --current "$current" \
+            --output "$current" \
+            --reason "$REASON" \
+            --approved-by "$APPROVER"
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.group }}
           path: |
             playwright-report/
             test-results/
           retention-days: 7
+      - name: Upload locale cache footprints
+        if: success() && matrix.group == 'core'
+        uses: actions/upload-artifact@v7
+        with:
+          name: locale-cache-footprints-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/**/locale-cache-footprints.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Download previous locale cache footprints
+        id: previous-footprints
+        if: success() && matrix.group == 'core'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          mkdir -p previous-footprints
+
+          # Prefer the latest successful run on this branch. A new branch falls
+          # back to the default branch so its first run still has a baseline.
+          find_baseline() {
+            local branch="$1"
+            local run_id artifact runs_file
+            runs_file=$(mktemp)
+            if ! gh run list --repo "$GITHUB_REPOSITORY" --workflow test.yml --branch "$branch" --status success --limit 50 \
+              --json databaseId --jq ".[] | select(.databaseId != ${CURRENT_RUN_ID}) | .databaseId" > "$runs_file"; then
+              echo "::error title=Cache footprint baseline lookup failed::Could not list successful runs on ${branch}."
+              rm -f "$runs_file"
+              return 2
+            fi
+            while read -r run_id; do
+              [ -n "$run_id" ] || continue
+              if ! artifact=$(gh api \
+                "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
+                --jq '[.artifacts[] | select(.expired == false) | select(.name | startswith("locale-cache-footprints-"))] | sort_by(.created_at) | reverse | .[0].name // empty'); then
+                echo "::error title=Cache footprint baseline lookup failed::Could not list artifacts for run ${run_id}."
+                rm -f "$runs_file"
+                return 2
+              fi
+              if [ -n "$artifact" ]; then
+                echo "Comparing against ${artifact} from run ${run_id} on ${branch}."
+                if ! gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "$artifact" --dir previous-footprints; then
+                  echo "::error title=Cache footprint baseline lookup failed::Could not download ${artifact} from run ${run_id}."
+                  rm -f "$runs_file"
+                  return 2
+                fi
+                rm -f "$runs_file"
+                return 0
+              fi
+            done < "$runs_file"
+            rm -f "$runs_file"
+            return 1
+          }
+
+          default_branch="${DEFAULT_BRANCH:-main}"
+          if find_baseline "$BRANCH"; then
+            echo "baseline=true" >> "$GITHUB_OUTPUT"
+          else
+            branch_status=$?
+            if [ "$branch_status" -eq 2 ]; then
+              exit 1
+            fi
+            if [ "$BRANCH" != "$default_branch" ] && find_baseline "$default_branch"; then
+              echo "baseline=true" >> "$GITHUB_OUTPUT"
+            else
+              default_status=$?
+              if [ "$default_status" -eq 2 ]; then
+                exit 1
+              fi
+              echo "::warning title=Cache footprint baseline unavailable::No earlier successful run with a locale-cache-footprints artifact was found; this run establishes the baseline."
+              echo "baseline=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+      - name: Check locale cache footprint drift
+        if: success() && matrix.group == 'core' && (github.event_name != 'workflow_dispatch' || inputs.rebaseline_reason == '')
+        env:
+          BASELINE: ${{ steps.previous-footprints.outputs.baseline }}
+        run: |
+          set -euo pipefail
+          if [ "$BASELINE" != "true" ]; then
+            echo "No previous footprint artifact; baseline run only."
+            {
+              echo '## Locale cache footprint drift'
+              echo ''
+              echo 'No previous footprint artifact was available, so this run establishes the baseline.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          current=$(find test-results -name locale-cache-footprints.json -print -quit)
+          previous=$(find previous-footprints -name locale-cache-footprints.json -print -quit)
+          test -n "$current"
+          test -n "$previous"
+          node scripts/check-cache-footprint-drift.mjs --current "$current" --previous "$previous"
+
+  android:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - run: npm ci
+      - name: Configure stable test signing
+        env:
+          ANDROID_TEST_KEYSTORE_BASE64: ${{ secrets.ANDROID_TEST_KEYSTORE_BASE64 }}
+          ANDROID_TEST_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_TEST_KEYSTORE_PASSWORD }}
+          ANDROID_TEST_KEY_ALIAS: ${{ secrets.ANDROID_TEST_KEY_ALIAS }}
+          ANDROID_TEST_KEY_PASSWORD: ${{ secrets.ANDROID_TEST_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in ANDROID_TEST_KEYSTORE_BASE64 ANDROID_TEST_KEYSTORE_PASSWORD ANDROID_TEST_KEY_ALIAS ANDROID_TEST_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::$name is not configured in repository secrets"
+              exit 1
+            fi
+          done
+          keystore="$RUNNER_TEMP/sixfold-ci-test.p12"
+          printf '%s' "$ANDROID_TEST_KEYSTORE_BASE64" | base64 -d > "$keystore"
+          test -s "$keystore"
+          chmod 600 "$keystore"
+          {
+            echo "ANDROID_TEST_KEYSTORE_PATH=$keystore"
+            echo "ANDROID_TEST_KEYSTORE_PASSWORD=$ANDROID_TEST_KEYSTORE_PASSWORD"
+            echo "ANDROID_TEST_KEY_ALIAS=$ANDROID_TEST_KEY_ALIAS"
+            echo "ANDROID_TEST_KEY_PASSWORD=$ANDROID_TEST_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+      - name: Build debug APK
+        run: npm run native:apk:debug
+      - name: Verify APK signing
+        run: |
+          set -euo pipefail
+          apk=android/app/build/outputs/apk/debug/app-debug.apk
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -n "$sdk"
+          apksigner=$(find "$sdk/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$apksigner"
+          certs=$(mktemp)
+          trap 'rm -f "$certs"' EXIT
+          "$apksigner" verify --print-certs "$apk" | tee "$certs"
+          grep -q 'CN=Sixfold CI Test' "$certs"
+      - name: Verify APK contents
+        run: |
+          set -euo pipefail
+          apk=android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          listing=$(mktemp)
+          trap 'rm -f "$listing"' EXIT
+          unzip -l "$apk" > "$listing"
+          grep -q 'assets/public/index.html' "$listing"
+          grep -q 'assets/public/native-plugins.js' "$listing"
+          grep -q 'res/mipmap-anydpi-v26/ic_launcher.xml' "$listing"
+          grep -q 'res/mipmap-anydpi-v26/ic_launcher_round.xml' "$listing"
+          if grep -Eq 'res/mipmap-(ar|hi|kn|han)([-/])' "$listing"; then
+            echo "::error::the APK contains a locale-qualified launcher resource"
+            exit 1
+          fi
+          ls -lh "$apk"
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: sixfold-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  emulator:
+    name: Android emulator API ${{ matrix.api }}
+    # ubuntu-latest moved to 26.04, where every full interaction pass loses
+    # its software-rendered guest (API 33's qemu disappears, API 34/36 hit an
+    # input-dispatch ANR while the WebView paints its first frame). The
+    # emulator stays on the last image whose guest completes the assertions.
+    runs-on: ubuntu-24.04
+    needs: android
+    # A cold run downloads the emulator and its system image before it boots
+    # anything; the cache makes later runs short, but the first one needs room.
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      # One software-rendered guest at a time: the full interaction passes are
+      # the heaviest thing this workflow runs, and overlapping emulators made
+      # the host loss worse. The rows are fast enough to stay well inside the
+      # job timeout when serialized.
+      max-parallel: 1
+      matrix:
+        include:
+          # The API 24 and 26 images ship a Chromium 69 WebView, below the
+          # stylesheets' floor (inset, flex gap, min()/max()/clamp(),
+          # aspect-ratio, dvh, color-mix()). Both prove the APK installs and the
+          # activity reaches its first paint; API 33, 34 and 36 run the full
+          # WebView assertions.
+          - api: 24
+            launch_only: true
+            image_tag: google_apis
+          - api: 26
+            launch_only: true
+            image_tag: google_apis
+          # 33 stays on google_apis: its AOSP image ships Chromium 101, and the
+          # full pass fails the Sudoku cell check there (a digit painted 2px
+          # wider than the cell at system scale 2.0). Real API 33 phones update
+          # WebView through the Play Store, so the older AOSP engine is not the
+          # engine to assert against.
+          - api: 33
+            launch_only: false
+            image_tag: google_apis
+          # 34 is the last release before the platform enforces edge-to-edge;
+          # the strip checks need the full pass to sample the window surface.
+          # 34 and 36 run the AOSP `default` image: without Play services there
+          # is no GMS fonts provider to die under the app and kill it, which is
+          # the provider-removal flake the exit-4 branch exists for. Their full
+          # assertions pass on this image (verified locally). The synthetic
+          # self-test still drives the retry every run, and the GMS records stay
+          # pinned by scripts/lib/app-removal.test.mjs. The API 34 row also
+          # carries the retry self-test: the wrapper removes the app for the
+          # assertion that first samples pixels, so this row's green result
+          # comes from the exit-4 repeat and the branch runs on every build.
+          - api: 34
+            launch_only: false
+            image_tag: default
+            retry_self_test: true
+          - api: 36
+            launch_only: false
+            image_tag: default
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - run: npm ci
+      # Reuse the signed artifact the Android job already proved. Building a
+      # second APK here would spend one build per API level and could diverge
+      # from the artifact users actually install.
+      - name: Download debug APK
+        uses: actions/download-artifact@v8
+        with:
+          name: sixfold-debug-apk
+          path: android/app/build/outputs/apk/debug
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # A cold run downloads the emulator and a 1.2 GB system image, which is
+      # most of this job's wall clock. The script only installs what is missing,
+      # so caching those two directories is enough to skip the download. The
+      # key carries the image tag and a version suffix; changing either makes
+      # the affected rows download a fresh image (switching to -v1 refilled all
+      # five at once), so bump it only for a change to the cached paths or the
+      # SDK's install layout. The restore keys degrade instead of missing: the
+      # same API and tag at an older version first (the exact image), then any
+      # tag or version for that API (at least the emulator plus whatever image
+      # was cached). A version bump then costs an incremental install, not a
+      # full download on every row.
+      - name: Cache the emulator and its system image
+        uses: actions/cache@v6
+        with:
+          path: |
+            /usr/local/lib/android/sdk/emulator
+            /usr/local/lib/android/sdk/system-images
+          key: emulator-api${{ matrix.api }}-${{ matrix.image_tag || 'google_apis' }}-x86_64-v1
+          restore-keys: |
+            emulator-api${{ matrix.api }}-${{ matrix.image_tag || 'google_apis' }}-x86_64-
+            emulator-api${{ matrix.api }}-
+      # Plain SDK tooling rather than an emulator action: the boot, the install
+      # and the assertions are the same commands a workstation runs, so a
+      # failure here can be reproduced instead of guessed at.
+      - name: Boot emulator, install and check the shell
+        env:
+          API_LEVEL: ${{ matrix.api }}
+          AVD_NAME: sixfold-smoke-${{ matrix.api }}
+          FAILURE_DIR: emulator-failure-${{ matrix.api }}
+          SMOKE_LAUNCH_ONLY: ${{ matrix.launch_only && '1' || '0' }}
+          SMOKE_RETRY_SELF_TEST: ${{ matrix.retry_self_test && '1' || '0' }}
+          SMOKE_IMAGE_TAG: ${{ matrix.image_tag || 'google_apis' }}
+        run: bash scripts/android-emulator-smoke.sh
+      - name: Keep a failed launch's logcat and screen
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-failure-api-${{ matrix.api }}
+          path: emulator-failure-${{ matrix.api }}/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  native:
+    name: native pins
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The shells are generated, so this job builds them first and then proves
+      # every pin and every precached byte against the source tree. It fails in
+      # about a minute, instead of at the end of an APK build.
+      - name: Verify the generated asset manifest
+        run: npm run assets:manifest:check
+      - name: Build the shell and verify every pin and asset
+        run: |
+          npm run native:build
+          npm run native:check
 
   check:
     name: check
-    needs: test
+    needs: [test, android, native, emulator]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Verify all Playwright shards passed
+      - name: Verify Playwright, Android builds and the emulator smoke passed
         env:
-          RESULT: ${{ needs.test.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          ANDROID_RESULT: ${{ needs.android.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
+          EMULATOR_RESULT: ${{ needs.emulator.result }}
         run: |
-          echo "Playwright matrix: $RESULT"
-          test "$RESULT" = "success"
+          echo "Playwright matrix: $TEST_RESULT"
+          echo "Android APK: $ANDROID_RESULT"
+          echo "Native pins: $NATIVE_RESULT"
+          echo "Android emulator: $EMULATOR_RESULT"
+          test "$TEST_RESULT" = "success"
+          test "$ANDROID_RESULT" = "success"
+          test "$NATIVE_RESULT" = "success"
+          test "$EMULATOR_RESULT" = "success"

@@ -7,6 +7,10 @@
     return window.SixfoldI18n ? window.SixfoldI18n.t(value) : value;
   }
 
+  function isNativeShell() {
+    return Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+
   const $ = function (id) { return document.getElementById(id); };
   const $$ = function (selector) { return Array.from(document.querySelectorAll(selector)); };
 
@@ -27,6 +31,7 @@
   };
   const cards = $$('[data-game]');
   const backButtons = $$('[data-back]');
+
   if (!app || !hub || !screens.water || !screens.sudoku || !screens.fruit || !screens.ttt || !screens.mines || !screens.wordle || !screens.badges) return;
 
   function load(key, fallback) {
@@ -64,20 +69,11 @@
 
   const FONT = '"Google Sans Flex", ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
 
-  /* ---------- sharing ---------- */
+  /* ---------- saving results ---------- */
 
-  const SHARE_TITLE = 'Sixfold — Six games. No filler.';
-  const SHARE_TEXT = 'Sixfold: six games, no filler — an offline pocket arcade of Merge, Sudoku, Tic Tac Toe, Minesweeper, Water Sort and Fruit Merge. No accounts, no ads.';
+  // Results are saved, never handed to a native share sheet: the Android shell
+  // files the PNG into the photo gallery and a browser downloads it instead.
   let toastTimer = 0;
-  let shareFallbackEl = null;
-  let shareFallbackUrl = '';
-  let shareFallbackOpener = null;
-  let shareFallbackInert = null;
-
-  function shareUrl() {
-    if (location.protocol !== 'http:' && location.protocol !== 'https:') return '';
-    return location.origin + location.pathname;
-  }
 
   function toast(message) {
     const el = $('toast');
@@ -95,175 +91,33 @@
     }, 2300);
   }
 
-  function localizeShare(text) {
-    if (!window.SixfoldI18n) return String(text);
-    const translated = window.SixfoldI18n.t(String(text));
-    return window.SixfoldI18n.number ? window.SixfoldI18n.number(translated) : translated;
-  }
-
-  function copyShare(text) {
-    const url = shareUrl();
-    const localized = localizeShare(text);
-    const full = url ? localized + ' ' + url : localized;
-    if (!navigator.clipboard || !navigator.clipboard.writeText) {
-      toast(localize('Copy is not available in this browser.'));
-      return;
-    }
-    navigator.clipboard.writeText(full).then(function () {
-      toast(localize('Copied — paste it anywhere.'));
-    }).catch(function () {
-      toast(localize('Could not copy the text.'));
-    });
-  }
-
-  function share(title, text) {
-    const url = shareUrl();
-    const localized = localizeShare(text);
-    if (navigator.share) {
-      navigator.share({ title: localize(title || SHARE_TITLE), text: localized, url: url || undefined }).catch(function (err) {
-        // Closing the share sheet is a choice, not a failure.
-        if (err && err.name === 'AbortError') return;
-        copyShare(text);
-      });
-      return;
-    }
-    copyShare(text);
-  }
-
-  function closeShareFallback() {
-    if (!shareFallbackEl || shareFallbackEl.hidden) return;
-    shareFallbackEl.hidden = true;
-    document.documentElement.classList.remove('share-fallback-open');
-    if (shareFallbackInert) {
-      shareFallbackInert.inert = false;
-      shareFallbackInert = null;
-    }
-    if (shareFallbackUrl) {
-      URL.revokeObjectURL(shareFallbackUrl);
-      shareFallbackUrl = '';
-    }
-    const opener = shareFallbackOpener;
-    shareFallbackOpener = null;
-    if (opener && opener.isConnected) {
-      try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }
-    }
-  }
-
-  function buildShareFallback() {
-    if (shareFallbackEl) return shareFallbackEl;
-    const el = document.createElement('div');
-    el.className = 'share-fallback';
-    el.id = 'share-fallback';
-    el.hidden = true;
-    el.innerHTML = [
-      '<div class="share-fallback-card" role="dialog" aria-modal="true" aria-labelledby="share-fallback-title" aria-describedby="share-fallback-note">',
-      '  <div class="share-fallback-head"><h2 id="share-fallback-title">Save your result</h2></div>',
-      '  <img class="share-fallback-image" alt="Your Sixfold result card" decoding="async" />',
-      '  <p class="share-fallback-note" id="share-fallback-note"></p>',
-      '  <div class="share-fallback-actions">',
-      '    <a class="btn share-fallback-save" download>Save image</a>',
-      '    <button class="btn ghost share-fallback-done" type="button" data-close>Done</button>',
-      '  </div>',
-      '</div>'
-    ].join('');
-    document.body.appendChild(el);
-    el.addEventListener('click', function (event) {
-      if (event.target === el || event.target.closest('[data-close]')) closeShareFallback();
-    });
-    document.addEventListener('keydown', function (event) {
-      if (event.key !== 'Escape' || el.hidden) return;
-      event.preventDefault();
-      closeShareFallback();
-    });
-    shareFallbackEl = el;
-    return el;
-  }
-
-  function showShareFallback(file, data) {
-    const el = buildShareFallback();
-    const embedded = window.self !== window.top;
-    shareFallbackOpener = document.activeElement;
-    if (shareFallbackUrl) URL.revokeObjectURL(shareFallbackUrl);
-    shareFallbackUrl = URL.createObjectURL(file);
-
-    const image = el.querySelector('.share-fallback-image');
-    image.src = shareFallbackUrl;
-    image.alt = localize('Your Sixfold result card');
-    el.querySelector('#share-fallback-title').textContent = localize('Save your result');
-    const download = el.querySelector('.share-fallback-save');
-    download.href = shareFallbackUrl;
-    download.download = file.name || 'sixfold-result.png';
-    download.textContent = localize('Save image');
-    el.querySelector('.share-fallback-done').textContent = localize('Done');
-    el.querySelector('#share-fallback-note').textContent = embedded
-      ? localize('Native image sharing is blocked while this page is inside the embedded preview. Save the card here, or open the preview URL directly in your browser to use the share sheet.')
-      : localize('This browser cannot open the native image share sheet. Save the card instead.');
-
-    const screen = document.body.dataset.screen;
-    const background = screen === 'hub'
-      ? document.getElementById('hub')
-      : screen === 'merge'
-        ? document.querySelector('.app')
-        : document.getElementById(screen);
-    if (background && 'inert' in background && !background.inert) {
-      background.inert = true;
-      shareFallbackInert = background;
-    }
-    el.hidden = false;
-    document.documentElement.classList.add('share-fallback-open');
-    window.setTimeout(function () {
-      if (!el.hidden) download.focus({ preventScroll: true });
-    }, 0);
-  }
-
-  function offerShareFallback(file, data, text) {
+  async function saveCard(data) {
+    let file = null;
     try {
-      showShareFallback(file, data);
+      // The async path waits for the card's launcher mark to decode, so a save
+      // that lands on the first frame still carries the app's own artwork.
+      if (window.MergeShareCard && window.MergeShareCard.file) {
+        file = await window.MergeShareCard.file(data);
+      }
     } catch (err) {
-      copyShare(text);
+      file = null;
     }
+    if (!file || !window.MergeShareCard || !window.MergeShareCard.save) {
+      toast(localize('Couldn’t save the image.'));
+      return;
+    }
+    window.MergeShareCard.save(file).then(function (saved) {
+      const message = saved
+        ? (isNativeShell() ? 'Saved to your gallery.' : 'Image downloaded.')
+        : 'Couldn’t save the image.';
+      toast(localize(message));
+    });
   }
 
-  /* Share the generated Sixfold card when the browser can share files. When
-     the native sheet cannot take an image, show the same card with a save
-     option instead of silently copying text. Keeping this in one helper means
-     all six games use the same card and the same fallback. */
+  // Every game keeps calling MergeShare.result; it now writes the card to the
+  // gallery instead of opening the share sheet.
   function shareResult(title, text, data) {
-    if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
-        typeof File !== 'function') {
-      share(title, text);
-      return;
-    }
-    let file;
-    try {
-      file = window.MergeShareCard.fileSync(data);
-    } catch (err) {
-      share(title, text);
-      return;
-    }
-    let canShare = false;
-    if (navigator.share && navigator.canShare) {
-      try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
-    }
-    if (!canShare) {
-      offerShareFallback(file, data, text);
-      return;
-    }
-    let pending;
-    try {
-      // iOS rejects a file share that also carries title/text. Send only the
-      // file so the native image share sheet is allowed to open.
-      pending = navigator.share({ files: [file] });
-    } catch (err) {
-      offerShareFallback(file, data, text);
-      return;
-    }
-    if (pending && typeof pending.catch === 'function') {
-      pending.catch(function (err) {
-        if (err && err.name === 'AbortError') return;
-        offerShareFallback(file, data, text);
-      });
-    }
+    saveCard(data);
   }
 
   function shareAppData() {
@@ -281,67 +135,20 @@
     return { app: true, file: 'sixfold-collection', title: 'Sixfold', badge: badge };
   }
 
-  function shareAppText() {
-    const data = shareAppData();
-    const badge = data.badge
-      ? ' ' + localize('Your badge') + ': ' +
-        (data.badge.unit
-          ? localize('Perfect six')
-          : localize(data.badge.days + ' day streak')) + '.'
-      : '';
-    return SHARE_TEXT + badge;
-  }
-
   function shareApp() {
-    const data = shareAppData();
-    const text = shareAppText();
-    if (!window.MergeShareCard || !window.MergeShareCard.fileSync ||
-        typeof File !== 'function') {
-      share(SHARE_TITLE, text);
-      return;
-    }
-    let file;
-    try {
-      file = window.MergeShareCard.fileSync(data);
-    } catch (err) {
-      share(SHARE_TITLE, text);
-      return;
-    }
-    let canShare = false;
-    if (navigator.share && navigator.canShare) {
-      try { canShare = navigator.canShare({ files: [file] }); } catch (err) {}
-    }
-    if (!canShare) {
-      offerShareFallback(file, data, text);
-      return;
-    }
-    let pending;
-    try {
-      pending = navigator.share({ files: [file] });
-    } catch (err) {
-      offerShareFallback(file, data, text);
-      return;
-    }
-    if (pending && typeof pending.catch === 'function') {
-      pending.catch(function (err) {
-        if (err && err.name === 'AbortError') return;
-        offerShareFallback(file, data, text);
-      });
-    }
+    saveCard(shareAppData());
   }
 
   function shareDaily() {
     if (!window.SixfoldDaily || !window.SixfoldDaily.shareData) return;
-    const data = window.SixfoldDaily.shareData();
-    shareResult(data.title, data.game + ' · ' + data.label, data);
+    saveCard(window.SixfoldDaily.shareData());
   }
 
   window.MergeShare = {
-    share: share,
     result: shareResult,
     app: shareApp,
     daily: shareDaily,
-    url: shareUrl,
+    save: saveCard,
     toast: toast
   };
 
@@ -359,10 +166,85 @@
     try { dismissed = localStorage.getItem(KEY); } catch (err) {}
     if (dismissed === version) return;
     panel.hidden = false;
+    const details = panel.querySelector('.whats-new-details');
+    if (details) {
+      // The list has its own stagger. Keying it only to [open] let the first
+      // opening animate and every later open appear as a plain cut; the class
+      // is re-armed on each toggle so the note keeps its little reveal.
+      details.addEventListener('toggle', function () {
+        details.classList.remove('is-opening');
+        if (!details.open) return;
+        void details.offsetWidth;
+        details.classList.add('is-opening');
+      });
+    }
     const close = $('whats-new-close');
     if (close) close.addEventListener('click', function () {
-      panel.hidden = true;
+      // Record the dismissal first: a reader who taps and immediately leaves
+      // should not see the note again on the next launch.
       try { localStorage.setItem(KEY, version); } catch (err) {}
+      if (reducedMotion()) {
+        panel.hidden = true;
+        return;
+      }
+      // Fade and lift the card in place, then take it out of the flow. The old
+      // fixed ghost let the hub reflow underneath a translucent copy, so the
+      // hero title showed through the card while it left. Keeping the real card
+      // in the flow during the 200 ms exit avoids that collision and keeps the
+      // whole dismissal on opacity and transform.
+      panel.style.willChange = 'opacity, transform';
+      void panel.offsetWidth;
+      panel.classList.add('is-leaving');
+      panel.setAttribute('aria-hidden', 'true');
+      let closed = false;
+      let following = [];
+      const finish = function () {
+        if (closed) return;
+        closed = true;
+        // Measure the space the card occupies before hiding it. The layout
+        // collapses by this amount; the siblings below are first offset by the
+        // same amount with a transform and then released, so the collapse is a
+        // compositor glide instead of an instant jump. The card is already
+        // faded out, so nothing overlaps while the content moves.
+        let node = panel.nextElementSibling;
+        while (node) {
+          following.push(node);
+          node = node.nextElementSibling;
+        }
+        const first = following[0];
+        const before = first ? first.getBoundingClientRect().top : 0;
+        panel.hidden = true;
+        panel.classList.remove('is-leaving');
+        panel.removeAttribute('aria-hidden');
+        panel.style.willChange = '';
+        if (!first || reducedMotion()) return;
+        const shift = before - first.getBoundingClientRect().top;
+        if (!(shift > 0)) return;
+        following.forEach(function (el) {
+          el.style.transition = 'none';
+          el.style.transform = 'translateY(' + shift + 'px)';
+          el.style.willChange = 'transform';
+        });
+        // Commit the from-position before starting the release transition.
+        void first.offsetHeight;
+        window.requestAnimationFrame(function () {
+          following.forEach(function (el) {
+            el.style.transition = 'transform 180ms cubic-bezier(0.4, 0, 1, 1)';
+            el.style.transform = 'translateY(0)';
+          });
+        });
+        window.setTimeout(function () {
+          following.forEach(function (el) {
+            el.style.transition = '';
+            el.style.transform = '';
+            el.style.willChange = '';
+          });
+        }, 220);
+      };
+      panel.addEventListener('transitionend', function (event) {
+        if (event.target === panel && event.propertyName === 'opacity') finish();
+      });
+      window.setTimeout(finish, 280);
     });
   })();
 
@@ -431,9 +313,11 @@
   function buildCoach() {
     const el = document.createElement('div');
     el.className = 'coach';
+    // Built at runtime, so it opts into the appearance cross-fade here.
+    el.dataset.fade = '';
     el.setAttribute('role', 'group');
     el.setAttribute('aria-label', localize('Quick tutorial'));
-    el.innerHTML = '<span class="coach-step" aria-hidden="true"></span>' +
+    el.innerHTML = '<span class="coach-step" aria-hidden="true" data-fade></span>' +
       '<p class="coach-text" aria-live="polite"></p>' +
       '<button class="coach-skip" type="button" aria-label="' + localize('Skip tutorial') + '" title="' + localize('Skip tutorial') + '">' + localize('Skip') + '</button>';
     el.querySelector('.coach-skip').addEventListener('click', function () {
@@ -529,14 +413,25 @@
 
   let current = 'hub';
   let lastGame = 'merge';
+  // The die's swing owns navigation for its 430 ms. Without this a card tapped
+  // mid-swing opens its game, and the pick then replaces it, so the hub
+  // visibly changes screen twice.
+  let surpriseRolling = false;
   const games = {};
 
   /* Every finished round offers the same short pause before the next one
      starts. Three seconds is enough to read the card, win or loss, without
-     making the arcade feel slow. */
+     making the arcade feel slow. The pause is a clock rather than a countdown
+     that runs regardless: it freezes while the app is in the background or a
+     sheet is open, and it never re-arms over a result the reader has closed.
+     The remaining time is drawn as a progress edge under the button, so the
+     button keeps the label the reader's language already gave it instead of
+     an English "Next 3s". */
   const AUTO_NEXT_DELAY = 3000;
   let autoNextTimer = 0;
   let autoNextButton = null;
+  let autoNextEnd = 0;
+  let autoNextFrozen = 0;
 
   function cancelAutoNext() {
     if (autoNextTimer) {
@@ -544,58 +439,211 @@
       autoNextTimer = 0;
     }
     if (autoNextButton) {
-      if (autoNextButton.dataset.autoNextBase) {
-        autoNextButton.textContent = autoNextButton.dataset.autoNextBase;
-      }
+      autoNextButton.removeEventListener('click', cancelAutoNext);
+      autoNextButton.classList.remove('is-counting');
+      autoNextButton.style.removeProperty('--auto-next-left');
       autoNextButton = null;
     }
+    autoNextFrozen = 0;
   }
 
   function scheduleAutoNext(button, action, delay) {
     cancelAutoNext();
-    if (!button) return;
+    // A hidden card means the result was dismissed (or has not been shown yet),
+    // so re-entering the screen must not start the next round by itself.
+    if (!button || button.closest('[hidden]')) return;
     autoNextButton = button;
-    if (!button.dataset.autoNextBase) {
-      button.dataset.autoNextBase = button.textContent.trim();
-    }
     const screen = document.body.dataset.screen;
     const total = Math.max(800, Number(delay) || AUTO_NEXT_DELAY);
-    const end = Date.now() + total;
+    autoNextEnd = Date.now() + total;
 
     function paint() {
-      const remaining = Math.max(1, Math.ceil((end - Date.now()) / 1000));
-      const label = 'Next ' + remaining + 's';
-      if (button.textContent !== label) button.textContent = label;
+      const left = Math.max(0, Math.min(1, (autoNextEnd - Date.now()) / total));
+      button.style.setProperty('--auto-next-left', left.toFixed(3));
     }
 
     paint();
-    // A manual tap should take over immediately and stop the countdown.
-    button.addEventListener('click', cancelAutoNext, { once: true });
+    button.classList.add('is-counting');
+    // A manual tap takes over immediately and stops the countdown.
+    button.addEventListener('click', cancelAutoNext);
 
     function tick() {
+      autoNextTimer = 0;
       if (!button.isConnected || button.closest('[hidden]') ||
-          document.body.dataset.screen !== screen ||
-          document.documentElement.classList.contains('sheet-open')) {
+          document.body.dataset.screen !== screen) {
         cancelAutoNext();
         return;
       }
-      if (Date.now() >= end) {
+      if (document.hidden || document.documentElement.classList.contains('sheet-open')) {
+        if (!autoNextFrozen) autoNextFrozen = Date.now();
+        autoNextTimer = window.setTimeout(tick, 250);
+        return;
+      }
+      if (autoNextFrozen) {
+        autoNextEnd += Date.now() - autoNextFrozen;
+        autoNextFrozen = 0;
+      }
+      if (Date.now() >= autoNextEnd) {
         const nextAction = action;
         cancelAutoNext();
         nextAction();
         return;
       }
       paint();
-      autoNextTimer = window.setTimeout(tick, 200);
+      autoNextTimer = window.setTimeout(tick, 120);
     }
 
-    autoNextTimer = window.setTimeout(tick, 200);
+    autoNextTimer = window.setTimeout(tick, 120);
   }
 
   window.MergeAutoNext = {
     schedule: scheduleAutoNext,
     cancel: cancelAutoNext
   };
+
+  /* ---------- the four compact result cards ---------- */
+
+  // Water Sort, Tic Tac Toe, Minesweeper and Fruit Merge finish in a card that
+  // covers the board, but the card was paint only: the board stayed tappable
+  // behind its scrim, back walked out of the game, and a dismissed card could
+  // never be read again. Each one is a real dialog now. Back, Escape and the
+  // card's own action close it, the board and status behind it leave the tab
+  // order and the pointer while it is up, and its footer keeps a quiet
+  // "Result" chip so the last round stays reachable after the card is closed.
+  // The header and footer stay live: the celebration covers the board, not the
+  // frame, and the reader can open settings or leave without waiting it out.
+  const compactResults = [
+    { screen: 'water', card: $('water-win') },
+    { screen: 'ttt', card: $('ttt-result') },
+    { screen: 'mines', card: $('mines-result') },
+    { screen: 'fruit', card: $('fruit-over') }
+  ];
+
+  function setCompactInert(card, screenEl, on) {
+    if (on) {
+      // Revealing a card is two calls: the one that shows it and the observer
+      // that follows the hidden change. The second call would find its
+      // siblings already inert, record an empty set, and leave nothing to
+      // release when the card closes again, so keep the first set.
+      if (card._covered && card._covered.length) return;
+      // The celebration's dimmer is paint only (a box-shadow), so what really
+      // swallowed a tap was this pass. Walking to the screen root also made the
+      // header's settings control and the footer inert, which left the frame
+      // dead for the whole pause: the reader could not stop the clock or open
+      // settings. Only the content the card covers leaves the pointer and tab
+      // order. The frame stays usable, and a sheet raised over the result
+      // already freezes the clock.
+      const boundary = card.closest('.play-main') || screenEl;
+      const covered = [];
+      let node = card;
+      while (node && node !== boundary) {
+        const parent = node.parentElement;
+        if (!parent) break;
+        Array.prototype.forEach.call(parent.children, function (sibling) {
+          if (sibling === node || !('inert' in sibling) || sibling.inert) return;
+          sibling.inert = true;
+          covered.push(sibling);
+        });
+        node = parent;
+      }
+      card._covered = covered;
+      return;
+    }
+    (card._covered || []).forEach(function (el) { el.inert = false; });
+    card._covered = null;
+  }
+
+  function wireCompactResult(entry) {
+    const card = entry.card;
+    const screenEl = document.getElementById(entry.screen);
+    if (!card || !screenEl || !('MutationObserver' in window)) return;
+    const footer = screenEl.querySelector('.play-actions');
+    if (!footer) return;
+    const primary = card.querySelector('.play-btn');
+    let chip = null;
+    let dismissed = false;
+
+    function makeChip() {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'play-btn play-btn--ghost play-result-chip';
+      button.textContent = localize('Result');
+      button.dataset.fade = '';
+      button.hidden = true;
+      button.addEventListener('click', function () {
+        dismissed = false;
+        card.hidden = false;
+        sync();
+        if (primary) primary.focus({ preventScroll: true });
+      });
+      footer.insertBefore(button, footer.firstChild);
+      return button;
+    }
+
+    function sync() {
+      const open = !card.hidden;
+      setCompactInert(card, screenEl, open);
+      if (!chip) chip = makeChip();
+      if (open) dismissed = false;
+      chip.hidden = open || !dismissed;
+      if (!open && dismissed) chip.focus({ preventScroll: true });
+    }
+
+    entry.dismiss = function () {
+      if (card.hidden) return;
+      dismissed = true;
+      card.hidden = true;
+      // Closing the card is the reader's answer: no new round may start under
+      // their hands three seconds later.
+      cancelAutoNext();
+      sync();
+    };
+
+    // A round that starts again replaces the result, so the chip goes with it.
+    screenEl.addEventListener('click', function (event) {
+      if (!dismissed || !event.target.closest) return;
+      if (!event.target.closest('.play-btn') || event.target.closest('.play-result-chip')) return;
+      dismissed = false;
+      sync();
+    });
+
+    new MutationObserver(sync).observe(card, { attributes: true, attributeFilter: ['hidden'] });
+    sync();
+  }
+
+  compactResults.forEach(wireCompactResult);
+
+  function openCompactResult() {
+    const screen = document.body.dataset.screen;
+    for (let i = 0; i < compactResults.length; i += 1) {
+      const entry = compactResults[i];
+      if (entry.screen === screen && entry.card && entry.dismiss && !entry.card.hidden) return entry;
+    }
+    return null;
+  }
+
+  // The compact cards answer back and Escape the way the sheet stack does, so
+  // one gesture never dismisses a card and leaves the game at the same time.
+  document.addEventListener('sixfold:back', function (event) {
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    const entry = openCompactResult();
+    if (!entry) return;
+    event.preventDefault();
+    entry.dismiss();
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    const entry = openCompactResult();
+    if (!entry) return;
+    event.preventDefault();
+    entry.dismiss();
+  });
+
+  function reducedMotion() {
+    return Boolean(window.SixfoldMotion && window.SixfoldMotion.reduced());
+  }
 
   function setScreen(screen) {
     const previous = current;
@@ -617,17 +665,34 @@
     if (!isMerge && app.contains(document.activeElement)) {
       try { document.activeElement.blur(); } catch (err) {}
     }
-    app.toggleAttribute('inert', !isMerge);
+    // Element.toggleAttribute() is Chromium 69; the API 26 emulator's WebView
+    // predates it, and this line runs before body.dataset.screen is set, so a
+    // missing method would leave the game screen half-entered.
+    if (isMerge) app.removeAttribute('inert');
+    else app.setAttribute('inert', '');
     if (isMerge) app.removeAttribute('aria-hidden');
     else app.setAttribute('aria-hidden', 'true');
     body.dataset.screen = screen;
 
+    // The hub's entrance belongs to the launch, not to every return. Once the
+    // reader leaves the collection, the classes that own the entrance are
+    // switched off, so coming back from a game does not replay the cover build
+    // or the card stagger (the hub is display:none behind a game, and a CSS
+    // animation restarts whenever that element is shown again).
+    if (previous === 'hub' && screen !== 'hub') {
+      document.documentElement.classList.add('hub-settled');
+    }
+    // A play screen arrives once too. The screens are display:none behind each
+    // other, so a browser restarts each shell animation on every re-entry;
+    // marking the screen as it is left keeps the first visit the only launch
+    // moment.
+    if (previous && previous !== 'hub' && screens[previous]) {
+      screens[previous].classList.add('shell-settled');
+    }
     if (screen === 'hub' && previous && previous !== 'hub') {
-      hub.classList.remove('is-returning');
-      void hub.offsetWidth;
-      hub.classList.add('is-returning');
-      window.setTimeout(function () { hub.classList.remove('is-returning'); }, 520);
-      window.setTimeout(replaySixBuild, 160);
+      // The hidden game's sequence starts fresh after a visit elsewhere, but
+      // without the build animation that used to run here.
+      resetSixProgress();
     }
 
     if (isMerge) {
@@ -664,7 +729,10 @@
   }
 
   function updateDocumentTitle() {
-    document.title = current === 'hub' ? 'Sixfold — Six games. No filler.' : (SCREEN_NAMES[current] || 'Sixfold') + ' — Sixfold';
+    const name = current === 'fruit' && games.fruit && games.fruit.label
+      ? games.fruit.label()
+      : SCREEN_NAMES[current];
+    document.title = current === 'hub' ? 'Sixfold — Six games. No filler.' : localize(name || 'Sixfold') + ' — Sixfold';
   }
 
   function openBadges() {
@@ -680,6 +748,7 @@
   }
 
   function openGame(game) {
+    if (surpriseRolling) return;
     if (VALID_GAMES.indexOf(game) === -1 || game === 'wordle') return;
     lastGame = game;
     setScreen(game);
@@ -704,7 +773,7 @@
   let hiddenRevealCloseTimer = 0;
 
   function calmMotion() {
-    return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    return Boolean(window.SixfoldMotion && window.SixfoldMotion.reduced());
   }
 
   function wordleWasFound() {
@@ -729,12 +798,15 @@
     hiddenReveal.classList.add('is-closing');
     if (hub) hub.removeAttribute('inert');
     document.documentElement.classList.remove('hidden-reveal-open');
+    // The game enters under the scrim that is already leaving, so the reader
+    // sees one movement from the cover to the board instead of the hub being
+    // swapped out after the reveal has gone.
+    openWordle();
     window.clearTimeout(hiddenRevealCloseTimer);
     hiddenRevealCloseTimer = window.setTimeout(function () {
       hiddenReveal.hidden = true;
       hiddenReveal.setAttribute('aria-hidden', 'true');
       hiddenReveal.classList.remove('is-closing');
-      openWordle();
     }, calmMotion() ? 40 : 300);
   }
 
@@ -774,6 +846,13 @@
         event.preventDefault();
         closeHiddenReveal();
       }
+    });
+    // Back during the reveal is the same exit as its scrim: skip the intro and
+    // open the game, instead of closing the app from what is still the hub.
+    document.addEventListener('sixfold:back', function (event) {
+      if (!hiddenRevealOpen) return;
+      event.preventDefault();
+      closeHiddenReveal();
     });
   }
 
@@ -836,6 +915,76 @@
     card.addEventListener('click', function () { openGame(card.dataset.game); });
   });
 
+  /* "Choose a game" used to jump the hash and snap the list. Scroll the hub
+     instead and keep the URL on the hub route. */
+  const chooseCta = document.querySelector('.home-cta');
+  const collection = $('collection');
+  if (chooseCta && collection) {
+    chooseCta.addEventListener('click', function (event) {
+      event.preventDefault();
+      collection.scrollIntoView({
+        behavior: reducedMotion() ? 'auto' : 'smooth',
+        block: 'start'
+      });
+      if (cards[0]) cards[0].focus({ preventScroll: true });
+    });
+  }
+
+  /* The hub's tape is the only thing that animates forever. Stop it as soon as
+     the app stops being the window in front — blur, pagehide, or the native
+     shell's own pause — instead of waiting for the WebView to call the page
+     hidden, which arrives after the recents gesture has already started
+     compositing the hub. Each signal clears only its own flag, so a late
+     visibilitychange cannot restart the tape behind a paused window. */
+  const away = { hidden: document.hidden, blurred: false, native: false };
+  let awayPaused = false;
+
+  function syncAway() {
+    const paused = away.hidden || away.blurred || away.native;
+    if (paused === awayPaused) return;
+    awayPaused = paused;
+    document.documentElement.classList.toggle('is-app-hidden', paused);
+  }
+
+  function markAway(source, value) {
+    if (away[source] === value) return;
+    away[source] = value;
+    syncAway();
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    markAway('hidden', document.hidden);
+  });
+  window.addEventListener('blur', function () { markAway('blurred', true); });
+  window.addEventListener('focus', function () { markAway('blurred', false); });
+  window.addEventListener('pagehide', function () { markAway('blurred', true); });
+  window.addEventListener('pageshow', function () { markAway('blurred', false); });
+  // A tap proves the window is in front even if the shell skipped its focus or
+  // its resume, so it clears both the window flag and the native one.
+  // Otherwise a dropped resume would freeze the tape until the next reload.
+  document.addEventListener('pointerdown', function () {
+    markAway('blurred', false);
+    markAway('native', false);
+  }, { capture: true, passive: true });
+
+  const nativeApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (nativeApp && nativeApp.addListener) {
+    function listenNative(event, handler) {
+      try {
+        const pending = nativeApp.addListener(event, handler);
+        if (pending && typeof pending.catch === 'function') pending.catch(function () {});
+      } catch (err) {
+        /* a shell without the App plugin still gets the DOM signals */
+      }
+    }
+    listenNative('appStateChange', function (state) {
+      markAway('native', !(state && state.isActive));
+    });
+    listenNative('pause', function () { markAway('native', true); });
+    listenNative('resume', function () { markAway('native', false); });
+  }
+  syncAway();
+
   const hubShare = $('hub-share');
   if (hubShare) {
     hubShare.addEventListener('click', shareApp);
@@ -844,24 +993,63 @@
   const surpriseBtn = $('home-surprise');
   if (surpriseBtn) {
     surpriseBtn.addEventListener('click', function () {
-      if (!cards.length) return;
+      if (!cards.length || surpriseRolling) return;
       const pick = cards[Math.floor(Math.random() * cards.length)];
-      if (pick && pick.dataset.game) openGame(pick.dataset.game);
+      if (!pick || !pick.dataset.game) return;
+      if (reducedMotion()) {
+        openGame(pick.dataset.game);
+        return;
+      }
+      // Show the pick before opening it: the die rolls, the card it landed on
+      // lifts if it is already on screen, and only then does the game take
+      // over. The hub never scrolls to the pick, so the page does not move
+      // under the finger that just tapped. The roll's own end is the cue, so
+      // the CSS duration stays the only place the timing lives; the timeout
+      // only covers a roll that never animates.
+      surpriseRolling = true;
+      let opened = false;
+      let fallback = 0;
+      const resolved = function () {
+        if (opened) return;
+        opened = true;
+        window.clearTimeout(fallback);
+        surpriseBtn.removeEventListener('animationend', onRollEnd);
+        surpriseBtn.classList.remove('is-rolling');
+        pick.classList.remove('is-picked');
+        // Released in the same task as the open, so nothing can slip between
+        // the swing ending and the pick taking the screen.
+        surpriseRolling = false;
+        openGame(pick.dataset.game);
+      };
+      const onRollEnd = function (event) {
+        if (event.animationName === 'diceRoll') resolved();
+      };
+      surpriseBtn.classList.remove('is-rolling');
+      void surpriseBtn.offsetWidth;
+      surpriseBtn.classList.add('is-rolling');
+      surpriseBtn.addEventListener('animationend', onRollEnd);
+      pick.classList.remove('is-picked');
+      void pick.offsetWidth;
+      pick.classList.add('is-picked');
+      fallback = window.setTimeout(resolved, 900);
     });
   }
 
-  /* The cover is the six-piece Sixfold mark, so its six numbered tiles are the
-     secret key. Tap 01 through 06 in order; any wrong tap starts the sequence
-     again. The only feedback is a tiny physical press, which keeps the game
-     hidden until it is actually found. */
+  /* The cover is the six-piece Sixfold mark, and each numbered piece is a real
+     shortcut to the game in that position. The hidden Wordle is still there:
+     press and hold any piece instead of tapping it. */
   const sixArt = document.querySelector('.home-hero-art');
   const sixGrid = document.querySelector('.home-six');
   const sixPieces = $$('.home-six-piece');
   const sixHitTimers = new WeakMap();
-  let sixStep = 0;
-  let sixTouch = null;
-  let sixLastTapIndex = -1;
-  let sixLastTapAt = 0;
+  const SIX_GAMES = ['merge', 'sudoku', 'ttt', 'mines', 'water', 'fruit'];
+  // The press is one transform transition in css/home.css. Releasing the class
+  // before that transition lands was what made a tap end mid-press and snap
+  // back; hold it for the full duration so the tile finishes settling first.
+  const SIX_PRESS_MS = 160;
+  let sixHoldTimer = 0;
+  let sixHoldOrigin = null;
+  let sixHoldConsumedAt = 0;
   let sixLocked = false;
   function clearSixPress() {
     sixPieces.forEach(function (piece) {
@@ -881,110 +1069,136 @@
     sixHitTimers.set(piece, window.setTimeout(function () {
       piece.classList.remove('is-six-hit');
       sixHitTimers.delete(piece);
-    }, 280));
+    }, SIX_PRESS_MS));
   }
-  function commitSixTap(index) {
+  function cancelSixHold() {
+    window.clearTimeout(sixHoldTimer);
+    sixHoldTimer = 0;
+    sixHoldOrigin = null;
+  }
+  function startSixHold(index, x, y) {
+    cancelSixHold();
     if (sixLocked) return;
-    const now = Date.now();
-    if (index === sixLastTapIndex && now - sixLastTapAt < 450) return;
-    sixLastTapIndex = index;
-    sixLastTapAt = now;
-    handleSixPress(index);
-  }
-  function handleSixPress(index) {
-    const piece = sixPieces[index];
-    if (!piece || sixLocked) return;
-    if (index !== sixStep) {
-      sixStep = index === 0 ? 1 : 0;
-      clearSixPress();
-      if (index === 0) flashSixPiece(piece);
-      return;
-    }
-    sixStep += 1;
-    flashSixPiece(piece);
-    if (sixStep === sixPieces.length) {
-      sixStep = 0;
+    sixHoldOrigin = { index: index, x: x, y: y };
+    sixHoldTimer = window.setTimeout(function () {
+      sixHoldTimer = 0;
+      const origin = sixHoldOrigin;
+      sixHoldOrigin = null;
+      if (!origin || sixLocked) return;
+      sixHoldConsumedAt = Date.now();
       sixLocked = true;
       if (sixGrid) {
         sixGrid.classList.remove('is-unlocking');
         void sixGrid.offsetWidth;
         sixGrid.classList.add('is-unlocking');
       }
+      if (window.MergeHaptics && window.MergeHaptics.tap) window.MergeHaptics.tap();
       window.setTimeout(function () {
         if (sixGrid) sixGrid.classList.remove('is-unlocking');
-        sixLocked = false;
         showHiddenReveal();
-      }, calmMotion() ? 80 : 520);
-    }
+      }, calmMotion() ? 80 : 320);
+    }, 650);
   }
+  function openSixGame(index) {
+    if (sixLocked) return;
+    const game = SIX_GAMES[index];
+    if (game) openGame(game);
+  }
+  // The build animation used to hold its final transform until the class was
+  // removed, which is what stopped a finished tile from showing a press. Mark
+  // the cover as settled after the last piece finishes building and the launch
+  // layer has handed the hub over. Settling on the first piece's animationend
+  // cut the rest of the stagger short, and the reduced-motion fallback used to
+  // poll for home-ready; one observer does the waiting now.
+  let sixBuildsLeft = sixPieces.length;
+  let sixReadyWait = null;
+  function settleSixCover() {
+    const html = document.documentElement;
+    if (html.classList.contains('six-settled')) return;
+    if (!html.classList.contains('home-ready')) {
+      if (sixReadyWait) return;
+      if (!('MutationObserver' in window)) {
+        sixReadyWait = window.setTimeout(function () {
+          sixReadyWait = null;
+          settleSixCover();
+        }, 240);
+        return;
+      }
+      sixReadyWait = new MutationObserver(function () {
+        if (!document.documentElement.classList.contains('home-ready')) return;
+        sixReadyWait.disconnect();
+        sixReadyWait = null;
+        settleSixCover();
+      });
+      sixReadyWait.observe(html, { attributes: true, attributeFilter: ['class'] });
+      return;
+    }
+    // A launch with no build to wait for (Reduced motion, or a return from
+    // another document) settles as soon as the hub is up.
+    if (calmMotion() || !html.classList.contains('home-build')) sixBuildsLeft = 0;
+    if (sixBuildsLeft > 0) return;
+    html.classList.add('six-settled');
+  }
+  settleSixCover();
+
   sixPieces.forEach(function (piece, index) {
-    piece.addEventListener('click', function () { commitSixTap(index); });
-    // Safari can suppress the synthetic click on animated tiles. Handle the
-    // physical tap directly, and let the same-index guard absorb a late click.
-    piece.addEventListener('touchstart', function (event) {
-      const touch = event.changedTouches && event.changedTouches[0];
-      sixTouch = touch ? { x: touch.clientX, y: touch.clientY, id: touch.identifier } : null;
-    }, { passive: true });
-    piece.addEventListener('touchend', function (event) {
-      const touch = event.changedTouches && event.changedTouches[0];
-      const start = sixTouch;
-      sixTouch = null;
-      if (!touch || !start || touch.identifier !== start.id) return;
-      if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 18) return;
-      commitSixTap(index);
-    }, { passive: true });
-    piece.addEventListener('touchcancel', function () { sixTouch = null; }, { passive: true });
+    piece.addEventListener('click', function () {
+      if (Date.now() - sixHoldConsumedAt < 800) return;
+      openSixGame(index);
+    });
+    piece.addEventListener('animationend', function (event) {
+      if (event.animationName !== 'sixBuild') return;
+      sixBuildsLeft = Math.max(0, sixBuildsLeft - 1);
+      settleSixCover();
+    });
+    function holdStart(event) {
+      const touch = event.touches && event.touches[0];
+      const point = touch || event;
+      if (typeof point.clientX === 'number') {
+        flashSixPiece(piece);
+        startSixHold(index, point.clientX, point.clientY);
+      }
+    }
+    function holdMove(event) {
+      if (!sixHoldOrigin || sixHoldOrigin.index !== index) return;
+      const touch = event.touches && event.touches[0];
+      const point = touch || event;
+      if (Math.hypot(point.clientX - sixHoldOrigin.x, point.clientY - sixHoldOrigin.y) > 18) cancelSixHold();
+    }
+    function holdEnd() { cancelSixHold(); }
+    piece.addEventListener('pointerdown', holdStart);
+    piece.addEventListener('pointermove', holdMove);
+    piece.addEventListener('pointerup', holdEnd);
+    piece.addEventListener('pointercancel', holdEnd);
+    piece.addEventListener('pointerleave', holdEnd);
   });
 
-  function replaySixBuild() {
-    if (!document.documentElement.classList.contains('home-ready')) return;
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const cover = document.querySelector('.home-six');
-    if (!cover) return;
-    sixStep = 0;
+  /* The cover build is a launch animation. Returning to the hub only resets
+     the long-press state; it never replays the build. */
+  function resetSixProgress() {
+    cancelSixHold();
+    sixHoldConsumedAt = 0;
     sixLocked = false;
-    sixLastTapIndex = -1;
     clearSixPress();
     if (sixGrid) sixGrid.classList.remove('is-unlocking');
-    sixPieces.forEach(function (piece) { piece.style.animation = 'none'; });
-    void cover.offsetWidth;
-    sixPieces.forEach(function (piece) { piece.style.animation = ''; });
   }
 
   /* A small pointer tilt on the cover gives desktop mice the same sense of
-     physicality that touch scrolling already gives the phone layout. */
+     physicality that touch scrolling already gives the phone layout. The
+     listeners attach whenever a fine pointer exists; the current Motion choice
+     is read per frame, so switching Reduced to Full restores the tilt without
+     a reload. */
   if (sixArt && sixGrid && window.matchMedia &&
-      window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
-      !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     let tiltFrame = 0;
     let tiltRect = null;
     let tiltPoint = null;
 
-    function paintTilt() {
-      tiltFrame = 0;
-      if (!tiltPoint) return;
-      if (!tiltRect) tiltRect = sixArt.getBoundingClientRect();
-      if (!tiltRect.width || !tiltRect.height) return;
-      const x = (tiltPoint.x - tiltRect.left) / tiltRect.width - 0.5;
-      const y = (tiltPoint.y - tiltRect.top) / tiltRect.height - 0.5;
-      sixGrid.style.setProperty('--six-tilt-x', (y * -4.5).toFixed(2) + 'deg');
-      sixGrid.style.setProperty('--six-tilt-y', (x * 6.5).toFixed(2) + 'deg');
+    function reduced() {
+      return Boolean(window.SixfoldMotion && window.SixfoldMotion.reduced());
     }
 
-    function queueTilt() {
-      if (!tiltFrame) tiltFrame = window.requestAnimationFrame(paintTilt);
-    }
-
-    sixArt.addEventListener('pointerenter', function () {
-      tiltRect = sixArt.getBoundingClientRect();
-      sixGrid.classList.add('is-tilting');
-    });
-    sixArt.addEventListener('pointermove', function (event) {
-      if (event.pointerType === 'touch') return;
-      tiltPoint = { x: event.clientX, y: event.clientY };
-      queueTilt();
-    });
-    sixArt.addEventListener('pointerleave', function () {
+    function clearTilt() {
       tiltPoint = null;
       tiltRect = null;
       if (tiltFrame) {
@@ -994,6 +1208,37 @@
       sixGrid.classList.remove('is-tilting');
       sixGrid.style.removeProperty('--six-tilt-x');
       sixGrid.style.removeProperty('--six-tilt-y');
+    }
+
+    function paintTilt() {
+      tiltFrame = 0;
+      if (!tiltPoint || reduced()) return;
+      if (!tiltRect) tiltRect = sixArt.getBoundingClientRect();
+      if (!tiltRect.width || !tiltRect.height) return;
+      const x = (tiltPoint.x - tiltRect.left) / tiltRect.width - 0.5;
+      const y = (tiltPoint.y - tiltRect.top) / tiltRect.height - 0.5;
+      sixGrid.classList.add('is-tilting');
+      sixGrid.style.setProperty('--six-tilt-x', (y * -4.5).toFixed(2) + 'deg');
+      sixGrid.style.setProperty('--six-tilt-y', (x * 6.5).toFixed(2) + 'deg');
+    }
+
+    function queueTilt() {
+      if (!tiltFrame) tiltFrame = window.requestAnimationFrame(paintTilt);
+    }
+
+    sixArt.addEventListener('pointerenter', function () {
+      if (reduced()) return;
+      tiltRect = sixArt.getBoundingClientRect();
+      sixGrid.classList.add('is-tilting');
+    });
+    sixArt.addEventListener('pointermove', function (event) {
+      if (event.pointerType === 'touch' || reduced()) return;
+      tiltPoint = { x: event.clientX, y: event.clientY };
+      queueTilt();
+    });
+    sixArt.addEventListener('pointerleave', clearTilt);
+    window.addEventListener('sixfold:settings', function () {
+      if (reduced()) clearTilt();
     });
     // A scroll changes the element's page position without a pointerenter.
     // Drop the cached box so the next mouse frame measures it again.
@@ -1138,6 +1383,7 @@
       const hapticBtn = document.createElement('button');
       hapticBtn.type = 'button';
       hapticBtn.className = 'play-tool';
+      hapticBtn.dataset.fade = '';
       hapticBtn.dataset.playTool = 'haptics';
       hapticBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8.5" y="3" width="7" height="18" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8" /><g class="waves" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 9.4a4.6 4.6 0 0 0 0 5.2" /><path d="M19 9.4a4.6 4.6 0 0 1 0 5.2" /></g><path class="slash" d="M4.5 19.5l15-15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>';
       hapticBtn.addEventListener('click', function () {
@@ -1151,6 +1397,7 @@
       const helpBtn = document.createElement('button');
       helpBtn.type = 'button';
       helpBtn.className = 'play-tool';
+      helpBtn.dataset.fade = '';
       helpBtn.dataset.playTool = 'help';
       helpBtn.setAttribute('aria-label', localize('How to play ' + name));
       helpBtn.title = localize('How to play ' + name);
@@ -1165,6 +1412,7 @@
       const resetBtn = document.createElement('button');
       resetBtn.type = 'button';
       resetBtn.className = 'play-tool play-reset';
+      resetBtn.dataset.fade = '';
       resetBtn.dataset.playTool = 'reset';
       resetBtn.setAttribute('aria-label', localize('Reset ' + name + ' data'));
       resetBtn.title = localize('Reset ' + name + ' data');
@@ -1186,6 +1434,9 @@
       });
     }
 
+    // Merge's footer has its own vibration switch. A toggle in either place is
+    // the same device setting, so every visible switch has to follow it.
+    window.addEventListener('sixfold:haptics', syncHaptics);
     syncHaptics();
   }
 
@@ -1209,13 +1460,13 @@
     const STATE_KEY = 'merge-games.water.state.v3';
     const CAP = 4;
     const COLORS = [
-      { name: 'coral', hex: '#e85f3b', deep: '#b83828' },
-      { name: 'amber', hex: '#e3a92f', deep: '#ad7414' },
-      { name: 'lime', hex: '#8bbd54', deep: '#5d8e2f' },
-      { name: 'teal', hex: '#39a9a1', deep: '#167b77' },
-      { name: 'blue', hex: '#5b8fd5', deep: '#3264a5' },
-      { name: 'grape', hex: '#9a6bb5', deep: '#6d4389' },
-      { name: 'rose', hex: '#d96b8a', deep: '#a33d5e' }
+      { name: 'coral', symbol: '●', hex: '#e85f3b', light: '#f39b7e', deep: '#b83828' },
+      { name: 'amber', symbol: '◆', hex: '#e3a92f', light: '#f2d07a', deep: '#ad7414' },
+      { name: 'lime', symbol: '▲', hex: '#8bbd54', light: '#bfe08f', deep: '#5d8e2f' },
+      { name: 'teal', symbol: '■', hex: '#39a9a1', light: '#8ddcd6', deep: '#167b77' },
+      { name: 'blue', symbol: '★', hex: '#5b8fd5', light: '#a8c6ef', deep: '#3264a5' },
+      { name: 'grape', symbol: '✚', hex: '#9a6bb5', light: '#cdaee0', deep: '#6d4389' },
+      { name: 'rose', symbol: '✦', hex: '#d96b8a', light: '#f0a8bb', deep: '#a33d5e' }
     ];
     const LEVELS = [
       { tier: 'Easy', colors: 3, tubes: [[2, 1, 0, 0], [1, 2, 0, 1], [1, 2, 0, 2], [], []] },
@@ -1246,7 +1497,13 @@
       const base = COLORS[index] || COLORS[0];
       const theme = window.MergeTheme;
       if (theme && theme.colour) {
-        return { name: base.name, hex: theme.colour(base.hex), deep: theme.colour(base.deep) };
+        return {
+          name: base.name,
+          symbol: base.symbol,
+          hex: theme.colour(base.hex),
+          light: theme.colour(base.light),
+          deep: theme.colour(base.deep)
+        };
       }
       return base;
     }
@@ -1341,6 +1598,7 @@
         button.dataset.index = String(tubeViews.length);
         const glass = document.createElement('span');
         glass.className = 'water-glass';
+        glass.dataset.fade = '';
         const shine = document.createElement('span');
         shine.className = 'water-shine';
         shine.setAttribute('aria-hidden', 'true');
@@ -1391,6 +1649,9 @@
         if (segment.className !== className) segment.className = className;
         setTubeStyle(segment, '--liquid', swatch.hex);
         setTubeStyle(segment, '--liquid-deep', swatch.deep);
+        // A shape repeats the colour so the board still reads without hue
+        // vision. The tube's aria-label already carries the colour names.
+        if (segment.dataset.symbol !== swatch.symbol) segment.dataset.symbol = swatch.symbol;
         if (below) {
           setTubeStyle(segment, '--liquid-below', below.hex);
           setTubeStyle(segment, '--liquid-below-deep', below.deep);
@@ -1672,8 +1933,9 @@
 
     function restore() {
       const saved = load(STATE_KEY, null);
-      if (saved && Number.isInteger(saved.level) && Array.isArray(saved.tubes) &&
-          saved.tubes.length === LEVELS[saved.level]?.tubes.length &&
+      const savedLevel = saved && Number.isInteger(saved.level) ? LEVELS[saved.level] : null;
+      if (savedLevel && Array.isArray(saved.tubes) &&
+          saved.tubes.length === savedLevel.tubes.length &&
           saved.tubes.every(function (tube) { return Array.isArray(tube) && tube.length <= CAP; })) {
         level = saved.level;
         tubes = saved.tubes.map(function (tube) {
@@ -1776,7 +2038,13 @@
       }
     });
 
-    window.addEventListener('merge:appearance', function () { render(); });
+    // The board is rebuilt from the new palette when it is opened (activate),
+    // so rebuilding it here painted a screen nobody was looking at — in the
+    // middle of the appearance fade that triggered it.
+    window.addEventListener('merge:appearance', function () {
+      if (current !== 'water') return;
+      render();
+    });
     window.addEventListener('resize', function () {
       render();
       window.requestAnimationFrame(measureTubeGeometry);
@@ -2054,8 +2322,10 @@
             stamp: mode === 'two' ? mark + ' WINS' : 'THREE IN A ROW'
           });
         }
-      } else if (window.MergeCelebrate) {
-        window.MergeCelebrate.clear(winCard);
+      } else {
+        // A draw or a loss ends the round too, and used to end it silently.
+        if (window.MergeHaptics) window.MergeHaptics.over();
+        if (window.MergeCelebrate) window.MergeCelebrate.clear(winCard);
       }
       if (againBtn) againBtn.focus({ preventScroll: true });
       scheduleAutoNext(againBtn, newRound);
@@ -2068,6 +2338,12 @@
     function applyMove(index, mark) {
       if (board[index] || over) return;
       board[index] = mark;
+      // Each square that lands gets the same short tick as a keypress in the
+      // other games. The computer's reply stays silent: it is not a move the
+      // player made.
+      if ((mark === 'X' || mode === 'two') && window.MergeHaptics && window.MergeHaptics.tap) {
+        window.MergeHaptics.tap();
+      }
       if (mark === 'X') coachEvent('ttt', 'xmove', { index: index, moves: board.filter(Boolean).length });
       else coachEvent('ttt', 'reply', { index: index });
       const result = findWinner(board);
@@ -2377,18 +2653,23 @@
     /* The canonical eleven-fruit chain. Radii rise with the rank so the
        physics naturally makes larger fruit take more space. */
     const FRUITS = [
-      { name: 'Cherry', color: '#ca4b55', light: '#f0918d', deep: '#872a35', r: 13 },
-      { name: 'Strawberry', color: '#d9565c', light: '#f4a09b', deep: '#962a38', r: 16 },
-      { name: 'Grapes', color: '#8e63b2', light: '#cba7e1', deep: '#5c397a', r: 20 },
-      { name: 'Dekopon', color: '#e58a35', light: '#f5be69', deep: '#a55418', r: 24 },
-      { name: 'Persimmon', color: '#e07b2c', light: '#f5ad5b', deep: '#a54b13', r: 29 },
-      { name: 'Apple', color: '#c64d43', light: '#ee8e78', deep: '#842c2d', r: 34 },
-      { name: 'Pear', color: '#9cac47', light: '#d4de87', deep: '#627326', r: 40 },
-      { name: 'Peach', color: '#e58c80', light: '#f7bdae', deep: '#a65350', r: 46 },
-      { name: 'Pineapple', color: '#d6a62d', light: '#f1d064', deep: '#966b1c', r: 52 },
-      { name: 'Melon', color: '#8fae5b', light: '#d0e19f', deep: '#5a7533', r: 58 },
-      { name: 'Watermelon', color: '#408454', light: '#7db78b', deep: '#215b38', r: 65 }
+      { name: 'Cherry', value: 2, color: '#ca4b55', light: '#f0918d', deep: '#872a35', r: 13 },
+      { name: 'Strawberry', value: 4, color: '#d9565c', light: '#f4a09b', deep: '#962a38', r: 16 },
+      { name: 'Grapes', value: 8, color: '#8e63b2', light: '#cba7e1', deep: '#5c397a', r: 20 },
+      { name: 'Dekopon', value: 16, color: '#e58a35', light: '#f5be69', deep: '#a55418', r: 24 },
+      { name: 'Persimmon', value: 32, color: '#e07b2c', light: '#f5ad5b', deep: '#a54b13', r: 29 },
+      { name: 'Apple', value: 64, color: '#c64d43', light: '#ee8e78', deep: '#842c2d', r: 34 },
+      { name: 'Pear', value: 128, color: '#9cac47', light: '#d4de87', deep: '#627326', r: 40 },
+      { name: 'Peach', value: 256, color: '#e58c80', light: '#f7bdae', deep: '#a65350', r: 46 },
+      { name: 'Pineapple', value: 512, color: '#d6a62d', light: '#f1d064', deep: '#966b1c', r: 52 },
+      { name: 'Melon', value: 1024, color: '#8fae5b', light: '#d0e19f', deep: '#5a7533', r: 58 },
+      { name: 'Watermelon', value: 2048, color: '#408454', light: '#7db78b', deep: '#215b38', r: 65 }
     ];
+
+    // Number Merge keeps the same physics and chain, but every piece is a
+    // numbered tile. The choice is a device setting, so it survives a restart
+    // and travels with the JSON backup.
+    let numberMode = Boolean(window.SixfoldSettings && window.SixfoldSettings.get('fruitNumbers'));
 
     // Keep the hand-picked fruit colours and recolour copies when the palette
     // changes, so the canvas follows the same six choices as Merge.
@@ -2468,7 +2749,8 @@
         const spriteCtx = sprite.getContext('2d');
         spriteCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx = spriteCtx;
-        paintFruit({ tier: tier, r: def.r, x: size / 2, y: size / 2, angle: 0 });
+        if (numberMode) paintNumber({ tier: tier, r: def.r, x: size / 2, y: size / 2, angle: 0 });
+        else paintFruit({ tier: tier, r: def.r, x: size / 2, y: size / 2, angle: 0 });
         sprites.push({ canvas: sprite, size: size });
       });
       ctx = previous;
@@ -2480,7 +2762,9 @@
       if (!sprite) return;
       ctx.save();
       ctx.translate(fruit.x, fruit.y);
-      ctx.rotate(fruit.angle || 0);
+      // Numbered tiles stay upright: a rotated two looks like a different
+      // digit, and the board has to be read at a glance.
+      ctx.rotate(numberMode ? 0 : (fruit.angle || 0));
       ctx.drawImage(sprite.canvas, -sprite.size / 2, -sprite.size / 2, sprite.size, sprite.size);
       ctx.restore();
     }
@@ -2534,12 +2818,36 @@
       if (bestEl) bestEl.textContent = String(best);
       const fruit = FRUITS[nextTier];
       if (nextDot) {
-        nextDot.style.background = 'radial-gradient(circle at 32% 28%, ' + fruit.light + ', ' + fruit.color + ' 58%, ' + fruit.deep + ')';
-        nextDot.style.boxShadow = 'inset -2px -3px 0 rgba(0,0,0,.14)';
+        // The dot previews the next piece's colour. The number itself is the
+        // label beside it, so the tiny disc stays a swatch rather than a
+        // second, harder-to-read copy of the same digit.
+        nextDot.classList.remove('is-number');
+        nextDot.textContent = '';
+        if (numberMode) {
+          nextDot.style.background = fruit.light;
+          nextDot.style.boxShadow = 'inset 0 0 0 2px ' + fruit.color;
+        } else {
+          nextDot.style.background = 'radial-gradient(circle at 32% 28%, ' + fruit.light + ', ' + fruit.color + ' 58%, ' + fruit.deep + ')';
+          nextDot.style.boxShadow = 'inset -2px -3px 0 rgba(0,0,0,.14)';
+        }
       }
-      if (nextName) nextName.textContent = fruit.name;
-      canvas.setAttribute('aria-label', 'Fruit Merge board. Score ' + score +
-        '. Next fruit: ' + fruit.name + '. Drag to aim, release to drop. Arrow keys aim, space drops.');
+      if (nextName) nextName.textContent = numberMode ? String(fruit.value) : fruit.name;
+      canvas.setAttribute('aria-label', numberMode
+        ? 'Number Merge board. Score ' + score +
+          '. Next tile: ' + fruit.value + '. Drag to aim, release to drop. Arrow keys aim, space drops.'
+        : 'Fruit Merge board. Score ' + score +
+          '. Next fruit: ' + fruit.name + '. Drag to aim, release to drop. Arrow keys aim, space drops.');
+    }
+
+    /* The mode is visible outside the canvas too: the hub card and the game
+       header swap their name and art. Markup carries both versions so the
+       translation pass sees both strings; the root attribute does the swap. */
+    function syncModeUI() {
+      const card = document.querySelector('.home-game[data-game="fruit"]');
+      if (card) card.setAttribute('aria-label', localize(numberMode ? 'Play Number Merge' : 'Play Fruit Merge'));
+      const stats = root.querySelector('.play-stats');
+      if (stats) stats.setAttribute('aria-label', localize(numberMode ? 'Number Merge score' : 'Fruit Merge score'));
+      if (current === 'fruit') updateDocumentTitle();
     }
 
     function newRun() {
@@ -2560,7 +2868,9 @@
       if (finalBest) finalBest.textContent = String(best);
       updateHud();
       if (statusEl) statusEl.hidden = false;
-      setStatus('Drag to aim. Release to drop. Match two of the same fruit.');
+      setStatus(numberMode
+        ? 'Drag to aim. Release to drop. Match two of the same number.'
+        : 'Drag to aim. Release to drop. Match two of the same fruit.');
       render(0);
     }
 
@@ -2579,6 +2889,9 @@
     /* True when nothing is moving and no merge effect is still playing. */
     function atRest() {
       if (effects.length || dropLock > 0) return false;
+      // The round is over: step() stops simulating, so its last velocities are
+      // frozen and must not keep the frame loop alive behind the result card.
+      if (over) return true;
       for (let i = 0; i < fruits.length; i += 1) {
         const fruit = fruits[i];
         if (Math.abs(fruit.vx) + Math.abs(fruit.vy) > 4) return false;
@@ -2707,14 +3020,20 @@
       addMergeEffect(a, b, newTier, points);
       score += points;
       if (newTier === FRUITS.length - 1) {
-        setStatus('Watermelon! You reached the top of the fruit chain.');
+        setStatus(numberMode
+          ? FRUITS[newTier].value + '! You reached the top of the number chain.'
+          : 'Watermelon! You reached the top of the fruit chain.');
         if (window.MergeHaptics) window.MergeHaptics.win();
         if (window.MergeCelebrate) {
-          window.MergeCelebrate.win(document.querySelector('.fruit-stage'), { stamp: 'WATERMELON' });
+          window.MergeCelebrate.win(document.querySelector('.fruit-stage'), {
+            stamp: numberMode ? String(FRUITS[newTier].value) : 'WATERMELON'
+          });
         }
       }
       if (finalClear) {
-        setStatus('Two watermelons cleared — +' + points + '!');
+        setStatus(numberMode
+          ? 'Two ' + FRUITS[FRUITS.length - 1].value + ' tiles cleared — +' + points + '!'
+          : 'Two watermelons cleared — +' + points + '!');
       }
       if (score > best) {
         best = score;
@@ -2965,6 +3284,42 @@
         ctx.ellipse(r * 0.33, r * 0.2, r * 0.1, r * 0.045, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+
+    /* A numbered tile: light face, a ring in the chain colour and dark ink.
+       Keeping the ink dark on a pale face holds contrast on every tier and in
+       both themes, unlike white digits on amber or lime. */
+    function paintNumber(fruit) {
+      const def = FRUITS[fruit.tier];
+      const r = fruit.r;
+      ctx.save();
+      ctx.translate(fruit.x, fruit.y);
+
+      ctx.beginPath();
+      ctx.ellipse(0, r * 0.86, r * 0.8, r * 0.16, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(60, 42, 24, 0.12)';
+      ctx.fill();
+
+      const face = ctx.createRadialGradient(-r * 0.36, -r * 0.44, r * 0.08, 0, 0, r * 1.06);
+      face.addColorStop(0, '#fffaf1');
+      face.addColorStop(0.7, def.light);
+      face.addColorStop(1, def.light);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = face;
+      ctx.fill();
+      ctx.strokeStyle = def.color;
+      ctx.lineWidth = Math.max(2, r * 0.1);
+      ctx.stroke();
+
+      const text = String(def.value);
+      const size = Math.round(r * (text.length >= 4 ? 0.62 : text.length === 3 ? 0.74 : 0.9));
+      ctx.font = '800 ' + size + 'px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#2c2723';
+      ctx.fillText(text, 0, r * 0.03);
+      ctx.restore();
     }
 
     function paintFruit(fruit) {
@@ -3308,8 +3663,12 @@
       dropLock = DROP_LOCK;
       updateHud();
       startLoop();
-      const droppedName = FRUITS[tier].name.toLowerCase();
-      setStatus('Dropped ' + (droppedName === 'grapes' ? 'grapes' : 'a ' + droppedName) + '. Pair it with another.');
+      if (numberMode) {
+        setStatus('Dropped ' + FRUITS[tier].value + '. Pair it with another.');
+      } else {
+        const droppedName = FRUITS[tier].name.toLowerCase();
+        setStatus('Dropped ' + (droppedName === 'grapes' ? 'grapes' : 'a ' + droppedName) + '. Pair it with another.');
+      }
       coachEvent('fruit', 'drop');
       if (window.MergeHaptics) window.MergeHaptics.merge(20);
       render();
@@ -3324,7 +3683,9 @@
       startLoop();
       setStatus(dailyActive
         ? 'Daily Sixfold. Drag to aim, release to drop.'
-        : 'Fresh fruit. Drag to aim, release to drop.');
+        : numberMode
+          ? 'Fresh run. Drag to aim, release to drop.'
+          : 'Fresh fruit. Drag to aim, release to drop.');
     }
 
     let drag = null;
@@ -3381,8 +3742,9 @@
     const shareBtn = $('fruit-share');
     if (shareBtn) {
       shareBtn.addEventListener('click', function () {
-        shareResult('Fruit Merge', 'I scored ' + score + ' in Fruit Merge. My best is ' + best + '. Can you beat it?', {
-          game: 'Fruit Merge', number: '06', kind: 'MERGING',
+        const gameName = numberMode ? 'Number Merge' : 'Fruit Merge';
+        shareResult(gameName, 'I scored ' + score + ' in ' + gameName + '. My best is ' + best + '. Can you beat it?', {
+          game: gameName, number: '06', kind: numberMode ? 'NUMBERS' : 'MERGING',
           title: 'Round complete',
           score: score,
           label: 'POINTS',
@@ -3392,11 +3754,14 @@
       });
     }
 
+    // Same rule as Water Sort: a run that is not on screen takes its new
+    // colours from activate(), which reads them again before drawing.
     window.addEventListener('merge:appearance', function () {
+      if (current !== 'fruit') return;
       syncPalette();
       readUi();
       updateHud();
-      if (current === 'fruit') render();
+      render();
     });
     window.addEventListener('resize', function () {
       setupCanvas();
@@ -3431,13 +3796,26 @@
       newRun();
     }
 
+    window.addEventListener('sixfold:settings', function (event) {
+      const next = Boolean(event.detail && event.detail.fruitNumbers);
+      if (next === numberMode) return;
+      numberMode = next;
+      fruitSprites = [];
+      setupCanvas();
+      syncModeUI();
+      updateHud();
+      if (current === 'fruit') render();
+    });
+
     syncPalette();
     readUi();
     setupCanvas();
     newRun();
     render();
+    syncModeUI();
     games.fruit = {
       title: title,
+      label: function () { return numberMode ? 'Number Merge' : 'Fruit Merge'; },
       activate: function () {
         readUi();
         setupCanvas();
@@ -3468,6 +3846,38 @@
         setStatus('Best score reset. Fresh run.');
       }
     };
+
+    // Deterministic seam for the post-game frame-loop regression. The query
+    // flag keeps these controls out of normal play; the test uses them to end
+    // a run while a fruit is still moving, which is the state that used to
+    // keep atRest() false forever.
+    if (location.search.indexOf('fruit-loop-test=1') !== -1) {
+      window.__sixfoldFruitTest = {
+        finishWithMovingFruit: function () {
+          fruits = [makeFruit(0, W / 2, BOTTOM - FRUITS[0].r)];
+          fruits[0].vx = 40;
+          fruits[0].vy = 40;
+          fruits[0].age = 1;
+          endRun();
+          // The shared auto-next starts a fresh run after three seconds, which
+          // would stop the old loop for the wrong reason.
+          if (window.MergeAutoNext) window.MergeAutoNext.cancel();
+          startLoop();
+          return snapshot();
+        },
+        state: snapshot
+      };
+
+      function snapshot() {
+        return {
+          over: over,
+          running: running,
+          maxSpeed: fruits.reduce(function (max, fruit) {
+            return Math.max(max, Math.abs(fruit.vx) + Math.abs(fruit.vy));
+          }, 0)
+        };
+      }
+    }
   })();
 
   /* ======================================================================
@@ -3630,6 +4040,7 @@
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'mines-cell';
+        button.dataset.fade = '';
         button.dataset.index = String(i);
         button.setAttribute('role', 'gridcell');
         button.setAttribute('tabindex', i === 0 ? '0' : '-1');
@@ -4086,6 +4497,57 @@
     }
   };
 
+  // The legal page is its own document, so coming back from it is a fresh
+  // launch. theme.js records where the hub was before the link is followed; the
+  // launch layer waits for this restore before it lifts, so the return never
+  // paints the top of the collection and then snaps down to the saved place.
+  function restoreHubScroll() {
+    let top = 0;
+    let pending = false;
+    try {
+      if (typeof window.__sixfoldHubScroll === 'number' && window.__sixfoldHubScroll > 0) {
+        top = window.__sixfoldHubScroll;
+        pending = true;
+      } else {
+        const saved = sessionStorage.getItem('sixfold.hubScroll');
+        if (saved !== null) {
+          top = Number(saved);
+          pending = true;
+        }
+      }
+      sessionStorage.removeItem('sixfold.hubScroll');
+    } catch (err) {
+      pending = false;
+    }
+    window.__sixfoldHubScroll = 0;
+
+    const hubEl = $('hub');
+    let tries = 0;
+
+    function done() {
+      window.__sixfoldHubRestored = true;
+      try {
+        window.dispatchEvent(new Event('sixfold:hub-restored'));
+      } catch (err) {}
+    }
+
+    // The scroller clamps a scroll it cannot reach yet, so apply the position
+    // over the next couple of frames (the cards and their images settle the
+    // height) and report as soon as it sticks.
+    function apply() {
+      if (!hubEl) return done();
+      if (top > 0) hubEl.scrollTop = top;
+      tries += 1;
+      const settled = Math.abs(hubEl.scrollTop - top) <= 1;
+      if (!pending || top <= 0 || settled || tries >= 3) return done();
+      window.requestAnimationFrame(apply);
+    }
+
+    if (!pending) return done();
+    apply();
+  }
+
   installPlayTools();
   initRoute();
+  restoreHubScroll();
 })();

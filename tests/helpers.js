@@ -102,6 +102,30 @@ async function setPreferences(page, theme, locale) {
   }, { theme, locale });
 }
 
+/* The hidden seventh game opens from a press-and-hold on the cover mark. A
+   Playwright click is too short for that, and the welcome sheet can be over
+   the hub, so drive the real pointer events directly. */
+async function holdCover(page) {
+  await page.evaluate(async () => {
+    const piece = document.querySelector('.home-six-piece');
+    if (!piece) throw new Error('cover piece missing');
+    const rect = piece.getBoundingClientRect();
+    const at = {
+      bubbles: true,
+      cancelable: true,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true
+    };
+    piece.dispatchEvent(new PointerEvent('pointerdown', at));
+    await new Promise((resolve) => setTimeout(resolve, 720));
+    piece.dispatchEvent(new PointerEvent('pointerup', at));
+  });
+  await page.waitForTimeout(360);
+}
+
 module.exports = {
   LANGUAGE_NAMES,
   LOCALES,
@@ -109,5 +133,6 @@ module.exports = {
   expectNoClippedText,
   openLanguagePicker,
   chooseLocale,
-  setPreferences
+  setPreferences,
+  holdCover
 };

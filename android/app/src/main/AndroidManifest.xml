@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Predictive back is off. It governs the back gesture, not the home and
+         recents transitions, so it could not change what it was turned on for,
+         and this app navigates in the WebView: the legacy path is the honest
+         one until a real back callback can mirror the page's history. -->
+    <!-- Auto Backup would upload the WebView's local saves and settings to the
+         user's Google Drive. Sixfold promises they stay on the device and ships
+         its own export/restore, so platform backup is off. -->
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="false"
+        android:theme="@style/AppTheme.NoActionBar">
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density|fontScale"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+    <!-- Permissions. There is deliberately no INTERNET permission: every page,
+         dictionary and font is bundled and served through Capacitor's local
+         asset loader, so the shell never opens a socket. -->
+
+    <!-- The WebView has no Vibration API; HapticsPlugin drives the motor, and
+         the platform refuses to vibrate without this. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Saving result cards to the gallery needs this only on Android 9 and older. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+</manifest>

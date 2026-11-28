@@ -5,27 +5,62 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-test('public release labels are 5.0 and the build cache stays 5.2.0', () => {
+test('shipped pages only link GitHub surfaces this repository exposes', () => {
+  // Discussions is disabled on the repository, so /discussions is a 404. Keep
+  // this allowlist to the surfaces the project actually uses: the issue form
+  // and the release list. Enabling another surface means widening the list in
+  // the same change, so a dead link cannot ship again.
+  const allowed = new Set(['', '/issues', '/releases']);
+  for (const file of ['index.html', 'licenses.html']) {
+    const html = read(file);
+    const links = html.match(/https:\/\/github\.com\/Moh23rd\/Sixfold(\/[^"'\s<]*)?/g) || [];
+    for (const link of links) {
+      const path = link.replace('https://github.com/Moh23rd/Sixfold', '').split(/[?#]/)[0];
+      const surface = path.replace(/\/new\/choose$/, '').replace(/\/+$/, '');
+      expect(allowed.has(surface), file + ' links to ' + link).toBe(true);
+    }
+  }
+});
+
+test('release labels, cache epochs and the Android version agree', () => {
   const pkg = require('../package.json');
+  const lock = require('../package-lock.json');
   const build = pkg.version;
   const release = pkg.release;
-  const short = release;
   const html = read('index.html');
   const sw = read('sw.js');
   const changelog = read('CHANGELOG.md');
 
-  expect(html, 'hub version').toContain('>' + 'v' + short + '<');
-  expect(html, 'version aria-label').toContain('Sixfold version ' + short);
-  expect(html, 'settings version').toContain('Version ' + short);
-  expect(html, 'no old public hub label').not.toContain('>v5.2</p>');
-  expect(html, 'no old public What’s New label').not.toContain('What’s new in 5.2');
-  expect(html, 'What’s New label').toContain('What’s new in ' + short);
-  expect(html, 'What’s New storage version').toContain('data-version="' + short + '"');
+  expect(lock.version, 'lockfile version').toBe(build);
+  expect(lock.packages[''].version, 'lockfile package version').toBe(build);
+
+  expect(html, 'hub version').toContain('>v' + release + '<');
+  expect(html, 'version aria-label').toContain('Sixfold version ' + release);
+  expect(html, 'settings version').toContain('Version ' + release);
+  expect(html, 'no internal build in hub label').not.toContain('>v' + build + '</p>');
+  expect(html, 'no internal build in What’s New label').not.toContain('What’s new in ' + build);
+  expect(html, 'What’s New label').toContain('What’s new in ' + release);
+  expect(html, 'What’s New storage version').toContain('data-version="' + release + '"');
+  expect(html, 'manifest epoch').toContain("manifest.webmanifest') + '?v=" + build);
   expect(sw, 'internal build cache').toContain("const VERSION = 'sixfold-" + build + "';");
-  const firstChangelogHeading = changelog.match(/^## (.+)$/m)?.[1] || '';
-  expect(firstChangelogHeading, 'latest changelog entry').toContain('v' + short);
-  expect(firstChangelogHeading, 'latest changelog entry is not the internal build number').not.toContain(build);
-  expect(changelog, 'internal build is not a release heading').not.toMatch(/^## 5\.2\.0/m);
+
+  // The worker rejects a catalog whose version is not I18N_CODE, so the page,
+  // the locale loader and the worker have to move together.
+  const locale = read('i18n/i18n-locale.js').match(/var VERSION = '([^']+)'/)[1];
+  expect(sw, 'catalog cache epoch').toContain("const I18N_CODE = '" + locale + "';");
+  expect(html, 'locale loader epoch').toContain('i18n/i18n-locale.js?v=' + locale);
+  expect(html, 'catalog loader epoch').toContain('i18n/i18n.js?v=' + locale);
+
+  const gradle = read('android/app/build.gradle');
+  expect(gradle, 'Android versionName').toContain('versionName "' + build + '"');
+  expect(gradle, 'Android versionCode').toMatch(/versionCode [1-9]\d*/);
+
+  const firstReleaseHeading = changelog.match(/^## (v.+)$/m)?.[1] || '';
+  expect(firstReleaseHeading, 'latest public release entry').toContain('v' + release);
+  expect(firstReleaseHeading, 'latest public release entry is not the internal build number').not.toContain(build);
+  expect(changelog, 'internal build is not a release heading').not.toMatch(
+    new RegExp('^## ' + build.replace(/\./g, '\\.') + '$', 'm')
+  );
   expect(changelog, 'internal build label').toContain('Internal build: **' + build + '**');
   expect(changelog, 'public release note').toContain('Public release label: **v' + release + '**');
 });

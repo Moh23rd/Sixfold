@@ -30,10 +30,10 @@ body[data-screen="mines"] .app {
   width: min(100%, 960px);
   min-height: 100%;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top, 0px) + clamp(22px, 4vw, 34px))
-    calc(env(safe-area-inset-right, 0px) + clamp(18px, 4.5vw, 40px))
-    calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 22px)
-    calc(env(safe-area-inset-left, 0px) + clamp(18px, 4.5vw, 40px));
+  padding: calc(var(--sa-top) + clamp(22px, 4vw, 34px))
+    calc(var(--sa-right) + clamp(18px, 4.5vw, 40px))
+    calc(var(--sa-bottom) + 22px)
+    calc(var(--sa-left) + clamp(18px, 4.5vw, 40px));
   display: flex;
   flex-direction: column;
 }
@@ -48,28 +48,6 @@ body[data-screen="mines"] .app {
 .hub-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-}
-
-.hub-mark {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  grid-template-columns: repeat(3, 6px);
-  grid-auto-rows: 6px;
-  place-content: center;
-  gap: 2px;
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow:
-    0 4px 10px -5px rgba(59, 56, 51, 0.7),
-    inset 0 0 0 1px color-mix(in srgb, var(--ink) 9%, transparent);
-}
-
-.hub-mark span {
-  display: block;
-  border-radius: 2px;
-  background: var(--page);
 }
 
 .hub-word {
@@ -206,11 +184,36 @@ body[data-screen="mines"] .app {
 .mini-tube i.g4 { --mini-liquid: var(--g4, #39a9a1); }
 .mini-tube i.g5 { --mini-liquid: var(--g5, #5b8fd5); }
 
-.mini-fruit-cluster {
+.mini-cluster {
   position: relative;
   width: 154px;
   height: 128px;
 }
+
+/* Number Merge reuses the fruit cluster's geometry so both thumbnails sit in
+   the same frame at every breakpoint. */
+.mini-num {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mini-accent) 24%, #f6f1e8);
+  box-shadow: inset 0 0 0 3px var(--mini-accent);
+  color: #2c2723;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.n1 { width: 34px; height: 34px; left: 59px; top: 84px; font-size: 13px; --mini-accent: var(--g1, #d95151); }
+.n2 { width: 42px; height: 42px; left: 88px; top: 58px; font-size: 15px; --mini-accent: var(--g2, #e98a36); }
+.n3 { width: 52px; height: 52px; left: 38px; top: 38px; font-size: 17px; --mini-accent: var(--g3, #76a84c); }
+.n4 { width: 44px; height: 44px; left: 6px; top: 72px; font-size: 14px; --mini-accent: var(--g5, #5b8fd5); }
+.n5 { width: 30px; height: 30px; left: 116px; top: 22px; font-size: 10px; --mini-accent: var(--g6, #8b63b9); }
+
+html[data-fruit-numbers="on"] .mini-fruit-cluster { display: none; }
+html:not([data-fruit-numbers="on"]) .mini-number-cluster { display: none; }
 
 .mini-fruit {
   position: absolute;
@@ -289,7 +292,7 @@ body[data-screen="mines"] .app {
 
 .mini-mines .mines-open { color: var(--g5, #4e79c4); background: color-mix(in srgb, var(--page) 52%, var(--panel)); }
 .mini-mines .mines-flag { color: var(--t64); }
-.mini-mines .mines-mine { color: var(--warn); background: color-mix(in srgb, var(--warn) 18%, var(--panel)); }
+.mini-mines .mines-mine { color: var(--g1); background: color-mix(in srgb, var(--g1) 18%, var(--panel)); }
 
 .game-tag {
   color: var(--muted);
@@ -381,7 +384,7 @@ body[data-screen="mines"] .app {
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, opacity 150ms ease;
+  transition: transform 120ms var(--ease-out), opacity 150ms var(--ease-out);
 }
 
 .play-tool svg {
@@ -403,9 +406,7 @@ body[data-screen="mines"] .app {
   .play-tools { gap: 4px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .play-tool { transition: none; }
-}
+html[data-motion="reduced"] .play-tool { transition: none; }
 
 /* ---------- shared game screen ---------- */
 
@@ -429,10 +430,10 @@ html[data-theme="dark"] .play-screen { background: var(--page); }
   width: min(100%, 720px);
   min-height: 100%;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top, 0px) + 20px)
-    calc(env(safe-area-inset-right, 0px) + 16px)
-    calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 18px)
-    calc(env(safe-area-inset-left, 0px) + 16px);
+  padding: calc(var(--sa-top) + 20px)
+    calc(var(--sa-right) + 16px)
+    calc(var(--sa-bottom) + 18px)
+    calc(var(--sa-left) + 16px);
   display: flex;
   flex-direction: column;
   gap: clamp(14px, 3vh, 24px);
@@ -547,7 +548,7 @@ html[data-theme="dark"] .play-screen { background: var(--page); }
   box-shadow: none;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, background-color 150ms ease;
+  transition: transform 120ms var(--ease-out), background-color 150ms var(--ease-out);
 }
 
 .result-share svg { width: 16px; height: 16px; display: block; }
@@ -602,6 +603,7 @@ html[data-theme="dark"] .play-screen { background: var(--page); }
   justify-content: center;
   min-height: 44px;
   padding: 0 18px;
+  white-space: nowrap;
   border: 0;
   border-radius: 999px;
   font: inherit;
@@ -610,7 +612,7 @@ html[data-theme="dark"] .play-screen { background: var(--page); }
   letter-spacing: 0.01em;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease;
+  transition: transform 120ms var(--ease-out);
 }
 
 .play-btn:active { transform: translateY(1px) scale(0.985); }
@@ -728,7 +730,7 @@ html[data-theme="dark"] .water-board {
     0 10px 14px -14px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   transform-origin: 50% 100%;
-  transition: transform 180ms var(--ease-spring), border-color 180ms ease, box-shadow 180ms ease;
+  transition: transform 180ms var(--ease-spring);
 }
 
 .water-liquid {
@@ -896,7 +898,7 @@ html[data-theme="dark"] .water-glass {
   background: var(--t64);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--t64) 18%, transparent);
   transform: translateX(-50%);
-  animation: targetPulse 1.2s ease-in-out infinite;
+  animation: targetPulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .water-tube.is-pouring .water-glass {
@@ -1035,16 +1037,15 @@ html[data-theme="dark"] .water-glass {
   .water-tube.is-selected .water-glass { transform: translateY(-8px) rotate(-2deg); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .water-glass,
-  .water-liquid,
-  .water-drain,
-  .water-seg,
-  .water-seg.water-surface::before,
-  .water-tube.is-target::after,
-  .water-tube.is-receiving .water-seg.water-surface::before { transition: none; animation: none; }
-  .water-pour-layer { display: none; }
-}
+html[data-motion="reduced"] .water-glass,
+html[data-motion="reduced"] .water-liquid,
+html[data-motion="reduced"] .water-drain,
+html[data-motion="reduced"] .water-seg,
+html[data-motion="reduced"] .water-seg.water-surface::before,
+html[data-motion="reduced"] .water-tube.is-target::after,
+html[data-motion="reduced"] .water-tube.is-receiving .water-seg.water-surface::before { transition: none; animation: none; }
+
+html[data-motion="reduced"] .water-pour-layer { display: none; }
 
 /* ---------- fruit merge ---------- */
 
@@ -1132,6 +1133,10 @@ html[data-theme="dark"] .water-glass {
   background: color-mix(in srgb, var(--page) 72%, transparent);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
+  /* A veil, not a wall: on phones this layer goes full-screen, and a tap on
+     the header or the footer must still reach the control under the dimmer.
+     Only the card itself takes the pointer. */
+  pointer-events: none;
 }
 
 .fruit-over-card {
@@ -1141,6 +1146,7 @@ html[data-theme="dark"] .water-glass {
   background: var(--card);
   box-shadow: var(--card-shadow);
   text-align: center;
+  pointer-events: auto;
 }
 
 .fruit-over-card h2 {
@@ -1228,7 +1234,7 @@ html[data-theme="dark"] .water-glass {
   font-weight: 800;
   line-height: 1;
   cursor: pointer;
-  transition: background 140ms ease, box-shadow 140ms ease, transform 120ms ease;
+  transition: background 140ms var(--ease-out), transform 120ms var(--ease-out);
 }
 
 html[data-theme="dark"] .ttt-cell { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04); }
@@ -1368,7 +1374,7 @@ html[data-theme="dark"] .ttt-cell { box-shadow: inset 0 1px 0 rgba(255, 255, 255
   line-height: 1;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 120ms ease, transform 100ms ease, color 120ms ease;
+  transition: background 120ms var(--ease-out), transform 100ms var(--ease-out), color 120ms var(--ease-out);
 }
 
 .mines-cell:not(.is-open):not(.is-flagged):hover {
@@ -1406,13 +1412,13 @@ html[data-theme="dark"] .mines-cell.has-7 { color: #f2e9dc; }
 html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 
 .mines-cell.is-mine {
-  background: color-mix(in srgb, var(--warn) 22%, var(--panel));
-  color: var(--warn);
+  background: color-mix(in srgb, var(--g1) 22%, var(--panel));
+  color: var(--g1);
   font-size: clamp(14px, 4.4vw, 19px);
 }
 
 .mines-cell.is-detonated {
-  background: var(--warn);
+  background: var(--g1);
   color: #fff7f3;
   box-shadow: inset 0 0 0 2px color-mix(in srgb, #fff7f3 55%, transparent);
 }
@@ -1442,16 +1448,14 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
   .mines-board-wrap { border-radius: 19px; padding: 7px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mines-cell { transition: none; }
-}
+html[data-motion="reduced"] .mines-cell { transition: none; }
 
 /* ---------- responsive ---------- */
 
 @media (max-width: 720px) {
   .mini-merge { width: 124px; }
   .mini-water { height: 108px; }
-  .mini-fruit-cluster { transform: scale(0.9); }
+  .mini-cluster { transform: scale(0.9); }
 }
 
 @media (max-width: 420px) {
@@ -1478,8 +1482,8 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
       "foot board";
     align-items: center;
     gap: 10px 24px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
-    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 12px);
+    padding-top: calc(var(--sa-top) + 14px);
+    padding-bottom: calc(var(--sa-bottom) + 12px);
   }
 
   .play-head {
@@ -1506,11 +1510,9 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
   .fruit-stage { width: min(44vw, 290px); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .water-glass,
-  .ttt-cell,
-  .play-btn { transition: none; }
-}
+html[data-motion="reduced"] .water-glass,
+html[data-motion="reduced"] .ttt-cell,
+html[data-motion="reduced"] .play-btn { transition: none; }
 
 
 /* ---------- collection v2 layout ---------- */
@@ -1547,7 +1549,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 }
 
 @media (max-width: 420px) {
-  .play-shell { gap: 10px; padding-top: calc(env(safe-area-inset-top, 0px) + 15px); }
+  .play-shell { gap: 10px; padding-top: calc(var(--sa-top) + 15px); }
   .play-intro h1 { font-size: clamp(24px, 6.8vw, 31px); }
   .play-stats { width: 138px; }
   .play-stat strong { font-size: 18px; }
@@ -1630,7 +1632,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 
 .mini-merge { width: 112px; }
 .mini-water { height: 106px; }
-.mini-fruit-cluster { transform: scale(0.9); }
+.mini-cluster { transform: scale(0.9); }
 
 .hub-foot {
   padding-top: 26px;
@@ -1671,7 +1673,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: #bdb2a3; }
 
 .play-shell {
   gap: clamp(8px, 2dvh, 14px);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-top: calc(var(--sa-top) + 16px);
 }
 
 .play-head { gap: 10px; }
@@ -1875,9 +1877,7 @@ html[data-theme="dark"] .ttt-cell { box-shadow: none; }
   to { clip-path: inset(0 0 0 0); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ttt-strike { animation: none; }
-}
+html[data-motion="reduced"] .ttt-strike { animation: none; }
 
 .ttt-cell:focus-visible {
   z-index: 2;
@@ -2019,8 +2019,8 @@ html[data-theme="dark"] .ttt-cell { box-shadow: none; }
   .play-shell {
     grid-template-columns: minmax(0, 1fr) minmax(230px, auto);
     gap: 8px 26px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 10px);
+    padding-top: calc(var(--sa-top) + 12px);
+    padding-bottom: calc(var(--sa-bottom) + 10px);
   }
 
   .play-head { gap: 6px; }
@@ -2078,17 +2078,17 @@ html[data-theme="dark"] .ttt-cell { box-shadow: none; }
   .water-glass { height: min(25vh, 100px); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .play-tool { transition: none; }
-}
+html[data-motion="reduced"] .play-tool { transition: none; }
 
 /* =====================================================================
    v1.6 — one fixed play frame, square boards, palette everywhere
    ===================================================================== */
 
 /* The appearance sheet is shared by every game, so it has to sit above the
-   fixed play screens (z-index 31) rather than behind them. */
-.sheet { z-index: 60; }
+   fixed play screens (z-index 31) rather than behind them — and above the
+   share toast (70), the daily finish note (75) and the update banner (120),
+   which used to float over an open panel. */
+.sheet { z-index: 130; }
 
 .play-screen {
   height: 100dvh;
@@ -2102,8 +2102,8 @@ html[data-theme="dark"] .ttt-cell { box-shadow: none; }
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: clamp(6px, 1.6dvh, 12px);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
-  padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 10px);
+  padding-top: calc(var(--sa-top) + 14px);
+  padding-bottom: calc(var(--sa-bottom) + 10px);
 }
 
 .play-head { min-width: 0; }
@@ -2282,8 +2282,8 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 @media (max-height: 700px) {
   .play-shell {
     gap: 6px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
-    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 8px);
+    padding-top: var(--pb-gutter-top);
+    padding-bottom: var(--pb-gutter-bottom);
   }
 
   .play-head { gap: 5px; }
@@ -2306,6 +2306,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   .play-btn { min-height: 38px; }
 }
 
+
 /* Side-by-side landscape, including desktop windows that are wider than they
    are tall. The board column owns the full height; the left column keeps the
    title, stats, controls and hint visible. */
@@ -2319,8 +2320,8 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
       "foot board";
     align-items: center;
     gap: 4px 20px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
-    padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 8px);
+    padding-top: var(--pb-gutter-top);
+    padding-bottom: var(--pb-gutter-bottom);
   }
 
   .play-head {
@@ -2387,10 +2388,10 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
     width: min(100%, 1080px);
     height: 100%;
     min-height: 0;
-    padding: calc(env(safe-area-inset-top, 0px) + 66px)
-      calc(env(safe-area-inset-right, 0px) + 28px)
-      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 16px)
-      calc(env(safe-area-inset-left, 0px) + 28px);
+    padding: calc(var(--sa-top) + 66px)
+      calc(var(--sa-right) + 28px)
+      calc(var(--sa-bottom) + 16px)
+      calc(var(--sa-left) + 28px);
     display: grid;
     grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
@@ -2540,10 +2541,10 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: calc(env(safe-area-inset-top, 0px) + 10px)
-      calc(env(safe-area-inset-right, 0px) + 12px)
-      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 8px)
-      calc(env(safe-area-inset-left, 0px) + 12px);
+    padding: var(--pb-gutter-top)
+      calc(var(--sa-right) + 12px)
+      var(--pb-gutter-bottom)
+      calc(var(--sa-left) + 12px);
     display: grid;
     grid-template-columns: minmax(230px, 31vw) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -2753,7 +2754,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out);
 }
 
 .hub-share svg { width: 18px; height: 18px; display: block; }
@@ -2770,6 +2771,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 .hub-look {
   display: inline-flex;
   align-items: center;
+  flex: none;
   gap: 8px;
   min-height: 42px;
   padding: 5px 9px 5px 6px;
@@ -2780,7 +2782,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   color: var(--ink);
   font: inherit;
   cursor: pointer;
-  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out);
 }
 
 .hub-look:hover {
@@ -2800,8 +2802,9 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  flex: none;
   gap: 1px;
-  line-height: 1;
+  line-height: 1.2;
   text-align: left;
 }
 
@@ -2846,11 +2849,6 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   .hub-look { padding-right: 8px; }
 }
 
-@media (max-width: 360px) {
-  .hub-look-copy span { display: none; }
-  .hub-look-copy strong { max-width: 12ch; font-size: 11px; }
-  .hub-look-chevron { display: none; }
-}
 
 /* ---------- shared game header ---------- */
 
@@ -2932,7 +2930,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 120ms ease, background-color 150ms ease;
+  transition: transform 120ms var(--ease-out), background-color 150ms var(--ease-out);
 }
 
 .play-tool svg { width: 19px; height: 19px; display: block; }
@@ -2982,7 +2980,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 /* The landscape rail is narrow by design, so the tools and actions become
    two calm rows instead of trying to share a row. */
 @media (orientation: landscape) and (min-height: 500px) {
-  .play-shell { padding-top: calc(env(safe-area-inset-top, 0px) + 22px); }
+  .play-shell { padding-top: calc(var(--sa-top) + 22px); }
 
   .play-stats {
     display: grid;
@@ -3029,9 +3027,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   .play-note { display: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hub-look { transition: none; }
-}
+html[data-motion="reduced"] .hub-look { transition: none; }
 
 @media (orientation: landscape) and (max-height: 520px) {
   .play-foot {
@@ -3058,7 +3054,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 
 /* Portrait starts at the same quiet top inset as Merge. */
 @media (orientation: portrait) {
-  .play-shell { padding-top: calc(env(safe-area-inset-top, 0px) + 20px); }
+  .play-shell { padding-top: calc(var(--sa-top) + 20px); }
 }
 
 /* Keep the three game actions on one row at normal phone widths; the labels
@@ -3081,8 +3077,8 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 }
 
 /* ==========================================================================
-   v1.9 — one universal fullscreen control, a scoped reset per game, and a
-   plain back arrow. Kept together so these shared controls stay in step.
+   v1.9 — a scoped reset per game and a plain back arrow. Kept together so
+   these shared controls stay in step.
    ========================================================================== */
 
 /* The arrow is the whole control: a quiet square that reads instantly and
@@ -3102,7 +3098,7 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
   color: var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color 150ms ease, transform 120ms ease;
+  transition: background-color 150ms var(--ease-out), transform 120ms var(--ease-out);
 }
 
 .games-home::after {
@@ -3141,50 +3137,6 @@ html[data-theme="dark"] .mines-cell.has-8 { color: var(--muted); }
 
 .play-head > .games-home {
   margin-bottom: 0;
-}
-
-/* Fullscreen belongs to the collection, not to any one game. */
-.hub-focus {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--card) 76%, transparent);
-  box-shadow: var(--card-shadow);
-  color: var(--ink);
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
-}
-
-.hub-focus[hidden] { display: none; }
-
-.hub-focus svg {
-  width: 18px;
-  height: 18px;
-  display: block;
-}
-
-.hub-focus .focus-exit { display: none; }
-.hub-focus[aria-pressed="true"] .focus-enter { display: none; }
-.hub-focus[aria-pressed="true"] .focus-exit { display: block; }
-
-.hub-focus:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--ink) 20%, transparent);
-  background: var(--card);
-}
-
-.hub-focus:active { transform: scale(0.96); }
-
-.hub-focus:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 3px;
 }
 
 .hub-actions { gap: 9px; }
@@ -3243,45 +3195,27 @@ html[data-theme="dark"] .reset-confirm:hover {
    current palette, so the universal colour settings are never a guess. */
 @media (max-width: 520px) {
   .hub-actions { gap: 8px; }
-  .hub-focus { width: 40px; height: 40px; }
   .hub-share { width: 40px; height: 40px; }
   .hub-look {
     gap: 6px;
     padding: 4px 9px 4px 5px;
   }
-  .hub-look-copy span {
-    display: block;
-    color: var(--ink);
-    font-size: 11.5px;
-    font-weight: 800;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-  .hub-look-copy strong { display: none; }
-  .hub-look-chevron { display: block; }
 }
 
 @media (max-width: 360px) {
   .games-home { width: 36px; height: 36px; }
-  .hub-focus { width: 38px; height: 38px; }
   .hub-share { width: 38px; height: 38px; }
-  .hub-look-copy span { display: block; font-size: 11px; }
-  .hub-look-copy strong { display: none; }
-  .hub-look-chevron { display: block; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hub-focus,
-  .hub-share,
-  .games-home { transition: none; }
-}
+html[data-motion="reduced"] .hub-share,
+html[data-motion="reduced"] .games-home { transition: none; }
 
 /* Copy feedback for sharing. It floats above the build label, never moves
    layout, and is announced politely rather than stealing focus. */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 22px);
+  bottom: calc(var(--sa-bottom) + 22px);
   z-index: 70;
   max-width: min(86vw, 360px);
   padding: 11px 17px;
@@ -3295,15 +3229,13 @@ html[data-theme="dark"] .reset-confirm:hover {
   box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.55);
   opacity: 0;
   transform: translate(-50%, 8px);
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
   pointer-events: none;
 }
 
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 
-@media (prefers-reduced-motion: reduce) {
-  .toast { transition: none; }
-}
+html[data-motion="reduced"] .toast { transition: none; }
 
 /* ==========================================================================
    Landscape legibility
@@ -3320,8 +3252,9 @@ html[data-theme="dark"] .reset-confirm:hover {
   .hub-brand { gap: 8px; }
   .hub-word { font-size: 10.5px; letter-spacing: 0.13em; }
   .hub-actions { gap: 8px; }
-  .hub-look-copy, .hub-look-chevron { display: none; }
-  .hub-look { padding-inline: 9px; }
+  /* The pill keeps its palette name: two dots on their own say nothing. The
+     chevron is hidden by the pill's own ladder in home.css. */
+  .hub-look { gap: 6px; padding-inline: 8px; }
 }
 
 @media (orientation: landscape) and (max-height: 520px) {
@@ -3447,9 +3380,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   .coach-skip { min-width: 32px; padding-inline: 4px; font-size: 8.5px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .coach.coach-in { animation: none; }
-}
+html[data-motion="reduced"] .coach.coach-in { animation: none; }
 
 /* ==========================================================================
    Portrait phone controls — one centred group, like Merge
@@ -3461,16 +3392,21 @@ html[data-theme="dark"] .reset-confirm:hover {
 .play-body { display: contents; }
 
 @media (orientation: portrait) and (max-width: 720px) {
-  .play-shell { grid-template-rows: auto minmax(0, 1fr); }
+  /* min-content keeps the body row from clamping: a column that genuinely
+     needs more height grows the shell and scrolls instead of spilling its
+     footer into the bottom gutter. */
+  .play-shell { grid-template-rows: auto minmax(min-content, 1fr); }
 
+  /* auto + min-height keeps the centred layout on screens that fit, and lets
+     a tall column grow the shell (so the screen scrolls) instead of pushing
+     the footer past the bottom gutter, where the blur band would sit on it. */
   .play-body {
     display: flex;
     flex-direction: column;
     justify-content: safe center;
-    height: 100%;
-    min-height: 0;
+    height: auto;
+    min-height: 100%;
     gap: 10px;
-    container-type: size;
   }
 
   .play-main {
@@ -3479,10 +3415,20 @@ html[data-theme="dark"] .reset-confirm:hover {
     overflow: visible;
   }
 
+  /* On the shortest phones the centred column can still be taller than the
+     viewport, so the shell keeps the footer inside the bottom gutter by
+     trimming the two rows that are pure breathing room. */
+  .play-body { gap: 8px; }
+
+
+  /* Portrait measures against the page rather than the stage: the column has
+     to be able to grow past its padding, and size containment would hide that
+     overflow from the scroller. cqh therefore resolves to the viewport here. */
   .board-stage {
     flex: 0 0 auto;
     container-type: normal;
   }
+
 
   .play-body > .play-foot {
     width: 100%;
@@ -3493,11 +3439,7 @@ html[data-theme="dark"] .reset-confirm:hover {
 /* Keep tall boards from outgrowing the centred group on short phones. These
    caps only bind when the phone is shorter than a typical modern handset. */
 @media (orientation: portrait) and (max-width: 720px) {
-  .fruit-stage { width: min(100%, 390px, 55cqh); }
-  #ttt-board,
-  #mines:not([data-difficulty="hard"]) .mines-board-wrap {
-    width: min(100%, 360px, 64cqh);
-  }
+  .fruit-stage { width: min(100%, 390px); }
 }
 
 /* At 380px and below the footer and tools share one compact row. This keeps
@@ -3676,7 +3618,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   text-transform: uppercase;
   cursor: pointer;
   touch-action: manipulation;
-  transition: color 150ms ease;
+  transition: color 150ms var(--ease-out);
 }
 
 .hub-link:hover { color: var(--ink); }
@@ -3752,7 +3694,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   letter-spacing: 0.01em;
   line-height: 1.2;
   text-transform: none;
-  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+  transition: transform 150ms var(--ease-out), background-color 150ms var(--ease-out);
 }
 
 .hub-link:hover {
@@ -3771,7 +3713,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   font-size: 17px;
   font-weight: 500;
   line-height: 1;
-  transition: transform 150ms ease;
+  transition: transform 150ms var(--ease-out);
 }
 .hub-link:hover .hub-link-chevron { transform: translateX(2px); }
 .hub-meta .hub-version { margin: 0; }
@@ -3797,7 +3739,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
-  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
 }
 
 .play-chip:hover { color: var(--ink); background: var(--card); }
@@ -3863,7 +3805,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   .hub h1 { font-size: 41px; }
   .mini-merge { width: 92px; gap: 6px; }
   .mini-water { transform: scale(0.82); transform-origin: bottom; }
-  .mini-fruit-cluster { transform: scale(0.78); }
+  .mini-cluster { transform: scale(0.78); }
   .mini-ttt { width: 92px; height: 92px; gap: 4px; }
   .mini-mines { width: 94px; height: 94px; gap: 4px; }
   .hub-foot { font-size: 7.5px; letter-spacing: 0.04em; }
@@ -3887,21 +3829,6 @@ html[data-theme="dark"] .reset-confirm:hover {
 .whats-new[hidden] { display: none; }
 
 [dir="rtl"] .whats-new { padding-right: 0; padding-left: 8px; }
-
-.whats-new-mark {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 22px;
-  height: 22px;
-  margin-top: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1;
-}
 
 .whats-new-details { flex: 1; min-width: 0; }
 
@@ -3931,13 +3858,16 @@ html[data-theme="dark"] .reset-confirm:hover {
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: rotate(45deg);
-  transition: transform 150ms ease, margin-top 150ms ease;
+  /* Only transform animates: easing margin-top moved the caret by layout and
+     let it drift out of step with the rotation. */
+  transition: transform 150ms var(--ease-out);
 }
 
 .whats-new-details[open] .whats-new-label::after {
-  margin-top: 2px;
-  transform: rotate(-135deg);
+  transform: translateY(4px) rotate(-135deg);
 }
+
+html[data-motion="reduced"] .whats-new-label::after { transition: none; }
 
 .whats-new-label:focus-visible {
   outline: 2px solid var(--ink);
@@ -4011,9 +3941,7 @@ html[data-theme="dark"] .reset-confirm:hover {
   .whats-new-mark { display: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .whats-new-label::after { transition: none; }
-}
+html[data-motion="reduced"] .whats-new-label::after { transition: none; }
 
 /* Keep the install notice in the same printed language as the shelf. */
 .install-fix {
@@ -4186,8 +4114,8 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   height: 30px;
   left: 60px;
   top: 86px;
-  background: radial-gradient(circle at 35% 28%, #f39a92, #d4525a 60%, #8f2f3a);
-  box-shadow: 13px 5px 0 -3px #c24650, inset -4px -5px 0 rgba(0, 0, 0, 0.16);
+  background: radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--g7) 64%, #fff), var(--g1) 60%, color-mix(in srgb, var(--g1) 68%, #000));
+  box-shadow: 13px 5px 0 -3px var(--g2), inset -4px -5px 0 rgba(0, 0, 0, 0.16);
 }
 
 .f1::before {
@@ -4197,8 +4125,8 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   top: -13px;
   width: 17px;
   height: 14px;
-  border-top: 2px solid #5d8d4f;
-  border-right: 2px solid #5d8d4f;
+  border-top: 2px solid var(--ink-tile-low);
+  border-right: 2px solid var(--ink-tile-low);
   border-radius: 0 12px 0 0;
   transform: rotate(-8deg);
 }
@@ -4208,7 +4136,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   height: 38px;
   left: 92px;
   top: 56px;
-  background: radial-gradient(circle at 33% 28%, #f8c07a, #ef9a4c 58%, #d9762b);
+  background: radial-gradient(circle at 33% 28%, color-mix(in srgb, var(--g7) 60%, #fff), var(--g2) 58%, color-mix(in srgb, var(--g2) 64%, #000));
 }
 
 .f2::before {
@@ -4219,7 +4147,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 21px;
   top: -5px;
   border-radius: 70% 10% 70% 10%;
-  background: #5d8d4f;
+  background: var(--ink-tile-low);
   transform: rotate(-24deg);
 }
 
@@ -4229,15 +4157,15 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 36px;
   top: 32px;
   border-radius: 46% 54% 48% 52%;
-  background-color: #6f4b91;
+  background-color: var(--g4);
   background-image:
-    radial-gradient(circle at 29% 22%, #c29ce0 0 19%, transparent 20%),
-    radial-gradient(circle at 56% 18%, #b58ad6 0 19%, transparent 20%),
-    radial-gradient(circle at 22% 46%, #b58ad6 0 19%, transparent 20%),
-    radial-gradient(circle at 48% 44%, #c29ce0 0 20%, transparent 21%),
-    radial-gradient(circle at 72% 43%, #a87bc8 0 18%, transparent 19%),
-    radial-gradient(circle at 37% 68%, #b58ad6 0 19%, transparent 20%),
-    radial-gradient(circle at 63% 69%, #c29ce0 0 18%, transparent 19%);
+    radial-gradient(circle at 29% 22%, var(--g7) 0 19%, transparent 20%),
+    radial-gradient(circle at 56% 18%, var(--g5) 0 19%, transparent 20%),
+    radial-gradient(circle at 22% 46%, var(--g5) 0 19%, transparent 20%),
+    radial-gradient(circle at 48% 44%, var(--g7) 0 20%, transparent 21%),
+    radial-gradient(circle at 72% 43%, var(--g2) 0 18%, transparent 19%),
+    radial-gradient(circle at 37% 68%, var(--g5) 0 19%, transparent 20%),
+    radial-gradient(circle at 63% 69%, var(--g7) 0 18%, transparent 19%);
   box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.18);
 }
 
@@ -4249,7 +4177,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 24px;
   top: -6px;
   border-radius: 70% 10% 70% 10%;
-  background: #5d8d4f;
+  background: var(--ink-tile-low);
   transform: rotate(-30deg);
 }
 
@@ -4259,7 +4187,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 6px;
   top: 68px;
   border-radius: 48% 48% 46% 46% / 42% 42% 58% 58%;
-  background: radial-gradient(circle at 38% 30%, #d5e49a, #9bbb5b 55%, #6f963f);
+  background: radial-gradient(circle at 38% 30%, color-mix(in srgb, var(--g7) 68%, #fff), var(--g3) 55%, color-mix(in srgb, var(--g3) 64%, #000));
 }
 
 .f4::before {
@@ -4270,7 +4198,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 20px;
   top: -7px;
   border-radius: 3px;
-  background: #6b5236;
+  background: var(--ink-tile-low);
   transform: rotate(7deg);
 }
 
@@ -4280,8 +4208,8 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   left: 114px;
   top: 24px;
   border-radius: 50% 50% 46% 46% / 44% 44% 58% 58%;
-  background-color: #d95151;
-  background-image: radial-gradient(#f7dfae 0 1px, transparent 1.4px);
+  background-color: var(--g6);
+  background-image: radial-gradient(var(--g7) 0 1px, transparent 1.4px);
   background-size: 7px 8px;
 }
 
@@ -4292,17 +4220,17 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   height: 9px;
   left: 7px;
   top: -4px;
-  background: #5d8d4f;
+  background: var(--ink-tile-low);
   clip-path: polygon(50% 0, 62% 55%, 100% 35%, 74% 78%, 50% 60%, 26% 78%, 0 35%, 38% 55%);
 }
 
 /* A screen settles in rather than snapping. */
 @keyframes sixfoldShellIn {
-  from { opacity: 0.55; transform: translateY(6px); }
+  from { opacity: 0; }
   to { opacity: 1; transform: none; }
 }
 
-.play-screen:not([hidden]) .play-shell {
+.play-screen:not([hidden]):not(.shell-settled) .play-shell {
   animation: sixfoldShellIn 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -4346,7 +4274,7 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
 .play-win.is-victory,
 .fruit-over-card.is-victory,
 .overlay-card.is-victory {
-  animation: victoryCard 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: victoryCard 360ms var(--ease-out);
 }
 
 @keyframes victoryCard {
@@ -4355,18 +4283,17 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   100% { transform: scale(1); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .play-screen:not([hidden]) .play-shell,
-  .play-win:not([hidden]),
-  .fruit-over-card:not([hidden]),
-  .play-win.is-victory,
-  .fruit-over-card.is-victory,
-  .overlay-card.is-victory {
+html[data-motion="reduced"] .play-screen:not([hidden]) .play-shell,
+html[data-motion="reduced"] .play-win:not([hidden]),
+html[data-motion="reduced"] .fruit-over-card:not([hidden]),
+html[data-motion="reduced"] .play-win.is-victory,
+html[data-motion="reduced"] .fruit-over-card.is-victory,
+html[data-motion="reduced"] .overlay-card.is-victory {
     animation: none;
   }
 
-  .victory-layer { display: none; }
-}
+
+html[data-motion="reduced"] .victory-layer { display: none; }
 
 /* On phones the three difficulty choices and the flag toggle each need a
    readable row. German and French labels are wider than English, so wrap the
@@ -4395,87 +4322,130 @@ html[data-theme="dark"] #mines { --cart-ink: #1b1815; }
   }
 }
 
-/* Keep a blocked native share useful: show the generated card with a
-   direct download instead of a bare toast. */
-html.share-fallback-open,
-html.share-fallback-open body { overflow: hidden; }
 
-.share-fallback {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  display: flex;
+/* ---------- short portrait phones ----------
+   A 320x568 screen with a 44/34 inset leaves the game column 78px less wall
+   than a bare phone of the same size. Rather than let the footer slide under
+   the bottom band, the two boards that can shrink without losing tap accuracy
+   give up height, and the water glasses drop their decorative padding. The
+   caps are measured from the usable height (viewport minus both insets), not
+   from a fixed pixel offset, so a phone with smaller insets simply gets a
+   bigger board. The constants are the rest of the column: the head, the
+   feedback line, the footer and the four gaps (314px). The fruit field is a
+   360 × 450 canvas, so its width is 0.8 of the height it can afford, plus the
+   296px the rest of its column needs. */
+@media (orientation: portrait) and (max-width: 720px) and (max-height: 700px) {
+  #ttt-board {
+    width: min(100%, 360px, calc(100dvh - var(--sa-top) - var(--sa-bottom) - 314px));
+  }
+  /* Fruit Merge sits 9px past a 320 × 568 screen and 28px past a 360 × 640 one
+     with the old flat cap. Its canvas is 4:5, so the width has to come from the
+     height the column can spare, not from the viewport width. */
+  .fruit-stage {
+    width: min(100%, 390px, max(140px, calc((100dvh - var(--sa-top) - var(--sa-bottom) - 296px) * 0.8)));
+  }
+  .play-screen .water-glass { height: clamp(92px, 24vw, 148px); }
+  .play-screen .water-board { padding: 10px 10px 8px; }
+}
+
+/* ---------- what's new, refreshed ---------- */
+
+/* One considered card instead of a bare line: a soft surface, a release dot,
+   check-marked items and a close target that reads as a control. The collapsed
+   state stays a single row, so the collection is never pushed down. */
+.whats-new {
   align-items: center;
-  justify-content: center;
-  padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
-  background: rgba(18, 16, 13, 0.54);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  gap: 10px;
+  margin-top: 20px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 58%, transparent);
+  box-shadow: 0 14px 30px -28px rgba(18, 16, 13, 0.75);
+  transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
 }
 
-.share-fallback[hidden] { display: none; }
-
-.share-fallback-card {
-  position: relative;
-  width: min(100%, 420px);
-  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 16px;
-  border-radius: 20px;
-  background: var(--sheet-bg);
-  color: var(--ink);
-  box-shadow: 0 28px 70px -28px rgba(0, 0, 0, 0.8), 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent) inset;
-  animation: shareFallbackIn 220ms cubic-bezier(0.22, 1, 0.36, 1);
+.whats-new.is-leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  /* Scoped to the exit: the card stays in the flow so the hub does not jump
+     out from underneath a detached copy of it. */
+  transition: opacity 160ms cubic-bezier(0.4, 0, 1, 1), transform 180ms cubic-bezier(0.4, 0, 1, 1);
+  will-change: opacity, transform;
 }
 
-@keyframes shareFallbackIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.985); }
-  to { opacity: 1; transform: none; }
+html[data-motion="reduced"] .whats-new { transition: none; }
+
+.whats-new-label {
+  gap: 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
 }
 
-.share-fallback-head { margin-bottom: 12px; }
-
-.share-fallback-head h2 {
-  margin: 0;
-  font-size: 18px;
-  letter-spacing: -0.02em;
+.whats-new-label::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--t8);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--t8) 18%, transparent);
 }
 
-.share-fallback-image {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 12px;
-  background: var(--page);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent), 0 12px 28px -20px rgba(0, 0, 0, 0.6);
-}
-
-.share-fallback-note {
-  margin: 12px 2px 14px;
-  color: var(--muted-strong);
-  font-size: 12.5px;
+.whats-new-list {
+  gap: 7px;
+  margin-top: 10px;
+  font-size: 11.5px;
   line-height: 1.45;
 }
 
-.share-fallback-actions {
-  display: flex;
-  gap: 8px;
+.whats-new-list li { padding-inline-start: 19px; }
+
+.whats-new-list li::before {
+  content: "";
+  inset-inline-start: 0;
+  top: 0.22em;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--t8) 15%, transparent);
 }
 
-.share-fallback-actions .btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 14px;
-  font-size: 13px;
-  text-align: center;
-  text-decoration: none;
+.whats-new-list li::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 0.42em;
+  width: 3px;
+  height: 5.5px;
+  border-right: 1.4px solid var(--t8);
+  border-bottom: 1.4px solid var(--t8);
+  transform: rotate(42deg);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .share-fallback-card { animation: none; }
+html[data-motion="full"] .whats-new-details.is-opening .whats-new-list li {
+  animation: whats-new-item 240ms var(--ease-out) both;
 }
+
+html[data-motion="full"] .whats-new-details.is-opening .whats-new-list li:nth-child(2) { animation-delay: 35ms; }
+html[data-motion="full"] .whats-new-details.is-opening .whats-new-list li:nth-child(3) { animation-delay: 70ms; }
+html[data-motion="full"] .whats-new-details.is-opening .whats-new-list li:nth-child(4) { animation-delay: 105ms; }
+html[data-motion="full"] .whats-new-details.is-opening .whats-new-list li:nth-child(5) { animation-delay: 140ms; }
+
+@keyframes whats-new-item {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+
+.whats-new-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--seg-bg) 80%, transparent);
+  color: var(--muted-strong);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.whats-new-close:hover { color: var(--ink); }

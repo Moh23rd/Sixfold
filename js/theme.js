@@ -4,11 +4,24 @@
 
   const THEME_KEY = 'merge2048.theme';
   const PALETTE_KEY = 'merge2048.palette';
+  // The seed behind the two colour sources that are not fixed ramps. The
+  // wallpaper's own colour is cached so a restart shows the right palette
+  // before the native plugin has answered.
+  const WALLPAPER_KEY = 'merge2048.palette.wallpaper';
+  const WALLPAPER_COLORS_KEY = 'merge2048.palette.wallpaper.colors';
+  const CUSTOM_KEY = 'merge2048.palette.custom';
 
   // The hand-tuned "Warm" ramp, one colour per tile for 2 … 2048.
   const WARM = [
     '#f3ecdf', '#f0e3c8', '#efb07a', '#ee9563', '#ec7c55', '#e85f3b',
     '#e7c364', '#e3b94a', '#dcab30', '#cf9822', '#b9801a'
+  ];
+
+  // Red is a hand-tuned ramp rather than a hue-shifted Warm ramp: the deepest
+  // Warm tiles are gold, and shifting them by a few degrees left them orange.
+  const RED = [
+    '#f8e9e5', '#f4d3cc', '#f0b0a4', '#ec8c7c', '#e86b5b', '#e24b46',
+    '#d6383a', '#c42b32', '#ab222b', '#8f1a23', '#70131b'
   ];
 
   // The seven accent colours the collection games use for tubes, fruit, marks
@@ -17,15 +30,15 @@
     '#e85f3b', '#e3a92f', '#8bbd54', '#39a9a1', '#5b8fd5', '#9a6bb5', '#d96b8a'
   ];
 
-  // Other palettes are the warm colours hue-shifted (or, for Mono, desaturated),
-  // so they keep the same brightness curve and stay equally readable.
+  // Other palettes are the warm colours hue-shifted, so they keep the same
+  // brightness curve and stay equally readable. Red uses its own ramp.
   const PALETTES = [
     { id: 'warm', label: 'Warm' },
     { id: 'ocean', label: 'Ocean', shift: 196 },
     { id: 'forest', label: 'Forest', shift: 104 },
     { id: 'berry', label: 'Berry', shift: 296 },
     { id: 'dusk', label: 'Dusk', shift: 252 },
-    { id: 'mono', label: 'Mono', mono: true }
+    { id: 'red', label: 'Red', ramp: RED, shift: -14, satScale: 1.04 }
   ];
 
   // Page chrome colours that pick up the palette, page background included.
@@ -33,15 +46,74 @@
 
   const root = document.documentElement;
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
-  const state = { theme: 'auto', palette: 'warm' };
+  const state = { theme: 'auto', palette: 'warm', wallpaper: '#e85f3b', custom: '#e85f3b', wallpaperColors: [] };
 
   try {
     const savedTheme = localStorage.getItem(THEME_KEY);
     if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') state.theme = savedTheme;
     const savedPalette = localStorage.getItem(PALETTE_KEY);
-    if (PALETTES.some(function (p) { return p.id === savedPalette; })) state.palette = savedPalette;
+    // Mono was retired in 6.0 in favour of Red. A reader who had chosen it
+    // should land on the new red ramp rather than silently back on Warm.
+    if (savedPalette === 'mono') {
+      state.palette = 'red';
+      localStorage.setItem(PALETTE_KEY, 'red');
+    } else if (PALETTES.some(function (p) { return p.id === savedPalette; }) ||
+      savedPalette === 'wallpaper' || savedPalette === 'custom') state.palette = savedPalette;
+    const savedWallpaper = normalizeHex(localStorage.getItem(WALLPAPER_KEY));
+    if (savedWallpaper) state.wallpaper = savedWallpaper;
+    const savedWallpaperColors = JSON.parse(localStorage.getItem(WALLPAPER_COLORS_KEY) || 'null');
+    state.wallpaperColors = normalizeColours(savedWallpaperColors);
+    if (!state.wallpaperColors.length && savedWallpaper) state.wallpaperColors = [savedWallpaper];
+    const savedCustom = normalizeHex(localStorage.getItem(CUSTOM_KEY));
+    if (savedCustom) state.custom = savedCustom;
   } catch (err) {
     /* storage blocked — defaults are fine */
+  }
+
+  /* ---------- appearance cross-fade ---------- */
+
+  // A theme or palette switch repaints every surface at once. The class below
+  // is what turns on the colour transitions at the end of v5.css: they are
+  // raised for the length of one switch and taken away again, so the app pays
+  // nothing for them while it is being played.
+  const FADE_MS = 160;
+  let fadeTimer = 0;
+
+  function endCrossFade() {
+    window.clearTimeout(fadeTimer);
+    fadeTimer = 0;
+    root.classList.remove('is-theme-fading');
+  }
+
+  function isNativeShell() {
+    return Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+
+  function crossFade() {
+    // A page set to reduced motion, or one the launch script already put on
+    // the light paint path, keeps the instant switch it had.
+    if (window.SixfoldMotion && window.SixfoldMotion.reduced()) return;
+    if (window.MergePerf && window.MergePerf.lite) return;
+    // The shell fades too: its WebView composites each faded surface
+    // separately, which used to leave a page on an in-between colour until
+    // something forced a repaint. repaintNativePage() promotes those surfaces
+    // for the length of the switch, so the layer carries the new colours.
+    root.classList.add('is-theme-fading');
+    window.clearTimeout(fadeTimer);
+    fadeTimer = window.setTimeout(endCrossFade, FADE_MS + 60);
+  }
+
+  // The launch call lands under the splash, where a fade would only add work
+  // to the first paint. Every later switch — a swatch, a theme button or the
+  // phone turning to dark at sunset — is a real change and gets the fade.
+  function switchIsVisible(persist) {
+    return Boolean(persist) || root.classList.contains('home-ready');
+  }
+
+  // Copy set from code goes through the same catalog as the document pass,
+  // so a panel opened after a language change is not left in English.
+  function tr(value) {
+    return window.SixfoldI18n ? window.SixfoldI18n.t(value) : value;
   }
 
   /* ---------- colour helpers ---------- */
@@ -84,8 +156,116 @@
     }).join('');
   }
 
+  // The fixed ramps plus the two sources built at runtime: the wallpaper's
+  // colour and a hex the reader chose. Keeping them in one list means the
+  // rest of the module (swatches, persistence, the colour read-back for the
+  // browser chrome) never needs a second branch.
+  let dynamicPalettes = [];
+
+  function allPalettes() {
+    return PALETTES.concat(dynamicPalettes);
+  }
+
   function activePalette() {
-    return PALETTES.filter(function (p) { return p.id === state.palette; })[0] || PALETTES[0];
+    const all = allPalettes();
+    return all.filter(function (p) { return p.id === state.palette; })[0] || PALETTES[0];
+  }
+
+  // #rgb or #rrggbb in, a lowercase #rrggbb out, or null.
+  function normalizeHex(value) {
+    const match = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(value || '').trim());
+    if (!match) return null;
+    let raw = match[1].toLowerCase();
+    if (raw.length === 3) raw = raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2];
+    return '#' + raw;
+  }
+
+  // The wallpaper reader returns primary, secondary and tertiary. Keep them
+  // deduplicated and ordered, and never more than the three Android supplies:
+  // the ramp uses them as anchor colours, so a repeated anchor would waste a
+  // third of the board's range.
+  function normalizeColours(value) {
+    const source = Array.isArray(value) ? value : [value];
+    const seen = {};
+    return source.map(normalizeHex).filter(function (hex) {
+      if (!hex || seen[hex]) return false;
+      seen[hex] = true;
+      return true;
+    }).slice(0, 3);
+  }
+
+  // A palette built from one real colour: the warm ramp keeps its brightness
+  // curve and takes the seed's hue. Saturation and lightness follow the seed
+  // only part of the way — a wallpaper that is almost white still has to leave
+  // the board readable, and a neon one must not turn every tile into a lamp.
+  function seededPalette(id, label, seed) {
+    const value = normalizeHex(seed) || '#e85f3b';
+    const n = parseInt(value.slice(1), 16);
+    const hsl = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    return {
+      id: id,
+      label: label,
+      seed: value,
+      // The ramp's middle tile sits near 14°, so starting there puts the seed's
+      // hue where the strongest tile is and keeps the light and deep ends
+      // leaning the way the hand-tuned ramp does.
+      shift: hsl[0] - 14,
+      satScale: Math.max(0.62, Math.min(1.18, 0.58 + hsl[1] * 0.78)),
+      lightShift: Math.max(-0.06, Math.min(0.06, (hsl[2] - 0.5) * 0.16))
+    };
+  }
+
+  // A wallpaper palette keeps one hue: the primary colour Android extracted.
+  // Android also reports a secondary and tertiary colour, but those are often
+  // complementary accents from elsewhere in the image; mixing them into the
+  // board made a green wallpaper produce red and purple tiles. Every tile and
+  // game accent is a shade of the primary colour instead. Lightness still comes
+  // from the hand-tuned ramp, so a dark wallpaper cannot erase the numbers and
+  // a pale one cannot wash out the board.
+  function wallpaperPalette(id, label, seed, colours) {
+    const anchors = normalizeColours(colours);
+    const primary = normalizeHex(seed) || anchors[0] || '#e85f3b';
+    const base = seededPalette(id, label, primary);
+    const n = parseInt(primary.slice(1), 16);
+    const hsl = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    const saturation = Math.max(0.28, Math.min(0.88, hsl[1] * 0.92));
+    // Seven steps of the one hue keep the collection's cards and the games'
+    // pieces distinguishable without borrowing a second colour from the image.
+    const accentLightness = [0.66, 0.58, 0.50, 0.42, 0.70, 0.54, 0.46];
+    base.anchors = [primary];
+    base.colors = [primary];
+    // Keep the hand-tuned ramp's lightness curve, but pin every step to the
+    // primary hue. Recolouring the Warm ramp by hue-shift would leave the
+    // light and gold ends pointing at their own hues, which is how a green
+    // wallpaper ended up with blue and cyan tiles.
+    base.ramp = WARM.map(function (hex) {
+      const value = parseInt(hex.slice(1), 16);
+      const source = rgbToHsl((value >> 16) & 255, (value >> 8) & 255, value & 255);
+      const tileSaturation = Math.max(0.08, Math.min(0.88, source[1] * 0.7 + hsl[1] * 0.3));
+      const tileLightness = Math.max(0.10, Math.min(0.94, source[2] + (hsl[2] - 0.5) * 0.10));
+      return hslToHex(hsl[0], tileSaturation, tileLightness);
+    });
+    base.accents = accentLightness.map(function (lightness) {
+      return hslToHex(hsl[0], saturation, lightness);
+    });
+    base.inkLow = hslToHex(hsl[0], 0.14, 0.38);
+    return base;
+  }
+
+  function setDynamicPalette(id, label, seed) {
+    const palette = seededPalette(id, label, seed);
+    dynamicPalettes = dynamicPalettes.filter(function (p) { return p.id !== id; }).concat([palette]);
+    return palette;
+  }
+
+  function setWallpaperPalette(seed, colours) {
+    const palette = wallpaperPalette('wallpaper', tr('Wallpaper'), seed, colours);
+    dynamicPalettes = dynamicPalettes.filter(function (p) { return p.id !== 'wallpaper'; }).concat([palette]);
+    return palette;
+  }
+
+  function dynamicPalette(id) {
+    return dynamicPalettes.filter(function (p) { return p.id === id; })[0] || null;
   }
 
   // Recolours #rrggbb or #rrggbbaa for the given palette, keeping alpha.
@@ -93,13 +273,41 @@
     const value = String(hex).trim();
     const match = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(value);
     if (!match) return hex;
-    if (!palette.mono && !palette.shift) return value;
+    if (!palette.ramp && !palette.shift && !palette.satScale && !palette.lightShift) return value;
 
     const alpha = match[2] ? match[2].toLowerCase() : '';
     const n = parseInt(match[1], 16);
     const hsl = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
-    if (palette.mono) return hslToHex(hsl[0], 0.04, hsl[2]) + alpha;
-    return hslToHex(hsl[0] + palette.shift, hsl[1], hsl[2]) + alpha;
+    if (palette.ramp) {
+      const warmIndex = WARM.indexOf(match[1].toLowerCase());
+      if (warmIndex !== -1) return palette.ramp[warmIndex] + alpha;
+      const accentIndex = GAME_ACCENTS.indexOf(match[1].toLowerCase());
+      if (accentIndex !== -1 && palette.accents) return palette.accents[accentIndex] + alpha;
+    }
+    const hue = hsl[0] + (palette.shift || 0);
+    const saturation = Math.max(0, Math.min(1, hsl[1] * (palette.satScale || 1)));
+    // The clamp keeps a seed at either end from pushing the page's own light
+    // or dark base past pure white or black, where a tint would vanish.
+    const lightness = Math.max(0.06, Math.min(0.96, hsl[2] + (palette.lightShift || 0)));
+    return hslToHex(hue, saturation, lightness) + alpha;
+  }
+
+  // Page surfaces take the wallpaper's colour at a much lower saturation than
+  // the board. The board can be vivid; a full-strength wall colour behind every
+  // panel would make the app look like a different theme and hurt contrast.
+  function tintSurface(hex, palette) {
+    if (!palette.anchors) return recolor(hex, palette);
+    const value = String(hex).trim();
+    const match = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(value);
+    if (!match) return hex;
+    const alpha = match[2] ? match[2].toLowerCase() : '';
+    const n = parseInt(match[1], 16);
+    const source = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    const a = parseInt(palette.anchors[0].slice(1), 16);
+    const anchor = rgbToHsl((a >> 16) & 255, (a >> 8) & 255, a & 255);
+    const saturation = Math.max(0, Math.min(0.4, anchor[1] * 0.34 + source[1] * 0.16));
+    const lightness = Math.max(0.06, Math.min(0.96, source[2] + (anchor[2] - 0.5) * 0.08));
+    return hslToHex(anchor[0], saturation, lightness) + alpha;
   }
 
   /* ---------- page tint ---------- */
@@ -109,7 +317,7 @@
       root.style.removeProperty(name);
     });
     const palette = activePalette();
-    if (!palette.mono && !palette.shift) return;
+    if (!palette.ramp && !palette.anchors && !palette.shift) return;
 
     const computed = getComputedStyle(root);
     const bases = PAGE_VARS.map(function (name) {
@@ -117,31 +325,74 @@
     });
     bases.forEach(function (pair) {
       if (!/^#[0-9a-f]{6,8}$/i.test(pair[1])) return;
-      root.style.setProperty(pair[0], recolor(pair[1], palette));
+      root.style.setProperty(pair[0], tintSurface(pair[1], palette));
     });
   }
 
   /* ---------- browser chrome ---------- */
 
-  // The two flat page colours before any palette is applied.
+  // The two flat page colours, used only if --page has not resolved yet.
   const PAGE_BASE = { light: '#f6f1e8', dark: '#1a1918' };
 
-  // The page colour for the theme and palette in use, worked out arithmetically
-  // (no layout reads), so the bar can be repainted the instant a swatch is tapped.
+  // The window surface takes a six- or eight-digit hex; a custom property is
+  // kept exactly as written, so a #fff in the cascade has to be expanded first.
+  function pageHex(value) {
+    const match = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(String(value || '').trim());
+    if (!match) return null;
+    const raw = match[1].toLowerCase();
+    if (raw.length === 3) return '#' + raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2];
+    return '#' + raw;
+  }
+
+  // The page colour for the theme, palette and contrast in use. Reading --page
+  // back from the cascade, rather than recolouring a second copy of the bases,
+  // keeps the bar, the manifest and the window surface on the colour the page
+  // actually paints: high contrast replaces --page with pure white or black, and
+  // a palette tints whatever value resolved. It is a style read, not a layout
+  // read, so a swatch still repaints the bar in the same task.
   function chromeColour() {
-    return recolor(root.dataset.theme === 'dark' ? PAGE_BASE.dark : PAGE_BASE.light, activePalette());
+    return pageHex(getComputedStyle(root).getPropertyValue('--page'))
+      || tintSurface(root.dataset.theme === 'dark' ? PAGE_BASE.dark : PAGE_BASE.light, activePalette());
+  }
+
+  // The window surface behind the WebView is only seen at the edges while a
+  // system animation runs, so it has to follow the page and not the phone's
+  // day/night setting. One report per distinct colour: the appearance paths
+  // already repaint through refreshPage, so without this memo the same colour
+  // would cross the bridge twice. A browser ignores this entirely.
+  let reportedSurface = null;
+
+  function paintWindowSurface(bg) {
+    if (bg === reportedSurface) return;
+    const native = window.Capacitor && window.Capacitor.Plugins;
+    const plugin = native && native.WindowSurface;
+    if (!plugin || typeof plugin.setColor !== 'function') return;
+    reportedSurface = bg;
+    try {
+      const pending = plugin.setColor({ color: bg });
+      // A report that never landed left the surface on the old colour. Forget
+      // it, so the next appearance change tries again instead of treating the
+      // colour as already painted for the rest of the session.
+      if (pending && pending.catch) {
+        pending.catch(function () {
+          if (reportedSurface === bg) reportedSurface = null;
+        });
+      }
+    } catch (err) {
+      /* an older APK without the plugin keeps the static launch colour */
+      reportedSurface = null;
+    }
   }
 
   // The phone's status bar / address bar follows the page, palette included.
   function paintBrowserChrome() {
+    const bg = chromeColour();
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      const bg = chromeColour();
-      if (meta.getAttribute('content') !== bg) meta.setAttribute('content', bg);
-    }
+    if (meta && meta.getAttribute('content') !== bg) meta.setAttribute('content', bg);
     // Scrollbars, form controls and the phone's own surfaces follow this too.
     const scheme = document.querySelector('meta[name="color-scheme"]');
     if (scheme) scheme.setAttribute('content', root.dataset.theme === 'dark' ? 'dark' : 'light');
+    paintWindowSurface(bg);
   }
 
   // The installed app's bottom strip comes from the manifest, not theme-color.
@@ -163,15 +414,71 @@
       link.id = 'manifest-link';
       document.head.appendChild(link);
     }
-    const href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=5.2.0';
+    // Follow the build epoch the page was served with. A second copy of the
+    // number here went stale for two builds and pointed the switch at the
+    // previous build's manifest; the page's own link is the single source.
+    const current = link.getAttribute('href') || '';
+    const query = current.indexOf('?') === -1 ? '' : current.slice(current.indexOf('?'));
+    const href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + query;
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+  }
+
+  // Pointing the manifest at the light or dark file makes the browser fetch and
+  // parse it again. That is worth doing — a fresh install should capture the
+  // bottom chrome this page is using — but it is not worth doing inside the
+  // frame the appearance switch is animating in, so it waits for idle.
+  let manifestTimer = 0;
+  function syncManifestLater() {
+    window.clearTimeout(manifestTimer);
+    const run = function () {
+      manifestTimer = 0;
+      syncManifest();
+    };
+    if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 1200 });
+    else manifestTimer = window.setTimeout(run, 120);
+  }
+
+  // Android's WebView presents an appearance switch one frame behind on its
+  // composited scrollers (the hub, a game screen, the sheet card): the controls
+  // take the new colours, but the large page surface keeps the colours of the
+  // previous switch until some later frame forces it out. Promoting the page
+  // briefly creates the layer that carries the new colours, and dropping the
+  // promotion puts it back on the normal path. It only runs in the shell; a
+  // browser commits the switch on its own. will-change: opacity is the
+  // promotion that does not turn the page into a containing block, so a fixed
+  // banner or dialog keeps its place while it is held.
+  let repaintToken = 0;
+
+  function repaintNativePage() {
+    if (!isNativeShell()) return;
+    // The surfaces that own a full-page colour, not <html>: the fixed hub and
+    // play screens and the sheet card are their own composited layers, so
+    // promoting the root leaves their stale raster in place.
+    const surfaces = document.querySelectorAll('.hub, .play-screen, .sheet-card, .app');
+    if (!surfaces.length) return;
+    const token = ++repaintToken;
+    surfaces.forEach(function (el) { el.style.willChange = 'opacity'; });
+    // Hold the layer long enough to cover a sheet that starts leaving in the
+    // same task (its 320ms exit owns that window). Dropping the promotion in
+    // the middle of that transition can leave the card on screen.
+    window.setTimeout(function () {
+      if (token !== repaintToken) return;
+      surfaces.forEach(function (el) { el.style.willChange = ''; });
+    }, FADE_MS + 80);
   }
 
   function refreshPage() {
     tintPage();
     paintBrowserChrome();
-    syncManifest();
+    syncManifestLater();
+    repaintNativePage();
   }
+
+  // High contrast replaces --page with pure white or black, and it can be
+  // switched while a palette has already tinted the page inline. The settings
+  // module only writes the attribute, so this is the pass that resolves the new
+  // page colour and takes the bar and the window surface with it.
+  window.addEventListener('sixfold:settings', refreshPage);
 
   // The result image is drawn from the page colours, so tell the game when they
   // change and an open result card can redraw it with the new appearance.
@@ -204,12 +511,33 @@
     }
   }
 
+  // The shell's cold-start window is painted by the system from the app theme
+  // before any page runs, so the page's choice has to reach the OS too. The
+  // plugin persists it as the app's per-app night mode (Android 12+); a phone
+  // set to dark then still opens a light app on a light splash, and Auto keeps
+  // following the phone. A browser ignores this.
+  let reportedTheme = null;
+  function syncNativeNightMode(pref) {
+    const native = window.Capacitor && window.Capacitor.Plugins;
+    const plugin = native && native.WindowSurface;
+    if (!plugin || typeof plugin.setTheme !== 'function') return;
+    if (reportedTheme === pref) return;
+    reportedTheme = pref;
+    try {
+      const pending = plugin.setTheme({ preference: pref });
+      if (pending && typeof pending.catch === 'function') {
+        pending.catch(function () { reportedTheme = null; });
+      }
+    } catch (err) {
+      reportedTheme = null;
+    }
+  }
+
   function applyTheme(pref, persist) {
     state.theme = pref;
+    syncNativeNightMode(pref);
+    if (switchIsVisible(persist)) crossFade();
     root.dataset.theme = resolvedTheme();
-    // Bar first, then the rest of the page: they change together instead of the
-    // status bar trailing the new colours.
-    paintBrowserChrome();
     if (persist) {
       try { localStorage.setItem(THEME_KEY, pref); } catch (err) {}
     }
@@ -228,28 +556,74 @@
 
   function syncHubPalette() {
     const label = document.getElementById('hub-palette-label');
-    if (label) label.textContent = activePalette().label;
+    if (label) label.textContent = tr(activePalette().label);
   }
 
-  function applyPalette(id, persist) {
-    const palette = PALETTES.filter(function (p) { return p.id === id; })[0] || PALETTES[0];
+  // Where a palette write came from, as one stack frame. Run #163's artifact
+  // showed the app back on Warm with nothing to say what put it there: the
+  // palette changed between the swatch sample and the strip check, and the
+  // capture could only show the result. The caller is the whole cause a logcat
+  // line can carry, so each write names its own. The frame after applyPalette
+  // is the caller; the two helpers themselves sit above it and are not named.
+  function paletteCaller() {
+    try {
+      const frames = String(new Error().stack || '')
+        .split('\n')
+        .map(function (line) { return line.trim().replace(/^at\s+/, ''); })
+        .filter(function (frame) { return frame && frame !== 'Error'; });
+      for (let i = 0; i < frames.length; i++) {
+        if (frames[i].indexOf('applyPalette') !== -1) return frames[i + 1] || frames[i];
+      }
+      return frames[0] || 'an unknown caller';
+    } catch (err) {
+      return 'an unknown caller';
+    }
+  }
+
+  function applyPalette(id, persist, instant) {
+    const palette = allPalettes().filter(function (p) { return p.id === id; })[0] || PALETTES[0];
+    // Opt-in only: the caller stack names the frame that moved the palette,
+    // but building it on every boot is not worth a release log line.
+    if (window.__sixfoldDebug) {
+      try {
+        console.log(
+          '[appearance] palette ' + state.palette +
+            (state.palette === palette.id ? ' kept' : ' -> ' + palette.id) +
+            (persist ? ', saved' : ', unsaved') +
+            ', at ' + paletteCaller()
+        );
+      } catch (err) {
+        /* a logger that is not there must not stop the switch */
+      }
+    }
     state.palette = palette.id;
-    paintBrowserChrome();
+    if (!instant && switchIsVisible(persist)) crossFade();
 
     for (let i = 0; i < WARM.length; i++) {
-      root.style.setProperty('--t' + (2 << i), recolor(WARM[i], palette));
+      root.style.setProperty('--t' + (2 << i), palette.ramp ? palette.ramp[i] : recolor(WARM[i], palette));
     }
     // Shared accents for the other five games (see games.css/games.js).
     for (let i = 0; i < GAME_ACCENTS.length; i++) {
-      root.style.setProperty('--g' + (i + 1), recolor(GAME_ACCENTS[i], palette));
+      root.style.setProperty(
+        '--g' + (i + 1),
+        palette.accents ? palette.accents[i] : recolor(GAME_ACCENTS[i], palette)
+      );
     }
     root.style.setProperty(
       '--ink-tile-low',
-      palette.mono ? hslToHex(0, 0, 0.46) : palette.shift ? hslToHex(34 + palette.shift, 0.11, 0.46) : '#857a6b'
+      palette.inkLow || (palette.ramp ? hslToHex(0, 0.16, 0.38) :
+        palette.shift ? hslToHex(34 + palette.shift, 0.11, 0.46) : '#857a6b')
     );
 
     if (persist) {
-      try { localStorage.setItem(PALETTE_KEY, palette.id); } catch (err) {}
+      try {
+        localStorage.setItem(PALETTE_KEY, palette.id);
+        if (palette.id === 'wallpaper') {
+          localStorage.setItem(WALLPAPER_KEY, palette.seed);
+          if (palette.colors) localStorage.setItem(WALLPAPER_COLORS_KEY, JSON.stringify(palette.colors));
+        }
+        if (palette.id === 'custom') localStorage.setItem(CUSTOM_KEY, palette.seed);
+      } catch (err) {}
     }
     syncPaletteButtons();
     syncHubPalette();
@@ -257,37 +631,193 @@
     announceAppearance();
   }
 
+  let customSwatch = null;
+  let customDetails = null;
+
+  function paletteSwatch(palette) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'palette';
+    // Opted in where it is built, so a palette swatch added later has to say
+    // whether it takes part in the appearance cross-fade.
+    btn.dataset.fade = '';
+    btn.dataset.paletteOpt = palette.id;
+    btn.setAttribute('aria-pressed', 'false');
+    // Use the visible palette name. A composed "Warm colours" label stops
+    // matching the visible word once the locale translates them separately.
+    btn.setAttribute('aria-label', tr(palette.label));
+
+    const sw = document.createElement('span');
+    sw.className = 'swatches';
+    [2, 6, 10].forEach(function (i) {
+      const dot = document.createElement('span');
+      dot.style.background = recolor(WARM[i], palette);
+      sw.appendChild(dot);
+    });
+
+    const label = document.createElement('span');
+    label.textContent = tr(palette.label);
+
+    btn.appendChild(sw);
+    btn.appendChild(label);
+    return btn;
+  }
+
+  // The dynamic swatches show what the board would look like now, so their
+  // dots are repainted whenever their seed moves.
+  function paintSwatchDots(btn, palette) {
+    if (!btn || !palette) return;
+    const dots = btn.querySelectorAll('.swatches span');
+    [2, 6, 10].forEach(function (i, index) {
+      if (dots[index]) dots[index].style.background = recolor(WARM[i], palette);
+    });
+  }
+
+  function wallpaperPlugin() {
+    const plugins = window.Capacitor && window.Capacitor.Plugins;
+    const plugin = plugins && plugins.WallpaperColors;
+    return plugin && typeof plugin.colors === 'function' ? plugin : null;
+  }
+
+  // Reads the phone's wallpaper colours and rebuilds the wallpaper palette.
+  // Returns false where no shell can answer, so the caller keeps the cached
+  // seed instead of leaving the reader on a dead swatch.
+  // A read already crossing the bridge is reused by the next resume instead of
+  // stacked: a phone that repaints its wallpaper on every lock and unlock would
+  // otherwise queue one round trip per flick, each one a chance to repaint.
+  let wallpaperRead = null;
+
+  function readWallpaper(persist) {
+    const plugin = wallpaperPlugin();
+    if (!plugin) return false;
+    if (wallpaperRead) return true;
+    let pending;
+    try { pending = plugin.colors(); } catch (err) { return false; }
+    if (!pending || typeof pending.then !== 'function') return false;
+    wallpaperRead = pending;
+    pending.then(function (result) {
+      wallpaperRead = null;
+      // Only the primary colour is ours. Android's secondary and tertiary are
+      // separate accents from the image and can be a complementary red or
+      // purple; keeping them in the palette is what broke a green wallpaper.
+      const seed = normalizeHex(result && result.primary);
+      if (!seed) return;
+      const colors = [seed];
+      const current = dynamicPalette('wallpaper');
+      // The common resume: the same wallpaper the last paint already used.
+      // Rebuilding the ramp here used to repaint every surface and run a fade
+      // for a colour that had not moved, which is exactly the churn a phone
+      // that changes wallpaper on every lock would make constant.
+      if (state.palette === 'wallpaper' && current && current.colors &&
+        current.colors[0] === seed) return;
+      state.wallpaper = seed;
+      state.wallpaperColors = colors;
+      setWallpaperPalette(seed, colors);
+      paintSwatchDots(document.querySelector('[data-palette-opt="wallpaper"]'), dynamicPalette('wallpaper'));
+      // A wallpaper that did change arrives without the switch transition: the
+      // reader is looking at a freshly resumed screen, not at a choice, and the
+      // new colours should already be in place by the first frame.
+      applyPalette('wallpaper', persist, !persist);
+    }).catch(function () {
+      wallpaperRead = null;
+      /* an older shell or a wallpaper with no extracted colours */
+    });
+    return true;
+  }
+
   function buildPalettes() {
     const wrap = document.getElementById('palettes');
     if (!wrap) return;
     PALETTES.forEach(function (p) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'palette';
-      btn.dataset.paletteOpt = p.id;
-      btn.setAttribute('aria-pressed', 'false');
-      // Use the visible palette name. A composed "Warm colours" label stops
-      // matching the visible word once the locale translates them separately.
-      btn.setAttribute('aria-label', p.label);
-
-      const sw = document.createElement('span');
-      sw.className = 'swatches';
-      [2, 6, 10].forEach(function (i) {
-        const dot = document.createElement('span');
-        dot.style.background = recolor(WARM[i], p);
-        sw.appendChild(dot);
-      });
-
-      const label = document.createElement('span');
-      label.textContent = p.label;
-
-      btn.appendChild(sw);
-      btn.appendChild(label);
+      const btn = paletteSwatch(p);
       btn.addEventListener('click', function () {
         applyPalette(p.id, true);
       });
       wrap.appendChild(btn);
     });
+
+    // A browser cannot read the wallpaper, and showing a control that can
+    // never answer would be worse than not offering it. The palette still
+    // resolves from the cached seed, so a reader who chose it in the app keeps
+    // its colours if the page is opened outside the shell.
+    if (wallpaperPlugin()) {
+      const btn = paletteSwatch(dynamicPalette('wallpaper') || seededPalette('wallpaper', tr('Wallpaper'), state.wallpaper));
+      btn.addEventListener('click', function () {
+        if (!readWallpaper(true)) applyPalette('wallpaper', true);
+      });
+      wrap.appendChild(btn);
+    }
+
+    customSwatch = paletteSwatch(dynamicPalette('custom') || seededPalette('custom', tr('Custom'), state.custom));
+    customSwatch.addEventListener('click', function () {
+      applyPalette('custom', true);
+      const field = document.getElementById('colour-hex');
+      if (field) field.value = state.custom.toUpperCase();
+      if (customDetails) customDetails.open = true;
+    });
+    wrap.appendChild(customSwatch);
+  }
+
+  // The custom panel is a disclosure under the swatches: a preview row while
+  // it is closed, and the picker, the hex field and one Apply while it is open.
+  // Typing paints the preview live; only Apply (or the platform picker's own
+  // confirmation) commits, so a half-typed hex never recolours the whole app.
+  function wireCustomColour() {
+    customDetails = document.getElementById('colour-custom');
+    const picker = document.getElementById('colour-picker');
+    const field = document.getElementById('colour-hex');
+    const applyBtn = document.getElementById('colour-apply');
+    const hint = document.getElementById('colour-hint');
+    const preview = document.getElementById('colour-custom-preview');
+    const printed = document.getElementById('colour-custom-hex');
+    if (!picker || !field || !applyBtn) return;
+
+    function paint(value) {
+      const hex = normalizeHex(value) || state.custom;
+      if (preview) preview.style.background = hex;
+      if (printed) printed.textContent = hex.toUpperCase();
+      picker.value = hex;
+    }
+
+    function commit() {
+      const value = normalizeHex(field.value);
+      if (!value) {
+        field.setAttribute('aria-invalid', 'true');
+        if (hint) hint.textContent = tr('Enter a hex colour such as #RRGGBB.');
+        return;
+      }
+      field.removeAttribute('aria-invalid');
+      field.value = value.toUpperCase();
+      state.custom = value;
+      setDynamicPalette('custom', tr('Custom'), value);
+      paintSwatchDots(customSwatch, dynamicPalette('custom'));
+      paint(value);
+      applyPalette('custom', true);
+      if (hint) hint.textContent = tr('Custom colour applied.');
+    }
+
+    field.addEventListener('input', function () {
+      const value = normalizeHex(field.value);
+      if (!value) {
+        field.setAttribute('aria-invalid', 'true');
+        return;
+      }
+      field.removeAttribute('aria-invalid');
+      paint(value);
+    });
+    field.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      commit();
+    });
+    picker.addEventListener('input', function () {
+      field.value = String(picker.value || '').toUpperCase();
+      field.removeAttribute('aria-invalid');
+      paint(picker.value);
+    });
+    picker.addEventListener('change', commit);
+    applyBtn.addEventListener('click', commit);
+    paint(state.custom);
   }
 
   /* ---------- fullscreen ---------- */
@@ -300,16 +830,23 @@
     return document.fullscreenElement || document.webkitFullscreenElement || null;
   }
 
+  function standaloneDisplay() {
+    try {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) ||
+        window.navigator.standalone === true;
+    } catch (err) {
+      return false;
+    }
+  }
+
   const homeFocusBtn = document.getElementById('home-focus-toggle');
   if (homeFocusBtn) {
-    if (!fullscreenAvailable()) {
+    if (!fullscreenAvailable() || isNativeShell() || standaloneDisplay()) {
       homeFocusBtn.hidden = true;
     } else {
       const syncHomeFocus = function () {
-        const active = !!fullscreenElement();
-        homeFocusBtn.setAttribute('aria-pressed', String(active));
-        homeFocusBtn.setAttribute('aria-label', active ? 'Exit fullscreen' : 'Enter fullscreen');
-        homeFocusBtn.title = active ? 'Exit fullscreen' : 'Enter fullscreen';
+        homeFocusBtn.setAttribute('aria-pressed', String(!!fullscreenElement()));
       };
 
       const toggleHomeFocus = function () {
@@ -343,6 +880,55 @@
   const hubEl = document.getElementById('hub');
   const sheetOpeners = new WeakMap();
   const sheetCloseTimers = new WeakMap();
+  // The sheet that is up, if any. Android's back gesture asks the page first
+  // (js/native.js dispatches sixfold:back), and the panel on top is what it
+  // should dismiss — not the app underneath it.
+  let openSheetEl = null;
+
+  /* Back is the only gesture some readers have in a browser, so a sheet adds one
+     history entry while it is up: back closes the panel instead of leaving the
+     screen (or the page). The native shell already asks the page first, and its
+     sixfold:back path goes through closeSheet, which takes that entry with it. */
+  let sheetHistorySheet = null;
+  let sheetHistoryClosing = false;
+
+  function pushSheetHistory(sheet) {
+    if (!sheet || !window.history || !history.pushState) return;
+    try {
+      history.pushState({ sixfoldSheet: sheet.id || 'sheet', game: document.body.dataset.screen || 'hub' }, '');
+      sheetHistorySheet = sheet;
+    } catch (err) {
+      /* history restricted: the sheet still closes from its own controls */
+    }
+  }
+
+  function popSheetHistory(sheet) {
+    if (sheetHistorySheet !== sheet) return;
+    sheetHistorySheet = null;
+    // A close from the sheet's own controls has to take its entry with it, or
+    // the next back would only undo an invisible step.
+    sheetHistoryClosing = true;
+    try { history.back(); } catch (err) { sheetHistoryClosing = false; }
+  }
+
+  window.addEventListener('popstate', function (event) {
+    if (sheetHistoryClosing) {
+      sheetHistoryClosing = false;
+      event.stopImmediatePropagation();
+      return;
+    }
+    // Forward into an entry a sheet pushed: the panel stays up.
+    if (event.state && event.state.sixfoldSheet) {
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (!sheetHistorySheet) return;
+    const sheet = sheetHistorySheet;
+    sheetHistorySheet = null;
+    // This entry is the sheet's, not a route: games.js must not read it as one.
+    event.stopImmediatePropagation();
+    closeSheet(sheet);
+  });
 
   function openSheet(sheet, opener) {
     if (!sheet) return;
@@ -352,10 +938,16 @@
       sheetCloseTimers.delete(sheet);
     }
     sheetOpeners.set(sheet, opener || null);
+    openSheetEl = sheet;
     sheet.hidden = false;
+    // A panel that was left halfway down opens at its title again: a settings
+    // sheet should always start at the top, not where the last visit stopped.
+    const card = sheet.querySelector('.sheet-card');
+    if (card) card.scrollTop = 0;
     // Commit the display change before the entering styles, so the card rises
     // rather than appearing on the same frame it is revealed.
     void sheet.offsetWidth;
+    traceSheetPaint(sheet);
     sheet.classList.remove('is-closing');
     sheet.classList.add('is-open');
     // The page behind the sheet can't be tabbed into or tapped while it's open.
@@ -367,6 +959,7 @@
       sheet._inertBackground = background;
     }
     document.documentElement.classList.add('sheet-open');
+    pushSheetHistory(sheet);
     const doneBtn = sheet.querySelector('.sheet-done');
     if (doneBtn) {
       doneBtn.focus();
@@ -380,29 +973,99 @@
     }
   }
 
+  /* A device trace for the first frame that carries the scrim. Playwright can
+     read the computed style, but only the phone can say when the compositor
+     actually painted the backdrop-filter. The marker is deliberately tiny and
+     fires once per open; it is not a polling loop. */
+  function traceSheetPaint(sheet) {
+    if (!window.performance || typeof window.performance.now !== 'function' || !window.requestAnimationFrame) return;
+    const start = window.performance.now();
+    const id = sheet.id || 'sheet';
+    window.requestAnimationFrame(function () {
+      const backdrop = sheet.querySelector('.sheet-backdrop');
+      const style = backdrop ? window.getComputedStyle(backdrop) : null;
+      const record = {
+        sheet: id,
+        ms: Math.round((window.performance.now() - start) * 10) / 10,
+        lite: Boolean(window.MergePerf && window.MergePerf.lite),
+        filter: style ? (style.webkitBackdropFilter || style.backdropFilter || 'none') : 'none',
+        background: style ? style.backgroundColor : ''
+      };
+      window.__sixfoldSheetPaint = record;
+      try {
+        const from = 'sixfold-sheet-' + id + '-start';
+        const to = 'sixfold-sheet-' + id + '-first-frame';
+        window.performance.mark(from);
+        window.performance.mark(to);
+        window.performance.measure(to, from, to);
+      } catch (err) {}
+      if (typeof window.CustomEvent === 'function' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('sixfold:sheet-paint', { detail: record }));
+      }
+    });
+  }
+
+  // The heading of the screen that is up is a sensible place to leave focus
+  // when the element that opened a sheet is no longer on the page.
+  function focusScreenStart() {
+    const screen = document.body.dataset.screen;
+    const host = screen && screen !== 'hub' ? document.getElementById(screen) : hubEl;
+    const title = host && host.querySelector('h1[tabindex="-1"]');
+    if (title && title.getClientRects().length) title.focus({ preventScroll: true });
+  }
+
   function closeSheet(sheet) {
     if (!sheet || sheet.hidden || sheet.classList.contains('is-closing')) return;
+    popSheetHistory(sheet);
+    if (openSheetEl === sheet) openSheetEl = null;
+    // The sheet's own leave animation owns the next 320ms. A colour fade
+    // raised by a theme tap a moment ago would replace it, so end it here.
+    endCrossFade();
     // Let the scrim and card leave before removing the dialog from the page.
     sheet.classList.remove('is-open');
     sheet.classList.add('is-closing');
-    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.SixfoldMotion && window.SixfoldMotion.reduced();
     const timer = window.setTimeout(function () {
       sheet.hidden = true;
       sheet.classList.remove('is-open', 'is-closing');
-      sheet.removeAttribute('data-context');
       document.documentElement.classList.remove('sheet-open');
       if (sheet._inertBackground) {
         sheet._inertBackground.inert = false;
         sheet._inertBackground = null;
       }
-      // Send focus back to whatever opened the sheet.
+      // Send focus back to whatever opened the sheet — unless that opener is
+      // inside a panel that has since closed. Erasing data from Look & feel
+      // used to leave focus on its hidden Done button.
       const opener = sheetOpeners.get(sheet);
-      if (opener) opener.focus();
+      if (opener && opener.isConnected && opener.getClientRects().length) opener.focus();
+      else focusScreenStart();
       sheetOpeners.delete(sheet);
       sheetCloseTimers.delete(sheet);
-    }, reduced ? 0 : 320);
+    // Reduced fades the sheet in place for 160ms; keep it mounted long enough
+    // for that fade before removing the dialog.
+    }, reduced ? 180 : 320);
     sheetCloseTimers.set(sheet, timer);
   }
+
+  document.addEventListener('sixfold:back', function (event) {
+    if (!openSheetEl) return;
+    event.preventDefault();
+    // The guide records that it was seen inside closeWelcome; closing the raw
+    // sheet here would show it again on the next launch.
+    if (openSheetEl === welcomeSheet) closeWelcome();
+    else closeSheet(openSheetEl);
+  });
+
+  /* The legal page is its own document, so a return from it is a fresh
+     launch. Record where the hub was before the link is followed, or the
+     reader comes back to the top of the collection instead of their place. */
+  document.addEventListener('click', function (event) {
+    const link = event.target.closest && event.target.closest('a[href$="licenses.html"]');
+    if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const top = (hubEl && hubEl.scrollTop) ||
+      (document.scrollingElement && document.scrollingElement.scrollTop) || 0;
+    try { sessionStorage.setItem('sixfold.hubScroll', String(top)); } catch (err) {}
+  });
 
   const appearanceSheet = document.getElementById('sheet');
   const appearanceBtn = document.getElementById('appearance');
@@ -412,9 +1075,19 @@
   const helpBtn = document.getElementById('how-to');
   const aboutSheet = document.getElementById('about');
   const aboutBtn = document.getElementById('hub-about');
+  const welcomeSheet = document.getElementById('welcome');
+  const welcomeStart = document.getElementById('welcome-start');
+  const welcomeOpen = document.getElementById('welcome-open');
+  const WELCOME_KEY = 'sixfold.welcome.v1';
   const resetSheet = document.getElementById('reset-sheet');
   const sudokuSettingsSheet = document.getElementById('sudoku-settings');
   const sudokuSettingsBtn = document.getElementById('sudoku-settings-open');
+  const waterSettingsSheet = document.getElementById('water-settings');
+  const waterSettingsBtn = document.getElementById('water-settings-open');
+  const minesSettingsSheet = document.getElementById('mines-settings');
+  const minesSettingsBtn = document.getElementById('mines-settings-open');
+  const fruitSettingsSheet = document.getElementById('fruit-settings');
+  const fruitSettingsBtn = document.getElementById('fruit-settings-open');
   const wipeSheet = document.getElementById('wipe-sheet');
   const wipeBtn = document.getElementById('wipe-open');
   const wipeConfirmBtn = document.getElementById('wipe-confirm');
@@ -464,6 +1137,80 @@
   wireSheet(helpSheet, helpBtn);
   wireSheet(aboutSheet, aboutBtn);
   wireSheet(sudokuSettingsSheet, sudokuSettingsBtn);
+  wireSheet(waterSettingsSheet, waterSettingsBtn);
+  wireSheet(minesSettingsSheet, minesSettingsBtn);
+  wireSheet(fruitSettingsSheet, fruitSettingsBtn);
+
+  /* ---------- first-run welcome ---------- */
+  // A fresh install gets one short guide in the same sheet language as Look &
+  // feel: where the six games live, what the daily set is, and where the rest
+  // of the app hides. Seeing it, or tapping past it, records it; Look & feel
+  // can replay it at any time.
+  function welcomeSeen() {
+    try { return localStorage.getItem(WELCOME_KEY) === '1'; } catch (err) { return false; }
+  }
+
+  function markWelcomeSeen() {
+    try { localStorage.setItem(WELCOME_KEY, '1'); } catch (err) {}
+  }
+
+  function closeWelcome() {
+    if (!welcomeSheet || welcomeSheet.hidden) return;
+    markWelcomeSeen();
+    closeSheet(welcomeSheet);
+    // Hand the reader to the collection rather than leaving focus on a dialog
+    // that no longer exists.
+    window.setTimeout(function () {
+      const first = document.querySelector('.home-game');
+      if (first) first.focus({ preventScroll: true });
+    }, 340);
+  }
+
+  function openWelcome(opener) {
+    if (!welcomeSheet) return;
+    markWelcomeSeen();
+    openSheet(welcomeSheet, opener || null);
+    if (welcomeStart) {
+      window.setTimeout(function () {
+        if (!welcomeSheet.hidden && !welcomeSheet.classList.contains('is-closing')) {
+          welcomeStart.focus({ preventScroll: true });
+        }
+      }, 60);
+    }
+  }
+
+  function maybeWelcome() {
+    if (!welcomeSheet || welcomeSeen()) return;
+    if (document.body.dataset.screen !== 'hub') return;
+    if (document.querySelector('.sheet.is-open:not(.is-closing)')) return;
+    openWelcome(null);
+  }
+
+  if (welcomeSheet) {
+    welcomeSheet.querySelectorAll('[data-close]').forEach(function (el) {
+      el.addEventListener('click', closeWelcome);
+    });
+    if (welcomeStart) welcomeStart.addEventListener('click', closeWelcome);
+    if (welcomeOpen) {
+      welcomeOpen.addEventListener('click', function () {
+        closeSheet(appearanceSheet);
+        window.setTimeout(function () { openWelcome(appearanceBtn); }, 340);
+      });
+    }
+
+    // The hub is held back until the guide is up, so there is nothing to wait
+    // for: a short tick lets the sheet module finish wiring before it opens.
+    if (document.documentElement.classList.contains('home-ready')) {
+      window.setTimeout(maybeWelcome, 30);
+    } else if ('MutationObserver' in window) {
+      const readyObserver = new MutationObserver(function () {
+        if (!document.documentElement.classList.contains('home-ready')) return;
+        readyObserver.disconnect();
+        window.setTimeout(maybeWelcome, 30);
+      });
+      readyObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    }
+  }
 
   // Erasing everything is deliberately two separate taps: the quiet button in
   // Look & feel opens a warning sheet, and only its red button clears data.
@@ -506,7 +1253,10 @@
     wipeConfirmBtn.addEventListener('click', function () {
       if (wipeConfirmBtn.disabled) return;
       wipeConfirmBtn.disabled = true;
-      wipeConfirmBtn.textContent = 'Erasing…';
+      wipeConfirmBtn.setAttribute('aria-busy', 'true');
+      // Keep the reader's own label, which the catalog already translated, and
+      // only add the ellipsis: a hard-coded "Erasing…" stayed English here.
+      wipeConfirmBtn.textContent = wipeConfirmBtn.textContent.trim() + '…';
       wipeEverything();
     });
   }
@@ -542,16 +1292,10 @@
   }
 
   function activeSheet() {
-    const open = document.querySelector('.sheet.is-open:not(.is-closing)');
-    if (open) return open;
-    if (appearanceSheet && !appearanceSheet.hidden) return appearanceSheet;
-    if (sizeSheet && !sizeSheet.hidden) return sizeSheet;
-    if (helpSheet && !helpSheet.hidden) return helpSheet;
-    if (aboutSheet && !aboutSheet.hidden) return aboutSheet;
-    if (sudokuSettingsSheet && !sudokuSettingsSheet.hidden) return sudokuSettingsSheet;
-    if (wipeSheet && !wipeSheet.hidden) return wipeSheet;
-    if (resetSheet && !resetSheet.hidden) return resetSheet;
-    return null;
+    // openSheet always knows which panel is on top, including the per-game
+    // settings sheets an explicit list kept forgetting.
+    if (openSheetEl && !openSheetEl.hidden && !openSheetEl.classList.contains('is-closing')) return openSheetEl;
+    return document.querySelector('.sheet:not([hidden])');
   }
 
   function sheetFocusables(sheet) {
@@ -568,7 +1312,8 @@
       if (!sheet) return;
       if (e.key === 'Escape') {
         e.preventDefault();
-        closeSheet(sheet);
+        if (sheet === welcomeSheet) closeWelcome();
+        else closeSheet(sheet);
         return;
       }
       if (e.key !== 'Tab') return;
@@ -600,9 +1345,22 @@
 
   /* ---------- start ---------- */
 
+  // Both runtime palettes exist before the first apply, so restoring
+  // "wallpaper" or "custom" from storage resolves to real colours.
+  setWallpaperPalette(state.wallpaper, state.wallpaperColors);
+  setDynamicPalette('custom', tr('Custom'), state.custom);
   buildPalettes();
+  wireCustomColour();
   applyTheme(state.theme, false);
   applyPalette(state.palette, false);
+  // The cache is what the page last saw; ask the phone once the page is up, so
+  // a wallpaper changed since then is picked up without a visible re-entry.
+  if (state.palette === 'wallpaper' && wallpaperPlugin()) readWallpaper(false);
+  // The head paints the page colour inline so a hard reload (a return from the
+  // legal page) never flashes white before styles.css arrives. From here the
+  // stylesheet owns that colour: an inline value would survive a theme switch
+  // and leave the document on the old page colour underneath new content.
+  root.style.removeProperty('background-color');
 
   // Display controls on the other game screens use the same theme state and
   // persistence as Merge's footer toggle, without duplicating the theme logic.
@@ -625,6 +1383,13 @@
     colour: function (hex) {
       return recolor(hex, activePalette());
     },
+    // Android's SystemBars restyles the window background while it changes the
+    // bar icons, which undoes the report made just before it. Send the page
+    // colour again, past the memo, so that write is the one that stays.
+    repaintSurface: function () {
+      reportedSurface = null;
+      paintWindowSurface(chromeColour());
+    },
     confirmReset: openGameReset,
     closeSheet: closeSheet,
     openSheet: openSheet
@@ -635,4 +1400,12 @@
   };
   if (mq.addEventListener) mq.addEventListener('change', onSchemeChange);
   else if (mq.addListener) mq.addListener(onSchemeChange);
+
+  // A wallpaper set while the app was in the background is the common way the
+  // phone changes it, and the palette should already match on the way back.
+  // Only the wallpaper source pays for this; the fixed ramps never ask.
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden || state.palette !== 'wallpaper') return;
+    readWallpaper(false);
+  });
 })();

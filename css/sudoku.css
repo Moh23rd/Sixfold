@@ -60,7 +60,7 @@
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color 130ms ease, color 130ms ease, box-shadow 130ms ease;
+  transition: background-color 130ms var(--ease-out), color 130ms var(--ease-out);
 }
 
 .sudoku-cell.is-edge-right {
@@ -97,7 +97,7 @@
 }
 
 .sudoku-cell.is-hint {
-  animation: sudokuHint 900ms ease;
+  animation: sudokuHint 360ms var(--ease-out);
 }
 
 .sudoku-cell:focus-visible {
@@ -125,8 +125,8 @@
 }
 
 @keyframes sudokuHint {
-  0%, 100% { box-shadow: inset 0 0 0 2px var(--cart); }
-  40% { box-shadow: inset 0 0 0 3px var(--cart), 0 0 0 4px color-mix(in srgb, var(--cart) 30%, transparent); }
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.09); }
 }
 
 .sudoku-pad {
@@ -338,6 +338,11 @@
 
 @media (orientation: portrait) and (max-height: 680px) {
   .sudoku-wrap { width: min(100%, 286px, 40dvh); }
+  /* The short-screen board is about 237px wide, so a cell is 25px. The 3.4dvh
+     digit grew to 26.2px at the 1.3 system scale, whose line box is taller
+     than the cell. Keep the digit in proportion with this smaller board
+     instead of shrinking the global cap. */
+  .sudoku-cell { font-size: clamp(13px, 2.7dvh, 20px); }
   .sudoku-main { gap: 4px; }
   .sudoku-pad-key { min-height: 32px; }
   .sudoku-tool { min-height: 31px; }
@@ -362,16 +367,14 @@
   .sudoku-status { font-size: 12px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sudoku-cell,
-  .sudoku-cell.is-hint,
-  .sudoku-pad-key,
-  .sudoku-tool,
-  .sudoku-result-card {
+html[data-motion="reduced"] .sudoku-cell,
+html[data-motion="reduced"] .sudoku-cell.is-hint,
+html[data-motion="reduced"] .sudoku-pad-key,
+html[data-motion="reduced"] .sudoku-tool,
+html[data-motion="reduced"] .sudoku-result-card {
     animation: none;
     transition: none;
   }
-}
 
 /* Landscape gives the grid and the keypad their own columns. The board can
    then use the full height instead of stacking a small grid above a wide pad
@@ -381,7 +384,7 @@
     width: min(100%, 1240px);
     grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
     gap: 10px 28px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
+    padding-top: calc(var(--sa-top) + 20px);
   }
 
   .sudoku-shell .play-main {
@@ -458,7 +461,7 @@
   .sudoku-shell {
     grid-template-columns: minmax(190px, 30vw) minmax(0, 1fr);
     gap: 6px 14px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+    padding-top: calc(var(--sa-top) + 10px);
   }
 
   .sudoku-shell .play-main {
@@ -521,10 +524,10 @@
     align-items: start;
     gap: 8px clamp(24px, 3.2vw, 48px);
     padding:
-      calc(env(safe-area-inset-top, 0px) + 18px)
-      calc(env(safe-area-inset-right, 0px) + 26px)
-      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 14px)
-      calc(env(safe-area-inset-left, 0px) + 26px);
+      calc(var(--sa-top) + 18px)
+      calc(var(--sa-right) + 26px)
+      calc(var(--sa-bottom) + 14px)
+      calc(var(--sa-left) + 26px);
   }
 
   .sudoku-shell .play-head {
@@ -613,10 +616,10 @@
     grid-template-columns: auto minmax(0, 1fr);
     gap: 5px clamp(10px, 1.8vw, 18px);
     padding:
-      calc(env(safe-area-inset-top, 0px) + 8px)
-      calc(env(safe-area-inset-right, 0px) + 12px)
-      calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 6px)
-      calc(env(safe-area-inset-left, 0px) + 12px);
+      var(--pb-gutter-top)
+      calc(var(--sa-right) + 12px)
+      var(--pb-gutter-bottom)
+      calc(var(--sa-left) + 12px);
   }
 
   .sudoku-shell .play-intro .sub { display: none; }
@@ -716,9 +719,50 @@
 /* 320×568 portrait: keep the board large and trim the footer chrome so the
    final row stays inside the viewport. */
 @media (orientation: portrait) and (max-height: 600px) {
-  .sudoku-shell { padding-top: calc(env(safe-area-inset-top, 0px) + 12px); }
+  .sudoku-shell { padding-top: var(--pb-gutter-top); }
   .sudoku-shell .play-intro .sub { display: none; }
   .sudoku-wrap { width: min(100%, 278px, 40dvh); }
   .sudoku-shell .play-foot { min-height: 32px; }
   .sudoku-shell .play-foot .play-btn { min-height: 32px; }
+}
+
+/* The grid, the pad and the tools together are a few pixels taller than a
+   390-wide phone with a real status bar and home indicator. Shave the pad
+   rows and the two gaps rather than letting the tools sit under the bottom
+   band. */
+@media (max-height: 900px) {
+  .sudoku-main { gap: clamp(3px, 0.9dvh, 8px); }
+  .sudoku-pad-key { min-height: 30px; }
+  .sudoku-tool { min-height: 29px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .sudoku-shell { padding-top: calc(var(--sa-top) + 12px); }
+  .sudoku-shell .play-main { gap: 6px 10px; }
+  /* The board is square, so its width is what decides whether the bottom of
+     the grid lands under the bottom band on a 390-tall landscape phone. */
+  .sudoku-shell .sudoku-wrap { width: min(100%, 430px, calc(100dvh - 20px)); }
+  /* The rail used to hand its title row 155px and push the footer 23px past a
+     390-tall screen, where the fixed play frame clipped it. The cart row keeps
+     its back and settings buttons; the size of those controls, the title, the
+     stats gaps and the pad keys give the height back. */
+  .sudoku-shell .play-cart-row { gap: 6px; }
+  .sudoku-shell .games-home,
+  .sudoku-shell .sudoku-settings-open { width: 30px; height: 30px; }
+  .sudoku-shell .play-title-row { margin-top: 0; }
+  .sudoku-shell .play-stats { margin-top: 3px; padding-top: 3px; }
+  .sudoku-shell .sudoku-pad-key { min-height: 27px; }
+  .sudoku-shell .sudoku-tool { min-height: 27px; }
+}
+
+/* The smaller title is for phones that need every pixel. A wide landscape
+   window keeps the rail's own type and buys the same height from the pad keys
+   and the stats gaps instead. */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 900px) {
+  .sudoku-shell .play-intro h1 { font-size: 22px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 901px) {
+  .sudoku-shell .play-stats { margin-top: 0; padding-top: 0; }
+  .sudoku-shell .sudoku-pad-key { min-height: 25px; }
 }

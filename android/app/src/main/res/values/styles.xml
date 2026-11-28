@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <!-- The running app. The window surface is opaque and matches the neutral
+         page colour, so the system's window animations (back, return to home)
+         never composite a transparent card over the launcher, and a splash
+         drawable never leaks into a later transition.
+
+         This is the day/night fallback: before the page has ever reported an
+         appearance there is nothing else to go on. Afterwards MainActivity picks
+         the fixed light or dark variant from that report, and the page keeps the
+         surface in step through WindowSurfacePlugin, so the colour follows the
+         in-app appearance rather than the phone's setting. -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowBackground">@color/app_surface</item>
+        <item name="android:colorBackground">@color/app_surface</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+
+    <!-- Launch. The system splash API paints the icon on the same surface
+         colour, then postSplashScreenTheme swaps in the running theme; without
+         that swap the full-screen splash drawable stayed the window background
+         and reappeared around the WebView during the closing animation.
+
+         The icon is the 288dp splash drawable, not @mipmap/ic_launcher: the
+         system draws this attribute at 288dp and masks the inner 192dp, so the
+         108dp adaptive layers would be upscaled 2.67x at every density. -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/app_surface</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:windowBackground">@color/app_surface</item>
+    </style>
+
+    <!-- Fixed-appearance variants: the launch theme is chosen in MainActivity from
+         the surface the page last reported, so a dark appearance on a light-system
+         phone opens on a dark splash instead of the day/night one. Each variant
+         inherits everything from the theme above and changes only the surface,
+         including the handoff, which stays AppTheme.NoActionBar. -->
+    <style name="AppTheme.NoActionBarLaunch.Light">
+        <item name="windowSplashScreenBackground">@color/app_surface_light</item>
+        <item name="android:windowBackground">@color/app_surface_light</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Dark">
+        <item name="windowSplashScreenBackground">@color/app_surface_dark</item>
+        <item name="android:windowBackground">@color/app_surface_dark</item>
+    </style>
+</resources>

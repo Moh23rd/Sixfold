@@ -24,10 +24,10 @@ html[data-theme="dark"] {
 
 .hub-shell {
   width: min(100%, 1000px);
-  padding-top: calc(env(safe-area-inset-top, 0px) + clamp(18px, 3.6vw, 30px));
-  padding-right: calc(env(safe-area-inset-right, 0px) + clamp(16px, 3.8vw, 36px));
-  padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), env(safe-area-max-inset-bottom, 0px)) + 22px);
-  padding-left: calc(env(safe-area-inset-left, 0px) + clamp(16px, 3.8vw, 36px));
+  padding-top: max(var(--pb-gutter-top), calc(var(--sa-top) + clamp(18px, 3.6vw, 30px)));
+  padding-right: calc(var(--sa-right) + clamp(16px, 3.8vw, 36px));
+  padding-bottom: calc(var(--sa-bottom) + 22px);
+  padding-left: calc(var(--sa-left) + clamp(16px, 3.8vw, 36px));
 }
 
 /* ---------- masthead ---------- */
@@ -38,34 +38,7 @@ html[data-theme="dark"] {
 }
 
 .hub-brand {
-  gap: 9px;
   min-width: 0;
-}
-
-.hub-mark {
-  width: 32px;
-  height: 32px;
-  flex: none;
-  grid-template-columns: repeat(3, 6px);
-  grid-auto-rows: 6px;
-  gap: 2px;
-  border-radius: 9px;
-  background: var(--ink);
-  box-shadow: none;
-}
-
-.hub-mark span:nth-child(1) { background: var(--six-1); }
-.hub-mark span:nth-child(2) { background: var(--six-2); }
-.hub-mark span:nth-child(3) { background: var(--six-3); }
-.hub-mark span:nth-child(4) { background: var(--six-4); }
-.hub-mark span:nth-child(5) { background: var(--six-5); }
-.hub-mark span:nth-child(6) { background: var(--six-6); }
-
-.hub-brand-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
 }
 
 .hub-word {
@@ -74,23 +47,11 @@ html[data-theme="dark"] {
   letter-spacing: 0.2em;
 }
 
-.hub-tagline {
-  color: var(--muted);
-  font-family: var(--font-ui);
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
 .hub-actions {
   gap: 7px;
 }
 
-.hub-share,
-.hub-focus {
+.hub-share {
   width: 38px;
   height: 38px;
   border-radius: 10px;
@@ -100,14 +61,48 @@ html[data-theme="dark"] {
   color: var(--ink);
 }
 
-.hub-share:hover,
+.hub-share:hover {
+  transform: none;
+  border-color: var(--ink);
+  background: var(--home-faint);
+}
+
+.hub-share:active { transform: scale(0.95); }
+
+.hub-focus {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid var(--home-rule);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.hub-focus[hidden] { display: none; }
+
+.hub-focus svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.hub-focus .focus-exit { display: none; }
+.hub-focus[aria-pressed="true"] .focus-enter { display: none; }
+.hub-focus[aria-pressed="true"] .focus-exit { display: block; }
+
 .hub-focus:hover {
   transform: none;
   border-color: var(--ink);
   background: var(--home-faint);
 }
 
-.hub-share:active,
 .hub-focus:active { transform: scale(0.95); }
 
 .hub-share:focus-visible,
@@ -165,6 +160,7 @@ html[data-theme="dark"] {
   display: block;
   font-family: var(--font-ui);
   font-size: 6.5px;
+  line-height: 1.2;
   letter-spacing: 0.12em;
 }
 
@@ -232,12 +228,17 @@ html[data-theme="dark"] {
   font-size: clamp(40px, 12.5vw, 76px);
   font-weight: 700;
   letter-spacing: -0.067em;
-  line-height: 0.86;
+  /* The two lines are deliberately tight, but 0.86 put the next line's box on
+     top of the descender of the g in “Games”. A little breathing room keeps
+     the display treatment without clipping a letter. */
+  line-height: 0.94;
   text-transform: none;
   text-wrap: balance;
 }
 
 .home-hero h1 > span { display: block; }
+
+.home-hero h1 > span:first-child { padding-bottom: 0.035em; }
 
 .home-hero h1 .home-title-mark {
   display: table;
@@ -291,7 +292,7 @@ html[data-theme="dark"] {
   text-decoration: none;
   text-transform: uppercase;
   white-space: nowrap;
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  transition: transform 150ms var(--ease-out);
 }
 
 .home-cta span {
@@ -335,7 +336,7 @@ html[data-theme="dark"] {
   text-transform: uppercase;
   cursor: pointer;
   touch-action: manipulation;
-  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+  transition: background-color 150ms var(--ease-out), transform 150ms var(--ease-out);
 }
 
 .home-surprise svg {
@@ -357,6 +358,38 @@ html[data-theme="dark"] {
   outline-offset: 3px;
 }
 
+/* Surprise me: the die rolls, then the card it landed on lifts before the game
+   opens, so the pick is something the reader sees rather than a jump. */
+.home-game.is-picked {
+  border-color: var(--game-accent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--game-accent) 34%, transparent),
+    0 3px 0 var(--home-hard);
+}
+
+.home-game:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--home-hard);
+}
+
+@keyframes diceRoll {
+  0% { transform: rotate(0) scale(1); }
+  30% { transform: rotate(-20deg) scale(1.12); }
+  55% { transform: rotate(16deg) scale(1.08); }
+  78% { transform: rotate(-7deg) scale(1.03); }
+  100% { transform: rotate(0) scale(1); }
+}
+
+@keyframes cardPicked {
+  0% { transform: none; }
+  45% { transform: translateY(-3px) scale(1.012); }
+  100% { transform: none; }
+}
+
+html[data-motion="full"] .home-surprise.is-rolling svg { animation: diceRoll 430ms cubic-bezier(0.3, 0.9, 0.3, 1); }
+
+html[data-motion="full"] .home-game.is-picked { animation: cardPicked 430ms cubic-bezier(0.22, 1, 0.36, 1); }
+
 .home-promises {
   display: flex;
   align-items: center;
@@ -370,6 +403,10 @@ html[data-theme="dark"] {
   letter-spacing: 0.07em;
   line-height: 1.5;
   text-transform: uppercase;
+}
+
+.home-promises span {
+  white-space: nowrap;
 }
 
 .home-promises span + span::before {
@@ -407,7 +444,7 @@ html[data-theme="dark"] {
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 160ms var(--ease-out), box-shadow 160ms ease;
+  transition: transform 160ms var(--ease-out);
   border: 1.5px solid var(--ink);
   border-radius: 8px;
   box-shadow: inset 0 -4px 0 rgba(33, 29, 24, 0.12);
@@ -417,8 +454,8 @@ html[data-theme="dark"] {
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1;
-  animation-duration: 620ms;
-  animation-timing-function: var(--ease-spring);
+  animation-duration: 360ms;
+  animation-timing-function: var(--ease-out);
   /* Backwards fill covers the stagger delay; forwards fill would leave the
      final keyframe overriding the hover and press transforms forever. */
   animation-fill-mode: backwards;
@@ -446,15 +483,21 @@ html[data-theme="dark"] {
   text-transform: uppercase;
 }
 
-html.home-ready .home-six-piece { animation-name: sixBuild; }
+/* home-build is set at app-ready only when the launch resolves to Full, and
+   hub-settled is set the first time the reader leaves the collection. Together
+   they make the build a launch moment: the hub is display:none behind a game,
+   and without the second guard the browser would restart this animation every
+   time the collection came back. A switch to Reduced still drops home-build,
+   so choosing Full later does not replay a build the player already saw. */
+html.home-build:not(.hub-settled) .home-six-piece { animation-name: sixBuild; }
 
-html.home-ready .home-six-caption {
-  animation: sixCaptionIn 360ms var(--ease-out) 900ms both;
+html.home-build:not(.hub-settled) .home-six-caption {
+  animation: sixCaptionIn 360ms var(--ease-out) 340ms both;
 }
 
 @keyframes sixBuild {
   0% { opacity: 0; transform: translate(var(--six-x, 0), var(--six-y, 0)) scale(0.84) rotate(var(--six-r, 0deg)); }
-  64% { opacity: 1; transform: translate(0, 0) scale(1.035) rotate(0deg); }
+  64% { opacity: 1; transform: translate(0, 0) scale(1.02) rotate(0deg); }
   82% { transform: translate(0, 0) scale(0.99) rotate(0deg); }
   100% { opacity: 1; transform: none; }
 }
@@ -498,6 +541,12 @@ html.home-ready .home-six-caption {
   height: 100%;
   animation: tickerRun 42s linear infinite;
 }
+
+/* The tape is the one thing on the hub that never stops. Pause it with the
+   window, and start it from the beginning (instead of mid-word) on a phone
+   that asked for less motion or cannot afford the frames. */
+html.is-app-hidden .home-ticker-track { animation-play-state: paused; }
+html.perf-lite .home-ticker-track { animation: none; transform: none; }
 
 .home-ticker-group {
   display: flex;
@@ -625,7 +674,7 @@ html.home-ready .home-six-caption {
   text-align: left;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .home-game--merge { --game-accent: var(--six-1); }
@@ -686,7 +735,7 @@ html.home-ready .home-six-caption {
   font-size: 15px;
   font-weight: 500;
   line-height: 0.8;
-  transition: transform 160ms ease;
+  transition: transform 160ms var(--ease-out);
 }
 
 .home-game:hover .home-game-arrow { transform: translate(2px, -2px); }
@@ -732,9 +781,7 @@ html.home-ready .home-six-caption {
   opacity: 0.9;
 }
 
-.home-game-stage .mini-fruit-cluster {
-  transform: scale(0.78);
-}
+.home-game-stage .mini-cluster { transform: scale(0.78); }
 
 .home-game-stage .mini-ttt {
   width: 96px;
@@ -813,19 +860,21 @@ html.home-ready .home-six-caption {
 
 .home-game-play::after {
   content: "";
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
   flex: none;
-  border: solid currentColor;
-  border-width: 0 1.5px 1.5px 0;
-  transform: rotate(-45deg);
-  transition: transform 160ms ease;
+  /* One vector chevron for every card. A rotated 5px border square rendered
+     as a box or an L on some densities, which made one card's arrow differ. */
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M2.2 1 5.8 4 2.2 7' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M2.2 1 5.8 4 2.2 7' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 160ms var(--ease-out);
 }
 
-.home-game:hover .home-game-play::after { transform: translateX(2px) rotate(-45deg); }
+.home-game:hover .home-game-play::after { transform: translateX(2px); }
 
-html[dir="rtl"] .home-game-play::after { transform: rotate(135deg); }
-html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(-2px) rotate(135deg); }
+html[dir="rtl"] .home-game-play::after { transform: scaleX(-1); }
+html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(-2px) scaleX(-1); }
 
 /* ---------- install notice ---------- */
 
@@ -983,13 +1032,34 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-game-stage .mini-merge { width: 124px; }
   .home-game-stage .mini-water { transform: scale(0.95); }
   .home-game-stage .mini-sudoku { width: 116px; height: 116px; }
-  .home-game-stage .mini-fruit-cluster { transform: scale(0.94); }
+  .home-game-stage .mini-cluster { transform: scale(0.94); }
   .home-game-stage .mini-ttt { width: 110px; height: 110px; }
   .home-game-stage .mini-mines { width: 112px; height: 112px; }
 }
 
 @media (min-width: 920px) {
   .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Keep the roomy phone hero: the description starts at the cover's top edge
+   so the headline no longer strands an empty band above it, and the promise
+   row sits on the cover's foot instead of hovering above its caption. The
+   leftover height is shared above and below the CTAs, so a short locale does
+   not leave the single-line promise row stranded far under the buttons. */
+@media (max-width: 719px) {
+  /* The masthead is a label, not a section. The release note used to be the
+     only thing between it and the hero, so once the note was dismissed the
+     hero sat a full section gap below the wordmark and the header read as a
+     hole above the fold. The hero's gap is now the tight one; the note adds
+     its own room below itself, so a fresh visit keeps the same rhythm. */
+  .home-hero { margin-top: clamp(18px, 3vh, 30px); }
+  .whats-new { margin-bottom: clamp(12px, 2vh, 18px); }
+  .home-body {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 559px) {
@@ -1000,22 +1070,32 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 }
 
 @media (max-width: 480px) {
-  .hub-tagline { display: none; }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
   .hub-look-copy span { display: none; }
   .hub-look-copy strong { max-width: 12ch; font-size: 9.5px; }
   .hub-look-chevron { display: none; }
 }
 
+/* A short landscape window is wide, not narrow. Keep the Look pill's name and
+   its chevron, and give its two-line copy enough height that a scaled-up
+   system font cannot push the label out of the border. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .hub-look { min-height: 40px; padding: 0 10px 0 9px; }
+  .hub-look-copy span { display: block; }
+  .hub-look-chevron { display: block; }
+}
+
 @media (max-width: 380px) {
   .hub-shell {
-    padding-right: calc(env(safe-area-inset-right, 0px) + 15px);
-    padding-left: calc(env(safe-area-inset-left, 0px) + 15px);
+    padding-right: calc(var(--sa-right) + 15px);
+    padding-left: calc(var(--sa-left) + 15px);
   }
 
   .hub-word { font-size: 11px; letter-spacing: 0.16em; }
-  .hub-mark { width: 29px; height: 29px; }
   .hub-actions { gap: 5px; }
-  .hub-share,
+  .hub-share { width: 36px; height: 36px; }
   .hub-focus { width: 36px; height: 36px; }
   .hub-look { min-height: 36px; padding: 0 7px; }
 
@@ -1023,7 +1103,7 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
     grid-template-columns: minmax(0, 1fr) 92px;
     column-gap: 13px;
     row-gap: 16px;
-    margin-top: 27px;
+    margin-top: 24px;
   }
 
   .home-hero h1 { font-size: clamp(38px, 12.4vw, 47px); }
@@ -1031,8 +1111,8 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-ctas { margin-top: 15px; gap: 7px; }
   .home-cta { gap: 9px; min-height: 43px; padding: 0 11px; font-size: 9px; }
   .home-surprise { width: 43px; min-width: 43px; min-height: 43px; }
-  .home-promises { margin-top: 13px; font-size: 8px; gap: 3px 7px; }
-  .home-promises span + span::before { margin-right: 7px; }
+  .home-promises { margin-top: 13px; font-size: 7.5px; letter-spacing: 0.04em; gap: 2px 6px; }
+  .home-promises span + span::before { margin-right: 5px; }
   .home-six { gap: 4px; }
   .home-six-piece { padding: 0 6px 5px; border-radius: 7px; font-size: 7px; }
   .home-six-caption { margin-top: 8px; font-size: 6px; }
@@ -1055,7 +1135,7 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
   .home-game-stage .mini-merge { width: 96px; gap: 6px; }
   .home-game-stage .mini-water { transform: scale(0.77); }
   .home-game-stage .mini-sudoku { width: 92px; height: 92px; }
-  .home-game-stage .mini-fruit-cluster { transform: scale(0.73); }
+  .home-game-stage .mini-cluster { transform: scale(0.73); }
   .home-game-stage .mini-ttt { width: 90px; height: 90px; }
   .home-game-stage .mini-mines { width: 92px; height: 92px; }
   .hub-foot { margin-top: 28px; font-size: 8px; }
@@ -1064,8 +1144,6 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 }
 
 @media (max-width: 340px) {
-  .hub-brand-copy { gap: 2px; }
-  .hub-look-copy { display: none; }
   .hub-look { padding: 0 8px; }
   .home-hero { grid-template-columns: minmax(0, 1fr) 84px; }
   .home-cta { gap: 7px; font-size: 8.5px; padding: 0 9px; }
@@ -1082,25 +1160,26 @@ html[dir="rtl"] .home-game:hover .home-game-play::after { transform: translateX(
 
   .home-game:hover .home-game-arrow,
   .home-game:hover .home-game-play::after { transform: none; }
+
+  html[dir="rtl"] .home-game:hover .home-game-play::after { transform: scaleX(-1); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hub-share,
-  .hub-focus,
-  .hub-look,
-  .home-cta,
-  .home-surprise,
-  html.home-ready .home-six-piece,
-  html.home-ready .home-six-caption,
-  .home-game,
-  .home-game-arrow,
-  .home-game-play::after {
+html[data-motion="reduced"] .hub-share,
+html[data-motion="reduced"] .hub-look,
+html[data-motion="reduced"] .home-cta,
+html[data-motion="reduced"] .home-surprise,
+html[data-motion="reduced"].home-ready .home-six-piece,
+html[data-motion="reduced"].home-ready .home-six-caption,
+html[data-motion="reduced"] .home-ticker-track,
+html[data-motion="reduced"] .home-game,
+html[data-motion="reduced"] .home-game-arrow,
+html[data-motion="reduced"] .home-game-play::after {
     animation: none;
     transition: none;
   }
 
-  .home-ticker-track { animation: none; transform: none; }
-}
+
+html[data-motion="reduced"] .home-ticker-track { animation: none; transform: none; }
 
 /* ---------- Android stretch overscroll ----------
    Android 12+ stretches the content instead of rubber-banding it, but a fixed
@@ -1111,18 +1190,10 @@ html.has-stretch .hub {
   overscroll-behavior-y: none;
 }
 
-html.has-stretch .hub-shell.is-dragging {
-  will-change: transform;
-}
-
-html.has-stretch .hub-shell.is-stretching {
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.32, 1);
-  will-change: transform;
-}
-
-html.has-stretch .hub-shell.is-flinging {
-  transition: transform 120ms cubic-bezier(0.22, 1, 0.32, 1);
-  will-change: transform;
+/* The stretch is written frame by frame by overscroll.js on the hub itself —
+   a transition there would fight the spring and snap a caught animation flat. */
+html.has-stretch .hub {
+  transition: none;
 }
 
 /* The cover is a touch surface, not just decoration. Keep it above the
@@ -1148,8 +1219,50 @@ html.has-stretch .hub-shell.is-flinging {
 
 .hub-top + .whats-new { margin-top: 18px; }
 
-@media (prefers-reduced-motion: reduce) {
-  html.has-stretch .hub { overscroll-behavior-y: contain; }
-  html.has-stretch .hub-shell.is-stretching,
-  html.has-stretch .hub-shell.is-flinging { transition: none; }
+/* ---------- first-run welcome ---------- */
+
+/* The first visit gets one sheet, in the same language as every other sheet:
+   a short mark, three numbered steps, and one way out. It is shown once and
+   can be replayed from Look & feel. */
+.welcome-card { padding-top: 20px; }
+
+/* One filled action: the start button. Skip stays quiet so the first screen
+   has a single obvious next step. */
+.welcome-card .sheet-done {
+  background: transparent;
+  color: var(--muted);
 }
+
+.welcome-mark {
+  display: flex;
+  gap: 5px;
+  margin: 16px 0 0;
+}
+
+.welcome-mark span {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.welcome-mark span:nth-child(1) { background: var(--six-1); }
+.welcome-mark span:nth-child(2) { background: var(--six-2); }
+.welcome-mark span:nth-child(3) { background: var(--six-3); }
+.welcome-mark span:nth-child(4) { background: var(--six-4); }
+.welcome-mark span:nth-child(5) { background: var(--six-5); }
+.welcome-mark span:nth-child(6) { background: var(--six-6); }
+
+.welcome-steps { margin-top: 18px; }
+
+.welcome-start {
+  display: flex;
+  width: 100%;
+  margin-top: 18px;
+  justify-content: center;
+}
+
+.welcome-note { margin: 12px 0 0; text-align: center; }
+
+/* With reduced motion the script never marks the shell, so the hub keeps the
+   platform's own edge handling rather than the rebuilt stretch. */
+html[data-motion="reduced"] .hub { overscroll-behavior-y: contain; }

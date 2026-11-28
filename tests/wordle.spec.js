@@ -1,19 +1,12 @@
 const { test, expect } = require('@playwright/test');
-const { LANGUAGE_NAMES, LOCALES, setPreferences, expectNoClippedText, chooseLocale } = require('./helpers');
+const { LANGUAGE_NAMES, LOCALES, setPreferences, expectNoClippedText, chooseLocale, holdCover } = require('./helpers');
 const { expectNoAxeViolations } = require('./accessibility');
 
 async function openWordle(page) {
   await page.goto('/');
   await page.waitForSelector('#daily');
   await page.waitForFunction(() => document.documentElement.classList.contains('home-ready'));
-  for (let i = 0; i < 6; i += 1) {
-    await page.evaluate((index) => {
-      const piece = document.querySelectorAll('.home-six-piece')[index];
-      if (piece) piece.click();
-    }, i);
-    await page.waitForTimeout(50);
-  }
-  await page.waitForTimeout(400);
+  await holdCover(page);
   if (await page.locator('#hidden-reveal').isVisible()) {
     await page.evaluate(() => document.querySelector('#hidden-reveal-skip').click());
   }
@@ -318,22 +311,13 @@ const WORDLE_IME_LOCALES = ['ar', 'hi', 'kn', 'ja', 'ko', 'zh-Hans', 'zh-Hant'];
 
 async function captureWordleShare(page) {
   await page.evaluate(() => {
-    window.__wordleShare = '';
-    // Force the text fallback so the test observes the same localized copy a
-    // browser without file sharing would copy. The stub also keeps the test
-    // independent of clipboard permissions.
-    try { Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }); } catch (err) {}
-    try {
-      Object.defineProperty(navigator, 'clipboard', {
-        configurable: true,
-        value: {
-          writeText: function (text) {
-            window.__wordleShare = text;
-            return Promise.resolve();
-          }
-        }
-      });
-    } catch (err) {}
+    window.__wordleShare = null;
+    // Observe the card Wordle hands to the save path.
+    const original = window.MergeShare.result;
+    window.MergeShare.result = function (title, text, data) {
+      window.__wordleShare = { text: text, data: data };
+      return original.call(window.MergeShare, title, text, data);
+    };
   });
   await page.locator('#wordle-result-share').click();
   await page.waitForFunction(() => Boolean(window.__wordleShare));
@@ -414,11 +398,12 @@ for (const locale of LOCALES) {
     }
 
     const share = await captureWordleShare(page);
-    expect(share).toContain('Sixfold — Wordle');
-    expect(share).toContain('🟩🟩🟩🟩🟩');
-    if (locale === 'ar') expect(share).toContain('١/٦');
-    else if (locale === 'hi') expect(share).toContain('१/६');
-    else if (locale === 'kn') expect(share).toContain('೧/೬');
-    else expect(share).toContain('1/6');
+    expect(share.text).toContain('Sixfold — Wordle');
+    expect(share.text).toContain('🟩🟩🟩🟩🟩');
+    const localizedScore = await page.evaluate((score) => window.SixfoldI18n.number(score), share.data.score);
+    if (locale === 'ar') expect(localizedScore).toContain('١/٦');
+    else if (locale === 'hi') expect(localizedScore).toContain('१/६');
+    else if (locale === 'kn') expect(localizedScore).toContain('೧/೬');
+    else expect(localizedScore).toContain('1/6');
   });
 }

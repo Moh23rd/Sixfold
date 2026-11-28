@@ -2,13 +2,14 @@ const { test, expect } = require('@playwright/test');
 const { LANGUAGE_NAMES, LOCALES, expectNoClippedText } = require('./helpers');
 
 const WHATS_NEW_ITEMS = [
-  'Wordle in all twelve languages: localized word lists, native input for Arabic, Hindi, Kannada, Japanese, Korean and Chinese, and an offline English fallback',
-  'Wordle offline support: the selected dictionary downloads in the background, and an English fallback round keeps the game playable when it is not cached',
-  'Arabic and Hindi numerals, right-to-left Arabic, localized dates and share text across every game',
-  'New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic, with complete catalogs and offline fonts'
+  'One colour from your wallpaper: the palette now stays on that hue, with no stray purple or red.',
+  'Games and the first launch open cleanly, without flashing the screen behind them.',
+  'Every numbered cover tile opens its game; press and hold one for the hidden seventh.',
+  'A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.',
+  'Two ways to play: the installable web app and the direct Android APK — both on 6.0.'
 ];
 
-test.describe('What’s New 5.0', () => {
+test.describe('What’s New 6.0', () => {
   for (const locale of LOCALES) {
     test(LANGUAGE_NAMES[locale] + ' translations and 320px layout', async ({ page }) => {
       await page.addInitScript(({ locale }) => {
@@ -27,12 +28,12 @@ test.describe('What’s New 5.0', () => {
       const heading = (await panel.locator('.whats-new-label').textContent()).trim();
       const expectedHeading = await page.evaluate(() => {
         const i18n = window.SixfoldI18n;
-        return i18n.number(i18n.t('What’s new in 5.0'));
+        return i18n.number(i18n.t('What’s new in 6.0'));
       });
       expect(heading).toBe(expectedHeading);
 
       if (locale !== 'en') {
-        expect(heading, locale + ' heading').not.toBe('What’s new in 5.0');
+        expect(heading, locale + ' heading').not.toBe('What’s new in 6.0');
         expected.forEach((text, index) => {
           expect(text, locale + ' item ' + (index + 1)).not.toBe(WHATS_NEW_ITEMS[index]);
         });
@@ -62,4 +63,88 @@ test.describe('What’s New 5.0', () => {
       }
     });
   }
+});
+
+test('dismissing the card fades it in place before hiding it', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.removeItem('sixfold.whats-new.dismissed');
+  });
+  await page.goto('/');
+  const panel = page.locator('#whats-new');
+  await expect(panel).toBeVisible();
+  // Keep Playwright's click from scrolling the hub between the measurement
+  // and the dismissal.
+  await panel.scrollIntoViewIfNeeded();
+  const before = await panel.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { height: rect.height, top: rect.top };
+  });
+  expect(before.height).toBeGreaterThan(20);
+
+  // Tap and sample in the same task: the 200 ms exit is shorter than a loaded
+  // protocol round-trip, which would make this measurement a race.
+  const during = await page.evaluate(() => {
+    document.getElementById('whats-new-close').click();
+    const element = document.getElementById('whats-new');
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      leaving: element.classList.contains('is-leaving'),
+      hidden: element.hidden,
+      height: rect.height,
+      top: rect.top,
+      transition: style.transitionProperty
+    };
+  });
+  expect(during.leaving, 'the card enters its exit state').toBe(true);
+  expect(during.hidden, 'the card stays mounted while it fades').toBe(false);
+  expect(during.top, 'the card does not detach from its place').toBeCloseTo(before.top, 0);
+  expect(during.height, 'the card does not animate its height').toBeCloseTo(before.height, 0);
+  expect(during.transition).toContain('opacity');
+  expect(during.transition).toContain('transform');
+  expect(during.transition).not.toContain('height');
+  expect(during.transition).not.toContain('margin');
+  await expect(page.locator('.whats-new-ghost')).toHaveCount(0);
+
+  await page.waitForTimeout(80);
+  expect(await panel.evaluate((element) => Number(getComputedStyle(element).opacity))).toBeLessThan(1);
+  await expect(panel).toBeHidden({ timeout: 1500 });
+  await expect.poll(() => page.evaluate(() => {
+    const hero = document.querySelector('.home-hero');
+    return {
+      transform: getComputedStyle(hero).transform,
+      inlineTransform: hero.style.transform,
+      inlineWillChange: hero.style.willChange
+    };
+  })).toEqual({ transform: 'none', inlineTransform: '', inlineWillChange: '' });
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('sixfold.whats-new.dismissed'))).not.toBeNull();
+});
+
+test('the list reveal replays after the note is closed and opened again', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.removeItem('sixfold.whats-new.dismissed');
+  });
+  await page.goto('/');
+  const panel = page.locator('#whats-new');
+  const details = panel.locator('.whats-new-details');
+  await expect(panel).toBeVisible();
+
+  const revealRunning = () => page.evaluate(() => {
+    const item = document.querySelector('.whats-new-details.is-opening .whats-new-list li');
+    return Boolean(item && item.getAnimations().some((animation) =>
+      animation.playState === 'running' && animation.animationName === 'whats-new-item'
+    ));
+  });
+
+  await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  await expect.poll(revealRunning, { message: 'the first opening staggers the list' }).toBe(true);
+
+  await details.locator('summary').click();
+  await expect(details).not.toHaveAttribute('open', '');
+  await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  await expect.poll(revealRunning, { message: 'the second opening staggers the list again' }).toBe(true);
 });

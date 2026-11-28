@@ -364,6 +364,22 @@
     return cleanState(load(key || STATE_KEY, null));
   }
 
+  function activeDailyKey() {
+    try {
+      const raw = localStorage.getItem(ACTIVE_DAILY_KEY);
+      if (!raw) return '';
+      let value = raw;
+      // Older builds wrote the bare date. Accept both that and a JSON string so
+      // a daily started before this build still resumes.
+      if (raw.charAt(0) === '"') {
+        try { value = JSON.parse(raw); } catch (err) { return ''; }
+      }
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? String(value) : '';
+    } catch (err) {
+      return '';
+    }
+  }
+
   function currentElapsed() {
     if (!state) return 0;
     if (!runStart) return state.elapsed;
@@ -511,6 +527,7 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'sudoku-pad-key';
+      button.dataset.fade = '';
       button.dataset.digit = String(digit);
       button.innerHTML = '<span>' + digit + '</span>';
       button.addEventListener('click', function () {
@@ -539,6 +556,7 @@
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.className = 'sudoku-cell';
+        cell.dataset.fade = '';
         cell.dataset.index = String(index);
         cell.setAttribute('role', 'gridcell');
         cell.tabIndex = -1;
@@ -705,10 +723,18 @@
   }
 
   function findLearnHint() {
+    // Hints follow the puzzle's real solution. A wrong entry must not hide the
+    // digit the player needs, and the digit announced here has to match the
+    // solution digit applyPendingHint places.
+    const hintGrid = state.grid.slice();
+    for (let i = 0; i < CELLS; i += 1) {
+      if (hintGrid[i] && hintGrid[i] !== state.solution[i]) hintGrid[i] = 0;
+    }
+
     const singles = [];
     for (let i = 0; i < CELLS; i += 1) {
-      if (state.grid[i] || state.puzzle[i]) continue;
-      const mask = candidateMask(state.grid, i);
+      if (hintGrid[i] || state.puzzle[i]) continue;
+      const mask = candidateMask(hintGrid, i);
       if (popcount(mask) !== 1) continue;
       let digit = 1;
       while (digit <= 9 && !(mask & (1 << (digit - 1)))) digit += 1;
@@ -749,7 +775,7 @@
       for (let digit = 1; digit <= 9; digit += 1) {
         const bit = 1 << (digit - 1);
         const spots = unit.cells.filter(function (index) {
-          return !state.grid[index] && (candidateMask(state.grid, index) & bit);
+          return !hintGrid[index] && (candidateMask(hintGrid, index) & bit);
         });
         if (spots.length === 1) {
           return {
@@ -770,13 +796,23 @@
     if (hintTitle) hintTitle.textContent = found.title;
     if (hintCopy) hintCopy.textContent = found.copy;
     if (hintPlace) hintPlace.textContent = found.reveal ? 'Reveal ' + found.digit : 'Place ' + found.digit;
-    if (hintPanel) hintPanel.hidden = false;
+    if (hintPanel) {
+      hintPanel.hidden = false;
+      // The hint card is taller than the one-line feedback slot. The class
+      // lets the slot grow and the board give up the height in portrait.
+      const main = hintPanel.closest('.play-main');
+      if (main) main.classList.add('has-hint');
+    }
     selected = found.index;
     render();
   }
 
   function hideHintPanel() {
-    if (hintPanel) hintPanel.hidden = true;
+    if (hintPanel) {
+      hintPanel.hidden = true;
+      const main = hintPanel.closest('.play-main');
+      if (main) main.classList.remove('has-hint');
+    }
   }
 
   function applyPendingHint() {
@@ -920,11 +956,39 @@
     }
   }
 
+  // The solved card is a dialog: everything else on the screen leaves the tab
+  // order and the pointer while it is up — the pad and the tool row too, not
+  // only the board — and the keydown below keeps Tab inside the card.
+  let resultInert = [];
+  function setResultModal(on) {
+    if (!on) {
+      resultInert.forEach(function (el) { el.inert = false; });
+      resultInert = [];
+      return;
+    }
+    if (!resultEl) return;
+    // Walk from the card to the screen and cover every sibling on the way, so a
+    // control added beside the board later is covered without being listed.
+    const screenEl = document.getElementById('sudoku') || document.body;
+    let node = resultEl;
+    while (node && node !== screenEl) {
+      const parent = node.parentElement;
+      if (!parent) break;
+      Array.prototype.forEach.call(parent.children, function (sibling) {
+        if (sibling === node || !('inert' in sibling) || sibling.inert) return;
+        sibling.inert = true;
+        resultInert.push(sibling);
+      });
+      node = parent;
+    }
+  }
+
   function showResult() {
     if (!resultEl) return;
     const best = bestFor(difficulty);
     resultEl.hidden = false;
     resultEl.dataset.state = 'won';
+    setResultModal(true);
     if (resultTitle) resultTitle.textContent = 'Solved.';
     if (resultCopy) {
       const daily = dailyKey ? 'Daily Sixfold · ' + prettyDaily(dailyKey) + '. ' : '';
@@ -945,7 +1009,47 @@
       resultEl.hidden = true;
       resultEl.removeAttribute('data-state');
     }
+    setResultModal(false);
   }
+
+  // The solved card is modal; back dismisses it rather than leaving the game.
+  // A sheet opened over it still takes precedence.
+  document.addEventListener('sixfold:back', function (event) {
+    if (!resultEl || resultEl.hidden || document.body.dataset.screen !== 'sudoku') return;
+    if (document.documentElement.classList.contains('sheet-open')) return;
+    event.preventDefault();
+    hideResult();
+    try { boardEl.focus({ preventScroll: true }); } catch (err) {}
+  });
+
+  // Escape and Tab belong to the card while it is open, so a keyboard reader
+  // cannot leave the dialog by accident or tab into the board behind it.
+  document.addEventListener('keydown', function (event) {
+    if (!resultEl || resultEl.hidden || document.body.dataset.screen !== 'sudoku') return;
+    if (event.key === 'Escape') {
+      // A sheet opened over the result owns the gesture; one Escape must not
+      // close both the panel and the card underneath it.
+      if (event.defaultPrevented || document.documentElement.classList.contains('sheet-open')) return;
+      event.preventDefault();
+      hideResult();
+      try { boardEl.focus({ preventScroll: true }); } catch (err) {}
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusables = Array.prototype.slice.call(resultEl.querySelectorAll('button, [href]'))
+      .filter(function (el) { return !el.hidden && !el.disabled && el.getClientRects().length > 0; });
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || !resultEl.contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || !resultEl.contains(active))) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   function renderLevelSheet() {
     if (!levelGrid) return;
@@ -1193,9 +1297,7 @@
         game: 'Sudoku', number: '02', kind: 'LOGIC', title: dailyKey ? 'Daily Sudoku' : 'Sudoku',
         score: formatTime(time), label: 'TIME', meta: dailyKey ? [prettyDaily(dailyKey), label, hintText] : [label, hintText], accent: accent
       });
-      return;
     }
-    if (window.MergeShare && window.MergeShare.share) window.MergeShare.share('Sudoku', message);
   }
 
   /* ---------- setup ---------- */
@@ -1209,9 +1311,13 @@
     const savedDifficulty = load(DIFF_KEY, null);
     if (LEVELS[savedDifficulty]) difficulty = savedDifficulty;
     stats = cleanStats(load(STATS_KEY, null));
-    const activeDaily = load(ACTIVE_DAILY_KEY, null);
-    state = activeDaily ? loadState(DAILY_PREFIX + activeDaily) : loadState();
-    dailyKey = state && activeDaily && state.solved !== undefined ? activeDaily : '';
+    const activeDaily = activeDailyKey();
+    const dailyState = activeDaily ? loadState(DAILY_PREFIX + activeDaily) : null;
+    state = dailyState || loadState();
+    dailyKey = dailyState ? activeDaily : '';
+    if (!dailyState && activeDaily) {
+      try { localStorage.removeItem(ACTIVE_DAILY_KEY); } catch (err) {}
+    }
     if (state) difficulty = state.difficulty;
 
     if (!state) {

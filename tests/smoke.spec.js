@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 const { LOCALES, chooseLocale } = require('./helpers');
+const pkg = require('../package.json');
 
 const SW_SOURCE = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
 const SHELL_BLOCK = SW_SOURCE.match(/const SHELL = \[([\s\S]*?)\n\];/)[1];
@@ -34,6 +35,31 @@ test('all six hub cards open their game screen', async ({ page }) => {
   }
 });
 
+test('the surprise die opens one game, not a card tapped mid-swing', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.home-game[data-game="merge"]');
+  await page.evaluate(() => {
+    window.__screens = [];
+    new MutationObserver(() => {
+      window.__screens.push(document.body.dataset.screen);
+    }).observe(document.body, { attributes: true, attributeFilter: ['data-screen'] });
+  });
+
+  // Tap the die, then a different card before the 430 ms swing lands. The tap
+  // used to open its own game and be replaced by the pick a moment later.
+  const picked = await page.evaluate(() => {
+    document.getElementById('home-surprise').click();
+    const lifted = document.querySelector('.home-game.is-picked');
+    const other = document.querySelector('.home-game[data-game="' + (lifted.dataset.game === 'ttt' ? 'sudoku' : 'ttt') + '"]');
+    other.click();
+    return { game: lifted.dataset.game, other: other.dataset.game };
+  });
+  expect(picked.game).not.toBe(picked.other);
+
+  await expect(page.locator('body')).toHaveAttribute('data-screen', picked.game);
+  expect(await page.evaluate(() => window.__screens)).toEqual([picked.game]);
+});
+
 test('Daily Sixfold picks a date-seeded featured game', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#daily')).toBeVisible();
@@ -43,20 +69,24 @@ test('Daily Sixfold picks a date-seeded featured game', async ({ page }) => {
 
   const info = await page.evaluate(() => {
     const picks = [];
-    for (let day = 1; day <= 12; day += 1) {
+    for (let day = 1; day <= 18; day += 1) {
       const date = new Date(2026, 0, day);
       const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
       picks.push(window.SixfoldDaily.featuredGame(key));
     }
     const current = window.SixfoldDaily.featuredGame(window.SixfoldDaily.todayKey());
     return {
+      picks: picks,
       varied: new Set(picks).size,
       current: current,
       buttonGame: document.getElementById('daily-featured').dataset.game,
       buttonText: document.getElementById('daily-featured-label').textContent
     };
   });
-  expect(info.varied, 'the seeded featured game should vary by day').toBeGreaterThan(1);
+  expect(info.varied, 'the seeded featured game should use the whole collection').toBe(6);
+  for (let index = 1; index < info.picks.length; index += 1) {
+    expect(info.picks[index], 'the same game must not run two days in a row').not.toBe(info.picks[index - 1]);
+  }
   expect(info.buttonGame).toBe(info.current);
   expect(info.buttonText).not.toBe('Play daily Sudoku');
 
@@ -175,6 +205,57 @@ test('daily section can be hidden and restored from Look & feel', async ({ page 
   await expect(page.locator('#sudoku-settings')).toBeHidden();
 });
 
+test('Minesweeper and Water Sort settings live in their screens', async ({ page }) => {
+  await page.goto('/#water');
+  await page.waitForSelector('#water-tubes .water-seg');
+  await page.locator('#water-settings-open').click();
+  await expect(page.locator('#water-settings')).toBeVisible();
+  await page.locator('#water-settings [data-setting="colorblind"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-colorblind', 'on');
+  const symbol = await page.locator('#water-tubes .water-seg').first().evaluate((segment) => (
+    window.getComputedStyle(segment, '::after').content
+  ));
+  expect(symbol).not.toBe('none');
+  await page.locator('#water-settings .sheet-done').click();
+  await expect(page.locator('#water-settings')).toBeHidden();
+
+  await page.goto('/');
+  await page.locator('.home-game[data-game="mines"]').click();
+  await page.waitForSelector('#mines-board .mines-cell');
+  await page.locator('#mines-settings-open').click();
+  await expect(page.locator('#mines-settings')).toBeVisible();
+  await page.locator('#mines-settings [data-setting="largeMines"]').click();
+  await page.locator('#mines-settings [data-setting="hideTimer"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-large-mines', 'on');
+  await expect(page.locator('#mines .play-stats .play-stat:last-child')).toBeHidden();
+  const size = await page.locator('#mines-board .mines-cell').first().evaluate((cell) => parseFloat(
+    window.getComputedStyle(cell).fontSize
+  ));
+  expect(size).toBeGreaterThanOrEqual(19);
+});
+
+test('Fruit Merge switches to numbered tiles and remembers the choice', async ({ page }) => {
+  await page.goto('/#fruit');
+  await page.waitForFunction(() => window.SixfoldSettings);
+  await page.locator('#fruit-settings-open').click();
+  await expect(page.locator('#fruit-settings')).toBeVisible();
+  await page.locator('#fruit-settings [data-setting="fruitNumbers"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-fruit-numbers', 'on');
+  await expect(page.locator('#fruit-title')).toContainText('Number Merge');
+  await expect(page.locator('#fruit-next-name')).toHaveText(/^\d+$/);
+  await page.locator('#fruit-settings .sheet-done').click();
+
+  await page.goto('/');
+  const card = page.locator('.home-game[data-game="fruit"]');
+  await expect(card.locator('.home-game-title')).toContainText('Number Merge');
+  await expect(card.locator('.mini-number-cluster')).toBeVisible();
+  await expect(card.locator('.mini-fruit-cluster')).toBeHidden();
+
+  await page.reload();
+  await expect(page.locator('.home-game[data-game="fruit"] .home-game-title')).toContainText('Number Merge');
+  await expect(page.locator('.home-game[data-game="fruit"] .mini-number-cluster')).toBeVisible();
+});
+
 test('Arabic, Hindi and Kannada interface numbers use native digits', async ({ page }) => {
   await page.goto('/');
   for (const [locale, zero, digitPattern] of [
@@ -209,9 +290,9 @@ test('appearance settings update the document and backup downloads', async ({ pa
   await expect(page.locator('[data-setting="sound"]')).toHaveCount(0);
   await page.locator('#accessibility-settings summary').click();
   await expect(page.locator('#accessibility-settings')).toHaveAttribute('open', '');
-  await page.locator('[data-setting="highContrast"]').click();
+  await page.locator('#sheet [data-setting="highContrast"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-contrast', 'high');
-  await page.locator('[data-setting="highContrast"]').click();
+  await page.locator('#sheet [data-setting="highContrast"]').click();
   await expect(page.locator('html')).not.toHaveAttribute('data-contrast', 'high');
 
   const downloadPromise = page.waitForEvent('download');
@@ -511,7 +592,7 @@ test.describe('service worker locale cache', () => {
     await page.goto('/');
     await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
 
-    const manifest = '/manifest.webmanifest?v=5.2.0';
+    const manifest = '/manifest.webmanifest?v=' + pkg.version;
     const cached = (url) => page.evaluate(async (target) => {
       for (const name of (await caches.keys()).filter((value) => value.startsWith('sixfold-'))) {
         const cache = await caches.open(name);
@@ -554,4 +635,125 @@ test.describe('service worker locale cache', () => {
 
     await expect.poll(() => page.evaluate(async (name) => (await caches.keys()).includes(name), stagingName)).toBe(false);
   });
+});
+
+test('Water Sort pour effects use a real light tint', async ({ page }) => {
+  await page.goto('/#water');
+  await page.waitForSelector('#water-tubes .water-tube');
+
+  const colours = await page.evaluate(() => {
+    const tubes = document.querySelectorAll('#water-tubes .water-tube');
+    tubes[0].click();
+    tubes[3].click();
+    const ring = document.querySelector('.water-pour-ring');
+    const drop = document.querySelector('.water-pour-drop');
+    return {
+      ring: ring && ring.getAttribute('stroke'),
+      drop: drop && drop.getAttribute('fill')
+    };
+  });
+
+  // A missing light tone used to become the literal SVG attribute "undefined",
+  // so the splash ring and droplets painted with no colour at all.
+  expect(colours.ring).toMatch(/^#[0-9a-f]{6}$/i);
+  expect(colours.drop).toMatch(/^#[0-9a-f]{6}$/i);
+});
+
+test('an in-progress daily Sudoku resumes after a reload', async ({ page }) => {
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  await page.waitForFunction(() => window.SixfoldSudoku);
+  await page.evaluate(() => window.SixfoldSudoku.startDaily('2026-11-21'));
+  await page.waitForFunction(() => {
+    const cells = Array.from(document.querySelectorAll('#sudoku-board .sudoku-cell'));
+    return window.SixfoldSudoku.currentDaily() === '2026-11-21' &&
+      cells.length === 81 && cells.some((cell) => cell.textContent.trim());
+  });
+
+  await page.reload();
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  await expect.poll(() => page.evaluate(() => window.SixfoldSudoku.currentDaily())).toBe('2026-11-21');
+});
+
+test('finishing the sixth game of a week announces Perfect six', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    const start = window.SixfoldDaily.weekStartKey(window.SixfoldDaily.todayKey());
+    const days = {};
+    days[start] = { games: { merge: true, sudoku: true, ttt: true, mines: true, water: true } };
+    localStorage.setItem('sixfold.daily.v1', JSON.stringify({ days, best: 0 }));
+  });
+  await page.reload();
+  await page.waitForFunction(() => window.SixfoldDaily);
+
+  const result = await page.evaluate(() => {
+    const ok = window.SixfoldDaily.complete('fruit', null, window.SixfoldDaily.todayKey());
+    return {
+      ok: ok,
+      weekly: window.SixfoldDaily.weeklyBadge(),
+      pulse: document.getElementById('daily-badge').classList.contains('is-new')
+    };
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.weekly).toBe(true);
+  // The completion itself used to be counted before the "previous" week was
+  // read, which made this branch unreachable on the sixth game.
+  expect(result.pulse, 'the weekly badge is celebrated').toBe(true);
+});
+
+test('Sudoku hint places the digit it announces after a wrong entry', async ({ page }) => {
+  const solution = '534678912672195348198342567859761423426853791713924856961537284287419635345286179'.split('').map(Number);
+  const puzzle = '530070000600195000098000060800060003400803001700020006060000280000419005000080079'.split('').map(Number);
+  const grid = puzzle.slice();
+  // Cell 3 needs 6 and has candidates {2,6}. Put 6 in empty cell 2 on the same
+  // row: a hint built from the current grid sees cell 3 as a naked 2, while
+  // applying it writes the solution 6. That mismatch is the regression.
+  grid[2] = 6;
+  await page.addInitScript((state) => {
+    localStorage.setItem('sixfold.sudoku.state.v1', JSON.stringify(state));
+  }, {
+    puzzle: puzzle,
+    solution: solution,
+    grid: grid,
+    notes: new Array(81).fill(0),
+    difficulty: 'easy',
+    elapsed: 0,
+    hints: 0,
+    mistakes: 0,
+    solved: false
+  });
+
+  await page.goto('/#sudoku');
+  await page.waitForSelector('#sudoku-board .sudoku-cell');
+  // The first-visit coach sits in the same feedback slot as the hint panel.
+  const skipCoach = page.locator('#sudoku .coach-skip');
+  if (await skipCoach.isVisible()) await skipCoach.click();
+  await expect(page.locator('.sudoku-cell[data-index="2"]')).toHaveText('6');
+  await expect(page.locator('.sudoku-cell[data-index="3"]')).toHaveText('');
+
+  await page.locator('.sudoku-cell[data-index="3"]').click();
+  await page.locator('#sudoku-hint').click();
+  await expect(page.locator('#sudoku-hint-panel')).toBeVisible();
+
+  const targetIndex = await page.evaluate(() =>
+    Number(document.querySelector('#sudoku-board .sudoku-cell.is-selected').dataset.index));
+  const announced = Number((await page.locator('#sudoku-hint-place').innerText()).match(/\d+/)[0]);
+  await page.locator('#sudoku-hint-place').click();
+  const placed = Number((await page.locator('.sudoku-cell[data-index="' + targetIndex + '"]').innerText()).trim());
+
+  expect(placed, 'the hint must place the digit it just announced').toBe(announced);
+});
+
+test('Fruit Merge stops its frame loop after a moving game over', async ({ page }) => {
+  await page.goto('/?fruit-loop-test=1#fruit');
+  await page.waitForSelector('body[data-screen="fruit"]');
+  await page.waitForFunction(() => window.__sixfoldFruitTest);
+
+  const started = await page.evaluate(() => window.__sixfoldFruitTest.finishWithMovingFruit());
+  expect(started.over).toBe(true);
+  expect(started.running, 'the frame loop is running before it is expected to stop').toBe(true);
+  expect(started.maxSpeed, 'the frozen fruit is still above the rest threshold').toBeGreaterThan(4);
+
+  await expect.poll(() => page.evaluate(() => window.__sixfoldFruitTest.state().running)).toBe(false);
 });

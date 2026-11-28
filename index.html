@@ -1,8 +1,6 @@
 <!doctype html>
 <!--
   Sixfold is licensed under the GNU General Public License v3.0 (see LICENSE).
-  Additional permission under GPLv3 section 7: Apple App Store distribution is
-  permitted under the terms in APPSTORE-EXCEPTION.md.
 -->
 <html lang="en">
 <head>
@@ -17,22 +15,22 @@
   <meta property="og:title" content="Sixfold — Six games. No filler." />
   <meta property="og:description" content="Six games. No filler. An offline pocket arcade: Merge, Sudoku, Tic Tac Toe, Minesweeper, Water Sort and Fruit Merge. No accounts, no ads." />
   <meta property="og:url" content="https://moh23rd.github.io/Sixfold/" />
-  <meta property="og:image" content="https://moh23rd.github.io/Sixfold/og-image.png?v=4.0.0-w1" />
+  <meta property="og:image" content="https://moh23rd.github.io/Sixfold/og-image.png?v=6.0.4" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Sixfold — six games, no filler. A pocket arcade of six offline puzzles." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Sixfold — Six games. No filler." />
   <meta name="twitter:description" content="Six games. No filler. An offline pocket arcade: Merge, Sudoku, Tic Tac Toe, Minesweeper, Water Sort and Fruit Merge. No accounts, no ads." />
-  <meta name="twitter:image" content="https://moh23rd.github.io/Sixfold/og-image.png?v=4.0.0-w1" />
+  <meta name="twitter:image" content="https://moh23rd.github.io/Sixfold/og-image.png?v=6.0.4" />
   <meta name="theme-color" content="#f6f1e8" />
   <meta name="color-scheme" content="light" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sixfold" />
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=4.0.0" />
-  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=4.0.0" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=6.0.3" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png?v=6.0.3" />
   <script>
     (function () {
       // Set the document language before the first paint. The full copy is
@@ -80,7 +78,11 @@
       document.documentElement.dataset.theme = theme;
       // The launch screen is painted before the stylesheet arrives.
       // The native launch images use the neutral light/dark page colour, so the
-      // first painted frame stays in step even with a tinted palette.
+      // first painted frame stays in step even with a tinted palette. The page
+      // itself carries the same colour inline: a returning load (from Licenses)
+      // has no back-forward cache, and without this the browser paints white
+      // under a dark page until styles.css arrives.
+      document.documentElement.style.backgroundColor = PAGE[theme];
       document.documentElement.style.setProperty('--boot-bg', PAGE[theme]);
       var meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', PAGE[theme]);
@@ -97,7 +99,7 @@
       var link = document.createElement('link');
       link.rel = 'manifest';
       link.id = 'manifest-link';
-      link.href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=5.2.0';
+      link.href = (theme === 'dark' ? 'manifest-dark.webmanifest' : 'manifest.webmanifest') + '?v=6.0.0';
       document.head.appendChild(link);
 
       // Capture Chrome's install event early enough that the Help panel can
@@ -107,6 +109,42 @@
         window.__mergeInstallPrompt = event;
         try { window.dispatchEvent(new Event('merge:install-available')); } catch (e) {}
       });
+    })();
+  </script>
+  <script>
+    (function () {
+      // Motion is a page setting, not only the phone's: "System" follows the
+      // device, while Full and Reduced let the player override it (an OS set to
+      // reduce motion used to switch every transition and entrance in the app
+      // off with no way back). Full is the default so the app cannot open with
+      // no motion; the stylesheets gate on this attribute, and the value is
+      // resolved here so the first painted frame already has it.
+      var choice = 'full';
+      try {
+        var saved = JSON.parse(localStorage.getItem('sixfold.settings.v1') || 'null');
+        if (saved && typeof saved.motion === 'string') choice = saved.motion;
+      } catch (err) {}
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.documentElement.dataset.motion =
+        choice === 'full' ? 'full' : choice === 'reduced' || reduce ? 'reduced' : 'full';
+    })();
+  </script>
+  <script>
+    (function () {
+      // Android's WebView latches :hover on the last tapped element and marks a
+      // tapped button :focus-visible. Recording which input is in use lets the
+      // stylesheet keep hover and focus art for mouse and keyboard while touch
+      // gets only the pressed state.
+      var root = document.documentElement;
+      function mark(value) {
+        if (root.dataset.input !== value) root.dataset.input = value;
+      }
+      window.addEventListener('touchstart', function () { mark('touch'); }, { passive: true, capture: true });
+      window.addEventListener('mousedown', function (event) {
+        if (event.sourceCapabilities && event.sourceCapabilities.firesTouchEvents) return;
+        mark('mouse');
+      }, true);
+      window.addEventListener('keydown', function () { mark('key'); }, true);
     })();
   </script>
   <style>
@@ -124,7 +162,7 @@
       display: grid;
       place-items: center;
       background: var(--boot-bg, #f6f1e8);
-      transition: opacity 420ms cubic-bezier(0.4, 0, 0.2, 1), visibility 420ms;
+      transition: opacity var(--boot-fade, 420ms) cubic-bezier(0.4, 0, 0.2, 1), visibility var(--boot-fade, 420ms);
       animation: bootFallback 240ms linear 4s forwards;
     }
     html[data-theme="dark"] #boot-splash {
@@ -132,6 +170,7 @@
       --boot-muted: rgba(241, 234, 224, 0.82);
       --boot-track: rgba(241, 234, 224, 0.18);
     }
+    html.is-native #boot-splash { --boot-fade: 280ms; animation: none; }
     .boot-stage {
       display: flex;
       flex-direction: column;
@@ -158,7 +197,7 @@
       opacity: 0;
       animation: bootFade 360ms ease 40ms both;
     }
-    .boot-kicker { top: max(22px, calc(env(safe-area-inset-top, 0px) + 20px)); }
+    .boot-kicker { top: max(22px, calc(max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)) + 20px)); }
     .boot-kicker::before {
       content: "";
       display: inline-block;
@@ -170,34 +209,20 @@
       transform: rotate(45deg) translateY(-1px);
     }
     .boot-foot {
-      bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 18px));
+      bottom: max(22px, calc(max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)) + 18px));
       animation-delay: 220ms;
       animation-duration: 440ms;
     }
     .boot-mark {
-      position: relative;
+      display: block;
       width: clamp(126px, 34vw, 152px);
+      height: auto;
       aspect-ratio: 1;
       border-radius: 22.3%;
-      background: #3b3833;
       box-shadow: 0 22px 46px -24px rgba(0, 0, 0, 0.46);
-    }
-    /* Absolute geometry keeps the tile proportions exact at any width. */
-    .boot-mark span {
-      position: absolute;
-      width: 24%;
-      height: 24%;
-      border-radius: 18%;
-      background: #f3ecdf;
       opacity: 0;
-      animation: bootPiece 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation: bootMarkIn 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
     }
-    .boot-mark span:nth-child(1) { left: 10.5%; top: 24.25%; --bx: -14px; --by: -12px; --br: -8deg; animation-delay: 40ms; }
-    .boot-mark span:nth-child(2) { left: 38%; top: 24.25%; background: #ee9563; --bx: 2px; --by: -16px; --br: 5deg; animation-delay: 70ms; }
-    .boot-mark span:nth-child(3) { left: 65.5%; top: 24.25%; background: #e7c364; --bx: 16px; --by: -10px; --br: 8deg; animation-delay: 100ms; }
-    .boot-mark span:nth-child(4) { left: 10.5%; top: 51.75%; background: #efb07a; --bx: -16px; --by: 9px; --br: 6deg; animation-delay: 130ms; }
-    .boot-mark span:nth-child(5) { left: 38%; top: 51.75%; background: #ec7c55; --bx: 1px; --by: 15px; --br: -4deg; animation-delay: 160ms; }
-    .boot-mark span:nth-child(6) { left: 65.5%; top: 51.75%; background: #e85f3b; --bx: 15px; --by: 11px; --br: -7deg; animation-delay: 190ms; }
     .boot-word {
       margin: clamp(20px, 3.2vh, 30px) 0 0;
       margin-right: -0.22em;
@@ -238,10 +263,9 @@
     .boot-track span:nth-child(6) { background: #e85f3b; animation-delay: 325ms; }
     html.app-ready #boot-splash { opacity: 0; visibility: hidden; pointer-events: none; }
     html.app-ready .boot-stage { transform: translateY(-7px) scale(1.012); }
-    @keyframes bootPiece {
-      0% { opacity: 0; transform: translate(var(--bx, 0), var(--by, 0)) scale(0.72) rotate(var(--br, 0deg)); }
-      70% { opacity: 1; transform: translate(0, 0) scale(1.035) rotate(0); }
-      100% { opacity: 1; transform: none; }
+    @keyframes bootMarkIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: none; }
     }
     @keyframes bootWordIn {
       from { opacity: 0; transform: translateY(5px); }
@@ -250,75 +274,170 @@
     @keyframes bootFade { from { opacity: 0; } to { opacity: 1; } }
     @keyframes bootRail { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     @keyframes bootFallback { to { opacity: 0; visibility: hidden; pointer-events: none; } }
-    @media (prefers-reduced-motion: reduce) {
-      .boot-kicker,
-      .boot-foot,
-      .boot-word,
-      .boot-mark span { opacity: 1; animation: none; }
-      .boot-track span { transform: none; animation: none; }
-      .boot-stage { transition: none; }
-      html.app-ready .boot-stage { transform: none; }
-      #boot-splash { transition-duration: 0.01ms; animation: none; }
-    }
+    html[data-motion="reduced"] .boot-kicker,
+    html[data-motion="reduced"] .boot-foot,
+    html[data-motion="reduced"] .boot-word,
+    html[data-motion="reduced"] .boot-mark { opacity: 1; animation: none; }
+    html[data-motion="reduced"] .boot-track span { transform: none; animation: none; }
+    html[data-motion="reduced"] .boot-stage { transition: none; }
+    html[data-motion="reduced"].app-ready .boot-stage { transform: none; }
+    html[data-motion="reduced"] #boot-splash { transition-duration: 0.01ms; animation: none; }
   </style>
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=4.0.0" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=6.0.3" />
   <!-- Native iOS launch images, light and dark, portrait phone and tablet sizes. -->
-  <link rel="apple-touch-startup-image" href="splash/ios-640x1136-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-640x1136-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-750x1334-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-750x1334-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1242x2208-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1242x2208-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1125x2436-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1125x2436-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-828x1792-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-828x1792-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1242x2688-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1242x2688-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1170x2532-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1170x2532-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1284x2778-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1284x2778-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1179x2556-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1179x2556-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1290x2796-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1290x2796-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1206x2622-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1206x2622-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1320x2868-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1320x2868-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1488x2266-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1488x2266-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1536x2048-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1536x2048-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1620x2160-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1620x2160-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1640x2360-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1640x2360-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1668x2388-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-1668x2388-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-light.png?v=4.0.0" media="screen and (prefers-color-scheme: light) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=4.0.0" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-  <link rel="preload" href="fonts/google-sans-flex.woff2?v=4.0.1" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=5.2.8" />
-  <link rel="stylesheet" href="css/games.css?v=5.2.9" />
-  <link rel="stylesheet" href="css/home.css?v=4.0.0-w11" />
-  <link rel="stylesheet" href="css/polish.css?v=4.0.0-w16" />
-  <link rel="stylesheet" href="css/sudoku.css?v=4.0.0-w15" />
-  <link rel="stylesheet" href="css/v5.css?v=5.4.2" />
+  <link rel="apple-touch-startup-image" href="splash/ios-640x1136-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-640x1136-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-750x1334-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-750x1334-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1242x2208-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1242x2208-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1125x2436-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1125x2436-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-828x1792-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-828x1792-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1242x2688-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1242x2688-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1170x2532-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1170x2532-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1284x2778-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1284x2778-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1179x2556-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1179x2556-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1290x2796-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1290x2796-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1206x2622-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1206x2622-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1320x2868-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1320x2868-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1488x2266-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1488x2266-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1536x2048-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1536x2048-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1620x2160-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1620x2160-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1640x2360-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1640x2360-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1668x2388-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-1668x2388-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-light.png?v=6.0.4" media="screen and (prefers-color-scheme: light) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <link rel="apple-touch-startup-image" href="splash/ios-2048x2732-dark.png?v=6.0.4" media="screen and (prefers-color-scheme: dark) and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+  <script>
+    (function () {
+      // A restored backup is applied here, before any game reads storage. The
+      // page that asked for the reload still has its boards in memory and saves
+      // them on pagehide, so a restore written from that page lost to its own
+      // last save. Settings park the payload in the session and land it here.
+      var pending = null;
+      try { pending = sessionStorage.getItem('sixfold.restore.pending'); } catch (err) { return; }
+      if (!pending) return;
+      try {
+        sessionStorage.removeItem('sixfold.restore.pending');
+        var entries = JSON.parse(pending);
+        if (!entries || typeof entries.length !== 'number') return;
+        var stale = [];
+        for (var i = 0; i < localStorage.length; i += 1) {
+          var key = localStorage.key(i);
+          if (key && /^(merge2048|merge-games|sixfold)/.test(key)) stale.push(key);
+        }
+        stale.forEach(function (key) { localStorage.removeItem(key); });
+        for (var j = 0; j < entries.length; j += 1) {
+          var pair = entries[j];
+          if (pair && typeof pair[0] === 'string' && typeof pair[1] === 'string') {
+            localStorage.setItem(pair[0], pair[1]);
+          }
+        }
+      } catch (err) {}
+    })();
+  </script>
+  <script>
+    (function () {
+      // A budget phone should not pay for three masked backdrop filters or a
+      // long hero build. Decide before the stylesheets arrive, so the first
+      // paint is already the version the device will keep using.
+      var root = document.documentElement;
+      var lite = false;
+      try {
+        var mem = navigator.deviceMemory;
+        var cpu = navigator.hardwareConcurrency;
+        var conn = navigator.connection || {};
+        var fewCores = typeof cpu === 'number' && cpu > 0 && cpu <= 4;
+        var tinyRam = typeof mem === 'number' && mem > 0 && mem <= 2;
+        // A 4 GB desktop with four cores is not a budget phone. The memory
+        // heuristic only applies to a phone-shaped pointer or viewport;
+        // save-data still applies everywhere.
+        var phoneShape = window.matchMedia && (
+          window.matchMedia('(pointer: coarse)').matches ||
+          window.matchMedia('(max-width: 640px)').matches
+        );
+        var smallPhone = typeof mem === 'number' && mem > 0 && mem <= 4 && fewCores && phoneShape;
+        lite = tinyRam || smallPhone || conn.saveData === true;
+        var forced = /[?&]perf=(lite|full)/.exec(window.location.search);
+        if (forced) lite = forced[1] === 'lite';
+      } catch (err) {}
+      root.classList.toggle('perf-lite', lite);
+      window.MergePerf = {
+        lite: lite,
+        setLite: function (on) { root.classList.toggle('perf-lite', Boolean(on)); }
+      };
+    })();
+  </script>
+  <script>
+    (function () {
+      // The native shell must never paint the page's own launch composition: the
+      // OS splash is the launch screen and this layer is only its same-colour
+      // hand-off. The class is set here, before the body is parsed, because
+      // js/native.js loads at the end of the body — on a cold start the mark,
+      // wordmark and rail were painted for a frame first, which is the old
+      // launch screen flashing before the hand-off.
+      var root = document.documentElement;
+      var shell = false;
+      try {
+        shell = Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+        // The shell serves the bundled app from https://localhost; a browser tab
+        // is a real host (or a dev server over http on 127.0.0.1).
+        if (!shell && location.protocol === 'https:' && location.hostname === 'localhost') shell = true;
+      } catch (err) {}
+      // Returning from the legal page is a return on the web as well as in the
+      // shell's WebView: the legal page marks it as it is left, and reading it
+      // here, before the body is parsed, keeps the launch layer from ever being
+      // built. The shell needs this because a WebView keeps no back-forward
+      // cache; a browser tab needs it whenever the return is a fresh load.
+      var returning = false;
+      try {
+        returning = sessionStorage.getItem('sixfold.returning') === '1';
+        if (returning) sessionStorage.removeItem('sixfold.returning');
+      } catch (err) {}
+      try { window.__sixfoldFirstRun = localStorage.getItem('sixfold.welcome.v1') !== '1'; } catch (err) {}
+      if (shell) root.classList.add('is-native');
+      if (!returning) return;
+      // The hub was already built when the reader left it. Skip its splash and
+      // its entrances: hub-settled switches off the card stagger and the
+      // six-piece build. app-ready is *not* set here: the launch layer stays up
+      // until the hub has been put back at the reader's place, so the return
+      // never shows the top of the page for a frame and then jumps down.
+      root.classList.add('hub-settled');
+      window.__sixfoldReturning = true;
+      try {
+        window.__sixfoldHubScroll = Number(sessionStorage.getItem('sixfold.hubScroll') || 0);
+      } catch (err) {
+        window.__sixfoldHubScroll = 0;
+      }
+    })();
+  </script>
+  <link rel="preload" href="fonts/google-sans-flex.woff2?v=5.0.2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="css/styles.css?v=5.4.7" />
+  <link rel="stylesheet" href="css/games.css?v=5.3.19" />
+  <link rel="stylesheet" href="css/home.css?v=4.1.16" />
+  <link rel="stylesheet" href="css/polish.css?v=4.0.11" />
+  <link rel="stylesheet" href="css/sudoku.css?v=4.0.6" />
+  <link rel="stylesheet" href="css/v5.css?v=5.6.10" />
+  <link rel="stylesheet" href="css/progressive-blur.css?v=1.4.1" />
 </head>
-<body data-screen="hub">
-  <div class="boot-splash" id="boot-splash" aria-hidden="true">
+<body data-screen="hub" data-fade>
+  <div class="boot-splash" id="boot-splash" aria-hidden="true" data-fade>
     <p class="boot-kicker">The pocket arcade</p>
     <div class="boot-stage">
-      <div class="boot-mark">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
+      <img class="boot-mark" src="icons/mark-456.webp?v=6.0.3" alt="" width="152" height="152" />
       <p class="boot-word">Sixfold</p>
       <div class="boot-track">
         <span></span><span></span><span></span><span></span><span></span><span></span>
@@ -326,13 +445,19 @@
     </div>
     <p class="boot-foot">Six games. No filler.</p>
   </div>
+  <!-- The share card draws the launcher art from this image rather than
+       re-drawing it, so the card and the launcher are one file. It is hidden
+       from the layout, stays in the document after the boot stage is torn
+       down, and reuses the boot mark's pinned URL: the shell caches one copy
+       and a card saved offline still carries the mark. -->
+  <img id="share-mark" src="icons/mark-456.webp?v=6.0.3" alt="" width="456" height="456" hidden />
 
   <div class="hidden-reveal" id="hidden-reveal" role="dialog" aria-modal="true" aria-labelledby="hidden-reveal-title" aria-describedby="hidden-reveal-copy" aria-hidden="true" hidden>
     <div class="hidden-reveal-scrim" data-hidden-reveal-skip></div>
-    <div class="hidden-reveal-card">
+    <div class="hidden-reveal-card" data-fade>
       <div class="hidden-reveal-head">
         <span class="hidden-reveal-kicker">Sixfold / hidden game</span>
-        <span class="hidden-reveal-pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="hidden-reveal-pips" aria-hidden="true"><i data-fade></i><i data-fade></i><i data-fade></i><i data-fade></i><i data-fade></i><i data-fade></i></span>
       </div>
       <div class="hidden-reveal-tiles" aria-hidden="true">
         <span>F</span>
@@ -349,26 +474,22 @@
     </div>
   </div>
 
-  <section class="hub" id="hub" aria-labelledby="hub-title">
-    <div class="hub-shell">
-      <header class="hub-top">
-        <div class="hub-brand">
-          <span class="hub-mark" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span>
-          <span class="hub-brand-copy">
-            <span class="hub-word">Sixfold</span>
-            <span class="hub-tagline">Puzzle collection</span>
-          </span>
+  <section class="hub" id="hub" aria-labelledby="hub-title" data-fade>
+    <div class="hub-shell" data-fade>
+      <header class="hub-top" data-fade>
+        <div class="hub-brand" data-fade>
+          <span class="hub-word">Sixfold</span>
         </div>
         <div class="hub-actions">
-          <button class="hub-share" id="hub-share" type="button" aria-label="Share this game collection" title="Share">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg>
+          <button class="hub-share" id="hub-share" type="button" aria-label="Save image" title="Save image" data-fade>
+            <svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
           </button>
-          <button class="hub-focus" id="home-focus-toggle" type="button" aria-pressed="false" aria-label="Enter fullscreen" title="Enter fullscreen">
+          <button class="hub-focus" id="home-focus-toggle" type="button" aria-pressed="false" aria-label="Full screen" title="Full screen" data-fade>
             <svg class="focus-enter" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
             <svg class="focus-exit" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </button>
-          <button class="hub-look" id="appearance" type="button" aria-haspopup="dialog" aria-controls="sheet">
-            <span class="hub-look-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <button class="hub-look" id="appearance" type="button" aria-haspopup="dialog" aria-controls="sheet" data-fade>
+            <span class="hub-look-dots" aria-hidden="true"><i data-fade></i><i data-fade></i><i data-fade></i></span>
             <span class="hub-look-copy"><span>Look</span><strong id="hub-palette-label">Warm</strong></span>
             <span class="hub-look-chevron" aria-hidden="true">›</span>
           </button>
@@ -376,52 +497,52 @@
       </header>
 
       <!-- Bump data-version and replace this list with each release. -->
-      <aside class="whats-new" id="whats-new" data-version="5.0" aria-labelledby="whats-new-title" hidden>
-        <span class="whats-new-mark" aria-hidden="true">✦</span>
+      <aside class="whats-new" id="whats-new" data-version="6.0" aria-labelledby="whats-new-title" hidden data-fade>
         <details class="whats-new-details">
-          <summary class="whats-new-label" id="whats-new-title">What’s new in 5.0</summary>
+          <summary class="whats-new-label" id="whats-new-title">What’s new in 6.0</summary>
           <ul class="whats-new-list">
-            <li>Wordle in all twelve languages: localized word lists, native input for Arabic, Hindi, Kannada, Japanese, Korean and Chinese, and an offline English fallback</li>
-            <li>Wordle offline support: the selected dictionary downloads in the background, and an English fallback round keeps the game playable when it is not cached</li>
-            <li>Arabic and Hindi numerals, right-to-left Arabic, localized dates and share text across every game</li>
-            <li>New interface languages: French, German, Chinese, Japanese, Korean, Brazilian Portuguese, Hindi, Kannada and Arabic, with complete catalogs and offline fonts</li>
+            <li>One colour from your wallpaper: the palette now stays on that hue, with no stray purple or red.</li>
+            <li>Games and the first launch open cleanly, without flashing the screen behind them.</li>
+            <li>Every numbered cover tile opens its game; press and hold one for the hidden seventh.</li>
+            <li>A softer feel: smoother light and dark changes, refined haptics, and a calmer What’s New card.</li>
+            <li>Two ways to play: the installable web app and the direct Android APK — both on 6.0.</li>
           </ul>
         </details>
-        <button class="whats-new-close" id="whats-new-close" type="button" aria-label="Dismiss what’s new">×</button>
+        <button class="whats-new-close" id="whats-new-close" type="button" aria-label="Dismiss what’s new" data-fade>×</button>
       </aside>
 
-      <div class="home-hero">
+      <div class="home-hero" data-fade>
         <div class="home-head">
           <p class="home-kicker"><span class="home-kicker-pip" aria-hidden="true"></span>The pocket arcade</p>
           <h1 id="hub-title"><span>Six games.</span><span class="home-title-mark">No filler.</span></h1>
         </div>
 
         <div class="home-body">
-          <p class="home-sub">A small arcade for the in-between. Six satisfying puzzles, no accounts, no ads — and they work offline.</p>
+          <p class="home-sub" data-fade>A small arcade for the in-between. Six satisfying puzzles, no accounts, no ads — and they work offline.</p>
           <div class="home-ctas">
-            <a class="home-cta" href="#collection">Choose a game <span aria-hidden="true">↓</span></a>
-            <button class="home-surprise" id="home-surprise" type="button" aria-label="Surprise me — open a random game" title="Surprise me">
+            <a class="home-cta" href="#collection" data-fade>Choose a game <span aria-hidden="true">↓</span></a>
+            <button class="home-surprise" id="home-surprise" type="button" aria-label="Surprise me — open a random game" title="Surprise me" data-fade>
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.8" /><circle cx="8.4" cy="8.4" r="1.45" fill="currentColor" /><circle cx="15.6" cy="8.4" r="1.45" fill="currentColor" /><circle cx="12" cy="12" r="1.45" fill="currentColor" /><circle cx="8.4" cy="15.6" r="1.45" fill="currentColor" /><circle cx="15.6" cy="15.6" r="1.45" fill="currentColor" /></svg>
               <span>Surprise me</span>
             </button>
           </div>
-          <p class="home-promises"><span>No accounts</span><span>No ads</span><span>Works offline</span></p>
+          <p class="home-promises" data-fade><span>No accounts</span><span>No ads</span><span>Works offline</span></p>
         </div>
 
         <div class="home-hero-art" aria-hidden="true">
           <div class="home-six">
-            <button class="home-six-piece six-1" type="button" tabindex="-1">01</button>
-            <button class="home-six-piece six-2" type="button" tabindex="-1">02</button>
-            <button class="home-six-piece six-3" type="button" tabindex="-1">03</button>
-            <button class="home-six-piece six-4" type="button" tabindex="-1">04</button>
-            <button class="home-six-piece six-5" type="button" tabindex="-1">05</button>
-            <button class="home-six-piece six-6" type="button" tabindex="-1">06</button>
+            <button class="home-six-piece six-1" type="button" tabindex="-1" aria-label="Play Merge" data-fade>01</button>
+            <button class="home-six-piece six-2" type="button" tabindex="-1" aria-label="Play Sudoku" data-fade>02</button>
+            <button class="home-six-piece six-3" type="button" tabindex="-1" aria-label="Play Tic Tac Toe" data-fade>03</button>
+            <button class="home-six-piece six-4" type="button" tabindex="-1" aria-label="Play Minesweeper" data-fade>04</button>
+            <button class="home-six-piece six-5" type="button" tabindex="-1" aria-label="Play Water Sort" data-fade>05</button>
+            <button class="home-six-piece six-6" type="button" tabindex="-1" aria-label="Play Fruit Merge" data-fade>06</button>
           </div>
-          <p class="home-six-caption"><span>Play offline</span><span>01—06</span></p>
+          <p class="home-six-caption" data-fade><span>Play offline</span><span>01—06</span></p>
         </div>
       </div>
 
-      <div class="home-ticker" aria-hidden="true">
+      <div class="home-ticker" aria-hidden="true" data-fade>
         <div class="home-ticker-track">
           <div class="home-ticker-group">
             <span>Merge</span><span>Sudoku</span><span>Tic Tac Toe</span><span>Minesweeper</span><span>Water Sort</span><span>Fruit Merge</span><span>No ads</span><span>Offline</span>
@@ -432,20 +553,20 @@
         </div>
       </div>
 
-      <section class="daily" id="daily" aria-labelledby="daily-title">
+      <section class="daily" id="daily" aria-labelledby="daily-title" data-fade>
         <div class="daily-head">
           <div class="daily-heading">
             <p class="daily-kicker">Daily Sixfold</p>
             <p class="daily-date" id="daily-date">Today</p>
           </div>
           <div class="daily-side">
-            <div class="daily-streak" aria-label="Current and best daily streak">
+            <div class="daily-streak" aria-label="Current and best daily streak" data-fade>
               <strong id="daily-streak">0</strong>
               <span>day streak</span>
               <small>best <b id="daily-best">0</b></small>
             </div>
             <div class="daily-badge-wrap">
-              <button class="daily-badge" id="daily-badge" type="button" data-open-badges title="Badges">
+              <button class="daily-badge" id="daily-badge" type="button" data-open-badges title="Badges" data-fade>
                 <span class="daily-badge-mark" aria-hidden="true">★</span>
                 <span class="daily-badge-copy">
                   <span class="daily-badge-title" id="daily-badge-title">Badge</span>
@@ -453,9 +574,9 @@
                 </span>
               </button>
               <p class="daily-badge-next" id="daily-badge-next" hidden></p>
-              <span class="daily-badge-progress" id="daily-badge-progress" hidden><i id="daily-badge-progress-fill"></i></span>
+              <span class="daily-badge-progress" id="daily-badge-progress" hidden data-fade><i id="daily-badge-progress-fill" data-fade></i></span>
             </div>
-            <button class="daily-calendar-btn" id="daily-calendar-open" type="button" aria-haspopup="dialog" aria-controls="daily-calendar" aria-label="30-day calendar" title="30-day calendar">
+            <button class="daily-calendar-btn" id="daily-calendar-open" type="button" aria-haspopup="dialog" aria-controls="daily-calendar" aria-label="30-day calendar" title="30-day calendar" data-fade>
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M8 3.5v4M16 3.5v4M4 10h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><circle cx="9" cy="13.5" r="1" fill="currentColor" /><circle cx="12" cy="13.5" r="1" fill="currentColor" /><circle cx="15" cy="13.5" r="1" fill="currentColor" /><circle cx="9" cy="16.5" r="1" fill="currentColor" /><circle cx="12" cy="16.5" r="1" fill="currentColor" /></svg>
             </button>
           </div>
@@ -467,15 +588,22 @@
         </div>
 
         <div class="daily-actions">
-          <button class="daily-play" id="daily-featured" type="button">
+          <button class="daily-play" id="daily-featured" type="button" data-fade>
             <span id="daily-featured-label">Play Water Sort for today</span>
-            <span class="daily-play-arrow" aria-hidden="true">
+            <span class="daily-play-arrow" aria-hidden="true" data-fade>
               <svg viewBox="0 0 20 20" focusable="false"><path d="M4 10h11M10.5 5.5 15 10l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
             </span>
           </button>
-          <button class="daily-share" id="daily-share" type="button" aria-label="Share today’s challenge" title="Share today’s challenge">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg>
+          <button class="daily-share" id="daily-share" type="button" aria-label="Save image" title="Save image" data-fade>
+            <svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
           </button>
+        </div>
+        <div class="daily-gauntlet" id="daily-gauntlet" data-state="idle" data-fade>
+          <span class="daily-gauntlet-copy">
+            <span class="daily-gauntlet-title" id="daily-gauntlet-title">Daily Gauntlet</span>
+            <span class="daily-gauntlet-note" id="daily-gauntlet-note">Six rounds. One run.</span>
+          </span>
+          <button class="daily-gauntlet-action" id="daily-gauntlet-action" type="button" aria-label="Start the Daily Gauntlet" data-fade>Start</button>
         </div>
         <div class="daily-week" id="daily-week">
           <span class="daily-week-label">This week</span>
@@ -485,21 +613,21 @@
         <p class="sr-only" id="daily-live" role="status" aria-live="polite"></p>
       </section>
 
-      <div class="home-collection" id="collection">
+      <div class="home-collection" id="collection" data-fade>
         <div class="home-collection-head">
           <div>
-            <p class="home-label">The collection</p>
+            <p class="home-label" data-fade>The collection</p>
             <h2 id="home-collection-title">Six <span>ways</span> in.</h2>
           </div>
           <p class="home-collection-note">One tap to play. Your progress stays on this device.</p>
         </div>
 
-        <div class="home-grid">
-          <button class="home-game home-game--merge" type="button" data-game="merge" aria-label="Play Merge">
+        <div class="home-grid" data-fade>
+          <button class="home-game home-game--merge" type="button" data-game="merge" aria-label="Play Merge" data-fade>
             <span class="home-game-bar"><span class="home-game-num">01</span><span class="home-game-kind">Numbers</span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
-            <span class="home-game-art" aria-hidden="true">
-              <span class="home-game-stage">
-                <span class="mini-merge">
+            <span class="home-game-art" aria-hidden="true" data-fade>
+              <span class="home-game-stage" data-fade>
+                <span class="mini-merge" data-fade>
                   <span class="mini-tile mini-2">2</span>
                   <span class="mini-tile mini-4">4</span>
                   <span class="mini-tile mini-8">8</span>
@@ -508,128 +636,129 @@
               </span>
             </span>
             <span class="home-game-copy">
-              <span class="home-game-title">Merge</span>
-              <span class="home-game-desc">Slide, double, repeat. Keep the board alive.</span>
-              <span class="home-game-meta"><span>Endless · best saved</span><span class="home-game-play">Play</span></span>
+              <span class="home-game-title" data-fade>Merge</span>
+              <span class="home-game-desc" data-fade>Slide, double, repeat. Keep the board alive.</span>
+              <span class="home-game-meta" data-fade><span>Endless · best saved</span><span class="home-game-play" data-fade>Play</span></span>
             </span>
           </button>
 
-          <button class="home-game home-game--sudoku" type="button" data-game="sudoku" aria-label="Play Sudoku">
+          <button class="home-game home-game--sudoku" type="button" data-game="sudoku" aria-label="Play Sudoku" data-fade>
             <span class="home-game-bar"><span class="home-game-num">02</span><span class="home-game-kind">Numbers</span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
-            <span class="home-game-art" aria-hidden="true">
-              <span class="home-game-stage">
-                <span class="mini-sudoku"><i>5</i><i>3</i><i></i><i>6</i><i></i><i></i><i></i><i>9</i><i>8</i></span>
+            <span class="home-game-art" aria-hidden="true" data-fade>
+              <span class="home-game-stage" data-fade>
+                <span class="mini-sudoku" data-fade><i data-fade>5</i><i data-fade>3</i><i data-fade></i><i data-fade>6</i><i data-fade></i><i data-fade></i><i data-fade></i><i data-fade>9</i><i data-fade>8</i></span>
               </span>
             </span>
             <span class="home-game-copy">
-              <span class="home-game-title">Sudoku</span>
-              <span class="home-game-desc">Fill every row, column and box with 1–9.</span>
-              <span class="home-game-meta"><span>4 levels · one solution</span><span class="home-game-play">Play</span></span>
+              <span class="home-game-title" data-fade>Sudoku</span>
+              <span class="home-game-desc" data-fade>Fill every row, column and box with 1–9.</span>
+              <span class="home-game-meta" data-fade><span>4 levels · one solution</span><span class="home-game-play" data-fade>Play</span></span>
             </span>
           </button>
 
-          <button class="home-game home-game--ttt" type="button" data-game="ttt" aria-label="Play Tic Tac Toe">
+          <button class="home-game home-game--ttt" type="button" data-game="ttt" aria-label="Play Tic Tac Toe" data-fade>
             <span class="home-game-bar"><span class="home-game-num">03</span><span class="home-game-kind">Classic</span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
-            <span class="home-game-art" aria-hidden="true">
-              <span class="home-game-stage">
-                <span class="mini-ttt"><i class="x">×</i><i class="o">o</i><i></i><i class="o">o</i><i class="x">×</i><i></i><i></i><i class="x">×</i><i class="o">o</i></span>
+            <span class="home-game-art" aria-hidden="true" data-fade>
+              <span class="home-game-stage" data-fade>
+                <span class="mini-ttt" data-fade><i class="x" data-fade>×</i><i class="o" data-fade>o</i><i data-fade></i><i class="o" data-fade>o</i><i class="x" data-fade>×</i><i data-fade></i><i data-fade></i><i class="x" data-fade>×</i><i class="o" data-fade>o</i></span>
               </span>
             </span>
             <span class="home-game-copy">
-              <span class="home-game-title">Tic Tac Toe</span>
-              <span class="home-game-desc">Outplay the computer. Or a friend.</span>
-              <span class="home-game-meta"><span>3 levels · 2 players</span><span class="home-game-play">Play</span></span>
+              <span class="home-game-title" data-fade>Tic Tac Toe</span>
+              <span class="home-game-desc" data-fade>Outplay the computer. Or a friend.</span>
+              <span class="home-game-meta" data-fade><span>3 levels · 2 players</span><span class="home-game-play" data-fade>Play</span></span>
             </span>
           </button>
 
-          <button class="home-game home-game--mines" type="button" data-game="mines" aria-label="Play Minesweeper">
+          <button class="home-game home-game--mines" type="button" data-game="mines" aria-label="Play Minesweeper" data-fade>
             <span class="home-game-bar"><span class="home-game-num">04</span><span class="home-game-kind">Logic</span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
-            <span class="home-game-art" aria-hidden="true">
-              <span class="home-game-stage">
-                <span class="mini-mines">
-                  <i class="mines-open">1</i><i class="mines-flag">⚑</i><i class="mines-open">2</i>
-                  <i class="mines-open"></i><i class="mines-mine">✹</i><i class="mines-open">3</i>
-                  <i class="mines-open">2</i><i class="mines-open">1</i><i class="mines-flag">⚑</i>
+            <span class="home-game-art" aria-hidden="true" data-fade>
+              <span class="home-game-stage" data-fade>
+                <span class="mini-mines" data-fade>
+                  <i class="mines-open" data-fade>1</i><i class="mines-flag" data-fade>⚑</i><i class="mines-open" data-fade>2</i>
+                  <i class="mines-open" data-fade></i><i class="mines-mine" data-fade>✹</i><i class="mines-open" data-fade>3</i>
+                  <i class="mines-open" data-fade>2</i><i class="mines-open" data-fade>1</i><i class="mines-flag" data-fade>⚑</i>
                 </span>
               </span>
             </span>
             <span class="home-game-copy">
-              <span class="home-game-title">Minesweeper</span>
-              <span class="home-game-desc">Read the numbers. Clear the field.</span>
-              <span class="home-game-meta"><span>3 levels</span><span class="home-game-play">Play</span></span>
+              <span class="home-game-title" data-fade>Minesweeper</span>
+              <span class="home-game-desc" data-fade>Read the numbers. Clear the field.</span>
+              <span class="home-game-meta" data-fade><span>3 levels</span><span class="home-game-play" data-fade>Play</span></span>
             </span>
           </button>
 
-          <button class="home-game home-game--water" type="button" data-game="water" aria-label="Play Water Sort">
+          <button class="home-game home-game--water" type="button" data-game="water" aria-label="Play Water Sort" data-fade>
             <span class="home-game-bar"><span class="home-game-num">05</span><span class="home-game-kind">Sorting</span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
-            <span class="home-game-art" aria-hidden="true">
-              <span class="home-game-stage">
-                <span class="mini-water">
-                  <span class="mini-tube"><i class="g5"></i><i class="g3"></i><i class="g2"></i><i class="g1"></i></span>
-                  <span class="mini-tube"><i class="g2"></i><i class="g1"></i><i class="g5"></i></span>
-                  <span class="mini-tube"><i class="g3"></i><i class="g4"></i></span>
+            <span class="home-game-art" aria-hidden="true" data-fade>
+              <span class="home-game-stage" data-fade>
+                <span class="mini-water" data-fade>
+                  <span class="mini-tube" data-fade><i class="g5" data-fade></i><i class="g3" data-fade></i><i class="g2" data-fade></i><i class="g1" data-fade></i></span>
+                  <span class="mini-tube" data-fade><i class="g2" data-fade></i><i class="g1" data-fade></i><i class="g5" data-fade></i></span>
+                  <span class="mini-tube" data-fade><i class="g3" data-fade></i><i class="g4" data-fade></i></span>
                 </span>
               </span>
             </span>
             <span class="home-game-copy">
-              <span class="home-game-title">Water Sort</span>
-              <span class="home-game-desc">Pour every colour into its own tube.</span>
-              <span class="home-game-meta"><span>8 levels · easy to hard</span><span class="home-game-play">Play</span></span>
+              <span class="home-game-title" data-fade>Water Sort</span>
+              <span class="home-game-desc" data-fade>Pour every colour into its own tube.</span>
+              <span class="home-game-meta" data-fade><span>8 levels · easy to hard</span><span class="home-game-play" data-fade>Play</span></span>
             </span>
           </button>
 
-          <button class="home-game home-game--fruit" type="button" data-game="fruit" aria-label="Play Fruit Merge">
-            <span class="home-game-bar"><span class="home-game-num">06</span><span class="home-game-kind">Merging</span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
-            <span class="home-game-art" aria-hidden="true">
-              <span class="home-game-stage">
-                <span class="mini-fruit-cluster"><i class="mini-fruit f1"></i><i class="mini-fruit f2"></i><i class="mini-fruit f3"></i><i class="mini-fruit f4"></i><i class="mini-fruit f5"></i></span>
+          <button class="home-game home-game--fruit" type="button" data-game="fruit" aria-label="Play Fruit Merge" data-fade>
+            <span class="home-game-bar"><span class="home-game-num">06</span><span class="home-game-kind"><span class="is-fruit-mode">Merging</span><span class="is-number-mode">Numbers</span></span><span class="home-game-arrow" aria-hidden="true">↗</span></span>
+            <span class="home-game-art" aria-hidden="true" data-fade>
+              <span class="home-game-stage" data-fade>
+                <span class="mini-fruit-cluster mini-cluster" data-fade><i class="mini-fruit f1" data-fade></i><i class="mini-fruit f2" data-fade></i><i class="mini-fruit f3" data-fade></i><i class="mini-fruit f4" data-fade></i><i class="mini-fruit f5" data-fade></i></span>
+                <span class="mini-number-cluster mini-cluster" data-fade><i class="mini-num n1">2</i><i class="mini-num n2">4</i><i class="mini-num n3">8</i><i class="mini-num n4">16</i><i class="mini-num n5">32</i></span>
               </span>
             </span>
             <span class="home-game-copy">
-              <span class="home-game-title">Fruit Merge</span>
-              <span class="home-game-desc">Drop matching fruit. Don’t overflow.</span>
-              <span class="home-game-meta"><span>Endless · best saved</span><span class="home-game-play">Play</span></span>
+              <span class="home-game-title" data-fade><span class="is-fruit-mode">Fruit Merge</span><span class="is-number-mode">Number Merge</span></span>
+              <span class="home-game-desc" data-fade><span class="is-fruit-mode">Drop matching fruit. Don’t overflow.</span><span class="is-number-mode">Drop matching numbers. Don’t overflow.</span></span>
+              <span class="home-game-meta" data-fade><span>Endless · best saved</span><span class="home-game-play" data-fade>Play</span></span>
             </span>
           </button>
         </div>
 
-        <aside class="install-fix" id="install-fix" aria-labelledby="install-fix-title" hidden>
+        <aside class="install-fix" id="install-fix" aria-labelledby="install-fix-title" hidden data-fade>
           <span class="install-fix-mark" aria-hidden="true">!</span>
           <div class="install-fix-copy">
             <p class="install-fix-title" id="install-fix-title">Chrome install bug</p>
             <p class="install-fix-note" id="install-fix-note">Chrome 154–156 cannot install a second app from github.io. Update Chrome to 157 or newer, then install Sixfold again.</p>
           </div>
           <div class="install-fix-actions">
-            <a class="btn ghost install-fix-update" href="https://play.google.com/store/apps/details?id=com.android.chrome" target="_blank" rel="noopener">Update Chrome</a>
-            <button class="btn install-fix-install" id="install-fix-install" type="button" hidden>Install app</button>
+            <a class="btn ghost install-fix-update" href="https://play.google.com/store/apps/details?id=com.android.chrome" target="_blank" rel="noopener" data-fade>Update Chrome</a>
+            <button class="btn install-fix-install" id="install-fix-install" type="button" hidden data-fade>Install app</button>
           </div>
           <button class="install-fix-close" id="install-fix-close" type="button" aria-label="Dismiss install notice" title="Dismiss">×</button>
         </aside>
 
-        <footer class="hub-foot"><span>No accounts</span><span>No ads</span><span>Works offline</span></footer>
+        <footer class="hub-foot" data-fade><span>No accounts</span><span>No ads</span><span>Works offline</span></footer>
         <div class="hub-meta">
           <div class="hub-meta-links">
-            <button class="hub-link" id="hub-about" type="button" aria-haspopup="dialog" aria-controls="about" title="About and privacy">
+            <button class="hub-link" id="hub-about" type="button" aria-haspopup="dialog" aria-controls="about" title="About and privacy" data-fade>
               <svg class="hub-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M12 11.2v5.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" /><circle cx="12" cy="7.9" r="1.05" fill="currentColor" /></svg>
               <span>About &amp; privacy</span>
               <span class="hub-link-chevron" aria-hidden="true">›</span>
             </button>
-            <button class="hub-link" id="hub-badges" type="button" data-open-badges title="Badges">
+            <button class="hub-link" id="hub-badges" type="button" data-open-badges title="Badges" data-fade>
               <svg class="hub-link-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="9" r="5.6" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="m8.7 13.3-1.5 7 4.8-2.4 4.8 2.4-1.5-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /><path d="m12 6.8.8 1.6 1.8.3-1.3 1.3.3 1.8-1.6-.8-1.6.8.3-1.8-1.3-1.3 1.8-.3z" fill="currentColor" /></svg>
               <span>Badges</span>
               <span class="hub-link-chevron" aria-hidden="true">›</span>
             </button>
           </div>
-          <p class="hub-version" id="app-version" aria-label="Sixfold version 5.0">v5.0</p>
+          <p class="hub-version" id="app-version" aria-label="Sixfold version 6.0">v6.0</p>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="play-screen badges-page" id="badges" aria-labelledby="badges-title" hidden>
-    <div class="play-shell badges-shell">
+  <section class="play-screen badges-page" id="badges" aria-labelledby="badges-title" hidden data-fade>
+    <div class="play-shell badges-shell" data-fade>
       <header class="badges-head">
-        <button class="games-home" id="badges-back" data-back type="button" aria-label="Back to Sixfold" title="Back to Sixfold">
+        <button class="games-home" id="badges-back" data-back type="button" aria-label="Back to Sixfold" title="Back to Sixfold" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
         <div class="badges-heading">
@@ -640,6 +769,22 @@
       </header>
       <p class="badges-best" id="badges-best"></p>
       <ul class="badges-grid" id="badges-grid" aria-label="Daily badge collection"></ul>
+
+      <section class="profile-section" aria-labelledby="profile-games-title">
+        <div class="profile-head">
+          <h2 class="profile-title" id="profile-games-title">Six games</h2>
+        </div>
+        <ul class="profile-games" id="profile-games" aria-label="Six games"></ul>
+      </section>
+
+      <section class="profile-section" aria-labelledby="profile-gauntlet-title">
+        <div class="profile-head">
+          <h2 class="profile-title" id="profile-gauntlet-title">Daily Gauntlet</h2>
+          <p class="profile-note">Six rounds. One run.</p>
+        </div>
+        <div class="gauntlet-run" id="gauntlet-run" data-fade></div>
+        <div class="profile-gauntlet" id="profile-gauntlet"></div>
+      </section>
     </div>
   </section>
 
@@ -647,7 +792,7 @@
     <header class="header">
       <div class="title-block">
         <div class="play-cart-row">
-        <button class="games-home" id="back-to-games" data-back type="button" aria-label="Back to all games" title="Back to all games">
+        <button class="games-home" id="back-to-games" data-back type="button" aria-label="Back to all games" title="Back to all games" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
         <span class="play-cart" aria-hidden="true"><span class="play-cart-num">01</span><span class="play-cart-kind">Numbers</span></span>
@@ -656,17 +801,17 @@
         <p class="sub">Slide the tiles. Match numbers to double them.</p>
       </div>
       <div class="scores">
-        <div class="score"><span class="label">Score</span><span class="value" id="score">0</span></div>
-        <div class="score"><span class="label">Best</span><span class="value" id="best">0</span></div>
-        <div class="score moves"><span class="label">Moves</span><span class="value" id="moves">0</span></div>
+        <div class="score" data-fade><span class="label">Score</span><span class="value" id="score">0</span></div>
+        <div class="score" data-fade><span class="label">Best</span><span class="value" id="best">0</span></div>
+        <div class="score moves" data-fade><span class="label">Moves</span><span class="value" id="moves">0</span></div>
       </div>
     </header>
 
-    <div class="board" id="board" tabindex="0" role="group" aria-label="Game board" aria-describedby="board-summary" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight">
+    <div class="board" id="board" tabindex="0" role="group" aria-label="Game board" aria-describedby="board-summary" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" data-fade>
       <div class="grid" id="grid" aria-hidden="true"></div>
       <div class="tiles" id="tiles" aria-hidden="true"></div>
       <div class="overlay" id="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="overlay-title" aria-describedby="overlay-text overlay-score overlay-meta" aria-live="polite" aria-atomic="true">
-        <div class="overlay-card">
+        <div class="overlay-card" data-fade>
           <div class="result-top">
             <figure class="result-preview" id="result-preview" aria-hidden="true" hidden>
               <div class="result-thumb">
@@ -682,8 +827,7 @@
           </div>
           <p id="overlay-text">No moves left.</p>
           <div class="overlay-actions">
-            <button class="btn ghost" id="overlay-share" type="button" hidden>Share</button>
-            <button class="btn" id="overlay-btn" type="button">Try again</button>
+            <button class="btn" id="overlay-btn" type="button" data-fade>Try again</button>
           </div>
           <button class="overlay-save" id="overlay-save" type="button" hidden>Save image</button>
         </div>
@@ -695,7 +839,7 @@
 
     <footer class="footer">
       <div class="controls">
-        <button class="btn ghost icon" id="vibration-toggle" type="button" aria-pressed="true" aria-label="Vibration on" title="Vibration">
+        <button class="btn ghost icon" id="vibration-toggle" type="button" aria-pressed="true" aria-label="Vibration on" title="Vibration" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <rect x="8.5" y="3" width="7" height="18" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8" />
             <g class="waves" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -705,25 +849,25 @@
             <path class="slash" d="M4.5 19.5l15-15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
         </button>
-        <button class="btn ghost icon" id="how-to" type="button" aria-label="How to play" title="How to play">
+        <button class="btn ghost icon" id="how-to" type="button" aria-label="How to play" title="How to play" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8" />
             <path d="M9.6 9.4a2.6 2.6 0 0 1 5.1.7c0 1.7-2.4 1.9-2.4 3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
             <circle cx="12" cy="17.3" r="1.05" fill="currentColor" />
           </svg>
         </button>
-        <button class="btn ghost icon" id="merge-size" type="button" aria-label="Board size, 4 by 4" title="Board size">
+        <button class="btn ghost icon" id="merge-size" type="button" aria-label="Board size, 4 by 4" title="Board size" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="6.4" height="6.4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" /><rect x="13.6" y="4" width="6.4" height="6.4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" /><rect x="4" y="13.6" width="6.4" height="6.4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" /><rect x="13.6" y="13.6" width="6.4" height="6.4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" /></svg>
         </button>
-        <button class="btn ghost icon" id="merge-reset" type="button" aria-label="Reset Merge data" title="Reset Merge data">
+        <button class="btn ghost icon" id="merge-reset" type="button" aria-label="Reset Merge data" title="Reset Merge data" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><path d="M20 4v6h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
-        <button class="btn" id="new-game" type="button">New game</button>
+        <button class="btn" id="new-game" type="button" data-fade>New game</button>
       </div>
       <div class="status">
         <div class="status-line">
           <p class="hint" aria-live="polite">Tip: park your biggest tile in a corner.</p>
-          <button class="btn ghost result-again" id="view-result" type="button" aria-label="View result" hidden>Result</button>
+          <button class="btn ghost result-again" id="view-result" type="button" aria-label="View result" hidden data-fade>Result</button>
         </div>
         <p class="key-hint" aria-hidden="true">
           <span>Drag or use</span>
@@ -734,69 +878,72 @@
   </main>
 
 
-  <section class="play-screen" id="water" aria-labelledby="water-title" hidden>
-    <div class="play-shell">
-      <header class="play-head">
+  <section class="play-screen" id="water" aria-labelledby="water-title" hidden data-fade>
+    <div class="play-shell" data-fade>
+      <header class="play-head" data-fade>
         <div class="play-cart-row">
-        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games">
+        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
         <span class="play-cart" aria-hidden="true"><span class="play-cart-num">05</span><span class="play-cart-kind">Sorting</span></span>
-        </div>
-        <div class="play-title-row">
-          <div class="play-intro">
-            <p class="game-tag" id="water-level-label">Easy · Level 1 of 8</p>
-            <h1 id="water-title" tabindex="-1">Water Sort</h1>
-            <p class="sub">Pour colours until every tube holds one.</p>
-          </div>
-          <div class="play-stats" aria-label="Water Sort progress">
-            <div class="play-stat"><span class="label">Moves</span><strong id="water-moves">0</strong></div>
-            <div class="play-stat"><span class="label">Level</span><strong id="water-level">1</strong></div>
-          </div>
-        </div>
-      </header>
-      <div class="play-body">
-      <div class="play-main">
-        <div class="board-stage">
-          <div class="water-board">
-            <div class="water-tubes" id="water-tubes" role="group" aria-label="Water Sort tubes"></div>
-          </div>
-        </div>
-        <div class="play-feedback">
-          <p class="play-status" id="water-status" role="status" aria-live="polite">Tap a tube, then tap where to pour.</p>
-          <div class="play-win" id="water-win" hidden>
-            <p><strong>Level clear.</strong> Every colour has its own tube.</p>
-            <button class="play-btn play-btn--solid" id="water-next" type="button">Next level</button>
-            <button class="result-share result-share--labeled" id="water-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
-          </div>
-        </div>
-      </div>
-      <footer class="play-foot">
-        <div class="play-actions">
-          <button class="play-btn play-btn--ghost" id="water-undo" type="button">Undo</button>
-          <button class="play-btn play-btn--solid" id="water-new" type="button">New board</button>
-        </div>
-        <span class="play-note">Tap one tube, then another to pour.</span>
-      </footer>
-      </div>
-    </div>
-  </section>
-
-  <section class="play-screen" id="sudoku" aria-labelledby="sudoku-title" hidden>
-    <div class="play-shell sudoku-shell">
-      <header class="play-head">
-        <div class="play-cart-row">
-        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12h12"/><path d="m12 6-6 6 6 6"/></svg>
-        </button>
-        <span class="play-cart" aria-hidden="true"><span class="play-cart-num">02</span><span class="play-cart-kind">Numbers</span></span>
-        <button class="sudoku-settings-open" id="sudoku-settings-open" type="button" aria-haspopup="dialog" aria-controls="sudoku-settings" aria-label="Sudoku settings" title="Sudoku settings">
+        <button class="sudoku-settings-open" id="water-settings-open" type="button" aria-haspopup="dialog" aria-controls="water-settings" aria-label="Water Sort settings" title="Water Sort settings" data-fade>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
         </button>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
-            <button class="game-tag play-chip" id="sudoku-level" type="button" aria-haspopup="dialog" aria-controls="sudoku-levels">
+            <p class="game-tag" id="water-level-label" data-fade>Easy · Level 1 of 8</p>
+            <h1 id="water-title" tabindex="-1">Water Sort</h1>
+            <p class="sub">Pour colours until every tube holds one.</p>
+          </div>
+          <div class="play-stats" aria-label="Water Sort progress">
+            <div class="play-stat" data-fade><span class="label">Moves</span><strong id="water-moves">0</strong></div>
+            <div class="play-stat" data-fade><span class="label">Level</span><strong id="water-level">1</strong></div>
+          </div>
+        </div>
+      </header>
+      <div class="play-body" data-fade>
+      <div class="play-main" data-fade>
+        <div class="board-stage">
+          <div class="water-board" data-fade>
+            <div class="water-tubes" id="water-tubes" role="group" aria-label="Water Sort tubes"></div>
+          </div>
+        </div>
+        <div class="play-feedback">
+          <p class="play-status" id="water-status" role="status" aria-live="polite">Tap a tube, then tap where to pour.</p>
+          <div class="play-win" id="water-win" role="dialog" aria-labelledby="water-result-title" hidden>
+            <p><strong id="water-result-title">Level clear.</strong> Every colour has its own tube.</p>
+            <button class="play-btn play-btn--solid" id="water-next" type="button" data-fade>Next level</button>
+            <button class="result-share result-share--labeled" id="water-share" type="button" aria-label="Save image" title="Save image" data-fade><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
+          </div>
+        </div>
+      </div>
+      <footer class="play-foot" data-fade>
+        <div class="play-actions">
+          <button class="play-btn play-btn--ghost" id="water-undo" type="button" data-fade>Undo</button>
+          <button class="play-btn play-btn--solid" id="water-new" type="button" data-fade>New board</button>
+        </div>
+        <span class="play-note" data-fade>Tap one tube, then another to pour.</span>
+      </footer>
+      </div>
+    </div>
+  </section>
+
+  <section class="play-screen" id="sudoku" aria-labelledby="sudoku-title" hidden data-fade>
+    <div class="play-shell sudoku-shell" data-fade>
+      <header class="play-head" data-fade>
+        <div class="play-cart-row">
+        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games" data-fade>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12h12"/><path d="m12 6-6 6 6 6"/></svg>
+        </button>
+        <span class="play-cart" aria-hidden="true"><span class="play-cart-num">02</span><span class="play-cart-kind">Numbers</span></span>
+        <button class="sudoku-settings-open" id="sudoku-settings-open" type="button" aria-haspopup="dialog" aria-controls="sudoku-settings" aria-label="Sudoku settings" title="Sudoku settings" data-fade>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
+        </div>
+        <div class="play-title-row">
+          <div class="play-intro">
+            <button class="game-tag play-chip" id="sudoku-level" type="button" aria-haspopup="dialog" aria-controls="sudoku-levels" data-fade>
               <span id="sudoku-level-label">Easy</span>
               <span class="play-chip-chevron" aria-hidden="true">›</span>
             </button>
@@ -804,30 +951,30 @@
             <p class="sub">Fill every row, column and 3 × 3 box with 1–9.</p>
           </div>
           <div class="play-stats" aria-label="Sudoku progress">
-            <div class="play-stat"><span class="label">Time</span><strong id="sudoku-time">0:00</strong></div>
-            <div class="play-stat"><span class="label">Best</span><strong id="sudoku-best">—</strong></div>
+            <div class="play-stat" data-fade><span class="label">Time</span><strong id="sudoku-time">0:00</strong></div>
+            <div class="play-stat" data-fade><span class="label">Best</span><strong id="sudoku-best">—</strong></div>
           </div>
         </div>
       </header>
-      <div class="play-body">
-      <div class="play-main sudoku-main">
+      <div class="play-body" data-fade>
+      <div class="play-main sudoku-main" data-fade>
         <div class="board-stage">
           <div class="sudoku-wrap">
-            <div class="sudoku-board" id="sudoku-board" role="grid" aria-label="Sudoku board"></div>
+            <div class="sudoku-board" id="sudoku-board" role="grid" aria-label="Sudoku board" data-fade></div>
             <div class="sudoku-paused" id="sudoku-paused" hidden>
               <p>Paused.</p>
               <button id="sudoku-resume" type="button">Resume puzzle</button>
             </div>
             <div class="sudoku-result" id="sudoku-result" role="dialog" aria-labelledby="sudoku-result-title" aria-modal="true" tabindex="-1" hidden>
               <div class="sudoku-result-card">
-                <p class="game-tag">Grid complete</p>
+                <p class="game-tag" data-fade>Grid complete</p>
                 <h2 id="sudoku-result-title">Solved.</h2>
                 <p id="sudoku-result-copy">The grid is complete.</p>
                 <p class="sudoku-result-stats" id="sudoku-result-stats"></p>
                 <div class="sudoku-result-actions">
-                  <button class="play-btn play-btn--solid" id="sudoku-result-new" type="button">New puzzle</button>
-                  <button class="result-share" id="sudoku-result-share" type="button" aria-label="Share result" title="Share result">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 16V3"/><path d="m7 8 5-5 5 5"/></svg>
+                  <button class="play-btn play-btn--solid" id="sudoku-result-new" type="button" data-fade>New puzzle</button>
+                  <button class="result-share" id="sudoku-result-share" type="button" aria-label="Save image" title="Save image" data-fade>
+                    <svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg>
                   </button>
                 </div>
               </div>
@@ -847,62 +994,65 @@
         </div>
         <div class="sudoku-pad" id="sudoku-pad" role="group" aria-label="Number pad"></div>
         <div class="sudoku-tools" role="group" aria-label="Sudoku controls">
-          <button class="sudoku-tool" id="sudoku-notes" type="button" aria-pressed="false">Notes</button>
-          <button class="sudoku-tool" id="sudoku-auto-notes" type="button">Auto notes</button>
-          <button class="sudoku-tool" id="sudoku-erase" type="button">Erase</button>
-          <button class="sudoku-tool" id="sudoku-undo" type="button">Undo</button>
-          <button class="sudoku-tool" id="sudoku-hint" type="button">Hint</button>
-          <button class="sudoku-tool" id="sudoku-pause" type="button" aria-pressed="false">Pause</button>
+          <button class="sudoku-tool" id="sudoku-notes" type="button" aria-pressed="false" data-fade>Notes</button>
+          <button class="sudoku-tool" id="sudoku-auto-notes" type="button" data-fade>Auto notes</button>
+          <button class="sudoku-tool" id="sudoku-erase" type="button" data-fade>Erase</button>
+          <button class="sudoku-tool" id="sudoku-undo" type="button" data-fade>Undo</button>
+          <button class="sudoku-tool" id="sudoku-hint" type="button" data-fade>Hint</button>
+          <button class="sudoku-tool" id="sudoku-pause" type="button" aria-pressed="false" data-fade>Pause</button>
         </div>
       </div>
-      <footer class="play-foot">
+      <footer class="play-foot" data-fade>
         <div class="play-actions">
-          <button class="play-btn play-btn--solid" id="sudoku-new" type="button">New puzzle</button>
+          <button class="play-btn play-btn--solid" id="sudoku-new" type="button" data-fade>New puzzle</button>
         </div>
-        <span class="play-note">Givens are locked · notes are yours.</span>
+        <span class="play-note" data-fade>Givens are locked · notes are yours.</span>
       </footer>
       </div>
     </div>
   </section>
 
-  <section class="play-screen" id="fruit" aria-labelledby="fruit-title" hidden>
-    <div class="play-shell fruit-shell">
-      <header class="play-head">
+  <section class="play-screen" id="fruit" aria-labelledby="fruit-title" hidden data-fade>
+    <div class="play-shell fruit-shell" data-fade>
+      <header class="play-head" data-fade>
         <div class="play-cart-row">
-        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games">
+        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
-        <span class="play-cart" aria-hidden="true"><span class="play-cart-num">06</span><span class="play-cart-kind">Merging</span></span>
+        <span class="play-cart" aria-hidden="true"><span class="play-cart-num">06</span><span class="play-cart-kind"><span class="is-fruit-mode">Merging</span><span class="is-number-mode">Numbers</span></span></span>
+        <button class="sudoku-settings-open" id="fruit-settings-open" type="button" aria-haspopup="dialog" aria-controls="fruit-settings" aria-label="Fruit Merge settings" title="Fruit Merge settings" data-fade>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
-            <p class="game-tag">Drop · pair · grow</p>
-            <h1 id="fruit-title" tabindex="-1">Fruit Merge</h1>
-            <p class="sub">Pair the same fruit. Don’t reach the top.</p>
+            <p class="game-tag" data-fade>Drop · pair · grow</p>
+            <h1 id="fruit-title" tabindex="-1"><span class="is-fruit-mode">Fruit Merge</span><span class="is-number-mode">Number Merge</span></h1>
+            <p class="sub"><span class="is-fruit-mode">Pair the same fruit. Don’t reach the top.</span><span class="is-number-mode">Pair the same number. Don’t reach the top.</span></p>
           </div>
           <div class="play-stats" aria-label="Fruit Merge score">
-            <div class="play-stat"><span class="label">Score</span><strong id="fruit-score">0</strong></div>
-            <div class="play-stat"><span class="label">Best</span><strong id="fruit-best">0</strong></div>
+            <div class="play-stat" data-fade><span class="label">Score</span><strong id="fruit-score">0</strong></div>
+            <div class="play-stat" data-fade><span class="label">Best</span><strong id="fruit-best">0</strong></div>
           </div>
         </div>
       </header>
-      <div class="play-body">
-      <div class="play-main fruit-main">
+      <div class="play-body" data-fade>
+      <div class="play-main fruit-main" data-fade>
         <div class="board-stage">
-        <div class="fruit-stage">
-          <div class="fruit-hud">
-            <span class="fruit-next-label">Next <i class="fruit-next-dot" id="fruit-next-dot"></i><span id="fruit-next-name">Cherry</span></span>
+        <div class="fruit-stage" data-fade>
+          <div class="fruit-hud" data-fade>
+            <span class="fruit-next-label">Next <i class="fruit-next-dot" id="fruit-next-dot" data-fade></i><span id="fruit-next-name">Cherry</span></span>
             <span class="fruit-hint">Drag to aim</span>
           </div>
           <canvas id="fruit-canvas" width="720" height="860" tabindex="0" role="application" aria-label="Fruit Merge board"></canvas>
-          <div class="fruit-over" id="fruit-over" hidden>
+          <div class="fruit-over" id="fruit-over" role="dialog" aria-labelledby="fruit-over-title" hidden>
             <div class="fruit-over-card">
-              <p class="game-tag">Run over</p>
-              <h2>Fruit reached the top.</h2>
+              <p class="game-tag" data-fade>Run over</p>
+              <h2 id="fruit-over-title">Fruit reached the top.</h2>
               <p><strong id="fruit-final-score">0</strong> points · best <span id="fruit-final-best">0</span></p>
               <div class="fruit-over-actions">
-                <button class="play-btn play-btn--solid" id="fruit-again" type="button">Try again</button>
-                <button class="result-share result-share--labeled" id="fruit-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
+                <button class="play-btn play-btn--solid" id="fruit-again" type="button" data-fade>Try again</button>
+                <button class="result-share result-share--labeled" id="fruit-share" type="button" aria-label="Save image" title="Save image" data-fade><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
               </div>
             </div>
           </div>
@@ -912,40 +1062,40 @@
           <p class="play-status" id="fruit-status" role="status" aria-live="polite">Drag to aim. Release to drop.</p>
         </div>
       </div>
-      <footer class="play-foot">
+      <footer class="play-foot" data-fade>
         <div class="play-actions">
-          <button class="play-btn play-btn--solid" id="fruit-new" type="button">New game</button>
+          <button class="play-btn play-btn--solid" id="fruit-new" type="button" data-fade>New game</button>
         </div>
-        <span class="play-note">Drag to aim · release to drop.</span>
+        <span class="play-note" data-fade>Drag to aim · release to drop.</span>
       </footer>
       </div>
     </div>
   </section>
 
-  <section class="play-screen" id="ttt" aria-labelledby="ttt-title" hidden>
-    <div class="play-shell">
-      <header class="play-head">
+  <section class="play-screen" id="ttt" aria-labelledby="ttt-title" hidden data-fade>
+    <div class="play-shell" data-fade>
+      <header class="play-head" data-fade>
         <div class="play-cart-row">
-        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games">
+        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
         <span class="play-cart" aria-hidden="true"><span class="play-cart-num">03</span><span class="play-cart-kind">Classic</span></span>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
-            <p class="game-tag" id="ttt-tag">You are X · first move</p>
+            <p class="game-tag" id="ttt-tag" data-fade>You are X · first move</p>
             <h1 id="ttt-title" tabindex="-1">Tic Tac Toe</h1>
             <p class="sub" id="ttt-sub">Beat the computer to three in a row.</p>
           </div>
           <div class="play-stats" aria-label="Tic Tac Toe record">
-            <div class="play-stat"><span class="label" id="ttt-wins-label">Wins</span><strong id="ttt-wins">0</strong></div>
-            <div class="play-stat"><span class="label" id="ttt-draws-label">Draws</span><strong id="ttt-draws">0</strong></div>
-            <div class="play-stat"><span class="label" id="ttt-losses-label">Losses</span><strong id="ttt-losses">0</strong></div>
+            <div class="play-stat" data-fade><span class="label" id="ttt-wins-label">Wins</span><strong id="ttt-wins">0</strong></div>
+            <div class="play-stat" data-fade><span class="label" id="ttt-draws-label">Draws</span><strong id="ttt-draws">0</strong></div>
+            <div class="play-stat" data-fade><span class="label" id="ttt-losses-label">Losses</span><strong id="ttt-losses">0</strong></div>
           </div>
         </div>
       </header>
-      <div class="play-body">
-      <div class="play-main ttt-main">
+      <div class="play-body" data-fade>
+      <div class="play-main ttt-main" data-fade>
         <div class="ttt-difficulty" id="ttt-difficulty" role="group" aria-label="Computer difficulty or two players">
           <button type="button" data-ttt-difficulty="easy" aria-pressed="false">Easy</button>
           <button type="button" data-ttt-difficulty="sharp" aria-pressed="true">Sharp</button>
@@ -953,51 +1103,54 @@
           <button type="button" data-ttt-mode="two" aria-pressed="false">2 players</button>
         </div>
         <div class="board-stage">
-          <div class="ttt-board" id="ttt-board" role="group" aria-label="Tic Tac Toe board"></div>
+          <div class="ttt-board" id="ttt-board" role="group" aria-label="Tic Tac Toe board" data-fade></div>
         </div>
         <div class="play-feedback">
           <p class="play-status" id="ttt-status" role="status" aria-live="polite">Your move. You are X.</p>
-          <div class="play-win" id="ttt-result" hidden>
+          <div class="play-win" id="ttt-result" role="dialog" aria-labelledby="ttt-result-title" hidden>
             <p><strong id="ttt-result-title">You win.</strong> <span id="ttt-result-copy">Three in a row.</span></p>
-            <button class="play-btn play-btn--solid" id="ttt-again" type="button">New round</button>
-            <button class="result-share result-share--labeled" id="ttt-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
+            <button class="play-btn play-btn--solid" id="ttt-again" type="button" data-fade>New round</button>
+            <button class="result-share result-share--labeled" id="ttt-share" type="button" aria-label="Save image" title="Save image" data-fade><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
           </div>
         </div>
       </div>
-      <footer class="play-foot">
+      <footer class="play-foot" data-fade>
         <div class="play-actions">
-          <button class="play-btn play-btn--solid" id="ttt-new" type="button">New round</button>
+          <button class="play-btn play-btn--solid" id="ttt-new" type="button" data-fade>New round</button>
         </div>
-        <span class="play-note" id="ttt-note">You are X. The computer moves after you.</span>
+        <span class="play-note" id="ttt-note" data-fade>You are X. The computer moves after you.</span>
       </footer>
       </div>
     </div>
   </section>
 
-  <section class="play-screen" id="mines" aria-labelledby="mines-title" hidden>
-    <div class="play-shell">
-      <header class="play-head">
+  <section class="play-screen" id="mines" aria-labelledby="mines-title" hidden data-fade>
+    <div class="play-shell" data-fade>
+      <header class="play-head" data-fade>
         <div class="play-cart-row">
-        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games">
+        <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games" data-fade>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
         <span class="play-cart" aria-hidden="true"><span class="play-cart-num">04</span><span class="play-cart-kind">Logic</span></span>
+        <button class="sudoku-settings-open" id="mines-settings-open" type="button" aria-haspopup="dialog" aria-controls="mines-settings" aria-label="Minesweeper settings" title="Minesweeper settings" data-fade>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
-            <p class="game-tag" id="mines-level-tag">Beginner · 9 × 9</p>
+            <p class="game-tag" id="mines-level-tag" data-fade>Beginner · 9 × 9</p>
             <h1 id="mines-title" tabindex="-1">Minesweeper</h1>
             <p class="sub">Read the numbers. Clear every safe square.</p>
           </div>
           <div class="play-stats" aria-label="Minesweeper progress">
-            <div class="play-stat"><span class="label">Mines</span><strong id="mines-left">10</strong></div>
-            <div class="play-stat"><span class="label">Time</span><strong id="mines-time">0:00</strong></div>
+            <div class="play-stat" data-fade><span class="label">Mines</span><strong id="mines-left">10</strong></div>
+            <div class="play-stat" data-fade><span class="label">Time</span><strong id="mines-time">0:00</strong></div>
           </div>
         </div>
       </header>
-      <div class="play-body">
-      <div class="play-main mines-main">
-        <div class="mines-toolbar">
+      <div class="play-body" data-fade>
+      <div class="play-main mines-main" data-fade>
+        <div class="mines-toolbar" data-fade>
           <div class="mines-difficulty" id="mines-difficulty" role="group" aria-label="Board size">
             <button type="button" data-mines-difficulty="easy" aria-pressed="true">Beginner</button>
             <button type="button" data-mines-difficulty="medium" aria-pressed="false">Intermediate</button>
@@ -1008,63 +1161,63 @@
           </button>
         </div>
         <div class="board-stage">
-          <div class="mines-board-wrap">
+          <div class="mines-board-wrap" data-fade>
             <div class="mines-board" id="mines-board" role="grid" aria-label="Minesweeper board"></div>
           </div>
         </div>
         <div class="play-feedback">
           <p class="play-status" id="mines-status" role="status" aria-live="polite">Tap a square to begin. Long-press to flag.</p>
-          <div class="play-win" id="mines-result" hidden>
+          <div class="play-win" id="mines-result" role="dialog" aria-labelledby="mines-result-title" hidden>
             <p><strong id="mines-result-title">Field cleared.</strong> <span id="mines-result-copy">Every safe square is open.</span></p>
-            <button class="play-btn play-btn--solid" id="mines-again" type="button">New board</button>
-            <button class="result-share result-share--labeled" id="mines-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg><span class="result-share-label" aria-hidden="true">Share</span></button>
+            <button class="play-btn play-btn--solid" id="mines-again" type="button" data-fade>New board</button>
+            <button class="result-share result-share--labeled" id="mines-share" type="button" aria-label="Save image" title="Save image" data-fade><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg><span class="result-share-label" aria-hidden="true">Save image</span></button>
           </div>
         </div>
       </div>
-      <footer class="play-foot">
+      <footer class="play-foot" data-fade>
         <div class="play-actions">
-          <button class="play-btn play-btn--solid" id="mines-new" type="button">New board</button>
+          <button class="play-btn play-btn--solid" id="mines-new" type="button" data-fade>New board</button>
         </div>
-        <span class="play-note">Tap to dig · tap a number to chord · hold to flag.</span>
+        <span class="play-note" data-fade>Tap to dig · tap a number to chord · hold to flag.</span>
       </footer>
       </div>
     </div>
   </section>
 
-  <section class="play-screen" id="wordle" aria-labelledby="wordle-title" hidden>
-    <div class="play-shell wordle-shell">
-      <header class="play-head">
+  <section class="play-screen" id="wordle" aria-labelledby="wordle-title" hidden data-fade>
+    <div class="play-shell wordle-shell" data-fade>
+      <header class="play-head" data-fade>
         <div class="play-cart-row">
-          <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games">
+          <button class="games-home" data-back type="button" aria-label="Back to all games" title="Back to all games" data-fade>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </button>
           <span class="play-cart" aria-hidden="true"><span class="play-cart-num">??</span><span class="play-cart-kind">Words</span></span>
         </div>
         <div class="play-title-row">
           <div class="play-intro">
-            <p class="game-tag">The hidden sixth sense</p>
+            <p class="game-tag" data-fade>The hidden sixth sense</p>
             <h1 id="wordle-title" tabindex="-1">Wordle</h1>
             <p class="sub">Six guesses. Five letters. One word.</p>
           </div>
           <div class="play-stats" aria-label="Wordle stats">
-            <div class="play-stat"><span class="label">Played</span><strong id="wordle-played">0</strong></div>
-            <div class="play-stat"><span class="label">Streak</span><strong id="wordle-streak">0</strong></div>
+            <div class="play-stat" data-fade><span class="label">Played</span><strong id="wordle-played">0</strong></div>
+            <div class="play-stat" data-fade><span class="label">Streak</span><strong id="wordle-streak">0</strong></div>
           </div>
         </div>
       </header>
-      <div class="play-body wordle-body">
-        <div class="play-main wordle-main">
+      <div class="play-body wordle-body" data-fade>
+        <div class="play-main wordle-main" data-fade>
           <div class="wordle-board-wrap">
             <div class="wordle-board" id="wordle-board" role="grid" aria-label="Wordle board, 0 of 6 guesses used" aria-rowcount="6" aria-colcount="5" tabindex="0"></div>
             <div class="wordle-result" id="wordle-result" hidden role="dialog" aria-labelledby="wordle-result-title" tabindex="-1">
               <div class="wordle-result-card">
-                <p class="game-tag">Round complete</p>
+                <p class="game-tag" data-fade>Round complete</p>
                 <h2 id="wordle-result-title">Solved.</h2>
                 <p id="wordle-result-copy">The word was CRANE.</p>
                 <p class="wordle-result-stats" id="wordle-result-stats"></p>
                 <div class="wordle-result-actions">
-                  <button class="play-btn play-btn--solid" id="wordle-result-new" type="button">New game</button>
-                  <button class="result-share" id="wordle-result-share" type="button" aria-label="Share result" title="Share result"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="17.5" cy="5.5" r="2.5" /><circle cx="6.5" cy="12" r="2.5" /><circle cx="17.5" cy="18.5" r="2.5" /><path d="M8.65 10.73 15.35 6.77M8.65 13.27l6.7 3.96" /></g></svg></button>
+                  <button class="play-btn play-btn--solid" id="wordle-result-new" type="button" data-fade>New game</button>
+                  <button class="result-share" id="wordle-result-share" type="button" aria-label="Save image" title="Save image" data-fade><svg class="share-icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0 0)"><path d="M5.5 20.5L5.5 23.5C5.5 25.16 6.84 26.5 8.5 26.5L23.5 26.5C25.16 26.5 26.5 25.16 26.5 23.5L26.5 20.5" fill="none" stroke="currentColor" stroke-width="2"/><g opacity="0"><path d="M16 23.2L11.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g><g opacity="0"><path d="M16 23.2L20.5 23.2" fill="none" stroke="currentColor" stroke-width="2" pathLength="1"></path></g></g><g transform="translate(0 0)"><g opacity="1"><path d="M16 6.3L16 16.5" fill="none" stroke="currentColor" stroke-width="2"/></g><g opacity="1"><path d="M11.2 11.7L16 16.5L20.8 11.7" fill="none" stroke="currentColor" stroke-width="2"/></g></g></svg></button>
                 </div>
               </div>
             </div>
@@ -1073,31 +1226,50 @@
           <p class="wordle-offline" id="wordle-offline" role="note" aria-live="polite" aria-atomic="true" hidden></p>
           <div class="wordle-keyboard" id="wordle-keyboard" role="group" aria-label="Letter keyboard"></div>
         </div>
-        <footer class="play-foot">
+        <footer class="play-foot" data-fade>
           <div class="play-actions">
-            <button class="play-btn play-btn--ghost wordle-new" id="wordle-new" type="button">New game</button>
+            <button class="play-btn play-btn--ghost wordle-new" id="wordle-new" type="button" data-fade>New game</button>
           </div>
-          <span class="play-note">Type on your keyboard or tap the letters.</span>
+          <span class="play-note" data-fade>Type on your keyboard or tap the letters.</span>
         </footer>
       </div>
     </div>
   </section>
 
+  <div class="sheet welcome" id="welcome" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcome-title" aria-describedby="welcome-intro" data-fade>
+      <div class="sheet-head">
+        <h2 id="welcome-title">Welcome to Sixfold</h2>
+        <button class="sheet-done" type="button" data-close data-fade>Skip</button>
+      </div>
+      <div class="welcome-mark" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <p class="sheet-sub" id="welcome-intro" data-fade>Six games, one place. Everything saves on this device.</p>
+      <ol class="steps welcome-steps">
+        <li data-fade>Tap any cover on the hub to start a game.</li>
+        <li data-fade>Daily Sixfold gives you one fresh puzzle in every game, and keeps your streak.</li>
+        <li data-fade>Look changes the theme, language, contrast and backup. First-play tips wait inside each game.</li>
+      </ol>
+      <button class="btn welcome-start" id="welcome-start" type="button" data-fade>Start playing</button>
+      <p class="sheet-note welcome-note" data-fade>Replay this guide from Look &amp; feel.</p>
+    </div>
+  </div>
+
   <div class="sheet" id="sheet" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheet-title" data-fade>
       <div class="sheet-head">
         <h2 id="sheet-title">Look &amp; feel</h2>
-        <button class="sheet-done" id="sheet-done" type="button">Done</button>
+        <button class="sheet-done" id="sheet-done" type="button" data-fade>Done</button>
       </div>
-      <p class="sheet-sub">One look for every game. Saved on this device.</p>
+      <p class="sheet-sub" data-fade>One look for every game. Saved on this device.</p>
       <details class="language-picker" id="language-picker">
         <summary class="language-summary">
           <span class="language-summary-label">Language</span>
           <strong id="language-current">English</strong>
           <span class="language-summary-chevron" aria-hidden="true">›</span>
         </summary>
-        <div class="seg seg--languages" id="language-seg" role="group" aria-label="Language">
+        <div class="seg seg--languages" id="language-seg" role="group" aria-label="Language" data-fade>
           <button type="button" data-locale="en" aria-pressed="true">English</button>
           <button type="button" data-locale="es" aria-pressed="false">Español</button>
           <button type="button" data-locale="fr" aria-pressed="false">Français</button>
@@ -1112,97 +1284,119 @@
           <button type="button" data-locale="ar" aria-pressed="false" lang="ar">العربية</button>
         </div>
       </details>
-      <p class="sheet-label">Theme</p>
-      <div class="seg" id="theme-seg" role="group" aria-label="Theme">
-        <button type="button" data-theme-opt="auto" aria-pressed="true">Auto</button>
-        <button type="button" data-theme-opt="light" aria-pressed="false">Light</button>
-        <button type="button" data-theme-opt="dark" aria-pressed="false">Dark</button>
-      </div>        <p class="sheet-label">Colours</p>
+      <p class="sheet-label" data-fade>Theme</p>
+      <div class="seg" id="theme-seg" role="group" aria-label="Theme" data-fade>
+        <button data-fade type="button" data-theme-opt="auto" aria-pressed="true">Auto</button>
+        <button data-fade type="button" data-theme-opt="light" aria-pressed="false">Light</button>
+        <button data-fade type="button" data-theme-opt="dark" aria-pressed="false">Dark</button>
+      </div>
+      <p class="sheet-label" data-fade>Motion</p>
+      <div class="seg" id="motion-seg" role="group" aria-label="Motion" data-fade>
+        <button data-fade type="button" data-motion-opt="system" aria-pressed="false">System</button>
+        <button data-fade type="button" data-motion-opt="full" aria-pressed="true">Full</button>
+        <button data-fade type="button" data-motion-opt="reduced" aria-pressed="false">Reduced</button>
+      </div>
+      <p class="sheet-label" data-fade>Colours</p>
       <div class="palettes" id="palettes" role="group" aria-label="Colours"></div>
+      <details class="colour-custom" id="colour-custom" data-fade>
+        <summary class="colour-custom-summary" data-fade>
+          <span class="colour-custom-preview" id="colour-custom-preview" aria-hidden="true"></span>
+          <span class="colour-custom-copy"><strong>Custom colour</strong><small id="colour-custom-hex" data-i18n-skip>#E85F3B</small></span>
+          <span class="colour-custom-chevron" aria-hidden="true">›</span>
+        </summary>
+        <div class="colour-custom-body">
+          <input class="colour-picker" id="colour-picker" type="color" value="#e85f3b" aria-label="Pick a colour" data-fade />
+          <input class="colour-hex" id="colour-hex" type="text" value="#E85F3B" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Hex colour" data-fade />
+          <button class="btn colour-apply" id="colour-apply" type="button" data-fade>Apply</button>
+        </div>
+        <p class="colour-hint" id="colour-hint" role="status" aria-live="polite"></p>
+      </details>
       <details class="settings-disclosure" id="accessibility-settings">
         <summary class="settings-summary">
-          <span>Accessibility</span>
+          <span class="setting-copy"><strong>Accessibility</strong><small>Contrast, colour cues and larger text.</small></span>
           <span class="settings-summary-chevron" aria-hidden="true">›</span>
         </summary>
         <div class="settings-list">
-          <button class="setting-row" type="button" data-setting="highContrast" aria-pressed="false"><span class="setting-copy"><strong>High contrast</strong><small>Stronger ink, borders and controls.</small></span><span class="setting-state">Off</span></button>
-          <button class="setting-row" type="button" data-setting="colorblind" aria-pressed="false"><span class="setting-copy"><strong>Colour-blind cues</strong><small>Patterns and symbols alongside colour.</small></span><span class="setting-state">Off</span></button>
+          <button class="setting-row" type="button" data-setting="highContrast" aria-pressed="false" data-fade><span class="setting-copy"><strong>High contrast</strong><small>Stronger ink, borders and controls.</small></span><span class="setting-state" data-fade>Off</span></button>
+          <button class="setting-row" type="button" data-setting="colorblind" aria-pressed="false" data-fade><span class="setting-copy"><strong>Colour-blind cues</strong><small>Patterns and symbols alongside colour.</small></span><span class="setting-state" data-fade>Off</span></button>
         </div>
       </details>
-      <p class="sheet-label">Home</p>
+      <p class="sheet-label" data-fade>Home</p>
       <div class="settings-list">
-        <button class="setting-row" type="button" data-setting="dailyPuzzle" aria-pressed="true"><span class="setting-copy"><strong>Daily Sixfold</strong><small>Show today’s six games on the hub.</small></span><span class="setting-state">On</span></button>
-        <button class="setting-row" type="button" data-setting="dailyReminder" aria-pressed="false"><span class="setting-copy"><strong>Daily reminder</strong><small>One local nudge at 9:00 while Sixfold is open.</small></span><span class="setting-state">Off</span></button>
-        <p class="sheet-note" id="daily-reminder-status" role="status" aria-live="polite"></p>
+        <button class="setting-row" type="button" data-setting="dailyPuzzle" aria-pressed="true" data-fade><span class="setting-copy"><strong>Daily Sixfold</strong><small>Show today’s six games on the hub.</small></span><span class="setting-state" data-fade>On</span></button>
       </div>
-      <p class="sheet-label">Backup</p>
-      <p class="sheet-note">Keep a copy of every board, score, streak and setting. A backup is a normal JSON file and stays on this device until you share it. Moving to a new phone? Export here, then restore there.</p>
+      <p class="sheet-label" data-fade>Guide</p>
+      <div class="settings-list">
+        <button class="setting-row" id="welcome-open" type="button" data-fade><span class="setting-copy"><strong>Welcome &amp; guide</strong><small>Six games, the daily set and where everything lives.</small></span><span class="setting-state" aria-hidden="true">›</span></button>
+      </div>
+      <p class="sheet-label" data-fade>Backup</p>
+      <p class="sheet-note" data-fade>Keep a copy of every board, score, streak and setting. A backup is a normal JSON file and stays on this device until you share it. Moving to a new phone? Export here, then restore there.</p>
       <div class="backup-actions">
-        <button class="btn" id="backup-export" type="button">Export backup</button>
-        <button class="btn ghost" id="backup-import-open" type="button">Restore backup</button>
-        <input id="backup-import" type="file" accept="application/json,.json" hidden />
+        <button class="btn" id="backup-export" type="button" data-fade>Export backup</button>
+        <button class="btn ghost" id="backup-import-open" type="button" data-fade>Restore backup</button>
+        <input id="backup-import" type="file" accept=".json,application/json,text/plain,application/octet-stream" hidden />
       </div>
-      <p class="sheet-note" id="backup-status" role="status" aria-live="polite"></p>
-      <p class="sheet-label">This device</p>
-      <p class="sheet-note">Erase every game, score, streak, saved shape and appearance choice. Nothing outside Sixfold is touched.</p>
-      <button class="btn wipe-open" id="wipe-open" type="button">Erase all data</button>
-      <p class="sheet-note">Each game also has its own reset in its bottom tool row.</p>
+      <p class="sheet-note" id="backup-status" role="status" aria-live="polite" data-fade></p>
+      <p class="sheet-label" data-fade>This device</p>
+      <p class="sheet-note" data-fade>Erase every game, score, streak, saved shape and appearance choice. Nothing outside Sixfold is touched.</p>
+      <button class="btn wipe-open" id="wipe-open" type="button" data-fade>Erase all data</button>
+      <p class="sheet-note" data-fade>Each game also has its own reset in its bottom tool row.</p>
     </div>
   </div>
 
   <div class="sheet" id="wipe-sheet" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card sheet-card--confirm" role="dialog" aria-modal="true" aria-labelledby="wipe-title" aria-describedby="wipe-copy">
+    <div class="sheet-card sheet-card--confirm" role="dialog" aria-modal="true" aria-labelledby="wipe-title" aria-describedby="wipe-copy" data-fade>
       <div class="sheet-head">
         <h2 id="wipe-title">Erase everything?</h2>
-        <button class="sheet-done" data-close type="button">Cancel</button>
+        <button class="sheet-done" data-close type="button" data-fade>Cancel</button>
       </div>
-      <p class="sheet-sub" id="wipe-copy">Every board, best score, streak, saved shape and appearance choice on this device will be removed.</p>
-      <p class="sheet-note">Sixfold returns to a fresh install. This cannot be undone. Nothing outside Sixfold is affected.</p>
+      <p class="sheet-sub" id="wipe-copy" data-fade>Every board, best score, streak, saved shape and appearance choice on this device will be removed.</p>
+      <p class="sheet-note" data-fade>Sixfold returns to a fresh install. This cannot be undone. Nothing outside Sixfold is affected.</p>
       <div class="reset-actions">
-        <button class="btn reset-confirm" id="wipe-confirm" type="button">Yes, erase everything</button>
+        <button class="btn reset-confirm" id="wipe-confirm" type="button" data-fade>Yes, erase everything</button>
       </div>
     </div>
   </div>
 
   <div class="sheet" id="size-sheet" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="size-title">
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="size-title" data-fade>
       <div class="sheet-head">
         <h2 id="size-title">Merge board</h2>
-        <button class="sheet-done" data-close type="button">Cancel</button>
+        <button class="sheet-done" data-close type="button" data-fade>Cancel</button>
       </div>
-      <p class="sheet-sub">Pick a board size. Changing it starts a new round.</p>
-      <div class="seg" id="size-seg" role="group" aria-label="Board size">
-        <button type="button" data-size-opt="3" aria-pressed="false">3 × 3</button>
-        <button type="button" data-size-opt="4" aria-pressed="true">4 × 4</button>
-        <button type="button" data-size-opt="5" aria-pressed="false">5 × 5</button>
+      <p class="sheet-sub" data-fade>Pick a board size. Changing it starts a new round.</p>
+      <div class="seg" id="size-seg" role="group" aria-label="Board size" data-fade>
+        <button data-fade type="button" data-size-opt="3" aria-pressed="false">3 × 3</button>
+        <button data-fade type="button" data-size-opt="4" aria-pressed="true">4 × 4</button>
+        <button data-fade type="button" data-size-opt="5" aria-pressed="false">5 × 5</button>
       </div>
-      <p class="sheet-note">3 × 3 is a quick warm-up, 4 × 4 is the standard, and 5 × 5 is the long game. Each size keeps its own best score.</p>
+      <p class="sheet-note" data-fade>3 × 3 is a quick warm-up, 4 × 4 is the standard, and 5 × 5 is the long game. Each size keeps its own best score.</p>
     </div>
   </div>
 
   <div class="sheet" id="reset-sheet" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card sheet-card--confirm" role="dialog" aria-modal="true" aria-labelledby="reset-title" aria-describedby="reset-copy">
+    <div class="sheet-card sheet-card--confirm" role="dialog" aria-modal="true" aria-labelledby="reset-title" aria-describedby="reset-copy" data-fade>
       <div class="sheet-head">
         <h2 id="reset-title">Reset this game?</h2>
-        <button class="sheet-done" data-close type="button">Cancel</button>
+        <button class="sheet-done" data-close type="button" data-fade>Cancel</button>
       </div>
-      <p class="sheet-sub" id="reset-copy">Only this game’s saved progress will be cleared.</p>
-      <p class="sheet-note">Your look and every other game stay exactly as they are.</p>
+      <p class="sheet-sub" id="reset-copy" data-fade>Only this game’s saved progress will be cleared.</p>
+      <p class="sheet-note" data-fade>Your look and every other game stay exactly as they are.</p>
       <div class="reset-actions">
-        <button class="btn reset-confirm" id="reset-confirm" type="button">Reset game</button>
+        <button class="btn reset-confirm" id="reset-confirm" type="button" data-fade>Reset game</button>
       </div>
     </div>
   </div>
 
   <div class="sheet" id="help" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="help-title" data-fade>
       <div class="sheet-head">
         <h2 id="help-title">How to play</h2>
-        <button class="sheet-done" id="help-done" type="button">Got it</button>
+        <button class="sheet-done" id="help-done" type="button" data-fade>Got it</button>
       </div>
       <ol class="steps" id="help-steps">
         <li>Swipe or drag anywhere on the board, or use the arrow keys, to slide every tile.</li>
@@ -1210,7 +1404,7 @@
         <li>Every move drops in a new tile. If the board fills with no merges left, the round ends.</li>
         <li>Aim for 2048. There is no undo, so a move cannot be taken back.</li>
       </ol>
-      <p class="sheet-note">Your board is saved as you play — reopen the app and pick up where you left off.</p>
+      <p class="sheet-note" data-fade>Your board is saved as you play — reopen the app and pick up where you left off.</p>
     </div>
   </div>
 
@@ -1218,90 +1412,138 @@
        build label — belongs to the collection, so it lives only on the hub. -->
   <div class="sheet" id="about" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="about-title" data-fade>
       <div class="sheet-head">
         <h2 id="about-title">About Sixfold</h2>
-        <button class="sheet-done" data-close type="button">Done</button>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
       </div>
       <section class="sheet-block" id="install-block" hidden>
-        <p class="sheet-label">Install</p>
-        <p class="sheet-note" id="install-copy">Install Sixfold for an app-like window and offline play.</p>
-        <button class="btn install-btn" id="install-app" type="button" hidden>Install app</button>
-        <p class="sheet-note">Already installed but it won’t open? Remove the old app from your Home Screen or browser app settings, then try again. The phone controls the bottom system bar, so it keeps the colour it was given when the app was installed.</p>
+        <p class="sheet-label" data-fade>Install</p>
+        <p class="sheet-note" id="install-copy" data-fade>Install Sixfold for an app-like window and offline play.</p>
+        <button class="btn install-btn" id="install-app" type="button" hidden data-fade>Install app</button>
+        <p class="sheet-note" data-fade>Already installed but it won’t open? Remove the old app from your Home Screen or browser app settings, then try again. The phone controls the bottom system bar, so it keeps the colour it was given when the app was installed.</p>
       </section>
       <section class="sheet-block">
-        <p class="sheet-label">About &amp; privacy</p>
-        <p class="sheet-note">No accounts, ads or tracking. Your board, best scores and appearance choices stay on this device. Each game has its own reset in its tool row, so clearing one game never touches the others. Your light/dark choice is also remembered in a first-party cookie so an installed app can choose matching launch chrome.</p>
-        <p class="sheet-note">Questions, bug reports or feedback?<br /><a class="contact-link" href="https://github.com/Moh23rd/Sixfold/discussions" target="_blank" rel="noopener">Open a discussion</a><br /><a class="contact-link" href="https://github.com/Moh23rd/Sixfold/issues/new/choose" target="_blank" rel="noopener">Report a bug or send feedback</a></p>
-        <p class="sheet-note">A backup is yours: export it from Look &amp; feel whenever you want a copy.</p>
-        <p class="sheet-note">Release notes live in <a class="contact-link" href="https://github.com/Moh23rd/Sixfold/releases">GitHub Releases</a>.</p>
-        <p class="sheet-note"><a class="contact-link" href="licenses.html">Licenses &amp; source</a></p>
-        <p class="sheet-note version-note">Version 5.0</p>
+        <p class="sheet-label" data-fade>About &amp; privacy</p>
+        <p class="sheet-note" data-fade>No accounts, ads or tracking. Your board, best scores and appearance choices stay on this device. Each game has its own reset in its tool row, so clearing one game never touches the others. Your light/dark choice is remembered on this device, so the launch screen opens in the appearance you were using.</p>
+        <p class="sheet-note" data-fade>Questions, bug reports or feedback?<br /><a class="contact-link" href="https://github.com/Moh23rd/Sixfold/issues/new/choose" target="_blank" rel="noopener" data-fade>Report a bug or send feedback</a></p>
+        <p class="sheet-note" data-fade>A backup is yours: export it from Look &amp; feel whenever you want a copy.</p>
+        <p class="sheet-note" data-fade>Release notes live in <a class="contact-link contact-link--inline" href="https://github.com/Moh23rd/Sixfold/releases" target="_blank" rel="noopener">GitHub Releases</a>. <span>Android builds are attached there when published.</span></p>
+        <p class="sheet-note" data-fade><a class="contact-link" href="licenses.html" data-fade>Licenses &amp; source</a></p>
+        <p class="sheet-note version-note" data-fade>Version 6.0</p>
       </section>
     </div>
   </div>
 
   <div class="sheet" id="sudoku-levels" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sudoku-levels-title">
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sudoku-levels-title" data-fade>
       <div class="sheet-head">
         <h2 id="sudoku-levels-title">Difficulty</h2>
-        <button class="sheet-done" data-close type="button">Done</button>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
       </div>
-      <p class="sheet-sub">Every puzzle has exactly one solution. Best times save on this device.</p>
+      <p class="sheet-sub" data-fade>Every puzzle has exactly one solution. Best times save on this device.</p>
       <div class="sudoku-level-grid" id="sudoku-level-grid" role="group" aria-label="Sudoku difficulty"></div>
     </div>
   </div>
 
   <div class="sheet" id="sudoku-settings" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sudoku-settings-title">
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sudoku-settings-title" data-fade>
       <div class="sheet-head">
         <h2 id="sudoku-settings-title">Sudoku settings</h2>
-        <button class="sheet-done" data-close type="button">Done</button>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
       </div>
-      <p class="sheet-sub">Saved on this device for every Sudoku puzzle.</p>
-      <p class="sheet-label">Accessibility</p>
+      <p class="sheet-sub" data-fade>Saved on this device for every Sudoku puzzle.</p>
+      <p class="sheet-label" data-fade>Accessibility</p>
       <div class="settings-list">
-        <button class="setting-row" type="button" data-setting="largeDigits" aria-pressed="false"><span class="setting-copy"><strong>Larger Sudoku digits</strong><small>Bigger entries and notes on the grid.</small></span><span class="setting-state">Off</span></button>
-        <button class="setting-row" type="button" data-setting="leftHanded" aria-pressed="false"><span class="setting-copy"><strong>Left-handed Sudoku</strong><small>Board on the right in landscape.</small></span><span class="setting-state">Off</span></button>
-        <button class="setting-row" type="button" data-setting="hideTimer" aria-pressed="false"><span class="setting-copy"><strong>Hide timer</strong><small>Play Sudoku without a clock in view.</small></span><span class="setting-state">Off</span></button>
-        <button class="setting-row" type="button" data-setting="checkMistakes" aria-pressed="false"><span class="setting-copy"><strong>Check mistakes</strong><small>Mark Sudoku entries that do not fit.</small></span><span class="setting-state">Off</span></button>
+        <button class="setting-row" type="button" data-setting="largeDigits" aria-pressed="false" data-fade><span class="setting-copy"><strong>Larger Sudoku digits</strong><small>Bigger entries and notes on the grid.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="leftHanded" aria-pressed="false" data-fade><span class="setting-copy"><strong>Left-handed Sudoku</strong><small>Board on the right in landscape.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="hideTimer" aria-pressed="false" data-fade><span class="setting-copy"><strong>Hide timer</strong><small>Play Sudoku without a clock in view.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="checkMistakes" aria-pressed="false" data-fade><span class="setting-copy"><strong>Check mistakes</strong><small>Mark Sudoku entries that do not fit.</small></span><span class="setting-state" data-fade>Off</span></button>
       </div>
-      <p class="sheet-label">Sudoku input</p>
-      <div class="seg" id="input-mode-seg" role="group" aria-label="Sudoku input order">
-        <button type="button" data-setting-input="cell" aria-pressed="true">Cell first</button>
-        <button type="button" data-setting-input="digit" aria-pressed="false">Digit first</button>
+      <p class="sheet-label" data-fade>Sudoku input</p>
+      <div class="seg" id="input-mode-seg" role="group" aria-label="Sudoku input order" data-fade>
+        <button data-fade type="button" data-setting-input="cell" aria-pressed="true">Cell first</button>
+        <button data-fade type="button" data-setting-input="digit" aria-pressed="false">Digit first</button>
       </div>
-      <p class="sheet-note">Cell first selects a square, then a number. Digit first arms a number, then you tap its square.</p>
+      <p class="sheet-note" data-fade>Cell first selects a square, then a number. Digit first arms a number, then you tap its square.</p>
+    </div>
+  </div>
+
+  <div class="sheet" id="water-settings" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="water-settings-title" data-fade>
+      <div class="sheet-head">
+        <h2 id="water-settings-title">Water Sort settings</h2>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
+      </div>
+      <p class="sheet-sub" data-fade>Saved on this device for every Water Sort board.</p>
+      <p class="sheet-label" data-fade>Accessibility</p>
+      <div class="settings-list">
+        <button class="setting-row" type="button" data-setting="colorblind" aria-pressed="false" data-fade><span class="setting-copy"><strong>Colour-blind cues</strong><small>Symbols and patterns alongside colour.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="highContrast" aria-pressed="false" data-fade><span class="setting-copy"><strong>High contrast</strong><small>Stronger ink, borders and controls.</small></span><span class="setting-state" data-fade>Off</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="mines-settings" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="mines-settings-title" data-fade>
+      <div class="sheet-head">
+        <h2 id="mines-settings-title">Minesweeper settings</h2>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
+      </div>
+      <p class="sheet-sub" data-fade>Saved on this device for every Minesweeper field.</p>
+      <p class="sheet-label" data-fade>Accessibility</p>
+      <div class="settings-list">
+        <button class="setting-row" type="button" data-setting="largeMines" aria-pressed="false" data-fade><span class="setting-copy"><strong>Larger mine numbers</strong><small>Bigger numbers on the board.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="hideTimer" aria-pressed="false" data-fade><span class="setting-copy"><strong>Hide timer</strong><small>Play Sudoku and Minesweeper without a clock.</small></span><span class="setting-state" data-fade>Off</span></button>
+        <button class="setting-row" type="button" data-setting="highContrast" aria-pressed="false" data-fade><span class="setting-copy"><strong>High contrast</strong><small>Stronger ink, borders and controls.</small></span><span class="setting-state" data-fade>Off</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="fruit-settings" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="fruit-settings-title" data-fade>
+      <div class="sheet-head">
+        <h2 id="fruit-settings-title">Fruit Merge settings</h2>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
+      </div>
+      <p class="sheet-sub" data-fade>Saved on this device for every Fruit Merge run.</p>
+      <p class="sheet-label" data-fade>Mode</p>
+      <div class="settings-list">
+        <button class="setting-row" type="button" data-setting="fruitNumbers" aria-pressed="false" data-fade><span class="setting-copy"><strong>Numbers mode</strong><small>Swap fruit for numbered tiles.</small></span><span class="setting-state" data-fade>Off</span></button>
+      </div>
     </div>
   </div>
 
   <div class="sheet" id="daily-calendar" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="daily-calendar-title">
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="daily-calendar-title" data-fade>
       <div class="sheet-head">
         <h2 id="daily-calendar-title">Daily calendar</h2>
-        <button class="sheet-done" data-close type="button">Done</button>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
       </div>
-      <p class="sheet-sub">The last 30 local days. Each date features one game; completed days are marked.</p>
+      <p class="sheet-sub" data-fade>The last 30 local days. Each date features one game; completed days are marked.</p>
       <div class="daily-calendar-grid" id="daily-calendar-grid" role="group" aria-label="Last 30 daily picks"></div>
       <div class="daily-day-detail">
         <h3 id="daily-day-title">Today</h3>
         <p id="daily-day-copy"></p>
-        <button class="btn" id="daily-day-play" type="button">Play this Sudoku</button>
+        <button class="btn" id="daily-day-play" type="button" data-fade>Play this Sudoku</button>
       </div>
     </div>
   </div>
 
   <div class="sheet" id="sudoku-guide" hidden>
     <div class="sheet-backdrop" data-close></div>
-    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sudoku-guide-title">
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sudoku-guide-title" data-fade>
       <div class="sheet-head">
         <h2 id="sudoku-guide-title">Technique guide</h2>
-        <button class="sheet-done" data-close type="button">Done</button>
+        <button class="sheet-done" data-close type="button" data-fade>Done</button>
       </div>
-      <p class="sheet-sub">Short, repeatable moves. Use Auto notes to fill candidates, then look for these patterns.</p>
+      <p class="sheet-sub" data-fade>Short, repeatable moves. Use Auto notes to fill candidates, then look for these patterns.</p>
       <ul class="sudoku-guide-list">
         <li><strong>Naked single</strong><p>One empty cell accepts only one digit. Every other digit already appears in its row, column or box.</p></li>
         <li><strong>Hidden single</strong><p>Within a row, column or box, a digit fits in only one cell. The cell may have other candidates, but this digit has nowhere else to go.</p></li>
@@ -1310,17 +1552,17 @@
         <li><strong>Box-line reduction</strong><p>In a row or column, a digit’s candidates sit inside one box. Remove that digit from the other cells of that box.</p></li>
         <li><strong>X-Wing</strong><p>Two rows both confine a digit to the same two columns. Those columns can lose that digit everywhere else. The same idea works with two columns and two rows.</p></li>
       </ul>
-      <p class="sheet-note">When no simple single is available, Hint will still keep you moving and say that it is revealing a cell.</p>
+      <p class="sheet-note" data-fade>When no simple single is available, Hint will still keep you moving and say that it is revealing a cell.</p>
     </div>
   </div>
 
-  <aside class="update-banner" id="update-banner" role="status" aria-live="polite" hidden>
+  <aside class="update-banner" id="update-banner" role="status" aria-live="polite" hidden data-fade>
     <p class="update-copy">A new Sixfold is ready. Reload to use it.</p>
     <button class="update-reload" id="update-reload" type="button">Reload</button>
     <button class="update-later" id="update-later" type="button">Later</button>
   </aside>
 
-  <aside class="daily-finish" id="daily-finish" aria-live="polite" hidden>
+  <aside class="daily-finish" id="daily-finish" aria-live="polite" hidden data-fade>
     <span class="daily-finish-medal" aria-hidden="true"></span>
     <div class="daily-finish-copy">
       <strong id="daily-finish-title">Challenge finished</strong>
@@ -1330,22 +1572,33 @@
     <button class="daily-finish-close" id="daily-finish-close" type="button" aria-label="Dismiss">×</button>
   </aside>
 
-  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden data-fade></div>
 
-  <script src="js/settings.js?v=5.2.3"></script>
-  <script src="js/haptics.js?v=4.0.0"></script>
-  <script src="js/overscroll.js?v=4.0.0"></script>
-  <script src="js/celebrate.js?v=4.0.0"></script>
-  <script src="js/sharecard.js?v=5.2.7"></script>
-  <script src="js/theme.js?v=5.2.0"></script>
-  <script src="js/game.js?v=5.2.5"></script>
-  <script src="js/install.js?v=4.0.0"></script>
-  <script src="js/sudoku.js?v=5.2.6"></script>
-  <script src="js/games.js?v=5.2.8"></script>
-  <script src="js/daily.js?v=5.3.9"></script>
-  <script src="js/badges.js?v=1.0.1"></script>
+  <!-- Decorative edge blur: content dissolves as it scrolls under the phone's
+       transparent system bars. Three layers per edge; see progressive-blur.css. -->
+  <div class="progressive-blur progressive-blur--top" aria-hidden="true">
+    <span data-fade></span><span data-fade></span><span data-fade></span>
+  </div>
+  <div class="progressive-blur progressive-blur--bottom" aria-hidden="true">
+    <span data-fade></span><span data-fade></span><span data-fade></span>
+  </div>
+
+  <script src="js/settings.js?v=5.4.1"></script>
+  <script src="js/haptics.js?v=6.0.20"></script>
+  <script src="js/overscroll.js?v=6.0.5"></script>
+  <script src="js/celebrate.js?v=5.0.1"></script>
+  <script src="js/sharecard.js?v=5.3.5"></script>
+  <script src="js/theme.js?v=6.0.27"></script>
+  <script src="js/game.js?v=5.3.5"></script>
+  <script src="js/install.js?v=5.0.1"></script>
+  <script src="js/sudoku.js?v=5.3.5"></script>
+  <script src="js/games.js?v=5.5.11"></script>
+  <script src="js/daily.js?v=5.4.7"></script>
+  <script src="js/profile.js?v=1.0.0"></script>
+  <script src="js/badges.js?v=1.1.1"></script>
+  <script src="js/gauntlet.js?v=1.0.3"></script>
   <script src="js/update.js?v=5.1.0"></script>
-  <script src="i18n/i18n-locale.js?v=5.4.5"></script>
+  <script src="i18n/i18n-locale.js?v=6.0.12"></script>
   <script>
     // Only the active language pack is on the first-visit critical path. Every
     // other catalog is cached when its language is selected.
@@ -1356,9 +1609,9 @@
       });
     })();
   </script>
-  <script src="i18n/i18n.js?v=5.4.5"></script>
-  <script src="js/native.js?v=5.1.0"></script>
-  <script src="js/wordle-loader.js?v=5.2.5-wordle"></script>
+  <script src="i18n/i18n.js?v=6.0.12"></script>
+  <script src="js/native.js?v=5.2.2"></script>
+  <script src="js/wordle-loader.js?v=5.3.4-wordle"></script>
   <script>
     (function () {
       var splash = document.getElementById('boot-splash');
@@ -1367,35 +1620,102 @@
       var gone = false;
       var standalone = false;
       var calm = false;
+      var native = false;
       try {
         standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        calm = document.documentElement.getAttribute('data-motion') === 'reduced';
+        native = document.documentElement.classList.contains('is-native');
       } catch (err) {}
       // An installed app keeps the full launch composition; a browser visit
       // gets the same frame with a shorter hold. The last rail piece finishes
       // around 625ms, so both timings leave it fully drawn before the lift.
       var minimum = calm ? 0 : (standalone ? 800 : 680);
       var fade = calm ? 60 : (standalone ? 480 : 460);
+      // Inside the native shell the OS splash is the launch screen. This layer
+      // has no composition of its own to hold for, only a same-colour
+      // hand-off, and its fade is whatever the stylesheet gives it.
+      var returning = window.__sixfoldReturning === true;
+      // A return from the legal page is not a launch: no hand-off to wait for,
+      // no hold and no six-piece build. The hub is already the screen the reader
+      // left, so it lands at once instead of replaying the launch.
+      if (returning) {
+        gone = true;
+        var revealed = false;
+        function revealReturn() {
+          if (revealed) return;
+          revealed = true;
+          if (splash.parentNode) splash.parentNode.removeChild(splash);
+          document.documentElement.classList.add('app-ready', 'home-ready', 'hub-settled');
+        }
+        // games.js restores the hub's scroll position during parsing; reveal
+        // after that has landed instead of on a fixed delay, which used to show
+        // the top of the collection and then snap to the saved place.
+        if (window.__sixfoldHubRestored) {
+          window.requestAnimationFrame(revealReturn);
+        } else {
+          window.addEventListener('sixfold:hub-restored', revealReturn, { once: true });
+          window.setTimeout(revealReturn, 260);
+        }
+        return;
+      }
+      var nativeGone = !native;
+      if (native) {
+        minimum = 0;
+        var handoff = 0;
+        try { handoff = parseFloat(window.getComputedStyle(splash).transitionDuration) * 1000; } catch (err) {}
+        fade = handoff > 0 ? handoff : 420;
+        // Prepare the hub under this layer; native.js waits for its paint signal.
+        var markNativeReady = function () {
+          if (document.documentElement.getAttribute('data-motion') === 'full') {
+            document.documentElement.classList.add('home-build');
+          }
+          document.documentElement.classList.add('home-ready');
+        };
+        if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(markNativeReady);
+          });
+        } else {
+          markNativeReady();
+        }
+      }
       function lift() {
         if (gone) return;
+        // js/native.js starts the platform's splash exit and then says so. The
+        // hand-off must not run before that, or the hub would build behind it.
+        if (!nativeGone) return;
         gone = true;
         // Let the progress rail finish and the first board paint beneath it.
         var wait = Math.max(0, minimum - (Date.now() - started));
+        // Keep this layer opaque through the 450ms native fade.
+        if (native) wait += 450;
         window.setTimeout(function () {
           document.documentElement.classList.add('app-ready');
-          // Start the hub choreography only after the launch layer is gone.
-          // Otherwise the six-piece build finishes behind the splash and the
-          // cover looks static when it is finally revealed.
+          // Only a launch that starts in Full owns the six-piece build. A page
+          // that starts in Reduced must stay still when the player chooses Full
+          // later; otherwise the finished cover disappears and rebuilds.
+          if (document.documentElement.getAttribute('data-motion') === 'full') {
+            document.documentElement.classList.add('home-build');
+          }
+          // The cards and the rest of the hub choreography wait until the launch
+          // layer is gone; the cover is already building behind the fade.
           window.setTimeout(function () {
             if (splash.parentNode) splash.parentNode.removeChild(splash);
-            document.documentElement.classList.add('home-ready');
+            if (!native) document.documentElement.classList.add('home-ready');
           }, fade);
         }, wait);
       }
+      window.addEventListener('merge:splash-hidden', function () {
+        nativeGone = true;
+        lift();
+      });
       window.requestAnimationFrame(function () {
         window.requestAnimationFrame(lift);
       });
-      window.setTimeout(lift, 2800);
+      window.setTimeout(function () {
+        nativeGone = true;
+        lift();
+      }, native ? 30000 : 2800);
     })();
   </script>
   <script>
