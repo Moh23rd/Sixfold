@@ -1,8 +1,8 @@
 const { test, expect } = require('@playwright/test');
 
 // The daily store is the only completion boundary 6.0 needs: one event per
-// finished round, credited or replayed. These tests pin the contract recorded in
-// docs/M0-DAILY-SEAM.md, so a future game cannot quietly change it.
+// finished round, credited or replayed. These tests pin that contract, so a
+// future game cannot quietly change it.
 
 async function ready(page) {
   await page.goto('/');

@@ -91,4 +91,4 @@ and **Wordle Kannada**; revisions and hashes are pinned in
 [docs/WORDLE-SOURCES.json](docs/WORDLE-SOURCES.json). Release history is in
 [CHANGELOG.md](CHANGELOG.md).
 
-Questions or bug reports: [mohrd9685@gmail.com](mailto:mohrd9685@gmail.com).
+Questions or bug reports: [open an issue](https://github.com/Moh23rd/Sixfold/issues/new/choose).
