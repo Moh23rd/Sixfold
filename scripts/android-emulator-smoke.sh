@@ -362,6 +362,20 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
   fi
 
   if [ "$status" -eq 0 ]; then
+    # A green row says the paint proof passed, not what the platform did to the
+    # activity on the way there. Report the count from this boot so a run that
+    # was recreated mid-launch is visible in the job log even when the attach
+    # recovered, which is the only way to tell two green runs apart.
+    creates=$(adb_run logcat -d 2>/dev/null | grep -c 'Starting BridgeActivity' || true)
+    relaunches=$(adb_run logcat -b events -d 2>/dev/null | grep -c 'am_relaunch_activity' || true)
+    note "the launch: ${creates} activity create(s) and ${relaunches} relaunch(es) since boot"
+    # The attach can recover from a recreate, which would otherwise leave a
+    # green row that looks clean. A warning is the signal that the launch
+    # itself was not: it shows on the check run, so the recreate is counted on
+    # every row that had one instead of only in a job log nobody reads.
+    if [ "${relaunches:-0}" -gt 0 ] || [ "${creates:-0}" -gt 1 ]; then
+      echo "::warning title=Android launch recreated::the platform recreated the activity mid-launch (${creates} create(s), ${relaunches} relaunch(es)); the attach recovered, but the boot was not clean"
+    fi
     # The retry self-test is a property of this whole attempt: the removal was
     # armed, the assertion classified it as exit 4, and the repeat passed. A
     # green row that skipped the branch is the failure this catches.

@@ -15,8 +15,15 @@
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="false"
         android:theme="@style/AppTheme.NoActionBar">
+        <!-- mcc/mnc are handled here because the carrier configuration arrives
+             seconds into a boot, not before the app starts: the API 26 image
+             applies a Config changes=3 (mcc|mnc) about a second before the
+             activity resumes, and an undeclared change recreates the activity
+             under the running WebView. That recreate is the cold start the
+             emulator row used to report as a paint hand-off that never
+             completed. Nothing in the app depends on the carrier. -->
         <activity
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density|fontScale"
+            android:configChanges="mcc|mnc|orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density|fontScale"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"

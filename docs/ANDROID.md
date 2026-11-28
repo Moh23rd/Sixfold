@@ -569,7 +569,12 @@ grepping the logcat. The trigger for the recreate is
 the platform's: ten consecutive cold launches of this row on a workstation
 produced one activity, one page and no dropped call, so the row asserts whichever
 page the app is actually showing and keeps the evidence for the boot where that
-is not true.
+is not true. The carrier configuration is the one candidate the artifact named —
+the API 26 image applies `Config changes=3` (`mcc|mnc`) about a second before the
+activity resumes — so `MainActivity` declares both and handles them in place
+instead of being recreated under the WebView. A green row also reports how many
+activity creates and relaunches this boot produced, so a recovered recreate is
+visible in the log rather than only in a failure artifact.
 
 A pixel sample is only evidence about the app while its own window is on
 screen. The platform can remove a foreground app when a provider it holds a
