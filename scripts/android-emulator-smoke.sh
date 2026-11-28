@@ -397,11 +397,24 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
           nearest="Config changes=${nearest:0:180}"
         fi
       fi
+      # Nothing in the counts says who asked for the restart, and the lines
+      # between the destroy and the second create do: AppCompat, the splash
+      # install or the platform names itself there.
+      between="nothing logged between them"
+      if [ -n "$second" ]; then
+        first_destroy=$(grep -n 'App destroyed' "$launch_log" | head -n 1 | cut -d: -f1)
+        if [ -n "$first_destroy" ] && [ "$first_destroy" -lt "$second" ]; then
+          between=$(sed -n "${first_destroy},${second}p" "$launch_log" \
+            | sed -E 's/^[0-9-]+ [0-9:.]+[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] //' \
+            | cut -c1-150 | head -n 6 | tr '\n' '|' || true)
+        fi
+      fi
+      [ -n "$between" ] || between="nothing logged between them"
       start_list=$(grep 'START u0' "$launch_log" \
         | sed -E 's/^([0-9-]+ [0-9:.]+)[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] /\1 /' \
         | cut -c1-150 | head -n 4 | tr '\n' '|' || true)
       [ -n "$start_list" ] || start_list="none"
-      echo "::warning title=Android launch recreated::this launch created the activity ${creates} time(s), destroyed it ${destroys} time(s) and made ${starts} start request(s) (${relaunches} relaunch(es)); nearest before the second create: ${nearest}; start requests: ${start_list}"
+      echo "::warning title=Android launch recreated::this launch created the activity ${creates} time(s), destroyed it ${destroys} time(s) and made ${starts} start request(s) (${relaunches} relaunch(es)); nearest before the second create: ${nearest}; between the destroy and the second create: ${between}; start requests: ${start_list}"
     fi
     rm -f "$launch_log"
     # The retry self-test is a property of this whole attempt: the removal was
