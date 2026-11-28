@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { attachToLiveLaunch, chooseLivePage } from './reattach.mjs';
+import { ATTACH_RETRY_WINDOW, attachToLiveLaunch, chooseLivePage } from './reattach.mjs';
 
 const PID = '2144';
 const CLEAN = ['no crash, ANR or kill was recorded for the app'];
@@ -50,6 +50,60 @@ test('no live visible page is no page at all', () => {
   assert.equal(chooseLivePage([page({ bridge: 'gone' })]), null);
   assert.equal(chooseLivePage([page({ visible: 'hidden' })]), null);
   assert.equal(chooseLivePage([]), null);
+});
+
+test('a dead page that spends the probe budget still reattaches inside the window', async () => {
+  // The bridge probe can wait ten seconds before it calls a page gone. That has
+  // to leave room for the reattach a leftover page needs: the window bounds when
+  // another attach may start, and the first one is allowed to finish.
+  let attempts = 0;
+  let clock = 0;
+  const logs = [];
+  const session = await attachToLiveLaunch({
+    pid: PID,
+    connect: async () => {
+      attempts += 1;
+      if (attempts === 1) {
+        clock += 10000; // the whole probe budget on a page whose bridge is gone
+        throw new Error('no WebView page can reach a native bridge (1 page: gone)');
+      }
+      clock += 500; // the replacement page answers its first probe
+      return 'session';
+    },
+    livePid: () => PID,
+    deathReport: async () => CLEAN,
+    wait: async (ms) => { clock += ms; },
+    now: () => clock,
+    log: (line) => logs.push(line)
+  });
+  assert.equal(session, 'session');
+  assert.equal(attempts, 2);
+  assert.match(logs[0], /native bridge/);
+  assert.ok(clock < ATTACH_RETRY_WINDOW, `reattached at ${clock}ms, the window is ${ATTACH_RETRY_WINDOW}ms`);
+});
+
+test('a second dead page passes the window and stays fatal', async () => {
+  // Two full probe budgets plus the retry delay no longer fit, which is the
+  // limit this budget buys: one leftover page is recoverable, two are not.
+  let attempts = 0;
+  let clock = 0;
+  await assert.rejects(
+    attachToLiveLaunch({
+      pid: PID,
+      connect: async () => {
+        attempts += 1;
+        clock += 10000;
+        throw new Error('no WebView page can reach a native bridge (1 page: gone)');
+      },
+      livePid: () => PID,
+      deathReport: async () => CLEAN,
+      wait: async (ms) => { clock += ms; },
+      now: () => clock
+    }),
+    /native bridge/
+  );
+  assert.equal(attempts, 2);
+  assert.ok(clock >= ATTACH_RETRY_WINDOW);
 });
 
 test('a socket close reattaches while the launched pid is alive', async () => {
