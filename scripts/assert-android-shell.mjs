@@ -711,26 +711,50 @@ async function processIsGone() {
    healthy launch into a sixty-second wait for a paint callback the page could
    never request (the two failed API 26 attempts of run #261 did exactly that).
    The App plugin's own getInfo() is the probe: only a live bridge runs the
-   method and answers with the app's id, and it changes no app state. */
+   method and answers with the app's id, and it changes no app state. The probe
+   asks until the bridge answers instead of asking once: the devtools target
+   appears while the page is still booting its bridge, and the plugin object
+   exists a moment before the native side answers it, so a single call at the
+   wrong instant made every cold start spend a reattach on a page that would
+   have answered a moment later. Refused and unanswered calls are both retried
+   from here; only ten seconds without an answer is a gone page. */
+/* One call per evaluation, and the waiting happens in the harness. A page-side
+   retry loop cannot do it: the first calls land before the page has finished
+   booting its bridge, the promise they return never settles, and a pending
+   evaluation on this WebView never runs its own timers — so the loop sat until
+   the evaluation timed out and every cold start looked like a dead page. Each
+   attempt here is a fresh evaluation, and the first one that comes back wins. */
 const BRIDGE_PROBE =
   "(() => { const cap = window.Capacitor;" +
   " const app = cap && cap.Plugins && cap.Plugins.App;" +
-  " if (!app || typeof app.getInfo !== 'function') return Promise.resolve('starting');" +
-  " const silent = new Promise(function (resolve) { setTimeout(function () { resolve('gone'); }, 5000); });" +
-  ' const answered = app.getInfo().then(function (info) {' +
-  "   return info && typeof info === 'object' && (info.id || info.name || info.build) ? 'alive' : 'gone';" +
-  " }, function () { return 'gone'; });" +
-  ' return Promise.race([answered, silent]); })()';
+  " if (!app || typeof app.getInfo !== 'function') return 'no-plugin';" +
+  ' try {' +
+  '   const call = app.getInfo();' +
+  "   if (!call || typeof call.then !== 'function') return 'no-promise';" +
+  '   return call.then(function (info) {' +
+  "     return info && typeof info === 'object' && (info.id || info.name || info.build) ? 'ok' : 'empty';" +
+  "   }, function () { return 'refused'; });" +
+  " } catch (error) { return 'refused'; } })()";
+
+const BRIDGE_WAIT = 10000;
 
 async function bridgeAnswers(bound) {
-  try {
-    return await bound.evaluate(BRIDGE_PROBE, true, 8000);
-  } catch (error) {
-    // A dead emulator is not a dead page: let the host-loss path see it.
-    if (error instanceof EmulatorLost) throw error;
-    // The socket answered the visibility probe but not this one: the page is
-    // being replaced, which the attach retry handles as a restart.
-    return 'gone';
+  const deadline = Date.now() + BRIDGE_WAIT;
+  let verdict = 'starting';
+  for (;;) {
+    try {
+      const answer = await bound.evaluate(BRIDGE_PROBE, true, 3000);
+      if (answer === 'ok') return 'alive';
+      verdict = answer === 'no-plugin' ? 'starting' : 'gone';
+    } catch (error) {
+      // A dead emulator is not a dead page: let the host-loss path see it.
+      if (error instanceof EmulatorLost) throw error;
+      // A call that never comes back is a bridge that cannot answer yet, which
+      // is also what a replaced activity's leftover page looks like.
+      verdict = 'gone';
+    }
+    if (Date.now() >= deadline) return verdict;
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
 }
 

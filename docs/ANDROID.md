@@ -541,6 +541,13 @@ call it makes is dropped by the bridge thread that went away with it. That page
 can never report the native paint hand-off. The smoke therefore asks each page's
 `App` plugin for its own info before it attaches: only a page whose bridge
 answers is a candidate, and the newest visible, focused one of those is chosen.
+The question is asked again until the bridge answers, because the devtools
+target appears while the page is still booting its bridge and the plugin object
+exists a moment before the native side answers it. The retry runs in the
+harness: a page-side loop cannot work, since a call made that early never
+settles and a pending evaluation never runs the page's own timers. A page whose
+bridge has gone keeps the plugin object but never answers, and is reported as
+gone after ten seconds.
 Finding no answering page retries the attach inside the same window, which is
 what lets the replacement activity's page win once it is listed, instead of
 waiting out the paint deadline against the leftover page. Both failed API 26
