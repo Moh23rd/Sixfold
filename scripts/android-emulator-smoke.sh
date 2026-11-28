@@ -369,19 +369,41 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
 
   if [ "$status" -eq 0 ]; then
     # A green row says the paint proof passed, not what the platform did to the
-    # activity on the way there. Report the count from this boot so a run that
-    # was recreated mid-launch is visible in the job log even when the attach
-    # recovered, which is the only way to tell two green runs apart.
-    creates=$(adb_run logcat -d 2>/dev/null | grep -c 'Starting BridgeActivity' || true)
+    # activity on the way there. Report the counts from this launch so a run that
+    # was recreated is visible even when the attach recovered, which is the only
+    # way to tell two green runs apart.
+    launch_log=$(mktemp)
+    adb_run logcat -d > "$launch_log" 2>/dev/null || true
+    creates=$(grep -c 'Starting BridgeActivity' "$launch_log" || true)
+    destroys=$(grep -c 'App destroyed' "$launch_log" || true)
+    starts=$(grep -c 'START u0' "$launch_log" || true)
     relaunches=$(adb_run logcat -b events -d 2>/dev/null | grep -c 'am_relaunch_activity' || true)
-    note "the launch: ${creates} activity create(s) and ${relaunches} relaunch(es)"
-    # The attach can recover from a recreate, which would otherwise leave a
-    # green row that looks clean. A warning is the signal that the launch
-    # itself was not: it shows on the check run, so the recreate is counted on
-    # every row that had one instead of only in a job log nobody reads.
+    note "the launch: ${creates} activity create(s), ${destroys} destroy(s), ${starts} start request(s), ${relaunches} relaunch(es)"
+    # The attach can recover from a recreate, which would otherwise leave a green
+    # row that looks clean. A warning is the signal that the launch itself was
+    # not: it shows on the check run, so the recreate is reported on every row
+    # that had one instead of only in a job log nobody reads.
     if [ "${relaunches:-0}" -gt 0 ] || [ "${creates:-0}" -gt 1 ]; then
-      echo "::warning title=Android launch recreated::this launch created the activity ${creates} time(s) (${relaunches} relaunch(es)); the attach recovered, but the launch was not clean"
+      # The warning has to name the cause, not just the symptom. The second
+      # create's neighbourhood carries the configuration the platform applied in
+      # front of it; the start requests show whether anything outside this
+      # harness asked for the activity at all.
+      second=$(grep -n 'Starting BridgeActivity' "$launch_log" | sed -n '2p' | cut -d: -f1)
+      nearest="no configuration line in front of it"
+      if [ -n "$second" ]; then
+        nearest_line=$(head -n "$second" "$launch_log" | grep -E 'Config changes=' | tail -n 1 || true)
+        if [ -n "$nearest_line" ]; then
+          nearest="${nearest_line#*Config changes=}"
+          nearest="Config changes=${nearest:0:180}"
+        fi
+      fi
+      start_list=$(grep 'START u0' "$launch_log" \
+        | sed -E 's/^([0-9-]+ [0-9:.]+)[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] /\1 /' \
+        | cut -c1-150 | head -n 4 | tr '\n' '|' || true)
+      [ -n "$start_list" ] || start_list="none"
+      echo "::warning title=Android launch recreated::this launch created the activity ${creates} time(s), destroyed it ${destroys} time(s) and made ${starts} start request(s) (${relaunches} relaunch(es)); nearest before the second create: ${nearest}; start requests: ${start_list}"
     fi
+    rm -f "$launch_log"
     # The retry self-test is a property of this whole attempt: the removal was
     # armed, the assertion classified it as exit 4, and the repeat passed. A
     # green row that skipped the branch is the failure this catches.
