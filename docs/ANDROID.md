@@ -547,9 +547,16 @@ waiting out the paint deadline against the leftover page. Both failed API 26
 attempts of run #261 had attached to that leftover page and reported `the native
 paint hand-off never completed` with no cause recorded; the deadline now also
 logs the page's own launch state, so a slow page and a dead one stay
-distinguishable in the artifact. The trigger for the recreate itself is the
-platform's, not the shell's: it has not been reproduced on a workstation, and
-the row now asserts whichever page the app is actually showing.
+distinguishable in the artifact. A failing row's artifact answers both questions:
+`activity-recreate.txt` counts the bridge starts, the activity destroys and the
+plugin calls dropped on a dead thread in that boot, and lists the lifecycle
+lines around them; `devtools-listings.txt` holds every devtools listing the
+smoke read, with times and target ids, so whether a replacement page ever
+appeared is visible without grepping the logcat. The trigger for the recreate is
+the platform's: ten consecutive cold launches of this row on a workstation
+produced one activity, one page and no dropped call, so the row asserts whichever
+page the app is actually showing and keeps the evidence for the boot where that
+is not true.
 
 A pixel sample is only evidence about the app while its own window is on
 screen. The platform can remove a foreground app when a provider it holds a

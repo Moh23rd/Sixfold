@@ -29,6 +29,8 @@
    Run it with an emulator attached and the debug APK already built. */
 
 import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 
 import { anrTraceLines, describeDeath, parseDeathReport } from './lib/death-report.mjs';
@@ -1226,6 +1228,10 @@ async function evaluate(expression, awaitPromise = false) {
    run #261 recorded only the single target the smoke attached to, which left the
    question open. The id prefix is what separates two pages with the same URL. */
 let lastListing = '';
+/* Every distinct listing this launch produced, in order. The job log carries
+   them too, but a failed run is judged from its artifact, and the question a
+   leftover page raises is exactly whether the replacement page ever appeared. */
+const listingHistory = [];
 
 function describeTarget(target) {
   return `${target.type || 'unknown'} ${target.url || '(no url)'} [${String(target.id || '').slice(0, 8)}]`;
@@ -1235,11 +1241,34 @@ function reportTargets(targets) {
   const listing = targets.map((target) => `${target.type}:${target.id}:${target.url}`).join('|');
   if (listing === lastListing) return;
   lastListing = listing;
-  log(
+  const text =
     `the devtools listing holds ${targets.length} target${targets.length === 1 ? '' : 's'}: ` +
-      (targets.map(describeTarget).join('; ') || 'none')
-  );
+    (targets.map(describeTarget).join('; ') || 'none');
+  log(text);
+  listingHistory.push({ at: new Date().toISOString(), text });
 }
+
+/* scripts/android-emulator-smoke.sh points this at the directory it uploads
+   when a row fails, so the listings sit next to the logcat. A workstation run
+   without the variable writes nothing and only logs. */
+function writeDevtoolsHistory() {
+  const dir = process.env.SMOKE_FAILURE_DIR;
+  if (!dir) return;
+  const text = listingHistory.length
+    ? listingHistory.map((entry) => `${entry.at}  ${entry.text}`).join('\n') + '\n'
+    : 'no devtools listing was read before this failure\n';
+  try {
+    writeFileSync(join(dir, 'devtools-listings.txt'), text);
+  } catch (error) {
+    console.error(`::warning::could not write the devtools listings to ${dir}: ${error.message}`);
+  }
+}
+
+/* Many checks report through `fail`, which exits from inside the check, so the
+   exit path is the only place every failure goes through. */
+process.on('exit', (code) => {
+  if (code) writeDevtoolsHistory();
+});
 
 async function devtoolsTargets() {
   const response = await fetch(`http://127.0.0.1:${PORT}/json/list`);

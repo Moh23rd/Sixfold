@@ -172,6 +172,30 @@ cleanup() {
     # artifact could not show what the app did before the failure.
     timeout 120 "$ADB" logcat -d > "$OUT/logcat.txt" 2>&1 || true
     timeout 120 "$ADB" exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
+    # A cold start on this image can be torn down and recreated under the
+    # launch. When it is, the first instance's page keeps answering devtools
+    # while its bridge thread is gone, so the paint hand-off can never arrive.
+    # The logcat is in the artifact, but the reader should not have to count
+    # bridge starts by eye: write the recreate evidence as its own file.
+    if [ -s "$OUT/logcat.txt" ]; then
+      created=$(grep -c 'Starting BridgeActivity' "$OUT/logcat.txt" || true)
+      destroyed=$(grep -c 'App destroyed' "$OUT/logcat.txt" || true)
+      dropped=$(grep -c 'on a dead thread' "$OUT/logcat.txt" || true)
+      {
+        echo "the app activity was created ${created} time(s) in this boot"
+        echo "the log records ${destroyed} activity destroy(s) and ${dropped} plugin call(s) dropped on a dead bridge thread"
+        if [ "$created" -gt 1 ]; then
+          echo "the launch was recreated: the platform replaced the activity after it started,"
+          echo "so the first instance's page can be a leftover that never reaches the native bridge"
+        else
+          echo "the launch was not recreated in this boot"
+        fi
+        echo
+        echo '--- bridge starts, activity lifecycle and the config update before a create ---'
+        grep -E 'Starting BridgeActivity|App destroyed|App resumed|App paused|ResourcesManager: Invalidated|Choreographer' \
+          "$OUT/logcat.txt" | tail -n 120 || true
+      } > "$OUT/activity-recreate.txt"
+    fi
     # A lost device is the failure this artifact has to explain: record what
     # adb still sees, whether the emulator process survived, and what the
     # kernel said about it. Without these, "device offline" is a guess.
@@ -278,7 +302,7 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     adb_run shell svc power stayon true >/dev/null 2>&1
     export PATH="$SDK/platform-tools:$PATH"
     status=0
-    node scripts/assert-android-shell.mjs || status=$?
+    SMOKE_FAILURE_DIR="$OUT" node scripts/assert-android-shell.mjs || status=$?
     # The platform can remove a foreground app when a provider it connects to
     # dies (the API 34 image did this with the GMS fonts provider) or under
     # memory pressure. The assertion reports that as status 4 because the pixels
@@ -293,7 +317,7 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
       # The repeat decides the row: a passing second run must leave status at 0,
       # and a second removal or a real failure must still fail the row.
       status=0
-      node scripts/assert-android-shell.mjs || status=$?
+      SMOKE_FAILURE_DIR="$OUT" node scripts/assert-android-shell.mjs || status=$?
     fi
     # Exit 13 is Node's own "the event loop drained with a top-level await
     # pending". The assertion bounds every wait and reports an app failure as
