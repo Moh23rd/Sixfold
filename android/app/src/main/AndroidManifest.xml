@@ -19,9 +19,12 @@
              seconds into a boot, not before the app starts: the API 26 image
              applies a Config changes=3 (mcc|mnc) about a second before the
              activity resumes, and an undeclared change recreates the activity
-             under the running WebView. That recreate is the cold start the
-             emulator row used to report as a paint hand-off that never
-             completed. Nothing in the app depends on the carrier. -->
+             under the running WebView. Nothing in the app depends on the
+             carrier, so it is handled in place. This removes that relaunch but
+             not every recreate: with both declared, the row still counted two
+             activity creates in one launch with no am_relaunch_activity
+             between them, so the one that used to break the paint hand-off
+             comes from another path. -->
         <activity
             android:configChanges="mcc|mnc|orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density|fontScale"
             android:name=".MainActivity"

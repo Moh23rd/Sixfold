@@ -571,10 +571,13 @@ produced one activity, one page and no dropped call, so the row asserts whicheve
 page the app is actually showing and keeps the evidence for the boot where that
 is not true. The carrier configuration is the one candidate the artifact named —
 the API 26 image applies `Config changes=3` (`mcc|mnc`) about a second before the
-activity resumes — so `MainActivity` declares both and handles them in place
-instead of being recreated under the WebView. A green row also reports how many
-activity creates and relaunches this boot produced, so a recovered recreate is
-visible in the log rather than only in a failure artifact.
+activity resumes — so `MainActivity` declares both and handles them in place. That removes the
+relaunch but not the recreate: with both declared the row still counted two
+activity creates in one launch with no `am_relaunch_activity` between them, so
+the one that used to break the paint hand-off comes from another path. A green
+row reports its activity creates and relaunches and warns when it had more than
+one, so a recovered recreate shows on the check run instead of only in a failure
+artifact.
 
 A pixel sample is only evidence about the app while its own window is on
 screen. The platform can remove a foreground app when a provider it holds a
