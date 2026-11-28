@@ -32,7 +32,7 @@ import { execFileSync } from 'node:child_process';
 import { inflateSync } from 'node:zlib';
 
 import { anrTraceLines, describeDeath, parseDeathReport } from './lib/death-report.mjs';
-import { attachToLiveLaunch } from './lib/reattach.mjs';
+import { attachToLiveLaunch, chooseLivePage } from './lib/reattach.mjs';
 import { classifyRemoval } from './lib/app-removal.mjs';
 
 // The smoke can point this at a wrapper (scripts/test-emulator-retry.sh does)
@@ -701,7 +701,41 @@ async function processIsGone() {
   return !appPid();
 }
 
+/* A page is only the launched app while its own native bridge still answers.
+   A cold start on the API 26 image can create the activity twice: the first
+   instance is destroyed about a second after it resumes, while its page keeps
+   answering devtools evaluations and every plugin call it makes is dropped by
+   the plugin thread that went away with that bridge. Attaching to it turned a
+   healthy launch into a sixty-second wait for a paint callback the page could
+   never request (the two failed API 26 attempts of run #261 did exactly that).
+   The App plugin's own getInfo() is the probe: only a live bridge runs the
+   method and answers with the app's id, and it changes no app state. */
+const BRIDGE_PROBE =
+  "(() => { const cap = window.Capacitor;" +
+  " const app = cap && cap.Plugins && cap.Plugins.App;" +
+  " if (!app || typeof app.getInfo !== 'function') return Promise.resolve('starting');" +
+  " const silent = new Promise(function (resolve) { setTimeout(function () { resolve('gone'); }, 5000); });" +
+  ' const answered = app.getInfo().then(function (info) {' +
+  "   return info && typeof info === 'object' && (info.id || info.name || info.build) ? 'alive' : 'gone';" +
+  " }, function () { return 'gone'; });" +
+  ' return Promise.race([answered, silent]); })()';
+
+async function bridgeAnswers(bound) {
+  try {
+    return await bound.evaluate(BRIDGE_PROBE, true, 8000);
+  } catch (error) {
+    // A dead emulator is not a dead page: let the host-loss path see it.
+    if (error instanceof EmulatorLost) throw error;
+    // The socket answered the visibility probe but not this one: the page is
+    // being replaced, which the attach retry handles as a restart.
+    return 'gone';
+  }
+}
+
 async function connectToWebView() {
+  // Report this attempt's first listing even when it matches the previous one,
+  // so a retry always says what it saw instead of only logging changes.
+  lastListing = '';
   // The reattach path is called from a probe that must be able to time out, so
   // a missing target throws instead of ending the process.
   const found = await waitFor(
@@ -746,7 +780,11 @@ async function connectToWebView() {
         false,
         20000
       );
-      bound.state = state || {};
+      const seen = state || {};
+      bound.visible = seen.visible;
+      bound.focused = Boolean(seen.focused);
+      bound.origin = seen.origin || 0;
+      bound.bridge = await bridgeAnswers(bound);
       opened.push(bound);
     } catch (error) {
       lastError = error;
@@ -756,15 +794,27 @@ async function connectToWebView() {
   if (!opened.length) {
     throw lastError || new Error('could not attach to the WebView devtools socket');
   }
-  const newest = (list) => list.slice().sort((a, b) => (b.state.origin || 0) - (a.state.origin || 0))[0];
-  const visible = opened.filter((bound) => bound.state.visible !== 'hidden');
-  if (!visible.length) {
+  for (const bound of opened) {
+    if (bound.bridge !== 'alive') {
+      log(`ignoring a WebView page whose native bridge is ${bound.bridge} (${bound.target.url})`);
+    }
+  }
+  const chosen = chooseLivePage(opened);
+  if (!chosen) {
     for (const bound of opened) bound.socket.close();
-    // The old page can outlive its window for a moment. Wait for the current
+    if (!opened.some((bound) => bound.bridge === 'alive')) {
+      // Every page is a leftover of an activity that was replaced mid-launch,
+      // or one that has not registered its plugins yet. Neither can report the
+      // paint hand-off; wait for the page the app is actually showing.
+      throw new Error(
+        `no WebView page can reach a native bridge (${opened.length}` +
+          ` page${opened.length === 1 ? '' : 's'}: ${opened.map((bound) => bound.bridge).join(', ')})`
+      );
+    }
+    // The live page can outlive its window for a moment. Wait for the current
     // one rather than asserting against a page the player cannot see.
     throw new Error('the WebView page is not visible yet');
   }
-  const chosen = newest(visible.filter((bound) => bound.state.focused)) || newest(visible);
   for (const bound of opened) {
     if (bound !== chosen) bound.socket.close();
   }
@@ -823,6 +873,27 @@ async function launchPaint() {
       return null;
     }
     throw error;
+  }
+}
+
+/* What the page says about the launch at the moment the paint proof gives up.
+   The timeout used to be all a reader got, which said nothing about whether the
+   page had ever asked for the callback, hidden its splash or finished parsing —
+   so a dead page and a slow one read the same. Reported, never judged: the
+   assertion itself is still the callback's own timestamps. */
+async function launchState() {
+  try {
+    return await evaluate(
+      "(() => ({ painted: window.__sixfoldPainted === true," +
+        " requestedAt: window.__sixfoldPaintRequestedAt," +
+        " paintAt: window.__sixfoldPaintAt, hiddenAt: window.__sixfoldSplashHiddenAt," +
+        " bootAtHide: window.__sixfoldBootAtHide === true," +
+        " homeReady: Boolean(document.documentElement && document.documentElement.classList.contains('home-ready'))," +
+        " ready: document.readyState, splash: Boolean(document.getElementById('boot-splash'))," +
+        " visibility: document.visibilityState }))()"
+    );
+  } catch (error) {
+    return { error: error.message };
   }
 }
 
@@ -885,8 +956,11 @@ async function startAndProveLaunch(action = '') {
       60000,
       300
     );
-    if (!ready.value) problem = ready.error ? ready.error.message : 'the native paint hand-off never completed';
-    else {
+    if (!ready.value) {
+      const state = await launchState();
+      log(`the page at the paint deadline: ${JSON.stringify(state)}`);
+      problem = ready.error ? ready.error.message : 'the native paint hand-off never completed';
+    } else {
       if (ready.value.paintAt < ready.value.requestedAt) {
         problem = 'the Android paint callback arrived before the page asked for it';
       } else if (ready.value.paintAt > ready.value.hiddenAt) {
@@ -1146,15 +1220,36 @@ async function evaluate(expression, awaitPromise = false) {
   }
 }
 
+/* Every attach attempt reports the devtools listing it saw, and any change to
+   that listing while the attempt is still waiting. A launch that leaves a page
+   behind has to show in the artifact whether the replacement page ever appeared:
+   run #261 recorded only the single target the smoke attached to, which left the
+   question open. The id prefix is what separates two pages with the same URL. */
+let lastListing = '';
+
+function describeTarget(target) {
+  return `${target.type || 'unknown'} ${target.url || '(no url)'} [${String(target.id || '').slice(0, 8)}]`;
+}
+
+function reportTargets(targets) {
+  const listing = targets.map((target) => `${target.type}:${target.id}:${target.url}`).join('|');
+  if (listing === lastListing) return;
+  lastListing = listing;
+  log(
+    `the devtools listing holds ${targets.length} target${targets.length === 1 ? '' : 's'}: ` +
+      (targets.map(describeTarget).join('; ') || 'none')
+  );
+}
+
 async function devtoolsTargets() {
   const response = await fetch(`http://127.0.0.1:${PORT}/json/list`);
   if (!response.ok) throw new Error(`devtools listing returned ${response.status}`);
   const targets = await response.json();
+  reportTargets(targets);
   // Android can briefly expose the WebView from the activity it is replacing
   // as well as the one the player is looking at. Return both; connectToWebView
   // asks each page whether it is visible instead of trusting list order.
   const pages = targets.filter((target) => target.type === 'page' && /localhost|index\.html/.test(target.url));
-  if (pages.length > 1) log(`${pages.length} WebView page targets are open`);
   return pages.length ? pages : null;
 }
 

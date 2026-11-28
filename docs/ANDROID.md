@@ -534,6 +534,23 @@ launch's own deadline, so a slow or dead first paint cannot pass as a WebView
 restart. Assertion failures after the launch proof are never retried, and the
 emulator-lost path (exit 3) still reboots the guest as before.
 
+A cold start can also leave a page behind. On the API 26 image the activity is
+occasionally destroyed and recreated about a second after it resumes, and the
+first instance's page keeps answering devtools evaluations while every plugin
+call it makes is dropped by the bridge thread that went away with it. That page
+can never report the native paint hand-off. The smoke therefore asks each page's
+`App` plugin for its own info before it attaches: only a page whose bridge
+answers is a candidate, and the newest visible, focused one of those is chosen.
+Finding no answering page retries the attach inside the same window, which is
+what lets the replacement activity's page win once it is listed, instead of
+waiting out the paint deadline against the leftover page. Both failed API 26
+attempts of run #261 had attached to that leftover page and reported `the native
+paint hand-off never completed` with no cause recorded; the deadline now also
+logs the page's own launch state, so a slow page and a dead one stay
+distinguishable in the artifact. The trigger for the recreate itself is the
+platform's, not the shell's: it has not been reproduced on a workstation, and
+the row now asserts whichever page the app is actually showing.
+
 A pixel sample is only evidence about the app while its own window is on
 screen. The platform can remove a foreground app when a provider it holds a
 connection to dies under it (the API 34 image did this with the GMS fonts

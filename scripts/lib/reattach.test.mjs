@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { attachToLiveLaunch } from './reattach.mjs';
+import { attachToLiveLaunch, chooseLivePage } from './reattach.mjs';
 
 const PID = '2144';
 const CLEAN = ['no crash, ANR or kill was recorded for the app'];
@@ -16,6 +16,41 @@ const ANR = [
 const socketClosed = async () => {
   throw new Error('could not attach to the WebView devtools socket');
 };
+
+const page = (fields) => ({ url: 'https://localhost/', visible: 'visible', focused: false, origin: 0, bridge: 'alive', ...fields });
+
+test('the newest live visible page is the one the player sees', () => {
+  const older = page({ origin: 1000 });
+  const newer = page({ origin: 2000 });
+  assert.equal(chooseLivePage([older, newer]), newer);
+});
+
+test('a focused live page wins over a newer unfocused one', () => {
+  const older = page({ origin: 1000, focused: true });
+  const newer = page({ origin: 2000 });
+  assert.equal(chooseLivePage([older, newer]), older);
+});
+
+test('a page whose bridge is gone is never chosen, however current it looks', () => {
+  // The API 26 relaunch: the destroyed activity's page is the newest, focused
+  // and visible target, but its plugin thread died with its bridge, so it can
+  // never report the native paint hand-off.
+  const zombie = page({ origin: 2000, focused: true, bridge: 'gone' });
+  const live = page({ origin: 1000 });
+  assert.equal(chooseLivePage([zombie, live]), live);
+});
+
+test('a page that has not registered its plugins yet is skipped', () => {
+  const starting = page({ origin: 2000, focused: true, bridge: 'starting' });
+  const live = page({ origin: 1000 });
+  assert.equal(chooseLivePage([starting, live]), live);
+});
+
+test('no live visible page is no page at all', () => {
+  assert.equal(chooseLivePage([page({ bridge: 'gone' })]), null);
+  assert.equal(chooseLivePage([page({ visible: 'hidden' })]), null);
+  assert.equal(chooseLivePage([]), null);
+});
 
 test('a socket close reattaches while the launched pid is alive', async () => {
   let attempts = 0;

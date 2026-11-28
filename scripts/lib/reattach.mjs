@@ -8,6 +8,26 @@ import { describeDeath, recordsDeath } from './death-report.mjs';
 
 export const ATTACH_RETRY_WINDOW = 20000;
 
+/* Picks the page the player can actually see out of the WebView targets the
+   devtools list exposes. `bridge` is the answer of the page's own liveness
+   probe: 'alive' when its App plugin ran and answered, 'starting' when the page
+   has not registered its plugins yet, and 'gone' when the call was posted to a
+   bridge thread that no longer exists.
+
+   Only an alive page can report the native paint hand-off, so a page whose
+   bridge is gone is never a candidate even when it is the newest, focused and
+   visible one. That is not hypothetical: a cold start on the API 26 image can
+   create the activity twice, destroying the first instance about a second after
+   it resumes. The first instance's page keeps answering devtools evaluations
+   while every plugin call it makes is dropped, which used to make the smoke
+   wait out its paint deadline against a page that could never answer. */
+export function chooseLivePage(pages) {
+  const live = pages.filter((page) => page.bridge === 'alive' && page.visible !== 'hidden');
+  if (!live.length) return null;
+  const newest = (list) => list.slice().sort((a, b) => (b.origin || 0) - (a.origin || 0))[0];
+  return newest(live.filter((page) => page.focused)) || newest(live);
+}
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function attachToLiveLaunch({
