@@ -20,11 +20,16 @@
              applies a Config changes=3 (mcc|mnc) about a second before the
              activity resumes, and an undeclared change recreates the activity
              under the running WebView. Nothing in the app depends on the
-             carrier, so it is handled in place. This removes that relaunch but
-             not every recreate: with both declared, the row still counted two
-             activity creates in one launch with no am_relaunch_activity
-             between them, so the one that used to break the paint hand-off
-             comes from another path. -->
+             carrier, so it is handled in place.
+
+             The other relaunch on that row is not declarable. A launch that
+             starts while the install's package broadcasts are still being
+             delivered is handed a fresh ApplicationInfo, ActivityThread bumps
+             Configuration.assetsSeq for it, and the platform relaunches the
+             activity for CONFIG_ASSETS_PATHS, which AOSP keeps hidden because
+             apps cannot handle an asset-path change themselves. The smoke waits
+             for that traffic to settle before its first launch instead of
+             racing it; see docs/ANDROID.md. -->
         <activity
             android:configChanges="mcc|mnc|orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density|fontScale"
             android:name=".MainActivity"

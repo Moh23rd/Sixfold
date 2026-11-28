@@ -660,6 +660,52 @@ function startActivity(action = '') {
   return started;
 }
 
+/* A fresh install is not finished when `adb install` returns: the platform still
+   has to tell the app about the package change. A process that starts inside
+   that window is handed an updated ApplicationInfo, ActivityThread answers by
+   bumping Configuration.assetsSeq, and the platform relaunches the activity for
+   it (am_relaunch_resume_activity). That difference is CONFIG_ASSETS_PATHS,
+   which AOSP keeps hidden because an app cannot declare it in
+   android:configChanges — no manifest or theme choice prevents that recreate, so
+   the launch has to stop racing the installer. Wait until the package's own
+   broadcast traffic has gone quiet; the launch under test then behaves like the
+   one a returning player makes. */
+async function settleInstall() {
+  const QUIET_MS = 3000;
+  const LIMIT_MS = 30000;
+  const started = Date.now();
+  const ownPackage = PACKAGE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const traffic = new RegExp(`PACKAGE_(ADDED|CHANGED|REPLACED)[^\\n]*${ownPackage}`);
+  /* The newest matching timestamp, not a count: the ring keeps rotating while
+     the boot is still busy, so lines leave the tail and a count would read as
+     traffic forever. Only a newer broadcast means the install is still being
+     delivered. */
+  const newestTraffic = () => {
+    const dump = adbSafe(['shell', 'logcat', '-d', '-v', 'epoch', '-t', '3000'], 20000);
+    let newest = 0;
+    for (const line of dump.split('\n')) {
+      if (!traffic.test(line)) continue;
+      const stamp = Number(line.slice(0, line.indexOf(' ')));
+      if (Number.isFinite(stamp) && stamp > newest) newest = stamp;
+    }
+    return newest;
+  };
+  let newest = newestTraffic();
+  let quietSince = Date.now();
+  while (Date.now() - started < LIMIT_MS) {
+    await wait(500);
+    const current = newestTraffic();
+    if (current > newest) {
+      newest = current;
+      quietSince = Date.now();
+    } else if (Date.now() - quietSince >= QUIET_MS) {
+      log(`the install's package broadcasts settled after ${Date.now() - started}ms`);
+      return;
+    }
+  }
+  log('the install was still broadcasting after 30s; launching anyway');
+}
+
 async function launchApp(action = '') {
   adb(['shell', 'am', 'force-stop', PACKAGE]);
   startActivity(action);
@@ -1334,6 +1380,7 @@ try {
 
   log(`installing ${APK}`);
   adb(['install', '-r', '-t', APK]);
+  await settleInstall();
 
   // Not `am start -W`: the hub animates from the first frame, so the activity
   // never goes idle and the wait reports a timeout even though it launched.

@@ -561,23 +561,38 @@ distinguishable in the artifact. A failing row's artifact answers both questions
 `activity-recreate.txt` counts the bridge starts, the activity destroys, the
 plugin calls dropped on a dead thread and the activity manager's own relaunches
 in that boot, and lists the lifecycle lines around them; `logcat-events.txt`
-keeps the platform's event buffer, where `am_relaunch_activity` and the
+keeps the platform's event buffer, where `am_relaunch_resume_activity` and the
 `configuration_changed` event before it name the cause the app's log cannot;
 `devtools-listings.txt` holds every devtools listing the smoke read, with times
 and target ids, so whether a replacement page ever appeared is visible without
-grepping the logcat. The trigger for the recreate is
-the platform's: ten consecutive cold launches of this row on a workstation
-produced one activity, one page and no dropped call, so the row asserts whichever
-page the app is actually showing and keeps the evidence for the boot where that
-is not true. The carrier configuration is the one candidate the artifact named —
-the API 26 image applies `Config changes=3` (`mcc|mnc`) about a second before the
-activity resumes — so `MainActivity` declares both and handles them in place. That removes the
-relaunch but not the recreate: with both declared the row still counted two
-activity creates in one launch with no `am_relaunch_activity` between them, so
-the one that used to break the paint hand-off comes from another path. A green
-row reports its activity creates and relaunches and warns when it had more than
-one, so a recovered recreate shows on the check run instead of only in a failure
-artifact.
+grepping the logcat. The counts read both relaunch events: relaunching the
+resumed activity writes `am_relaunch_resume_activity`, and counting only
+`am_relaunch_activity` reported zero relaunches for a launch the platform had
+just relaunched.
+
+The trigger is the platform's, and it is a race with the installer rather than
+anything the app calls. `adb install` returns before the package broadcasts
+finish; an activity that starts inside that window is handed a new
+`ApplicationInfo`, `ActivityThread` bumps `Configuration.assetsSeq` for it, and
+the activity is relaunched for `CONFIG_ASSETS_PATHS` — a change AOSP keeps
+hidden because an app cannot handle an asset-path change itself, so no
+`android:configChanges` entry, theme or `recreate()` is involved and none could
+prevent it. A wiped AVD reproduces it on roughly half of its first launches,
+about a second after the launch resumes; a launch on a device that booted
+earlier never showed it, which is why ten local cold launches originally came
+out clean, and why the recreate survived declaring `mcc|mnc`.
+
+The smoke therefore waits for the install's own package traffic to be quiet for
+three seconds before its first launch, so the launch it asserts is the one a
+returning player makes rather than a race with the installer. The attach retry
+stays as the safety net for a recreate from any other source, and a green row
+still reports its activity creates and relaunches and warns when it had more
+than one. That warning raises `log.tag.ActivityThread`,
+`log.tag.AppCompatDelegate` and `log.tag.Configuration` before the app starts and
+quotes the lines those tags produce, plus the platform's own relaunch events, so
+a recreate from an app-side caller names it instead of only counting it. The
+carrier configuration stays declared for the separate `Config changes=3`
+relaunch the older image applied, which was never this one.
 
 A pixel sample is only evidence about the app while its own window is on
 screen. The platform can remove a foreground app when a provider it holds a
