@@ -85,6 +85,11 @@ jobs:
         run: npm run test:app-removal
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test ${{ matrix.files }}
+      - name: Name the failing specs in the job summary
+        if: failure()
+        env:
+          PLAYWRIGHT_JSON: test-results/playwright-report.json
+        run: node scripts/playwright-failure-summary.mjs "$PLAYWRIGHT_JSON"
       - name: Record an approved cache-footprint baseline
         if: success() && matrix.group == 'core' && github.event_name == 'workflow_dispatch' && inputs.rebaseline_reason != ''
         env:

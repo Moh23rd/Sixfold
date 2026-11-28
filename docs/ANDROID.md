@@ -504,7 +504,12 @@ regression, and the return from the legal page through both its own
 document of its own, so each return loads the app again; the check fails unless
 that load lands the hub settled, with no launch layer in the DOM and no hub
 entrance still running, which is the same animation set the page-level
-`launch-cover` test watches. Each job downloads the signed APK from the Android
+`launch-cover` test watches. Each return probe asks the page for its state over
+devtools, and each ask is bounded at three seconds: a probe the page never
+answers costs three seconds instead of the whole forty-second window, and the
+poll retries 300 ms later, so the rest of the window goes to a probe that can
+still answer. The timing line the row logs names how many probes went
+unanswered. Each job downloads the signed APK from the Android
 job instead of rebuilding it, so all API levels install the same artifact.
 
 The rows do not all boot the same image. API 34 and 36 run the AOSP `default`
