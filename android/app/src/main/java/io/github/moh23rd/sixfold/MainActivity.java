@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.view.View;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -22,6 +23,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
+import com.getcapacitor.PluginCall;
 
 public class MainActivity extends BridgeActivity {
     private static final String EXTRA_ACTION = "sixfold.action";
@@ -40,6 +42,7 @@ public class MainActivity extends BridgeActivity {
     private int insetRight = NO_INSET;
     private int insetBottom = NO_INSET;
     private int insetLeft = NO_INSET;
+    private int paintCallbackId = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -47,6 +50,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(WindowSurfacePlugin.class);
         registerPlugin(HapticsPlugin.class);
         registerPlugin(LaunchActionPlugin.class);
+        registerPlugin(LaunchPaintPlugin.class);
         registerPlugin(WallpaperColorsPlugin.class);
 
         // A shortcut can start the activity before the page exists. Keep the
@@ -72,14 +76,13 @@ public class MainActivity extends BridgeActivity {
             setTheme(isDark(surface) ? R.style.AppTheme_NoActionBarLaunch_Dark : R.style.AppTheme_NoActionBarLaunch_Light);
         }
 
-        // Install the platform launch screen here, from the theme chosen above,
-        // and keep the SplashScreen plugin out of the launch (its launch duration
-        // is 0). The plugin draws its own full-screen drawable, and its night
-        // copy is selected by the phone's day/night setting — not by the
-        // appearance the app is actually in — so a light app on a dark phone
-        // opened on a dark splash, then flipped to cream. The platform splash
-        // reads windowSplashScreenBackground from the theme instead, and this
-        // call is also what swaps postSplashScreenTheme in for the running app.
+        // Install the platform launch screen here, from the theme chosen above.
+        // This call also swaps postSplashScreenTheme in for the running app.
+        // The SplashScreen plugin then keeps its full-screen launch picture up
+        // (launchAutoHide is off) until the page signals that the hub or guide
+        // has painted. That extra layer is what covers the cold WebView's first
+        // frames after Android's platform splash exits; the page-side handoff
+        // in js/native.js hides it.
         SplashScreen.installSplashScreen(this);
 
         super.onCreate(savedInstanceState);
@@ -130,6 +133,12 @@ public class MainActivity extends BridgeActivity {
             // needs the bar heights again even though the window's own insets
             // have not moved.
             @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                paintCallbackId += 1;
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 pushInsets(true);
@@ -147,6 +156,33 @@ public class MainActivity extends BridgeActivity {
         }
 
         installStableInsets();
+    }
+
+    /**
+     * Arms one Android visual-state callback after the page says its launch
+     * layer is ready. The callback is the proof that the WebView committed a
+     * frame; the page waits for the values it writes before hiding the OS
+     * splash. It is deliberately not triggered from onPageFinished, which can
+     * run before the guide or hub has painted.
+     */
+    void requestPaintSignal(PluginCall call) {
+        final Bridge bridge = getBridge();
+        final WebView view = bridge == null ? null : bridge.getWebView();
+        if (view == null) {
+            if (call != null) call.reject("no WebView");
+            return;
+        }
+        final int callbackId = ++paintCallbackId;
+        view.postVisualStateCallback(SystemClock.uptimeMillis(), new WebView.VisualStateCallback() {
+            @Override
+            public void onComplete(long requestId) {
+                if (callbackId != paintCallbackId) return;
+                view.evaluateJavascript(
+                    "window.__sixfoldPainted=true;window.__sixfoldPaintAt=performance.now();",
+                    ignored -> { if (call != null) call.resolve(); }
+                );
+            }
+        });
     }
 
     /* SystemBars' inset handling is disabled in capacitor.config.json, and the

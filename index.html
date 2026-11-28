@@ -170,14 +170,7 @@
       --boot-muted: rgba(241, 234, 224, 0.82);
       --boot-track: rgba(241, 234, 224, 0.18);
     }
-    /* The native shell opens on the OS splash, which already shows this
-       composition. Its page layer is only the hand-off into the hub, so it
-       keeps the surface and drops the mark, wordmark and rail instead of
-       showing the launch screen a second time. */
-    html.is-native #boot-splash { --boot-fade: 280ms; }
-    html.is-native .boot-stage,
-    html.is-native .boot-kicker,
-    html.is-native .boot-foot { display: none; }
+    html.is-native #boot-splash { --boot-fade: 280ms; animation: none; }
     .boot-stage {
       display: flex;
       flex-direction: column;
@@ -414,6 +407,7 @@
         returning = sessionStorage.getItem('sixfold.returning') === '1';
         if (returning) sessionStorage.removeItem('sixfold.returning');
       } catch (err) {}
+      try { window.__sixfoldFirstRun = localStorage.getItem('sixfold.welcome.v1') !== '1'; } catch (err) {}
       if (shell) root.classList.add('is-native');
       if (!returning) return;
       // The hub was already built when the reader left it. Skip its splash and
@@ -1670,6 +1664,20 @@
         var handoff = 0;
         try { handoff = parseFloat(window.getComputedStyle(splash).transitionDuration) * 1000; } catch (err) {}
         fade = handoff > 0 ? handoff : 420;
+        // Prepare the hub under this layer; native.js waits for its paint signal.
+        var markNativeReady = function () {
+          if (document.documentElement.getAttribute('data-motion') === 'full') {
+            document.documentElement.classList.add('home-build');
+          }
+          document.documentElement.classList.add('home-ready');
+        };
+        if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(markNativeReady);
+          });
+        } else {
+          markNativeReady();
+        }
       }
       function lift() {
         if (gone) return;
@@ -1679,6 +1687,8 @@
         gone = true;
         // Let the progress rail finish and the first board paint beneath it.
         var wait = Math.max(0, minimum - (Date.now() - started));
+        // Keep this layer opaque through the 450ms native fade.
+        if (native) wait += 450;
         window.setTimeout(function () {
           document.documentElement.classList.add('app-ready');
           // Only a launch that starts in Full owns the six-piece build. A page
@@ -1691,7 +1701,7 @@
           // layer is gone; the cover is already building behind the fade.
           window.setTimeout(function () {
             if (splash.parentNode) splash.parentNode.removeChild(splash);
-            document.documentElement.classList.add('home-ready');
+            if (!native) document.documentElement.classList.add('home-ready');
           }, fade);
         }, wait);
       }
@@ -1705,7 +1715,7 @@
       window.setTimeout(function () {
         nativeGone = true;
         lift();
-      }, 2800);
+      }, native ? 30000 : 2800);
     })();
   </script>
   <script>

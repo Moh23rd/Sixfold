@@ -799,6 +799,33 @@ async function homeReady() {
   }
 }
 
+/* The actual Android paint hand-off. MainActivity sets these two values only
+   from WebView.VisualStateCallback.onComplete; native.js stamps the hide it
+   performs after seeing the painted flag. The APK smoke therefore proves the
+   real callback ran and that the OS splash did not hide before it, rather than
+   trusting a browser test to set a flag at home-ready. */
+async function launchPaint() {
+  try {
+    const state = await evaluate(
+      "(() => ({ painted: window.__sixfoldPainted === true," +
+        " requestedAt: window.__sixfoldPaintRequestedAt," +
+        " paintAt: window.__sixfoldPaintAt, hiddenAt: window.__sixfoldSplashHiddenAt," +
+        " bootAtHide: window.__sixfoldBootAtHide === true }))()"
+    );
+    if (!state || state.painted !== true) return null;
+    if (!Number.isFinite(state.requestedAt)) return null;
+    if (!Number.isFinite(state.paintAt) || !Number.isFinite(state.hiddenAt)) return null;
+    return state;
+  } catch (error) {
+    if (error instanceof EmulatorLost) throw error;
+    if (/devtools target|devtools socket|did not answer/i.test(error.message)) {
+      log(`the WebView paint state is not ready: ${error.message}`);
+      return null;
+    }
+    throw error;
+  }
+}
+
 /* The engine behind the launch-only rows. `ro.build.version.sdk` names the
    Android image, not the WebView that renders the page: the API 26 CI image
    stays on a Chromium 60-era WebView, while a real API 26 phone may have a
@@ -852,8 +879,22 @@ async function startAndProveLaunch(action = '') {
       wait,
       log
     });
-    const ready = await waitFor('the WebView to reach home-ready', homeReady, 60000, 300);
-    if (!ready.value) problem = ready.error ? ready.error.message : 'it never reached home-ready';
+    const ready = await waitFor(
+      'the Android paint callback and splash hand-off',
+      launchPaint,
+      60000,
+      300
+    );
+    if (!ready.value) problem = ready.error ? ready.error.message : 'the native paint hand-off never completed';
+    else {
+      if (ready.value.paintAt < ready.value.requestedAt) {
+        problem = 'the Android paint callback arrived before the page asked for it';
+      } else if (ready.value.paintAt > ready.value.hiddenAt) {
+        problem = 'the OS splash hid before the Android paint callback';
+      } else if (!ready.value.bootAtHide) {
+        problem = 'the page launch layer was gone when the OS splash hid';
+      }
+    }
   } catch (error) {
     if (error instanceof EmulatorLost) throw error;
     problem = error.message;
@@ -881,7 +922,7 @@ async function startAndProveLaunch(action = '') {
         ` ${describeDeath(report, trace)} [${problem}]`
     );
   }
-  log('the WebView reached home-ready');
+  log('the Android paint callback reached the page before the splash hid');
 }
 
 /* Leaves whatever game or sheet is open for the hub through the page's own

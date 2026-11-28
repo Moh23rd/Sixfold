@@ -23,23 +23,98 @@
     try { window.dispatchEvent(new Event('merge:splash-hidden')); } catch (err) {}
   }
 
-  // Dismiss the launch splash on the first frame the page actually paints. The
-  // launch theme's own auto-hide in capacitor.config.json is the safety net for
-  // a page that never gets here, not the normal path.
+  // Hold the OS splash until the page has finished its own hand-off. Hiding it
+  // on `load` uncovered the page's flat native boot surface for however long
+  // the WebView took to paint, which read as a blank flash between the launch
+  // screen and the hub. The page now paints underneath the splash and
+  // js/index marks home-ready when the hub (or the first-run guide) is ready.
   function hideSplash() {
     var splash = plugins.SplashScreen;
     if (!splash || !splash.hide) { splashHandoff(); return; }
+    var hidden = false;
+    var firstRun = typeof window.__sixfoldFirstRun === 'boolean'
+      ? window.__sixfoldFirstRun
+      : true;
+    if (typeof window.__sixfoldFirstRun !== 'boolean') {
+      try { firstRun = localStorage.getItem('sixfold.welcome.v1') !== '1'; } catch (err) {}
+    }
     function hide() {
-      try { ignoreRejection(splash.hide()); } catch (err) {}
+      if (hidden) return;
+      hidden = true;
+      window.__sixfoldSplashHiddenAt = performance.now();
+      window.__sixfoldBootAtHide = Boolean(document.getElementById('boot-splash'));
+      try {
+        // Let the launch picture dissolve while the first hub frames reach the
+        // compositor; an instant cut can expose a bare surface on a cold start.
+        ignoreRejection(splash.hide({ fadeOutDuration: 450 }));
+      } catch (err) {}
       // The plugin resolves the moment it starts the platform's exit, and there
       // is no callback for the exit finishing, so the hand-off starts here.
       splashHandoff();
     }
-    if (window.requestAnimationFrame) {
-      requestAnimationFrame(function () { requestAnimationFrame(hide); });
-    } else {
-      hide();
+    function waitForPaint(deadline) {
+      if (hidden) return;
+      requestPaint();
+      if (window.__sixfoldPainted || Date.now() > deadline) {
+        hide();
+        return;
+      }
+      window.setTimeout(function () { waitForPaint(deadline); }, 80);
     }
+    var paintAsked = false;
+    function requestPaint() {
+      if (paintAsked) return;
+      paintAsked = true;
+      window.__sixfoldPaintRequestedAt = performance.now();
+      var paint = plugins.LaunchPaint;
+      if (!paint || !paint.request) return;
+      try { ignoreRejection(paint.request()); } catch (err) {}
+    }
+    function waitForWelcome(deadline) {
+      if (hidden) return;
+      var welcome = document.getElementById('welcome');
+      if (welcome && !welcome.hidden) {
+        // The guide paints over the hub. Keep the OS splash up until the
+        // native WebView has committed a visual state, then uncover the guide.
+        if (window.requestAnimationFrame) {
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () { waitForPaint(Date.now() + 6000); });
+          });
+        } else {
+          waitForPaint(Date.now() + 6000);
+        }
+        return;
+      }
+      if (Date.now() > deadline) { waitForPaint(Date.now() + 1400); return; }
+      window.setTimeout(function () { waitForWelcome(deadline); }, 60);
+    }
+
+    function afterHomeReady() {
+      if (document.documentElement.classList.contains('home-ready')) {
+        // A returning reader has no guide to wait for. A first launch does:
+        // keep the branded launch screen up until that sheet is on screen.
+        if (firstRun) waitForWelcome(Date.now() + 9000);
+        else waitForPaint(Date.now() + 6000);
+        return;
+      }
+      if ('MutationObserver' in window) {
+        var ready = new MutationObserver(function () {
+          if (!document.documentElement.classList.contains('home-ready')) return;
+          ready.disconnect();
+          afterHomeReady();
+        });
+        ready.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      }
+      window.setTimeout(function () {
+        if ('MutationObserver' in window) {
+          try { ready.disconnect(); } catch (err) {}
+        }
+        hide();
+      }, 12000);
+      if (!('MutationObserver' in window)) window.setTimeout(hide, 700);
+    }
+
+    afterHomeReady();
   }
 
   function styleStatusBar(dark) {

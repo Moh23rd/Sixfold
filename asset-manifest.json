@@ -2,8 +2,8 @@
   "shell": [
     {
       "path": "index.html",
-      "bytes": 120246,
-      "sha256": "046b9c7927ea24e29c53ccbf3e7f70d44df32e70c2c55d8cbaa166ab2e596602"
+      "bytes": 120698,
+      "sha256": "7c6da963bc7ad1b24e6af0b7557c300fbc9ae402698faa2ccfadb14e698667bf"
     },
     {
       "path": "licenses.html",
@@ -137,8 +137,8 @@
     },
     {
       "path": "js/native.js",
-      "bytes": 10436,
-      "sha256": "79aafc224214c4a5ea72210e61972585653ea40229fc9a0986483269ad9ca3e6"
+      "bytes": 13502,
+      "sha256": "b63c87fa619a87315ee8f229c39ba2086f4be35a34f39953fe1c2f947eeb9682"
     },
     {
       "path": "js/wordle-loader.js",
