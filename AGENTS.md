@@ -26,3 +26,8 @@ Keep the public repository focused on the product and the material users need to
 - **GitHub carries** source, tests, CI configuration, user-facing documentation, and intentional release assets. Do not add a branch, tag, PR, Release or repository file just to move chat material around.
 - **Keep it tidy:** one focused PR per change, delete merged working branches, and do not attach the same asset in more than one place unless a consumer needs it.
 - If a chat-only deliverable needs a reproducible asset, commit the generator and the shipped asset only; leave the copy, notes and discussion in chat.
+
+## Repository workflow
+
+- `origin` is an SSH remote. Pushes use the deploy key the worktree configures in `core.sshCommand`, so `git push origin <branch>` works from here; an `https://` remote has no credentials and will be rejected. `git ls-remote origin` is the fast check before a long job.
+- The emulator is used only by `scripts/android-emulator-smoke.sh`. It creates its own AVD, fixes the AVD settings the assertions depend on, and installs the `sdkmanager` pieces it needs, so the command to reproduce a row is that script with `API_LEVEL`, `AVD_NAME`, `SMOKE_IMAGE_TAG`, `SMOKE_LAUNCH_ONLY` and `FAILURE_DIR` set.

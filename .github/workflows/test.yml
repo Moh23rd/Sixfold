@@ -296,6 +296,12 @@ jobs:
     # emulator stays on the last image whose guest completes the assertions.
     runs-on: ubuntu-24.04
     needs: android
+    # One emulator run per ref. A new push cancels the guest work the previous
+    # run still has queued instead of racing it for the same KVM, which is the
+    # contention the software-rendered rows are most sensitive to.
+    concurrency:
+      group: emulator-${{ github.ref }}
+      cancel-in-progress: true
     # A cold run downloads the emulator and its system image before it boots
     # anything; the cache makes later runs short, but the first one needs room.
     timeout-minutes: 50
