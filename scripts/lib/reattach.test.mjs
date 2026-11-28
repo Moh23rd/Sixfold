@@ -83,8 +83,8 @@ test('a dead page that spends the probe budget still reattaches inside the windo
 });
 
 test('a second dead page passes the window and stays fatal', async () => {
-  // Two full probe budgets plus the retry delay no longer fit, which is the
-  // limit this budget buys: one leftover page is recoverable, two are not.
+  // Three full probe budgets and the retry delays between them pass the window,
+  // which is the limit this buys: one leftover page is recoverable, two are not.
   let attempts = 0;
   let clock = 0;
   await assert.rejects(
@@ -102,7 +102,7 @@ test('a second dead page passes the window and stays fatal', async () => {
     }),
     /native bridge/
   );
-  assert.equal(attempts, 2);
+  assert.equal(attempts, 3);
   assert.ok(clock >= ATTACH_RETRY_WINDOW);
 });
 
@@ -162,7 +162,8 @@ test('a changed pid stays fatal', async () => {
 
 test('an expired window stays fatal', async () => {
   let attempts = 0;
-  const times = [0, 25000];
+  // Past the window on the retry, so a connect that never succeeds cannot loop.
+  const times = [0, ATTACH_RETRY_WINDOW + 1000];
   await assert.rejects(
     attachToLiveLaunch({
       pid: PID,
@@ -170,7 +171,7 @@ test('an expired window stays fatal', async () => {
       livePid: () => PID,
       deathReport: async () => CLEAN,
       wait: async () => {},
-      now: () => times.shift() ?? 25000
+      now: () => times.shift() ?? ATTACH_RETRY_WINDOW + 1000
     }),
     /devtools socket/
   );

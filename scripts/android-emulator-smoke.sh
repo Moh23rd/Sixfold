@@ -171,6 +171,11 @@ cleanup() {
     # lines a second: a 400-line tail covered barely one second, so the run #163
     # artifact could not show what the app did before the failure.
     timeout 120 "$ADB" logcat -d > "$OUT/logcat.txt" 2>&1 || true
+    # The main buffer says what the app did; the activity manager's own event
+    # buffer says what the platform did to it. A recreate is an
+    # am_relaunch_activity, and the configuration_changed event before it carries
+    # the configuration that caused it — the cause the app's log cannot name.
+    timeout 120 "$ADB" logcat -b events -d > "$OUT/logcat-events.txt" 2>&1 || true
     timeout 120 "$ADB" exec-out screencap -p > "$OUT/screen.png" 2>/dev/null || true
     # A cold start on this image can be torn down and recreated under the
     # launch. When it is, the first instance's page keeps answering devtools
@@ -181,19 +186,32 @@ cleanup() {
       created=$(grep -c 'Starting BridgeActivity' "$OUT/logcat.txt" || true)
       destroyed=$(grep -c 'App destroyed' "$OUT/logcat.txt" || true)
       dropped=$(grep -c 'on a dead thread' "$OUT/logcat.txt" || true)
+      relaunched=0
+      if [ -s "$OUT/logcat-events.txt" ]; then
+        relaunched=$(grep -c 'am_relaunch_activity' "$OUT/logcat-events.txt" || true)
+      fi
       {
         echo "the app activity was created ${created} time(s) in this boot"
         echo "the log records ${destroyed} activity destroy(s) and ${dropped} plugin call(s) dropped on a dead bridge thread"
-        if [ "$created" -gt 1 ]; then
+        echo "the activity manager recorded ${relaunched} relaunch(es) of a running activity"
+        if [ "$created" -gt 1 ] || [ "$relaunched" -gt 0 ]; then
           echo "the launch was recreated: the platform replaced the activity after it started,"
           echo "so the first instance's page can be a leftover that never reaches the native bridge"
         else
           echo "the launch was not recreated in this boot"
         fi
         echo
-        echo '--- bridge starts, activity lifecycle and the config update before a create ---'
-        grep -E 'Starting BridgeActivity|App destroyed|App resumed|App paused|ResourcesManager: Invalidated|Choreographer' \
+        echo '--- bridge starts, activity lifecycle and the configuration the platform applied ---'
+        grep -E 'Starting BridgeActivity|App destroyed|App resumed|App paused|ResourcesManager: Invalidated|Choreographer|Config changes=|Relaunching' \
           "$OUT/logcat.txt" | tail -n 120 || true
+        if [ -s "$OUT/logcat-events.txt" ]; then
+          echo
+          echo '--- activity manager events: what the platform did to the activity ---'
+          echo 'configuration_changed carries the changed-bits mask; the ActivityManager line'
+          echo "with 'Config changes=' above names the same change in the app's own log."
+          grep -E 'am_relaunch_activity|am_create_activity|am_destroy_activity|configuration_changed|am_on_resume_called|am_proc_start|am_kill|am_anr' \
+            "$OUT/logcat-events.txt" | tail -n 120 || true
+        fi
       } > "$OUT/activity-recreate.txt"
     fi
     # A lost device is the failure this artifact has to explain: record what

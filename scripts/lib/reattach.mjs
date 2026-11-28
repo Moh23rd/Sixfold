@@ -6,7 +6,10 @@
 
 import { describeDeath, recordsDeath } from './death-report.mjs';
 
-export const ATTACH_RETRY_WINDOW = 20000;
+/* Long enough for one page whose bridge has gone — the probe spends its whole
+   ten second budget before calling it gone — plus the retry delay and the
+   attach that follows. A second dead page passes the window and stays fatal. */
+export const ATTACH_RETRY_WINDOW = 30000;
 
 /* Picks the page the player can actually see out of the WebView targets the
    devtools list exposes. `bridge` is the answer of the page's own liveness

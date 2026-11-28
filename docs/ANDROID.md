@@ -524,10 +524,13 @@ being tested against the record that started this.
 
 A cold-starting WebView can be torn down and recreated by the system after the
 activity has started, which closes its DevTools socket before any page answers.
-The smoke retries only that attach: a new attempt starts only while a 20-second
+The smoke retries only that attach: a new attempt starts only while a 30-second
 window from the first attempt is open, and only while the process it launched
 is still the same live pid. An attach already in progress is left to finish, so
-the whole recovery can take longer than that window. The launch itself is never
+the whole recovery can take longer than that window. The window covers one page
+whose bridge is gone, where the liveness probe spends its whole ten-second
+budget before calling the page gone, plus the attach that follows; a second such
+page passes the window and the launch stays fatal. The launch itself is never
 repeated. A crash, kill or ANR recorded for that pid is fatal, a changed or
 missing pid is fatal, and the page still has to reach `home-ready` within the
 launch's own deadline, so a slow or dead first paint cannot pass as a WebView
@@ -555,11 +558,14 @@ attempts of run #261 had attached to that leftover page and reported `the native
 paint hand-off never completed` with no cause recorded; the deadline now also
 logs the page's own launch state, so a slow page and a dead one stay
 distinguishable in the artifact. A failing row's artifact answers both questions:
-`activity-recreate.txt` counts the bridge starts, the activity destroys and the
-plugin calls dropped on a dead thread in that boot, and lists the lifecycle
-lines around them; `devtools-listings.txt` holds every devtools listing the
-smoke read, with times and target ids, so whether a replacement page ever
-appeared is visible without grepping the logcat. The trigger for the recreate is
+`activity-recreate.txt` counts the bridge starts, the activity destroys, the
+plugin calls dropped on a dead thread and the activity manager's own relaunches
+in that boot, and lists the lifecycle lines around them; `logcat-events.txt`
+keeps the platform's event buffer, where `am_relaunch_activity` and the
+`configuration_changed` event before it name the cause the app's log cannot;
+`devtools-listings.txt` holds every devtools listing the smoke read, with times
+and target ids, so whether a replacement page ever appeared is visible without
+grepping the logcat. The trigger for the recreate is
 the platform's: ten consecutive cold launches of this row on a workstation
 produced one activity, one page and no dropped call, so the row asserts whichever
 page the app is actually showing and keeps the evidence for the boot where that
