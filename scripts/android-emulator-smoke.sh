@@ -188,7 +188,7 @@ cleanup() {
       dropped=$(grep -c 'on a dead thread' "$OUT/logcat.txt" || true)
       relaunched=0
       if [ -s "$OUT/logcat-events.txt" ]; then
-        relaunched=$(grep -c 'am_relaunch_activity' "$OUT/logcat-events.txt" || true)
+        relaunched=$(grep -cE 'am_relaunch_resume_activity|am_relaunch_activity' "$OUT/logcat-events.txt" || true)
       fi
       {
         echo "the app activity was created ${created} time(s) in this boot"
@@ -204,12 +204,16 @@ cleanup() {
         echo '--- bridge starts, activity lifecycle and the configuration the platform applied ---'
         grep -E 'Starting BridgeActivity|App destroyed|App resumed|App paused|ResourcesManager: Invalidated|Choreographer|Config changes=|Relaunching' \
           "$OUT/logcat.txt" | tail -n 120 || true
+        echo
+        echo '--- whoever asked for the recreate (AppCompat and ActivityThread at raised verbosity) ---'
+        grep -aE 'Schedule relaunch|Relaunching activity|recreate|Recreate|applyDayNight|updateForNightMode|SplashScreen' \
+          "$OUT/logcat.txt" | tail -n 60 || true
         if [ -s "$OUT/logcat-events.txt" ]; then
           echo
           echo '--- activity manager events: what the platform did to the activity ---'
           echo 'configuration_changed carries the changed-bits mask; the ActivityManager line'
           echo "with 'Config changes=' above names the same change in the app's own log."
-          grep -E 'am_relaunch_activity|am_create_activity|am_destroy_activity|configuration_changed|am_on_resume_called|am_proc_start|am_kill|am_anr' \
+          grep -E 'am_relaunch_resume_activity|am_relaunch_activity|am_create_activity|am_destroy_activity|configuration_changed|am_on_resume_called|am_proc_start|am_kill|am_anr' \
             "$OUT/logcat-events.txt" | tail -n 120 || true
         fi
       } > "$OUT/activity-recreate.txt"
@@ -319,6 +323,19 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     # makes every pixel check read a black window.
     adb_run shell svc power stayon true >/dev/null 2>&1
     export PATH="$SDK/platform-tools:$PATH"
+    # A recreate is logged by whoever asked for it, and those callers are silent
+    # at the default level: AppCompat's applyDayNight says at DEBUG why it
+    # recreated, ActivityThread only says it scheduled a relaunch at VERBOSE,
+    # and the platform's own configuration pass (the "Config changes=" line) is
+    # a VERBOSE log on the Configuration tag in these userdebug images. Raise
+    # them before the app process starts so the next recreate names its caller.
+    # The ring grows with them: a verbose launch writes more than the default
+    # 256 KiB buffer holds, and the first create would scroll out of the log the
+    # warning reads.
+    adb_run logcat -G 16M
+    for prop in ActivityThread:VERBOSE AppCompatDelegate:DEBUG Configuration:VERBOSE SplashScreen:VERBOSE; do
+      adb_run shell setprop "log.tag.${prop%%:*}" "${prop#*:}"
+    done
     # Count what this launch does, not what an earlier attempt left in the ring:
     # the recreate this row is watching for is a second activity create inside
     # one launch, and a cleared buffer also keeps an earlier attempt's crash out
@@ -377,7 +394,10 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     creates=$(grep -c 'Starting BridgeActivity' "$launch_log" || true)
     destroys=$(grep -c 'App destroyed' "$launch_log" || true)
     starts=$(grep -c 'START u0' "$launch_log" || true)
-    relaunches=$(adb_run logcat -b events -d 2>/dev/null | grep -c 'am_relaunch_activity' || true)
+    # A relaunch of the resumed activity is am_relaunch_resume_activity; plain
+    # am_relaunch_activity is the not-resumed case. Counting only the second
+    # name reported 0 relaunches for a launch the platform had just relaunched.
+    relaunches=$(adb_run logcat -b events -d 2>/dev/null | grep -cE 'am_relaunch_resume_activity|am_relaunch_activity' || true)
     note "the launch: ${creates} activity create(s), ${destroys} destroy(s), ${starts} start request(s), ${relaunches} relaunch(es)"
     # The attach can recover from a recreate, which would otherwise leave a green
     # row that looks clean. A warning is the signal that the launch itself was
@@ -387,7 +407,9 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
       # The warning has to name the cause, not just the symptom. The second
       # create's neighbourhood carries the configuration the platform applied in
       # front of it; the start requests show whether anything outside this
-      # harness asked for the activity at all.
+      # harness asked for the activity at all. Whoever called recreate() logs
+      # just before the destroy, not between it and the replacement, so the
+      # window reaches back over the first instance's teardown.
       second=$(grep -n 'Starting BridgeActivity' "$launch_log" | sed -n '2p' | cut -d: -f1)
       nearest="no configuration line in front of it"
       if [ -n "$second" ]; then
@@ -404,17 +426,25 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
       if [ -n "$second" ]; then
         first_destroy=$(grep -n 'App destroyed' "$launch_log" | head -n 1 | cut -d: -f1)
         if [ -n "$first_destroy" ] && [ "$first_destroy" -lt "$second" ]; then
-          between=$(sed -n "${first_destroy},${second}p" "$launch_log" \
+          from=$((first_destroy - 12))
+          [ "$from" -lt 1 ] && from=1
+          between=$(sed -n "${from},${second}p" "$launch_log" \
             | sed -E 's/^[0-9-]+ [0-9:.]+[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] //' \
-            | cut -c1-150 | head -n 6 | tr '\n' '|' || true)
+            | cut -c1-160 | tail -n 14 | tr '\n' '|' || true)
         fi
       fi
       [ -n "$between" ] || between="nothing logged between them"
+      # The caller itself, wherever it landed in the launch: the raised tags are
+      # the only lines that can name a recreate that no start request explains.
+      caller=$(grep -aE 'Schedule relaunch|Relaunching activity|recreate|Recreate|applyDayNight|updateForNightMode|SplashScreen' "$launch_log" \
+        | sed -E 's/^[0-9-]+ [0-9:.]+[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] //' \
+        | cut -c1-160 | head -n 4 | tr '\n' '|' || true)
+      [ -n "$caller" ] || caller="no recreate caller in the log"
       start_list=$(grep 'START u0' "$launch_log" \
         | sed -E 's/^([0-9-]+ [0-9:.]+)[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] /\1 /' \
         | cut -c1-150 | head -n 4 | tr '\n' '|' || true)
       [ -n "$start_list" ] || start_list="none"
-      echo "::warning title=Android launch recreated::this launch created the activity ${creates} time(s), destroyed it ${destroys} time(s) and made ${starts} start request(s) (${relaunches} relaunch(es)); nearest before the second create: ${nearest}; between the destroy and the second create: ${between}; start requests: ${start_list}"
+      echo "::warning title=Android launch recreated::this launch created the activity ${creates} time(s), destroyed it ${destroys} time(s) and made ${starts} start request(s) (${relaunches} relaunch(es)); nearest before the second create: ${nearest}; around the destroy: ${between}; recreate caller: ${caller}; start requests: ${start_list}"
     fi
     rm -f "$launch_log"
     # The retry self-test is a property of this whole attempt: the removal was
