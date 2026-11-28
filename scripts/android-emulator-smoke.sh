@@ -63,6 +63,10 @@ AVDMANAGER="$SDK/cmdline-tools/latest/bin/avdmanager"
 [ -x "$SDKMANAGER" ] || SDKMANAGER="$(command -v sdkmanager || true)"
 [ -x "$AVDMANAGER" ] || AVDMANAGER="$(command -v avdmanager || true)"
 APK="android/app/build/outputs/apk/debug/app-debug.apk"
+# The package the counts below belong to. The event buffer carries every
+# component's relaunches — this boot's FallbackHome relaunches too — so a count
+# that is not scoped to it reads a clean launch as a recreate.
+APP_ID="io.github.moh23rd.sixfold"
 OUT="${FAILURE_DIR:-emulator-failure}"
 LOG="${OUT}/emulator.log"
 ATTEMPTS="${SMOKE_ATTEMPTS:-3}"
@@ -188,7 +192,8 @@ cleanup() {
       dropped=$(grep -c 'on a dead thread' "$OUT/logcat.txt" || true)
       relaunched=0
       if [ -s "$OUT/logcat-events.txt" ]; then
-        relaunched=$(grep -cE 'am_relaunch_resume_activity|am_relaunch_activity' "$OUT/logcat-events.txt" || true)
+        relaunched=$(grep -E 'am_relaunch_resume_activity|am_relaunch_activity' "$OUT/logcat-events.txt" \
+          | grep -cF "$APP_ID" || true)
       fi
       {
         echo "the app activity was created ${created} time(s) in this boot"
@@ -206,7 +211,7 @@ cleanup() {
           "$OUT/logcat.txt" | tail -n 120 || true
         echo
         echo '--- whoever asked for the recreate (AppCompat and ActivityThread at raised verbosity) ---'
-        grep -aE 'Schedule relaunch|Relaunching activity|recreate|Recreate|applyDayNight|updateForNightMode|SplashScreen' \
+        grep -aE 'Schedule relaunch|Relaunching activity|recreate|Recreate|applyDayNight|updateForNightMode|Config changes|Configuration changed' \
           "$OUT/logcat.txt" | tail -n 60 || true
         if [ -s "$OUT/logcat-events.txt" ]; then
           echo
@@ -396,8 +401,11 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
     starts=$(grep -c 'START u0' "$launch_log" || true)
     # A relaunch of the resumed activity is am_relaunch_resume_activity; plain
     # am_relaunch_activity is the not-resumed case. Counting only the second
-    # name reported 0 relaunches for a launch the platform had just relaunched.
-    relaunches=$(adb_run logcat -b events -d 2>/dev/null | grep -cE 'am_relaunch_resume_activity|am_relaunch_activity' || true)
+    # name reported 0 relaunches for a launch the platform had just relaunched,
+    # and counting both without the package picks up the boot's FallbackHome.
+    relaunches=$(adb_run logcat -b events -d 2>/dev/null \
+      | grep -E 'am_relaunch_resume_activity|am_relaunch_activity' \
+      | grep -cF "$APP_ID" || true)
     note "the launch: ${creates} activity create(s), ${destroys} destroy(s), ${starts} start request(s), ${relaunches} relaunch(es)"
     # The attach can recover from a recreate, which would otherwise leave a green
     # row that looks clean. A warning is the signal that the launch itself was
@@ -436,7 +444,7 @@ while [ "$attempt" -lt "$ATTEMPTS" ]; do
       [ -n "$between" ] || between="nothing logged between them"
       # The caller itself, wherever it landed in the launch: the raised tags are
       # the only lines that can name a recreate that no start request explains.
-      caller=$(grep -aE 'Schedule relaunch|Relaunching activity|recreate|Recreate|applyDayNight|updateForNightMode|SplashScreen' "$launch_log" \
+      caller=$(grep -aE 'Schedule relaunch|Relaunching activity|recreate|Recreate|applyDayNight|updateForNightMode|Config changes|Configuration changed' "$launch_log" \
         | sed -E 's/^[0-9-]+ [0-9:.]+[ ]+[0-9]+[ ]+[0-9]+[ ]+[A-Z] //' \
         | cut -c1-160 | head -n 4 | tr '\n' '|' || true)
       [ -n "$caller" ] || caller="no recreate caller in the log"

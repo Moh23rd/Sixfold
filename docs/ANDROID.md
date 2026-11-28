@@ -565,10 +565,12 @@ keeps the platform's event buffer, where `am_relaunch_resume_activity` and the
 `configuration_changed` event before it name the cause the app's log cannot;
 `devtools-listings.txt` holds every devtools listing the smoke read, with times
 and target ids, so whether a replacement page ever appeared is visible without
-grepping the logcat. The counts read both relaunch events: relaunching the
-resumed activity writes `am_relaunch_resume_activity`, and counting only
-`am_relaunch_activity` reported zero relaunches for a launch the platform had
-just relaunched.
+grepping the logcat. The counts read both relaunch events, scoped to the app's
+own package: relaunching the resumed activity writes
+`am_relaunch_resume_activity`, and counting only `am_relaunch_activity` reported
+zero relaunches for a launch the platform had just relaunched, while counting
+the resumed form for every component read a clean launch as a recreate because
+the boot relaunches `com.android.settings/.FallbackHome` on its own.
 
 The trigger is the platform's, and it is a race with the installer rather than
 anything the app calls. `adb install` returns before the package broadcasts
