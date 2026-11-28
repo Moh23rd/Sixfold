@@ -6,9 +6,19 @@
 
 import { describeDeath, recordsDeath } from './death-report.mjs';
 
-/* Long enough for one page whose bridge has gone — the probe spends its whole
-   ten second budget before calling it gone — plus the retry delay and the
-   attach that follows. A second dead page passes the window and stays fatal. */
+/* How long one page may stay silent before the probe stops asking. The first
+   question gets the whole budget: a page still booting its bridge on a loaded
+   guest can stay quiet past ten seconds while the app's own plugin calls are
+   already succeeding (the API 33 row's shortcut launch did exactly that), so a
+   shorter budget calls a live page dead. A page already found silent is asked
+   again briefly — it has had its budget — which keeps a reattach cheap without
+   giving up on a page that was slow only once. */
+export const BRIDGE_PROBE_BUDGET = 15000;
+export const BRIDGE_REPROBE_BUDGET = 2000;
+
+/* Long enough for one page that spends its whole probe budget before it is
+   rejected, plus the retry delay and the attach that follows. A second dead page
+   passes the window and stays fatal. */
 export const ATTACH_RETRY_WINDOW = 30000;
 
 /* Picks the page the player can actually see out of the WebView targets the
@@ -29,6 +39,22 @@ export function chooseLivePage(pages) {
   if (!live.length) return null;
   const newest = (list) => list.slice().sort((a, b) => (b.origin || 0) - (a.origin || 0))[0];
   return newest(live.filter((page) => page.focused)) || newest(live);
+}
+
+/* The page to attach to when none of them answered its bridge probe. A silent
+   page is not a proven-dead one: only a refusal (`bridge: 'gone'`) is. A page
+   still booting its bridge on a starved guest stays silent for as long as the
+   renderer is busy, while the app's own plugin calls succeed moments later —
+   the API 33 row failed exactly that way, with the page declared gone ten
+   seconds before it answered. Attaching to the newest visible silent page lets
+   the paint proof, which is the assertion that matters, decide instead of a
+   probe that could not get an answer in time. A page that refused is never
+   returned: its bridge thread is gone and no paint hand-off can arrive. */
+export function chooseUnprovenPage(pages) {
+  const candidates = pages.filter((page) => page.bridge !== 'gone' && page.visible !== 'hidden');
+  if (!candidates.length) return null;
+  const newest = (list) => list.slice().sort((a, b) => (b.origin || 0) - (a.origin || 0))[0];
+  return newest(candidates.filter((page) => page.focused)) || newest(candidates);
 }
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

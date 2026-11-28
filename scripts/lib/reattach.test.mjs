@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ATTACH_RETRY_WINDOW, attachToLiveLaunch, chooseLivePage } from './reattach.mjs';
+import { ATTACH_RETRY_WINDOW, attachToLiveLaunch, chooseLivePage, chooseUnprovenPage } from './reattach.mjs';
 
 const PID = '2144';
 const CLEAN = ['no crash, ANR or kill was recorded for the app'];
@@ -52,10 +52,36 @@ test('no live visible page is no page at all', () => {
   assert.equal(chooseLivePage([]), null);
 });
 
+/* A probe that gets no answer is not a verdict. The API 33 row's shortcut launch
+   declared its page gone after ten seconds of silence and then watched the app
+   run its own plugin call, so a silent page has to remain attachable and the
+   paint proof decides. A page that refused is still never attached to. */
+test('a silent page is attached to rather than failed', () => {
+  const silent = page({ bridge: 'unanswered' });
+  assert.equal(chooseLivePage([silent]), null);
+  assert.equal(chooseUnprovenPage([silent]), silent);
+});
+
+test('an answering page still wins over a silent one', () => {
+  const silent = page({ origin: 2000, focused: true, bridge: 'unanswered' });
+  const live = page({ origin: 1000 });
+  assert.equal(chooseLivePage([silent, live]), live);
+});
+
+test('a page whose bridge refused is never attached to', () => {
+  assert.equal(chooseUnprovenPage([page({ bridge: 'gone' })]), null);
+  assert.equal(chooseUnprovenPage([page({ bridge: 'gone', visible: 'hidden' })]), null);
+  assert.equal(chooseUnprovenPage([]), null);
+});
+
+test('a hidden page is not a fallback', () => {
+  assert.equal(chooseUnprovenPage([page({ bridge: 'unanswered', visible: 'hidden' })]), null);
+});
+
 test('a dead page that spends the probe budget still reattaches inside the window', async () => {
-  // The bridge probe can wait ten seconds before it calls a page gone. That has
-  // to leave room for the reattach a leftover page needs: the window bounds when
-  // another attach may start, and the first one is allowed to finish.
+  // The bridge probe can wait fifteen seconds before it calls a page gone. That
+  // has to leave room for the reattach a leftover page needs: the window bounds
+  // when another attach may start, and the first one is allowed to finish.
   let attempts = 0;
   let clock = 0;
   const logs = [];
@@ -64,7 +90,7 @@ test('a dead page that spends the probe budget still reattaches inside the windo
     connect: async () => {
       attempts += 1;
       if (attempts === 1) {
-        clock += 10000; // the whole probe budget on a page whose bridge is gone
+        clock += 15000; // the whole probe budget on a page whose bridge is gone
         throw new Error('no WebView page can reach a native bridge (1 page: gone)');
       }
       clock += 500; // the replacement page answers its first probe
@@ -83,8 +109,9 @@ test('a dead page that spends the probe budget still reattaches inside the windo
 });
 
 test('a second dead page passes the window and stays fatal', async () => {
-  // Three full probe budgets and the retry delays between them pass the window,
-  // which is the limit this buys: one leftover page is recoverable, two are not.
+  // The fifteen second budget means two attempts and the retry delay between
+  // them pass the window, which is the limit this buys: one leftover page is
+  // recoverable, two are not.
   let attempts = 0;
   let clock = 0;
   await assert.rejects(
@@ -92,7 +119,7 @@ test('a second dead page passes the window and stays fatal', async () => {
       pid: PID,
       connect: async () => {
         attempts += 1;
-        clock += 10000;
+        clock += 15000;
         throw new Error('no WebView page can reach a native bridge (1 page: gone)');
       },
       livePid: () => PID,
@@ -102,7 +129,7 @@ test('a second dead page passes the window and stays fatal', async () => {
     }),
     /native bridge/
   );
-  assert.equal(attempts, 3);
+  assert.equal(attempts, 2);
   assert.ok(clock >= ATTACH_RETRY_WINDOW);
 });
 

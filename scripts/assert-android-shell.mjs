@@ -34,7 +34,13 @@ import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 
 import { anrTraceLines, describeDeath, parseDeathReport } from './lib/death-report.mjs';
-import { attachToLiveLaunch, chooseLivePage } from './lib/reattach.mjs';
+import {
+  attachToLiveLaunch,
+  BRIDGE_PROBE_BUDGET,
+  BRIDGE_REPROBE_BUDGET,
+  chooseLivePage,
+  chooseUnprovenPage
+} from './lib/reattach.mjs';
 import { classifyRemoval } from './lib/app-removal.mjs';
 
 // The smoke can point this at a wrapper (scripts/test-emulator-retry.sh does)
@@ -762,8 +768,14 @@ async function processIsGone() {
    appears while the page is still booting its bridge, and the plugin object
    exists a moment before the native side answers it, so a single call at the
    wrong instant made every cold start spend a reattach on a page that would
-   have answered a moment later. Refused and unanswered calls are both retried
-   from here; only ten seconds without an answer is a gone page. */
+   have answered a moment later.
+
+   Silence is not proof of death, though. A page that is still booting on a
+   loaded guest answers nothing for as long as its renderer is busy: on the API
+   33 row's shortcut launch the page stayed quiet through the whole ten-second
+   budget and then ran the app's own plugin call, so treating silence as a dead
+   bridge failed a healthy launch. Only a refusal is a dead bridge; a silent page
+   is attached to anyway (see chooseUnprovenPage) and the paint proof decides. */
 /* One call per evaluation, and the waiting happens in the harness. A page-side
    retry loop cannot do it: the first calls land before the page has finished
    booting its bridge, the promise they return never settles, and a pending
@@ -782,24 +794,42 @@ const BRIDGE_PROBE =
   "   }, function () { return 'refused'; });" +
   " } catch (error) { return 'refused'; } })()";
 
-const BRIDGE_WAIT = 10000;
+const BRIDGE_PROBE_TIMEOUT = 3000;
+/* Target id -> when its probe first went unanswered. A page that has already
+   spent its budget is asked again briefly, so a reattach does not start from
+   zero on a page the harness has been waiting on. */
+const silentPages = new Map();
 
 async function bridgeAnswers(bound) {
-  const deadline = Date.now() + BRIDGE_WAIT;
-  let verdict = 'starting';
+  const id = String(bound.target.id || bound.target.url || 'page');
+  const budget = silentPages.has(id) ? BRIDGE_REPROBE_BUDGET : BRIDGE_PROBE_BUDGET;
+  const deadline = Date.now() + budget;
+  let sawPlugin = false;
   for (;;) {
+    let answer = null;
     try {
-      const answer = await bound.evaluate(BRIDGE_PROBE, true, 3000);
-      if (answer === 'ok') return 'alive';
-      verdict = answer === 'no-plugin' ? 'starting' : 'gone';
+      answer = await bound.evaluate(BRIDGE_PROBE, true, BRIDGE_PROBE_TIMEOUT);
     } catch (error) {
-      // A dead emulator is not a dead page: let the host-loss path see it.
+      // A dead emulator is not a dead page: let the host-loss path see it. Any
+      // other failure is a call that never came back, which on a starved guest
+      // is a renderer still booting its page.
       if (error instanceof EmulatorLost) throw error;
-      // A call that never comes back is a bridge that cannot answer yet, which
-      // is also what a replaced activity's leftover page looks like.
-      verdict = 'gone';
     }
-    if (Date.now() >= deadline) return verdict;
+    // Any answer means the native side ran a plugin method.
+    if (answer === 'ok' || answer === 'empty') {
+      silentPages.delete(id);
+      return 'alive';
+    }
+    // A refusal is the page's bridge saying no: that bridge is gone.
+    if (answer === 'refused') {
+      silentPages.delete(id);
+      return 'gone';
+    }
+    if (answer === 'no-plugin' || answer === 'no-promise') sawPlugin = true;
+    if (Date.now() >= deadline) {
+      if (!sawPlugin && !silentPages.has(id)) silentPages.set(id, Date.now());
+      return sawPlugin ? 'starting' : 'unanswered';
+    }
     await new Promise((resolve) => setTimeout(resolve, 300));
   }
 }
@@ -868,24 +898,32 @@ async function connectToWebView() {
   }
   for (const bound of opened) {
     if (bound.bridge !== 'alive') {
-      log(`ignoring a WebView page whose native bridge is ${bound.bridge} (${bound.target.url})`);
+      log(`the WebView page at ${bound.target.url} has not answered its native bridge (${bound.bridge})`);
     }
   }
-  const chosen = chooseLivePage(opened);
+  // A page that answered goes first. A silent one is not a proven-dead one, so
+  // it is attached to rather than failed: the paint proof is the assertion, and
+  // a probe that could not get an answer in time must not decide the launch.
+  const chosen = chooseLivePage(opened) || chooseUnprovenPage(opened);
   if (!chosen) {
     for (const bound of opened) bound.socket.close();
-    if (!opened.some((bound) => bound.bridge === 'alive')) {
-      // Every page is a leftover of an activity that was replaced mid-launch,
-      // or one that has not registered its plugins yet. Neither can report the
-      // paint hand-off; wait for the page the app is actually showing.
+    if (opened.every((bound) => bound.bridge === 'gone')) {
+      // Every page refused the probe: these are the leftovers of activity
+      // instances that were replaced mid-launch, and none can report a paint.
       throw new Error(
         `no WebView page can reach a native bridge (${opened.length}` +
           ` page${opened.length === 1 ? '' : 's'}: ${opened.map((bound) => bound.bridge).join(', ')})`
       );
     }
-    // The live page can outlive its window for a moment. Wait for the current
-    // one rather than asserting against a page the player cannot see.
+    // The current page can outlive its window for a moment. Wait for it rather
+    // than asserting against a page the player cannot see.
     throw new Error('the WebView page is not visible yet');
+  }
+  if (chosen.bridge !== 'alive') {
+    log(
+      `attaching to a page whose native bridge has not answered (${chosen.bridge});` +
+        ' the paint hand-off still has to arrive'
+    );
   }
   for (const bound of opened) {
     if (bound !== chosen) bound.socket.close();

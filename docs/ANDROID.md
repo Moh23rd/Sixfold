@@ -548,19 +548,26 @@ The question is asked again until the bridge answers, because the devtools
 target appears while the page is still booting its bridge and the plugin object
 exists a moment before the native side answers it. The retry runs in the
 harness: a page-side loop cannot work, since a call made that early never
-settles and a pending evaluation never runs the page's own timers. A page whose
-bridge has gone keeps the plugin object but never answers, and is reported as
-gone after ten seconds.
-Finding no answering page retries the attach inside the same window, which is
-what lets the replacement activity's page win once it is listed, instead of
-waiting out the paint deadline against the leftover page. Both failed API 26
-attempts of run #261 had attached to that leftover page and reported `the native
-paint hand-off never completed` with no cause recorded; the deadline now also
-logs the page's own launch state, so a slow page and a dead one stay
-distinguishable in the artifact. A failing row's artifact answers both questions:
+settles and a pending evaluation never runs the page's own timers.
+
+Silence is not proof that a bridge is gone, and treating it as one failed
+two rows. A page still booting on a loaded guest answers nothing for as long as
+its renderer is busy: on the API 33 row's shortcut launch the page stayed quiet
+through the whole ten-second budget and then ran the app's own plugin call, so
+the launch was reported dead while the app was healthy. Only a refused call is a
+dead bridge. A silent page gets fifteen seconds of questions, a page already
+found silent is re-asked for two rather than the whole budget, and a silent page
+that never answers is attached to anyway so the paint proof — the assertion that
+actually matters — decides, with the probe's verdict named in the log and in the
+failure state. A page whose bridge refused is never attached to, which is the
+leftover the probe exists to avoid. Both failed API 26 attempts of run #261 had
+attached to that leftover page and reported `the native paint hand-off never
+completed` with no cause recorded; the deadline now also logs the page's own
+launch state, so a slow page and a dead one stay distinguishable in the
+artifact. A failing row's artifact answers both questions:
 `activity-recreate.txt` counts the bridge starts, the activity destroys, the
 plugin calls dropped on a dead thread and the activity manager's own relaunches
-in that boot, and lists the lifecycle lines around them; `logcat-events.txt`
+inside the launch, and lists the lifecycle lines around them; `logcat-events.txt`
 keeps the platform's event buffer, where `am_relaunch_resume_activity` and the
 `configuration_changed` event before it name the cause the app's log cannot;
 `devtools-listings.txt` holds every devtools listing the smoke read, with times
@@ -589,8 +596,16 @@ three seconds before its first launch, so the launch it asserts is the one a
 returning player makes rather than a race with the installer. The attach retry
 stays as the safety net for a recreate from any other source, and a green row
 still reports its activity creates and relaunches and warns when it had more
-than one. That warning raises `log.tag.ActivityThread`,
-`log.tag.AppCompatDelegate` and `log.tag.Configuration` before the app starts and
+than one. Both counts cover the attempt's *first* launch only, from the app's
+first start request to the next one: a full-pass row starts the app again for
+each shortcut step and each font scale, so a boot-wide count read three bridge
+starts for three launches and called a clean run a recreate. The report can
+never decide the row either — every read in it is guarded, because a `grep` that
+finds no `App destroyed` line returned 1 under `set -euo pipefail` and failed
+the API 36 row after every assertion had passed, before the warning it was
+assembling was printed. That warning raises `log.tag.ActivityThread`,
+`log.tag.AppCompatDelegate`, `log.tag.Configuration` and
+`log.tag.SplashScreen` before the app starts and
 quotes the lines those tags produce, plus the platform's own relaunch events, so
 a recreate from an app-side caller names it instead of only counting it. The
 carrier configuration stays declared for the separate `Config changes=3`
